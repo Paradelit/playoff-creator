@@ -638,13 +638,17 @@ export default function App() {
         const data = await response.json();
         const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+        console.log("Respuesta raw de Gemini:", responseText);
+        console.log("JSON limpio:", cleanText);
+        return JSON.parse(cleanText);
         return JSON.parse(cleanText);
       } catch (err) {
-        if (err.message === "RATE_LIMIT" || err.message === "FORBIDDEN") break; 
-        if (i === 4) throw new Error("Fallo en la comunicación con la IA.");
-        await new Promise(res => setTimeout(res, delay));
-        delay *= 2;
-      }
+          console.error(`Intento ${i+1} fallido:`, err);
+          if (err.message === "RATE_LIMIT" || err.message === "FORBIDDEN") break;
+          if (i === 4) throw new Error("Fallo en la comunicación con la IA.");
+          await new Promise(res => setTimeout(res, delay));
+          delay *= 2;
+        }
     }
   };
 
