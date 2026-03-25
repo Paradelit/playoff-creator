@@ -561,11 +561,12 @@ export default function App() {
   };
 
   const callGeminiForBracket = async (basesText, clasifText, userInstructions) => {
-    // ⚠️ ATENCIÓN: Esta clave DEBE ser de Google AI Studio (no la de Firebase).
-    // Si lo usas desde este chat web, la dejamos vacía para que use la nativa por defecto.
-    const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || "";    
-    const modelName = geminiApiKey ? "gemini-flash-latest" : "gemini-2.5-flash-preview-09-2025";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`;
+    const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+    const models = geminiApiKey
+      ? ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b']
+      : ['gemini-2.5-flash-preview-09-2025', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    let modelIndex = 0;
+    const getUrl = () => `https://generativelanguage.googleapis.com/v1beta/models/${models[modelIndex]}:generateContent?key=${geminiApiKey}`;
     
     let prompt = `
       Actúa como el comité de competición de la Federación de Baloncesto.
@@ -622,50 +623,54 @@ export default function App() {
       generationConfig: { responseMimeType: "application/json" }
     };
 
-    let delay = 1000;
-    for (let i = 0; i < 5; i++) {
+    while (modelIndex < models.length) {
       try {
-        const response = await fetch(url, {
+        setProcessStatus(`La IA está analizando... (modelo: ${models[modelIndex]})`);
+        const response = await fetch(getUrl(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        
+
         if (response.status === 429) {
-           setErrorMsg("Demasiadas peticiones a Gemini. Google ha limitado tu cuota. Espera 60 segundos.");
-           throw new Error("RATE_LIMIT");
+          setErrorMsg("Demasiadas peticiones a Gemini. Espera 60 segundos.");
+          throw new Error("RATE_LIMIT");
         }
-        
         if (response.status === 403) {
-           setErrorMsg("Error 403: La API Key que has puesto no tiene acceso a la IA (es probable que hayas usado la clave de Firebase). Déjala vacía si usas este visor web.");
-           throw new Error("FORBIDDEN");
+          setErrorMsg("Error 403: La API Key no tiene acceso a la IA.");
+          throw new Error("FORBIDDEN");
         }
-        
+        if (response.status === 503) {
+          console.warn(`Modelo ${models[modelIndex]} saturado, probando siguiente...`);
+          modelIndex++;
+          if (modelIndex < models.length) await new Promise(res => setTimeout(res, 1000));
+          continue;
+        }
         if (!response.ok) {
-           const errData = await response.text();
-           console.error("Detalle del error de Gemini:", errData);
-           throw new Error('API Error');
+          const errData = await response.text();
+          console.error("Detalle del error de Gemini:", errData);
+          throw new Error('API Error');
         }
         const data = await response.json();
         const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-        console.log("Respuesta raw de Gemini:", responseText);
-        console.log("JSON limpio:", cleanText);
-        return JSON.parse(cleanText);        
+        return JSON.parse(cleanText);
       } catch (err) {
-          console.error(`Intento ${i+1} fallido:`, err);
-          if (err.message === "RATE_LIMIT" || err.message === "FORBIDDEN") break;
-          if (i === 4) throw new Error("Fallo en la comunicación con la IA.");
-          await new Promise(res => setTimeout(res, delay));
-          delay *= 2;
-        }
+        if (err.message === "RATE_LIMIT" || err.message === "FORBIDDEN") throw err;
+        if (err.message !== 'API Error') { modelIndex++; continue; }
+        throw new Error("Fallo en la comunicación con la IA.");
+      }
     }
+    throw new Error("Todos los modelos de Gemini están saturados. Inténtalo más tarde.");
   };
 
   const callGeminiForResults = async (bracketStateSimplified, resultsText) => {
-    const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || ""; // ⚠️ DEJAR VACÍO SI SE USA EN EL CANVAS
-    const modelName = geminiApiKey ? "gemini-flash-latest" : "gemini-2.5-flash-preview-09-2025";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`;
+    const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+    const models = geminiApiKey
+      ? ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b']
+      : ['gemini-2.5-flash-preview-09-2025', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    let modelIndex = 0;
+    const getUrl = () => `https://generativelanguage.googleapis.com/v1beta/models/${models[modelIndex]}:generateContent?key=${geminiApiKey}`;
 
     let prompt = `
       Actúa como un asistente de datos deportivos.
@@ -686,41 +691,44 @@ export default function App() {
       generationConfig: { responseMimeType: "application/json" }
     };
 
-    let delay = 1000;
-    for (let i = 0; i < 5; i++) {
+    while (modelIndex < models.length) {
       try {
-        const response = await fetch(url, {
+        const response = await fetch(getUrl(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        
-        if (response.status === 429) throw new Error("RATE_LIMIT");
+
+        if (response.status === 429) {
+          setErrorMsg("Límite de peticiones de Google alcanzado. Espera un minuto.");
+          throw new Error("RATE_LIMIT");
+        }
         if (response.status === 403) {
-           setErrorMsg("Error 403: API Key incorrecta para la IA de Gemini.");
-           throw new Error("FORBIDDEN");
+          setErrorMsg("Error 403: API Key incorrecta para la IA de Gemini.");
+          throw new Error("FORBIDDEN");
+        }
+        if (response.status === 503) {
+          console.warn(`Modelo ${models[modelIndex]} saturado, probando siguiente...`);
+          modelIndex++;
+          if (modelIndex < models.length) await new Promise(res => setTimeout(res, 1000));
+          continue;
         }
         if (!response.ok) {
-           const errData = await response.text();
-           console.error("Detalle del error de Gemini:", errData);
-           throw new Error('API Error');
+          const errData = await response.text();
+          console.error("Detalle del error de Gemini:", errData);
+          throw new Error('API Error');
         }
-        
         const data = await response.json();
         const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
         const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         return JSON.parse(cleanText);
       } catch (err) {
-        if (err.message === "RATE_LIMIT") {
-           setErrorMsg("Límite de peticiones de Google alcanzado. Espera un minuto.");
-           break;
-        }
-        if (err.message === "FORBIDDEN") break;
-        if (i === 4) throw new Error("Fallo procesando los resultados.");
-        await new Promise(res => setTimeout(res, delay));
-        delay *= 2;
+        if (err.message === "RATE_LIMIT" || err.message === "FORBIDDEN") throw err;
+        if (err.message !== 'API Error') { modelIndex++; continue; }
+        throw new Error("Fallo procesando los resultados.");
       }
     }
+    throw new Error("Todos los modelos de Gemini están saturados. Inténtalo más tarde.");
   };
 
   const handleProcessDocuments = async () => {
