@@ -640,8 +640,7 @@ export default function App() {
         const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         console.log("Respuesta raw de Gemini:", responseText);
         console.log("JSON limpio:", cleanText);
-        return JSON.parse(cleanText);
-        return JSON.parse(cleanText);
+        return JSON.parse(cleanText);        
       } catch (err) {
           console.error(`Intento ${i+1} fallido:`, err);
           if (err.message === "RATE_LIMIT" || err.message === "FORBIDDEN") break;
