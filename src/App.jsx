@@ -3,7 +3,7 @@ import { Trophy, ZoomIn, ZoomOut, RefreshCw, Star, UploadCloud, FileText, CheckC
 
 // --- INTEGRACIÓN CON FIREBASE / FIRESTORE ---
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 
 // ⚠️ CONFIGURACIÓN DE FIREBASE (SOLO PARA BASE DE DATOS Y AUTH)
@@ -440,12 +440,6 @@ export default function App() {
       return;
     }
 
-    getRedirectResult(auth).catch((error) => {
-      if (error.code === 'auth/unauthorized-domain') {
-        setErrorMsg(`Dominio no autorizado: ${window.location.hostname}`);
-      }
-    });
-
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -463,7 +457,7 @@ export default function App() {
     setErrorMsg('');
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithRedirect(auth, provider);
+      await signInWithPopup(auth, provider);
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
       if (error.code === 'auth/unauthorized-domain') {
