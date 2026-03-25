@@ -3,7 +3,7 @@ import { Trophy, ZoomIn, ZoomOut, RefreshCw, Star, UploadCloud, FileText, CheckC
 
 // --- INTEGRACIÓN CON FIREBASE / FIRESTORE ---
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 
 // ⚠️ CONFIGURACIÓN DE FIREBASE (SOLO PARA BASE DE DATOS Y AUTH)
@@ -440,6 +440,12 @@ export default function App() {
       return;
     }
 
+    getRedirectResult(auth).catch((error) => {
+      if (error.code === 'auth/unauthorized-domain') {
+        setErrorMsg(`Dominio no autorizado: ${window.location.hostname}`);
+      }
+    });
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -457,7 +463,7 @@ export default function App() {
     setErrorMsg('');
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      await signInWithRedirect(auth, provider);
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
       if (error.code === 'auth/unauthorized-domain') {
@@ -525,26 +531,31 @@ export default function App() {
 
   const extractTextFromFile = async (file) => {
     if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-      if (!window.pdfjsLib) {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        });
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      }
-      
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await window.pdfjsLib.getDocument(arrayBuffer).promise;
-      let text = '';
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        text += content.items.map(item => item.str).join(' ') + '\n';
-      }
-      return text;
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('El PDF tardó demasiado en procesarse. Prueba con otro archivo.')), 30000)
+      );
+      const extract = async () => {
+        if (!window.pdfjsLib) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await window.pdfjsLib.getDocument(arrayBuffer).promise;
+        let text = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          text += content.items.map(item => item.str).join(' ') + '\n';
+        }
+        return text;
+      };
+      return await Promise.race([extract(), timeout]);
     } else {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
