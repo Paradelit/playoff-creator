@@ -509,7 +509,13 @@ export default function App() {
     
     const unsubscribe = onSnapshot(bracketsRef, (snapshot) => {
       const fetchedBrackets = snapshot.docs.map(doc => doc.data());
-      setBrackets(fetchedBrackets.sort((a, b) => b.createdAt - a.createdAt));
+      const sorted = fetchedBrackets.sort((a, b) => b.createdAt - a.createdAt);
+      setBrackets(sorted);
+      const lastId = localStorage.getItem('lastActiveBracketId');
+      if (lastId && sorted.find(b => b.id === lastId)) {
+        setActiveBracketId(lastId);
+        setAppMode('bracket');
+      }
     }, (error) => {
       console.error("Error sincronizando desde Firestore:", error);
     });
@@ -765,6 +771,7 @@ export default function App() {
 
       setBrackets(prev => [newBracketObj, ...prev]);
       setActiveBracketId(newBracketObj.id);
+      localStorage.setItem('lastActiveBracketId', newBracketObj.id);
 
       // Firestore en background — que no bloquee la UI
       if (user && db) {
@@ -1064,7 +1071,7 @@ export default function App() {
                   <h3 className="text-xl font-bold text-slate-800 mb-2 truncate">{b.name}</h3>
                   <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-4 truncate">{b.tournamentNameDetected || 'Competición'}</p>
                   <div className="flex justify-between items-center mt-auto border-t border-slate-100 pt-4">
-                    <button onClick={() => { setActiveBracketId(b.id); setAppMode('bracket'); setZoom(1); }} className="text-blue-600 font-bold hover:text-blue-800 flex items-center gap-1">Abrir cuadro <ArrowRight size={16} /></button>
+                    <button onClick={() => { setActiveBracketId(b.id); localStorage.setItem('lastActiveBracketId', b.id); setAppMode('bracket'); setZoom(1); }} className="text-blue-600 font-bold hover:text-blue-800 flex items-center gap-1">Abrir cuadro <ArrowRight size={16} /></button>
                     <button onClick={() => handleDeleteBracket(b.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18} /></button>
                   </div>
                 </div>
