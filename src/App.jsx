@@ -764,12 +764,13 @@ export default function App() {
       };
 
       setBrackets(prev => [newBracketObj, ...prev]);
-      
-      if (user && db) {
-        await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'brackets', newBracketObj.id), newBracketObj);
-      }
-
       setActiveBracketId(newBracketObj.id);
+
+      // Firestore en background — que no bloquee la UI
+      if (user && db) {
+        setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'brackets', newBracketObj.id), newBracketObj)
+          .catch(e => console.warn("No se pudo guardar en la nube:", e));
+      }
       
       setTimeout(() => {
         setAppMode('bracket');
