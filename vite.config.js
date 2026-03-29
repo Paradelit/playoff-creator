@@ -10,5 +10,15 @@ export default defineConfig({
       'Cross-Origin-Opener-Policy': 'unsafe-none',
       'Cross-Origin-Embedder-Policy': 'unsafe-none',
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('firebase')) return 'firebase';
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('lucide-react')) return 'vendor';
+        }
+      }
+    }
   }
 })

@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Datos privados de cada usuario: brackets, teams, members y cualquier subcolecci\u00f3n futura
+    match /artifacts/{appId}/users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Brackets compartidos: cualquier usuario autenticado puede leer y escribir
+    // (los permisos de edici\u00f3n se gestionan en la l\u00f3gica de la app)
+    match /artifacts/{appId}/shared/{shareCode} {
+      allow read, write: if request.auth != null;
+    }
+
+  }
+}

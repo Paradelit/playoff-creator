@@ -1,33 +1,37 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { toPng } from 'html-to-image';
-import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, getDoc } from 'firebase/firestore';
 
-import { auth, db, appId } from './services/firebase';
+import { useAuth } from './contexts/AuthContext';
+import { useFirebase } from './contexts/FirebaseContext';
 import { buildDynamicBracket, calculateMatchWinner } from './utils/bracketEngine';
 import { getUserColor } from './utils/cursorUtils';
 import { extractTextFromFile, callGeminiForBracket, callGeminiForResults } from './services/aiService';
 import { saveBracketToFirestore, toFirestore } from './services/firestoreService';
 
 import LoadingScreen from './screens/LoadingScreen';
-import LoginScreen from './screens/LoginScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import UploadScreen from './screens/UploadScreen';
 import PreviewScreen from './screens/PreviewScreen';
 import BracketScreen from './screens/BracketScreen';
 
-export default function App() {
+// Props:
+//   initialShareCode   – share code extraído de la URL por el padre
+//   onShareCodeConsumed – callback a llamar cuando el share code se ha procesado
+//   shareUrlBase       – base para construir share URLs, ej: "https://app.com/s"
+export default function PlayoffCreatorModule({ initialShareCode, onShareCodeConsumed, shareUrlBase }) {
+  const { user, handleLogout: authLogout } = useAuth();
+  const { db, appId } = useFirebase();
+  const firebaseError = !db;
+
   const [appMode, setAppMode] = useState('loading');
 
   const [brackets, setBrackets] = useState([]);
   const [activeBracketId, setActiveBracketId] = useState(null);
   const activeBracket = useMemo(() => brackets.find(b => b.id === activeBracketId), [brackets, activeBracketId]);
 
-  const [user, setUser] = useState(null);
   const _scfg = activeBracket?.shareConfig;
   const canEdit = !_scfg || _scfg.ownerId === user?.uid || (user?.email && _scfg.invites?.[user.email] === 'edit') || _scfg.linkAccess === 'edit';
-  const [firebaseError, setFirebaseError] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const [newBracketName, setNewBracketName] = useState('');
   const [basesFile, setBasesFile] = useState(null);
@@ -48,7 +52,8 @@ export default function App() {
   const [sharingBracket, setSharingBracket] = useState(null);
   const [inviteEmail, setInviteEmail] = useState('');
   const [invitePermission, setInvitePermission] = useState('view');
-  const [pendingShareCode, setPendingShareCode] = useState(null);
+  // Inicializado con el share code que pasa el padre (puede venir de la URL)
+  const [pendingShareCode, setPendingShareCode] = useState(initialShareCode || null);
 
   const fileInputBases = useRef(null);
   const fileInputClasif = useRef(null);
@@ -74,14 +79,14 @@ export default function App() {
   const [editingBracketName, setEditingBracketName] = useState(false);
   const [bracketNameInput, setBracketNameInput] = useState('');
 
-  // Persiste appMode en localStorage
+  // Persiste appMode en localStorage (con namespace del módulo)
   useEffect(() => {
     if (appMode === 'dashboard' || appMode === 'bracket' || appMode === 'upload') {
-      localStorage.setItem('lastAppMode', appMode);
+      localStorage.setItem('playoffs:lastAppMode', appMode);
     }
   }, [appMode]);
 
-  // T7 + T10: Limpiar modales, mensajes e inputs al cambiar de pantalla
+  // Limpiar modales, mensajes e inputs al cambiar de pantalla
   useEffect(() => {
     setShowMobileTools(false);
     setSharingBracket(null);
@@ -92,73 +97,10 @@ export default function App() {
     if (fileInputClasif?.current) fileInputClasif.current.value = '';
   }, [appMode]);
 
-  // Detecta código de cuadro compartido en la URL
-  useEffect(() => {
-    const m = window.location.pathname.match(/^\/s\/([A-Z0-9]{4,12})$/i);
-    if (m) setPendingShareCode(m[1].toUpperCase());
-  }, []);
-
-  // Auth
-  useEffect(() => {
-    if (!auth) {
-      setFirebaseError(true);
-      setAppMode('dashboard');
-      return;
-    }
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) setAppMode('dashboard');
-      else setAppMode('login');
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleLogin = async () => {
-    setIsLoggingIn(true);
-    setErrorMsg('');
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Error al iniciar sesión:", error);
-      if (error.code === 'auth/unauthorized-domain') {
-        const domain = window.location.hostname || "scf.usercontent.goog";
-        setErrorMsg(`Bloqueo de seguridad: Ve a Firebase Console -> Authentication -> Settings -> Authorized domains y añade: ${domain}`);
-      } else {
-        setErrorMsg("Error al conectar con Google. Revisa tu configuración de Firebase.");
-      }
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
-  const handleAnonymousLogin = async () => {
-    setIsLoggingIn(true);
-    setErrorMsg('');
-    try {
-      await signInAnonymously(auth);
-    } catch (error) {
-      console.error("Error en login anónimo:", error);
-      if (error.code === 'auth/unauthorized-domain') {
-        const domain = window.location.hostname || "scf.usercontent.goog";
-        setErrorMsg(`Bloqueo de seguridad: Ve a Firebase Console -> Authentication -> Settings -> Authorized domains y añade: ${domain}`);
-        setFirebaseError(true);
-        setAppMode('dashboard');
-      } else {
-        setErrorMsg("Error al iniciar sesión de invitado.");
-      }
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
-
+  // Cierra sesión y limpia el estado local
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      setBrackets([]);
-    } catch (error) {
-      console.error("Error al cerrar sesión", error);
-    }
+    setBrackets([]);
+    await authLogout();
   };
 
   // Sincronización Firestore
@@ -178,8 +120,8 @@ export default function App() {
       });
       if (isFirstSnapshot.current) {
         isFirstSnapshot.current = false;
-        const lastMode = localStorage.getItem('lastAppMode') || 'dashboard';
-        const lastId = localStorage.getItem('lastActiveBracketId');
+        const lastMode = localStorage.getItem('playoffs:lastAppMode') || 'dashboard';
+        const lastId = localStorage.getItem('playoffs:lastActiveBracketId');
         if (lastMode === 'bracket' && lastId && sorted.find(b => b.id === lastId)) {
           setActiveBracketId(lastId);
           setAppMode('bracket');
@@ -216,23 +158,23 @@ export default function App() {
     return () => {};
   }, [brackets.map(b => b.shareCode).join(',')]);
 
-  // Auto-abre cuadro compartido por URL
+  // Auto-abre cuadro compartido por share code
   useEffect(() => {
     if (!pendingShareCode || !user || !db || appMode === 'loading') return;
     const existing = brackets.find(b => b.shareCode === pendingShareCode);
     if (existing) {
       setActiveBracketId(existing.id);
-      localStorage.setItem('lastActiveBracketId', existing.id);
+      localStorage.setItem('playoffs:lastActiveBracketId', existing.id);
       setAppMode('bracket');
       setPendingShareCode(null);
-      window.history.replaceState({}, '', '/');
+      onShareCodeConsumed?.();
       return;
     }
     getDoc(doc(db, 'artifacts', appId, 'shared', pendingShareCode)).then(snap => {
       if (!snap.exists()) {
         alert('El enlace no es válido o el cuadro no existe.');
         setPendingShareCode(null);
-        window.history.replaceState({}, '', '/');
+        onShareCodeConsumed?.();
         return;
       }
       const data = snap.data();
@@ -243,7 +185,7 @@ export default function App() {
       if (!hasAccess) {
         alert('No tienes acceso a este cuadro compartido.');
         setPendingShareCode(null);
-        window.history.replaceState({}, '', '/');
+        onShareCodeConsumed?.();
         return;
       }
       const bookmarkId = `shared_${pendingShareCode}`;
@@ -256,14 +198,14 @@ export default function App() {
         }).catch(() => {});
       }
       setActiveBracketId(bookmarkId);
-      localStorage.setItem('lastActiveBracketId', bookmarkId);
+      localStorage.setItem('playoffs:lastActiveBracketId', bookmarkId);
       setAppMode('bracket');
       setPendingShareCode(null);
-      window.history.replaceState({}, '', '/');
+      onShareCodeConsumed?.();
     }).catch(() => {
       alert('Error al acceder al cuadro. Inténtalo de nuevo.');
       setPendingShareCode(null);
-      window.history.replaceState({}, '', '/');
+      onShareCodeConsumed?.();
     });
   }, [pendingShareCode, user, appMode]);
 
@@ -341,7 +283,7 @@ export default function App() {
     }
     setBrackets(prev => [pendingBracket, ...prev]);
     setActiveBracketId(pendingBracket.id);
-    localStorage.setItem('lastActiveBracketId', pendingBracket.id);
+    localStorage.setItem('playoffs:lastActiveBracketId', pendingBracket.id);
     if (user && db) {
       setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'brackets', pendingBracket.id), toFirestore(pendingBracket))
         .catch(e => console.warn("No se pudo guardar en la nube:", e));
@@ -503,7 +445,7 @@ export default function App() {
     setCanRedo(!!(h?.redo?.length));
   }, [activeBracketId]);
 
-  // F7: Atajos Ctrl+Z / Ctrl+Y
+  // Atajos Ctrl+Z / Ctrl+Y
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (appMode !== 'bracket' || !canEdit) return;
@@ -755,15 +697,6 @@ export default function App() {
   // --- RENDER ---
   if (appMode === 'loading') return <LoadingScreen />;
 
-  if (appMode === 'login') return (
-    <LoginScreen
-      errorMsg={errorMsg}
-      isLoggingIn={isLoggingIn}
-      handleLogin={handleLogin}
-      handleAnonymousLogin={handleAnonymousLogin}
-    />
-  );
-
   if (appMode === 'dashboard') return (
     <DashboardScreen
       user={user}
@@ -796,6 +729,7 @@ export default function App() {
       handleAddInvite={handleAddInvite}
       handleUpdateShareConfig={handleUpdateShareConfig}
       handleRemoveInvite={handleRemoveInvite}
+      shareUrlBase={shareUrlBase}
     />
   );
 
@@ -882,6 +816,7 @@ export default function App() {
       bracketExportRef={bracketExportRef}
       remoteCursors={remoteCursors}
       setAppMode={setAppMode}
+      shareUrlBase={shareUrlBase}
     />
   );
 }

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(firebase --version)",
+      "Bash(gh auth:*)",
+      "Bash(npx firebase-tools:*)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); tokens=d.get\\(''''tokens'''',{}\\); print\\(list\\(tokens.keys\\(\\)\\)[0] if tokens else ''''no tokens''''\\)\")",
+      "Read(//c/Users/ASUS/OneDrive/Desktop/playoff-creator/$APPDATA/**)",
+      "Bash(node:*)",
+      "WebSearch",
+      "Bash(npm run:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(npm install:*)",
+      "Bash(wc -l /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src/screens/*.jsx)"
+    ]
+  }
+}
