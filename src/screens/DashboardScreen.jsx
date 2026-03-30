@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Plus, Upload, Download, Trash2, Share2, Users, ArrowRight, FolderOpen, Cloud, CloudOff, LogOut, Link, X, Check, Copy } from 'lucide-react';
+import { Trophy, Plus, Upload, Download, Trash2, Share2, Users, ArrowRight, FolderOpen, Cloud, CloudOff, LogOut, Link, X, Check, Copy, ShieldHalf } from 'lucide-react';
 
 export default function DashboardScreen({
   user, brackets, firebaseError,
@@ -177,7 +177,12 @@ export default function DashboardScreen({
                     <h3 className="text-xl font-bold text-slate-800 truncate">{b.name}</h3>
                     {b.isShared && <span className="shrink-0 flex items-center gap-1 bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full"><Users size={11} /> Compartido</span>}
                   </div>
-                  <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-4 truncate">{b.tournamentNameDetected || 'Competición'}</p>
+                  <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-1 truncate">{b.tournamentNameDetected || 'Competición'}</p>
+                  {b.teamName && (
+                    <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold mb-3">
+                      <ShieldHalf size={10} /> {b.teamName}
+                    </span>
+                  )}
                   {b.shareCode && <p className="text-xs text-slate-400 mb-3 flex items-center gap-1"><Link size={11} /> Enlace de compartir activo</p>}
                   <div className="flex justify-between items-center mt-auto border-t border-slate-100 pt-4">
                     <button onClick={() => { setActiveBracketId(b.id); localStorage.setItem('playoffs:lastActiveBracketId', b.id); setAppMode('bracket'); setZoom(1); }} className="text-blue-600 font-bold hover:text-blue-800 flex items-center gap-1">Abrir cuadro <ArrowRight size={16} /></button>

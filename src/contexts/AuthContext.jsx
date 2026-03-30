@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signInWithCredential, linkWithPopup, deleteUser, signOut, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import { useFirebase } from './FirebaseContext';
 
 const AuthContext = createContext(null);
@@ -68,8 +68,34 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const handleLinkGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await linkWithPopup(auth.currentUser, provider);
+    } catch (error) {
+      if (error.code === 'auth/credential-already-in-use') {
+        const credential = GoogleAuthProvider.credentialFromError(error);
+        if (credential) {
+          await signInWithCredential(auth, credential);
+          return;
+        }
+      }
+      console.error('Error al vincular cuenta:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteAuthAccount = async () => {
+    try {
+      await deleteUser(auth.currentUser);
+    } catch (error) {
+      console.error('Error al eliminar cuenta:', error);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoggingIn, authError, setAuthError, authReady, handleLogin, handleAnonymousLogin, handleLogout }}>
+    <AuthContext.Provider value={{ user, isLoggingIn, authError, setAuthError, authReady, handleLogin, handleAnonymousLogin, handleLogout, handleLinkGoogle, handleDeleteAuthAccount }}>
       {children}
     </AuthContext.Provider>
   );

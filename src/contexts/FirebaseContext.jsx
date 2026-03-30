@@ -2,6 +2,7 @@ import React, { createContext, useContext } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const FirebaseContext = createContext(null);
 
@@ -15,7 +16,7 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-let _app, _auth, _db, _appId;
+let _app, _auth, _db, _storage, _appId;
 try {
   const configToUse = typeof __firebase_config !== 'undefined'
     ? JSON.parse(__firebase_config)
@@ -25,6 +26,7 @@ try {
     _app = getApps().length ? getApps()[0] : initializeApp(configToUse);
     _auth = getAuth(_app);
     _db = getFirestore(_app);
+    _storage = getStorage(_app);
     _appId = typeof __app_id !== 'undefined' ? __app_id : 'uros-fbm-app';
   }
 } catch (error) {
@@ -33,7 +35,7 @@ try {
 
 export function FirebaseProvider({ children }) {
   return (
-    <FirebaseContext.Provider value={{ app: _app, auth: _auth, db: _db, appId: _appId }}>
+    <FirebaseContext.Provider value={{ app: _app, auth: _auth, db: _db, storage: _storage, appId: _appId }}>
       {children}
     </FirebaseContext.Provider>
   );

@@ -1,32 +1,53 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, BookOpen, Save, X, Printer } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Trash2, BookOpen, Save, X, Printer, Undo, Maximize2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
-import { subscribeToTeams } from '../services/teamsService';
-import { subscribeToMembers } from '../services/teamsService';
+import { subscribeToTeams, subscribeToMembers } from '../services/teamsService';
 import { subscribeToTrainings, saveTraining, subscribeToExercises, saveExercise } from '../services/trainingsService';
+import { subscribeToProfile } from '../services/settingsService';
 import { teamDisplayName } from './TeamsScreen';
-import DrawableCourt from '../components/DrawableCourt';
 import MentionTextarea from '../components/MentionTextarea';
+import CourtCanvas, { COURT_TOOLS } from '../components/CourtCanvas';
+import ClubLogo from '../components/ClubLogo';
 
-const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const EMPTY_EJERCICIO = () => ({
-  id: crypto.randomUUID(),
-  tiempo: '',
-  contenido: '',
-  descripcion: '',
-  tipoPista: 'media',
-  trazos: [],
-});
+function getTemporada() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1; // 1-12
+  const startYear = month >= 9 ? year : year - 1;
+  return `${startYear}-${String(startYear + 1).slice(-2)}`;
+}
 
-const EMPTY_TRAINING = (numero = 1) => ({
-  meta: { numero, dia: '', fecha: '', horaInicio: '', horaFin: '', lugar: '' },
-  objetivos: '',
-  ejercicios: [],
-  cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
-});
+const DIAS = [
+  { val: 'L', label: 'L' }, { val: 'M', label: 'M' }, { val: 'X', label: 'X' },
+  { val: 'J', label: 'J' }, { val: 'V', label: 'V' }, { val: 'S', label: 'S' }, { val: 'D', label: 'D' },
+];
+
+function makeEjercicio() {
+  return { id: crypto.randomUUID(), tiempo: '', contenido: '', descripcion: '', tipoPista: 'media', elementos: [] };
+}
+
+function EMPTY_TRAINING(numero = 1) {
+  return {
+    meta: { numero, dia: '', fecha: '', horaInicio: '', horaFin: '', lugar: '' },
+    objetivos: '',
+    ejercicios: [
+      { ...makeEjercicio(), tipoPista: 'entera' },
+      { ...makeEjercicio(), tipoPista: 'entera' },
+      { ...makeEjercicio(), tipoPista: 'entera' },
+      makeEjercicio(),
+      makeEjercicio(),
+      makeEjercicio(),
+      makeEjercicio(),
+    ],
+    cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
+  };
+}
+
+// ─── Main screen ─────────────────────────────────────────────────────────────
 
 export default function TrainingEditorScreen() {
   const { teamId, trainingId } = useParams();
@@ -38,16 +59,17 @@ export default function TrainingEditorScreen() {
   const [members, setMembers] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [training, setTraining] = useState(null);
+  const [profile, setProfile] = useState({});
   const [loading, setLoading] = useState(true);
-  const [saveStatus, setSaveStatus] = useState('saved'); // 'saving' | 'saved'
-  const [modalEjercicioId, setModalEjercicioId] = useState(null); // ejercicio expanded
-  const [showLibrary, setShowLibrary] = useState(null); // ejercicio id that triggered library
+  const [saveStatus, setSaveStatus] = useState('saved');
+  const [modalEjercicioId, setModalEjercicioId] = useState(null);
+  const [activeTool, setActiveTool] = useState('O');
+  const [showLibrary, setShowLibrary] = useState(null);
   const [librarySearch, setLibrarySearch] = useState('');
 
   const saveTimerRef = useRef(null);
   const isFirstLoad = useRef(true);
 
-  // Subscriptions
   useEffect(() => {
     if (!user || !db) return;
     return subscribeToTeams(user.uid, db, appId, data => {
@@ -67,20 +89,24 @@ export default function TrainingEditorScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
+    return subscribeToProfile(user.uid, db, appId, setProfile);
+  }, [user, db, appId]);
+
+  useEffect(() => {
+    if (!user || !db) return;
     return subscribeToTrainings(teamId, user.uid, db, appId, data => {
       const found = data.find(t => t.id === trainingId);
-      if (found && isFirstLoad.current) {
-        setTraining(found);
-        isFirstLoad.current = false;
-      } else if (!found && isFirstLoad.current) {
-        setTraining({ id: trainingId, teamId, ...EMPTY_TRAINING() });
+      if (isFirstLoad.current) {
+        setTraining(found
+          ? { ...found, ejercicios: (found.ejercicios || []).map(e => ({ ...e, elementos: e.elementos || [] })) }
+          : { id: trainingId, teamId, ...EMPTY_TRAINING() }
+        );
         isFirstLoad.current = false;
       }
       setLoading(false);
     });
   }, [user, db, appId, teamId, trainingId]);
 
-  // Auto-save with debounce
   const triggerSave = useCallback((t) => {
     setSaveStatus('saving');
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -115,11 +141,21 @@ export default function TrainingEditorScreen() {
   }
 
   function addEjercicio() {
-    updateTraining(t => ({ ...t, ejercicios: [...(t.ejercicios || []), EMPTY_EJERCICIO()] }));
+    updateTraining(t => ({ ...t, ejercicios: [...(t.ejercicios || []), makeEjercicio()] }));
+  }
+
+  function removeLastEjercicio() {
+    updateTraining(t => {
+      if ((t.ejercicios || []).length <= 1) return t;
+      return { ...t, ejercicios: t.ejercicios.slice(0, -1) };
+    });
   }
 
   function removeEjercicio(id) {
-    updateTraining(t => ({ ...t, ejercicios: t.ejercicios.filter(e => e.id !== id) }));
+    updateTraining(t => {
+      if ((t.ejercicios || []).length <= 1) return t;
+      return { ...t, ejercicios: t.ejercicios.filter(e => e.id !== id) };
+    });
   }
 
   function updateEjercicio(id, field, value) {
@@ -137,7 +173,9 @@ export default function TrainingEditorScreen() {
         contenido: libExercise.contenido || e.contenido,
         descripcion: libExercise.descripcion || e.descripcion,
         tipoPista: libExercise.tipoPista || e.tipoPista,
-        trazos: libExercise.trazos || e.trazos,
+        elementos: libExercise.elementos || [],
+        libExerciseId: libExercise.id,
+        libExerciseName: libExercise.nombre,
       } : e),
     }));
     setShowLibrary(null);
@@ -153,198 +191,381 @@ export default function TrainingEditorScreen() {
       contenido: ejercicio.contenido,
       descripcion: ejercicio.descripcion,
       tipoPista: ejercicio.tipoPista,
-      trazos: ejercicio.trazos || [],
+      elementos: ejercicio.elementos || [],
     }, { uid: user.uid, db, appId });
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center font-sans">
+      <div className="min-h-screen bg-gray-200 flex items-center justify-center font-sans">
         <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
-
   if (!training) return null;
 
   const ejercicios = training.ejercicios || [];
-  const expandedEjercicio = ejercicios.find(e => e.id === modalEjercicioId);
+  const ejModal = ejercicios.find(e => e.id === modalEjercicioId);
+  const clubName = profile?.nombreClub?.trim() || 'Uros de Rivas';
+  const temporada = getTemporada();
   const libraryFiltered = exercises.filter(ex =>
     ex.nombre?.toLowerCase().includes(librarySearch.toLowerCase()) ||
     ex.contenido?.toLowerCase().includes(librarySearch.toLowerCase())
   );
 
-  return (
-    <div className="min-h-screen bg-slate-100 font-sans print:bg-white print:min-h-0">
+  const TOOLS = COURT_TOOLS;
 
-      {/* Barra de navegación — oculta al imprimir */}
-      <div className="print:hidden bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-20">
+  return (
+    <div className="min-h-screen bg-gray-200 py-6 px-4 font-sans text-black print:bg-white print:p-0 print:py-0">
+
+      {/* ─── TOOLBAR WEB ─── */}
+      <div className="max-w-[820px] mx-auto mb-4 flex items-center justify-between print:hidden gap-3">
         <button
           onClick={() => navigate(`/teams/${teamId}/trainings`)}
-          className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
+          className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-sm font-medium transition"
         >
           <ArrowLeft size={16} /> Entrenamientos
         </button>
-        <div className="flex items-center gap-4">
+
+        <div className="flex gap-2">
+          <button onClick={addEjercicio} className="flex items-center px-3 py-1.5 bg-white border border-gray-300 text-sm hover:bg-gray-50 transition shadow-sm rounded-lg gap-1">
+            <Plus size={14} /> Fila Extra
+          </button>
+          <button onClick={removeLastEjercicio} className="flex items-center px-3 py-1.5 bg-white border border-red-300 text-red-700 text-sm hover:bg-red-50 transition shadow-sm rounded-lg gap-1">
+            <Minus size={14} /> Quitar Fila
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3">
           <span className={`text-xs font-medium transition-colors ${saveStatus === 'saving' ? 'text-amber-500' : 'text-emerald-600'}`}>
             {saveStatus === 'saving' ? 'Guardando...' : '✓ Guardado'}
           </span>
           <button
             onClick={() => navigate('/exercises')}
-            className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-blue-600 transition"
+            className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 transition"
           >
             <BookOpen size={15} /> Biblioteca
           </button>
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition"
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition shadow"
           >
             <Printer size={15} /> Imprimir A4
           </button>
         </div>
       </div>
 
-      {/* Cuerpo A4 */}
-      <div className="max-w-[800px] mx-auto bg-white p-6 my-6 rounded-2xl shadow-lg print:shadow-none print:rounded-none print:my-0 print:p-6">
+      {/* ─── DOCUMENTO A4 ─── */}
+      <div className="max-w-[820px] mx-auto bg-white border border-gray-400 p-6 shadow-xl print:shadow-none print:border-none print:p-4 print:max-w-none">
 
-        {/* ─── CABECERA FICHA ─── */}
-        <div className="border-b-2 border-slate-800 pb-4 mb-4 print:border-slate-900">
-          <div className="flex items-end justify-between gap-2 mb-3">
-            <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900">Ficha de Entrenamiento</h1>
-            <p className="text-sm font-semibold text-slate-600">{team ? teamDisplayName(team) : ''}</p>
+        {/* Cabecera */}
+        <div className="flex justify-between items-start mb-4">
+          <div className="w-1/4">
+            <ClubLogo logoUrl={profile?.logoClub} />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2">
-            <MetaField label="Nº" value={training.meta?.numero || ''} onChange={v => updateMeta('numero', v)} type="number" />
-            <MetaField label="Día"
-              value={training.meta?.dia || ''}
-              onChange={v => updateMeta('dia', v)}
-              select options={DIAS}
-            />
-            <MetaField label="Fecha" value={training.meta?.fecha || ''} onChange={v => updateMeta('fecha', v)} type="date" />
-            <MetaField label="Hora inicio" value={training.meta?.horaInicio || ''} onChange={v => updateMeta('horaInicio', v)} type="time" />
-            <MetaField label="Hora fin" value={training.meta?.horaFin || ''} onChange={v => updateMeta('horaFin', v)} type="time" />
-            <MetaField label="Lugar" value={training.meta?.lugar || ''} onChange={v => updateMeta('lugar', v)} />
+          <div className="w-1/2 text-center pt-2">
+            <h1 className="font-bold text-2xl tracking-widest uppercase">{clubName}</h1>
+            <p className="text-xs text-gray-500 mt-1">Temporada {temporada}</p>
+          </div>
+          <div className="w-1/4 text-right text-sm">
+            <p className="font-bold">{team ? teamDisplayName(team) : ''}</p>
+            <p className="mt-2 text-sm">
+              Entrenamiento N°:&nbsp;
+              <input
+                type="text"
+                value={training.meta?.numero || ''}
+                onChange={e => updateMeta('numero', e.target.value)}
+                className="w-10 border-b border-black text-center focus:outline-none bg-transparent"
+              />
+            </p>
           </div>
         </div>
 
-        {/* ─── OBJETIVOS ─── */}
-        <Section title="Objetivos">
-          <textarea
-            value={training.objetivos || ''}
-            onChange={e => updateTraining(t => ({ ...t, objetivos: e.target.value }))}
-            placeholder="Objetivos de la sesión..."
-            rows={2}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none print:border-slate-400"
-          />
-        </Section>
-
-        {/* ─── EJERCICIOS ─── */}
-        <Section title="Ejercicios">
-          {ejercicios.length === 0 && (
-            <p className="text-slate-400 text-sm italic mb-3">Sin ejercicios. Añade uno abajo.</p>
-          )}
-          <div className="flex flex-col gap-4">
-            {ejercicios.map((ej, idx) => (
-              <EjercicioRow
-                key={ej.id}
-                ej={ej}
-                idx={idx}
-                onUpdate={(field, val) => updateEjercicio(ej.id, field, val)}
-                onRemove={() => removeEjercicio(ej.id)}
-                onExpand={() => setModalEjercicioId(ej.id)}
-                onOpenLibrary={() => { setShowLibrary(ej.id); setLibrarySearch(''); }}
-                onSaveToLibrary={() => saveToLibrary(ej)}
+        {/* Metadatos */}
+        <div className="border border-black flex flex-col mb-4 text-sm">
+          <div className="flex border-b border-black">
+            {/* Equipo */}
+            <div className="flex-1 border-r border-black p-1.5 flex items-center">
+              <span className="font-bold whitespace-nowrap">Equipo.-</span>
+              <input
+                type="text"
+                value={training.meta?.equipo || ''}
+                onChange={e => updateMeta('equipo', e.target.value)}
+                className="w-full ml-2 focus:outline-none bg-transparent"
               />
-            ))}
+            </div>
+            {/* Fecha */}
+            <div className="w-52 border-r border-black p-1.5 flex items-center gap-1">
+              <span className="font-bold whitespace-nowrap">Fecha.-</span>
+              <select
+                value={training.meta?.dia || ''}
+                onChange={e => updateMeta('dia', e.target.value)}
+                className="ml-1 text-xs bg-transparent focus:outline-none cursor-pointer font-bold appearance-none"
+              >
+                <option value="">Día</option>
+                {DIAS.map(d => <option key={d.val} value={d.val}>{d.label}</option>)}
+              </select>
+              <input
+                type="date"
+                value={training.meta?.fecha || ''}
+                onChange={e => updateMeta('fecha', e.target.value)}
+                className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
+              />
+            </div>
+            {/* Hora */}
+            <div className="w-48 border-r border-black p-1.5 flex items-center gap-1">
+              <span className="font-bold whitespace-nowrap">Hora.-</span>
+              <input
+                type="time"
+                value={training.meta?.horaInicio || ''}
+                onChange={e => updateMeta('horaInicio', e.target.value)}
+                className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
+              />
+              <span className="font-bold">-</span>
+              <input
+                type="time"
+                value={training.meta?.horaFin || ''}
+                onChange={e => updateMeta('horaFin', e.target.value)}
+                className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
+              />
+            </div>
+            {/* Lugar */}
+            <div className="flex-1 p-1.5 flex items-center">
+              <span className="font-bold whitespace-nowrap">Lugar.-</span>
+              <input
+                type="text"
+                value={training.meta?.lugar || ''}
+                onChange={e => updateMeta('lugar', e.target.value)}
+                className="w-full ml-2 focus:outline-none bg-transparent"
+              />
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={addEjercicio}
-            className="mt-3 flex items-center gap-2 text-blue-600 font-bold text-sm hover:text-blue-800 transition print:hidden"
-          >
-            <Plus size={16} /> Añadir ejercicio
-          </button>
-        </Section>
+          {/* Objetivos */}
+          <div className="p-1.5 flex flex-col min-h-[52px]">
+            <span className="font-bold">Objetivos de la semana.-</span>
+            <textarea
+              value={training.objetivos || ''}
+              onChange={e => updateTraining(t => ({ ...t, objetivos: e.target.value }))}
+              className="w-full flex-1 focus:outline-none bg-transparent resize-none leading-tight mt-1 text-sm"
+            />
+          </div>
+        </div>
 
-        {/* ─── CIERRE ─── */}
-        <Section title="Cierre de sesión">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <CierreField label="Faltas">
+        {/* Tabla ejercicios */}
+        <div className="border border-black flex flex-col mb-4 text-sm">
+          {/* Cabecera columnas */}
+          <div className="flex border-b border-black font-bold text-center bg-gray-50 print:bg-transparent">
+            <div className="w-14 border-r border-black p-1 text-xs">Tiempo</div>
+            <div className="w-32 border-r border-black p-1 text-xs">Contenido</div>
+            <div className="flex-1 border-r border-black p-1 text-xs text-left pl-2">Ejercicio</div>
+            <div className="w-40 p-1 text-xs">Pizarra</div>
+          </div>
+
+          {ejercicios.map((ej) => (
+            <div key={ej.id} className="group relative flex border-b border-black last:border-b-0 min-h-[100px]">
+              {/* Tiempo */}
+              <div className="w-14 border-r border-black p-1">
+                <input
+                  type="text"
+                  value={ej.tiempo || ''}
+                  onChange={e => updateEjercicio(ej.id, 'tiempo', e.target.value)}
+                  className="w-full h-full text-center focus:outline-none bg-transparent text-xs"
+                />
+              </div>
+              {/* Contenido */}
+              <div className="w-32 border-r border-black p-1 relative">
+                {ej.libExerciseId && (
+                  <span className="absolute top-1 right-1 print:hidden" title={`Enlazado: ${ej.libExerciseName || 'Biblioteca'}`}>
+                    <BookOpen size={9} className="text-amber-500" />
+                  </span>
+                )}
+                <textarea
+                  value={ej.contenido || ''}
+                  onChange={e => updateEjercicio(ej.id, 'contenido', e.target.value)}
+                  className="w-full h-full resize-none focus:outline-none bg-transparent leading-tight text-xs"
+                />
+              </div>
+              {/* Descripción */}
+              <div className="flex-1 border-r border-black p-1">
+                <textarea
+                  value={ej.descripcion || ''}
+                  onChange={e => updateEjercicio(ej.id, 'descripcion', e.target.value)}
+                  className="w-full h-full resize-none focus:outline-none bg-transparent leading-tight text-xs text-justify pb-2 pr-1"
+                />
+              </div>
+              {/* Pizarra miniatura */}
+              <div className="w-40 flex flex-col items-center justify-center relative bg-white overflow-hidden">
+                <div
+                  className="w-full h-full max-h-[110px] p-1 cursor-pointer hover:bg-gray-50 transition print:cursor-default"
+                  onClick={() => setModalEjercicioId(ej.id)}
+                >
+                  <CourtCanvas tipo={ej.tipoPista} elementos={ej.elementos || []} readOnly={true} />
+                </div>
+                {/* Controles flotantes — ocultos al imprimir */}
+                <div className="absolute bottom-1 right-1 flex gap-1 print:hidden opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-white p-1 rounded border border-gray-200 shadow-sm">
+                  <button onClick={() => setModalEjercicioId(ej.id)} className="text-blue-600 hover:text-blue-800" title="Abrir editor">
+                    <Maximize2 size={11} />
+                  </button>
+                  <button onClick={() => { setShowLibrary(ej.id); setLibrarySearch(''); }} className="text-indigo-500 hover:text-indigo-700" title="Cargar de biblioteca">
+                    <BookOpen size={11} />
+                  </button>
+                  <button onClick={() => saveToLibrary(ej)} className="text-emerald-600 hover:text-emerald-800" title="Guardar en biblioteca">
+                    <Save size={11} />
+                  </button>
+                  <select
+                    value={ej.tipoPista}
+                    onChange={e => updateEjercicio(ej.id, 'tipoPista', e.target.value)}
+                    className="text-[10px] border border-gray-300 bg-white cursor-pointer focus:outline-none"
+                  >
+                    <option value="media">1/2</option>
+                    <option value="entera">Full</option>
+                  </select>
+                  <button onClick={() => removeEjercicio(ej.id)} className="text-red-500 hover:text-red-700" title="Eliminar fila">
+                    <Trash2 size={11} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer cierre */}
+        <div className="border border-black flex text-sm" style={{ minHeight: 120 }}>
+          <div className="w-1/2 flex flex-col border-r border-black">
+            <div className="flex-1 border-b border-black p-1.5 flex flex-col">
+              <span className="font-bold">Faltas.-</span>
               <MentionTextarea
                 value={training.cierre?.faltas || ''}
                 onChange={e => updateCierre('faltas', e.target.value)}
                 members={members}
-                placeholder="Jugadores que han faltado..."
-                rows={3}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none print:border-slate-400"
+                placeholder=""
+                rows={2}
+                className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
               />
-            </CierreField>
-            <CierreField label="Retrasos">
+            </div>
+            <div className="flex-1 p-1.5 flex flex-col">
+              <span className="font-bold">Retrasos.-</span>
               <MentionTextarea
                 value={training.cierre?.retrasos || ''}
                 onChange={e => updateCierre('retrasos', e.target.value)}
                 members={members}
-                placeholder="Jugadores que han llegado tarde..."
-                rows={3}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none print:border-slate-400"
+                placeholder=""
+                rows={2}
+                className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
               />
-            </CierreField>
-            <CierreField label="Anotaciones">
+            </div>
+          </div>
+          <div className="w-1/2 flex flex-col">
+            <div className="flex-1 border-b border-black p-1.5 flex flex-col">
+              <span className="font-bold">Anotaciones.-</span>
               <MentionTextarea
                 value={training.cierre?.anotaciones || ''}
                 onChange={e => updateCierre('anotaciones', e.target.value)}
                 members={members}
-                placeholder="Anotaciones del entrenamiento..."
-                rows={3}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none print:border-slate-400"
+                placeholder=""
+                rows={2}
+                className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
               />
-            </CierreField>
-            <CierreField label="Observaciones">
+            </div>
+            <div className="flex-1 p-1.5 flex flex-col">
+              <span className="font-bold">Observaciones.-</span>
               <textarea
                 value={training.cierre?.observaciones || ''}
                 onChange={e => updateCierre('observaciones', e.target.value)}
-                placeholder="Observaciones del entrenador..."
-                rows={3}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none print:border-slate-400"
+                className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
               />
-            </CierreField>
+            </div>
           </div>
-        </Section>
+        </div>
 
       </div>
 
-      {/* ─── MODAL pizarra expandida ─── */}
-      {expandedEjercicio && (
-        <div className="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm print:hidden" onClick={() => setModalEjercicioId(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
-              <h3 className="font-bold text-slate-800">Pizarra — {expandedEjercicio.contenido || `Ejercicio ${(ejercicios.findIndex(e => e.id === expandedEjercicio.id) + 1)}`}</h3>
-              <button onClick={() => setModalEjercicioId(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
-            </div>
-            <div className="p-5 flex flex-col gap-4">
-              <div className="flex gap-2 print:hidden">
-                {[['media', 'Media pista'], ['entera', 'Pista entera']].map(([val, label]) => (
+      {/* ─── MODAL PLAYBOOK EDITOR ─── */}
+      {ejModal && (
+        <div className="fixed inset-0 z-50 bg-gray-900/90 flex flex-col items-center justify-center p-4 touch-none print:hidden">
+          <div className="bg-white w-full max-w-5xl h-[85vh] rounded-lg shadow-2xl flex flex-col overflow-hidden">
+
+            {/* Header modal */}
+            <div className="flex justify-between items-center p-3 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center gap-4">
+                <h3 className="font-bold text-gray-800">Playbook Editor</h3>
+                <div className="flex gap-1 border-l border-gray-300 pl-4">
                   <button
-                    key={val}
-                    type="button"
-                    onClick={() => updateEjercicio(expandedEjercicio.id, 'tipoPista', val)}
-                    className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors ${expandedEjercicio.tipoPista === val ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    onClick={() => updateEjercicio(ejModal.id, 'elementos', (ejModal.elementos || []).slice(0, -1))}
+                    className="p-1.5 text-gray-600 hover:bg-gray-200 rounded flex items-center text-sm"
+                    title="Deshacer último"
                   >
-                    {label}
+                    <Undo size={14} className="mr-1" /> Deshacer
+                  </button>
+                  <button
+                    onClick={() => updateEjercicio(ejModal.id, 'elementos', [])}
+                    className="p-1.5 text-red-600 hover:bg-red-50 rounded flex items-center text-sm"
+                    title="Limpiar pizarra"
+                  >
+                    <Trash2 size={14} className="mr-1" /> Limpiar
+                  </button>
+                  {/* Selector de pista en el modal */}
+                  <div className="flex gap-1 border-l border-gray-300 pl-3 ml-1">
+                    {[['media', 'Media pista'], ['entera', 'Pista entera']].map(([val, label]) => (
+                      <button
+                        key={val}
+                        onClick={() => updateEjercicio(ejModal.id, 'tipoPista', val)}
+                        className={`px-3 py-1 rounded text-sm font-semibold transition-colors ${ejModal.tipoPista === val ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setModalEjercicioId(null)}
+                className="p-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
+                title="Cerrar"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex flex-1 overflow-hidden bg-gray-100">
+              {/* Sidebar herramientas */}
+              <div className="w-48 bg-white border-r border-gray-200 flex flex-col p-2 gap-1 overflow-y-auto">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2 mt-2 mb-1">Herramientas</p>
+                {TOOLS.map((t, idx) => t.divider ? (
+                  <div key={idx} className="h-px bg-gray-200 my-1 mx-2" />
+                ) : (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveTool(t.id)}
+                    className={`flex items-center gap-3 px-3 py-2 rounded text-sm transition-colors ${activeTool === t.id ? 'bg-blue-100 text-blue-800 border border-blue-200 font-semibold' : 'text-gray-600 hover:bg-gray-50 border border-transparent'}`}
+                  >
+                    <div className="w-6 flex justify-center shrink-0">{t.icon}</div>
+                    <span className="text-xs leading-tight">{t.label}</span>
                   </button>
                 ))}
+                <div className="mt-auto p-3 bg-blue-50 rounded text-xs text-blue-800 leading-relaxed border border-blue-100 mx-1">
+                  <b>Tip:</b> Objetos: clic para colocar. Líneas: clic y arrastra.
+                </div>
               </div>
-              <DrawableCourt
-                tipo={expandedEjercicio.tipoPista}
-                trazos={expandedEjercicio.trazos || []}
-                setTrazos={t => updateEjercicio(expandedEjercicio.id, 'trazos', typeof t === 'function' ? t(expandedEjercicio.trazos || []) : t)}
-              />
+
+              {/* Lienzo */}
+              <div className="flex-1 flex items-center justify-center p-6 select-none">
+                <div className="bg-white shadow border border-gray-300 w-full h-full flex items-center justify-center">
+                  <CourtCanvas
+                    tipo={ejModal.tipoPista}
+                    elementos={ejModal.elementos || []}
+                    setElementos={nuevos => updateEjercicio(ejModal.id, 'elementos', nuevos)}
+                    readOnly={false}
+                    activeTool={activeTool}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ─── MODAL biblioteca de ejercicios ─── */}
+      {/* ─── MODAL BIBLIOTECA ─── */}
       {showLibrary && (
         <div className="fixed inset-0 bg-slate-900/70 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm print:hidden" onClick={() => setShowLibrary(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
@@ -368,7 +589,6 @@ export default function TrainingEditorScreen() {
                 libraryFiltered.map(ex => (
                   <button
                     key={ex.id}
-                    type="button"
                     onClick={() => loadFromLibrary(showLibrary, ex)}
                     className="w-full text-left px-5 py-3.5 border-b border-slate-100 last:border-0 hover:bg-blue-50 transition-colors"
                   >
@@ -382,138 +602,6 @@ export default function TrainingEditorScreen() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── Subcomponentes ───
-
-function MetaField({ label, value, onChange, type = 'text', select, options }) {
-  const cls = "border-b border-slate-400 bg-transparent text-sm focus:outline-none focus:border-blue-500 w-full py-1 print:border-slate-600";
-  return (
-    <div>
-      <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-0.5">{label}</p>
-      {select ? (
-        <select value={value} onChange={e => onChange(e.target.value)} className={cls + " bg-white"}>
-          <option value="">—</option>
-          {options.map(o => <option key={o}>{o}</option>)}
-        </select>
-      ) : (
-        <input type={type} value={value} onChange={e => onChange(e.target.value)} className={cls} />
-      )}
-    </div>
-  );
-}
-
-function Section({ title, children }) {
-  return (
-    <div className="mb-6">
-      <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3 border-b border-slate-200 pb-1">{title}</h2>
-      {children}
-    </div>
-  );
-}
-
-function CierreField({ label, children }) {
-  return (
-    <div>
-      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function EjercicioRow({ ej, idx, onUpdate, onRemove, onExpand, onOpenLibrary, onSaveToLibrary }) {
-  return (
-    <div className="border border-slate-200 rounded-xl overflow-hidden print:border-slate-400">
-      {/* Cabecera fila */}
-      <div className="bg-slate-50 px-3 py-2 flex items-center gap-2 print:bg-white border-b border-slate-200 print:border-slate-400">
-        <span className="text-xs font-black text-slate-500 w-5">{idx + 1}</span>
-        <input
-          type="number"
-          min="1"
-          value={ej.tiempo || ''}
-          onChange={e => onUpdate('tiempo', e.target.value)}
-          placeholder="min"
-          className="w-14 border border-slate-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 text-center print:border-slate-400"
-          title="Duración en minutos"
-        />
-        <input
-          type="text"
-          value={ej.contenido || ''}
-          onChange={e => onUpdate('contenido', e.target.value)}
-          placeholder="Contenido / categoría"
-          className="flex-1 border border-slate-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 print:border-slate-400"
-        />
-        <div className="flex items-center gap-1 shrink-0 print:hidden">
-          <button
-            type="button"
-            onClick={onOpenLibrary}
-            className="text-indigo-500 hover:text-indigo-700 p-1.5 hover:bg-indigo-50 rounded-lg transition text-xs font-semibold flex items-center gap-1"
-            title="Cargar desde biblioteca"
-          >
-            <BookOpen size={13} />
-          </button>
-          <button
-            type="button"
-            onClick={onSaveToLibrary}
-            className="text-emerald-600 hover:text-emerald-800 p-1.5 hover:bg-emerald-50 rounded-lg transition"
-            title="Guardar en biblioteca"
-          >
-            <Save size={13} />
-          </button>
-          <button
-            type="button"
-            onClick={onRemove}
-            className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition"
-            title="Eliminar ejercicio"
-          >
-            <Trash2 size={13} />
-          </button>
-        </div>
-      </div>
-
-      {/* Cuerpo fila */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
-        {/* Descripción */}
-        <div className="p-3">
-          <textarea
-            value={ej.descripcion || ''}
-            onChange={e => onUpdate('descripcion', e.target.value)}
-            placeholder="Descripción del ejercicio..."
-            rows={4}
-            className="w-full text-sm focus:outline-none resize-none text-slate-700 placeholder-slate-300"
-          />
-        </div>
-
-        {/* Pizarra */}
-        <div className="p-3 flex flex-col gap-2">
-          <div className="flex gap-2 print:hidden">
-            {[['media', 'Media'], ['entera', 'Entera']].map(([val, label]) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => onUpdate('tipoPista', val)}
-                className={`flex-1 py-1 rounded-lg text-xs font-semibold transition-colors ${ej.tipoPista === val ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-              >
-                {label}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={onExpand}
-              className="px-2 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition print:hidden"
-            >
-              Ampliar
-            </button>
-          </div>
-          <DrawableCourt
-            tipo={ej.tipoPista}
-            trazos={ej.trazos || []}
-            setTrazos={t => onUpdate('trazos', typeof t === 'function' ? t(ej.trazos || []) : t)}
-          />
-        </div>
-      </div>
     </div>
   );
 }

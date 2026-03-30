@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Pencil, Trash2, X, User, Users, ShieldHalf } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Trash2, X, User, Users, ShieldHalf, CalendarDays } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { subscribeToTeams, saveTeam, subscribeToMembers, saveMember, deleteMember } from '../services/teamsService';
@@ -115,12 +115,20 @@ export default function TeamDetailScreen() {
 
         {/* Navegación y título */}
         <div className="mb-8">
-          <button
-            onClick={() => navigate('/teams')}
-            className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition mb-3"
-          >
-            <ArrowLeft size={16} /> Equipos
-          </button>
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={() => navigate('/teams')}
+              className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
+            >
+              <ArrowLeft size={16} /> Equipos
+            </button>
+            <button
+              onClick={() => navigate(`/calendar?teamId=${teamId}`)}
+              className="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-800 text-sm font-bold transition"
+            >
+              <CalendarDays size={15} /> Calendario
+            </button>
+          </div>
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <ShieldHalf size={28} className="text-amber-500 shrink-0" />

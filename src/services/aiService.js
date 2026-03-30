@@ -140,6 +140,79 @@ export const callGeminiForBracket = async (basesText, clasifText, userInstructio
   }
 };
 
+export const callGeminiForCalendar = async (excelText, teams, { onStatus, onError }) => {
+  const teamsJson = JSON.stringify(teams.map(t => ({ id: t.id, teamName: t.teamName })));
+  const prompt = `
+Eres un asistente de planificación deportiva para un club de baloncesto.
+Se te entrega el contenido de un archivo Excel que contiene el CUADRANTE DE ENTRENAMIENTOS del club para la temporada.
+
+--- CONTENIDO DEL EXCEL ---
+${excelText.substring(0, 45000)}
+----------------------------
+
+EQUIPOS CONOCIDOS DEL ENTRENADOR (solo genera entradas para estos equipos; usa su id exacto):
+${teamsJson}
+
+CONCEPTOS CLAVE:
+- HORARIO RECURRENTE: Una sesión sin fecha específica que ocurre cada semana en un día fijo (ej: "los lunes", "martes y jueves"). Va en el array "recurring".
+- FECHA ESPECÍFICA: Una sesión con una fecha concreta (ej: 07/01/2026, sábado 12 de abril). Va en el array "specific".
+
+INSTRUCCIONES:
+1. Analiza el Excel y clasifica cada sesión como RECURRENTE o ESPECÍFICA.
+2. SOLO incluye equipos que aparezcan en la lista de EQUIPOS CONOCIDOS. Ignora el resto.
+3. Para cada entrada RECURRENTE extrae:
+   - teamId: id del equipo conocido (nunca null, solo equipos que coincidan)
+   - teamName: nombre del equipo
+   - diaSemana: número del día 0=Lunes, 1=Martes, 2=Miércoles, 3=Jueves, 4=Viernes, 5=Sábado, 6=Domingo
+   - horaInicio: HH:MM en 24h (o "" si no aparece)
+   - horaFin: HH:MM en 24h (o "" si no aparece)
+   - lugar: instalación (o "" si no aparece)
+   - tipo: "entrenamiento" (la mayoría) o "partido"
+4. Para cada entrada ESPECÍFICA extrae:
+   - teamId, teamName (igual que antes)
+   - fecha: YYYY-MM-DD obligatorio
+   - horaInicio, horaFin, lugar, tipo (igual que antes)
+   - rival: nombre del rival si es partido (o "")
+5. Ignora filas de encabezados, totales o notas.
+
+DEVUELVE ÚNICAMENTE UN JSON ESTRICTAMENTE VÁLIDO con esta estructura:
+{
+  "analysis": "Breve descripción de lo encontrado...",
+  "recurring": [
+    {
+      "teamId": "id-del-equipo",
+      "teamName": "Nombre del equipo",
+      "diaSemana": 1,
+      "horaInicio": "18:00",
+      "horaFin": "19:30",
+      "lugar": "Pabellón Norte",
+      "tipo": "entrenamiento"
+    }
+  ],
+  "specific": [
+    {
+      "teamId": "id-del-equipo",
+      "teamName": "Nombre del equipo",
+      "fecha": "2026-01-07",
+      "horaInicio": "10:00",
+      "horaFin": "12:00",
+      "lugar": "Pabellón Sur",
+      "tipo": "entrenamiento",
+      "rival": ""
+    }
+  ]
+}
+  `;
+
+  try {
+    return await callGemini(prompt, onStatus);
+  } catch (err) {
+    if (err.message === "RATE_LIMIT") onError("Demasiadas peticiones a Gemini. Espera 60 segundos.");
+    else if (err.message === "FORBIDDEN") onError("Error 403: La API Key no tiene acceso a la IA.");
+    throw err;
+  }
+};
+
 export const callGeminiForResults = async (bracketStateSimplified, resultsText, { onError }) => {
   const prompt = `
       Actúa como un asistente de datos deportivos.

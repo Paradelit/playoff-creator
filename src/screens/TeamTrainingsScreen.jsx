@@ -70,11 +70,11 @@ export default function TeamTrainingsScreen() {
 
         {/* Navegación */}
         <button
-          onClick={() => navigate(`/teams/${teamId}`)}
+          onClick={() => navigate(`/teams/${teamId}/cuaderno`)}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition mb-6"
         >
           <ArrowLeft size={16} />
-          {team ? teamDisplayName(team) : 'Equipo'}
+          Cuaderno
         </button>
 
         {/* Cabecera */}

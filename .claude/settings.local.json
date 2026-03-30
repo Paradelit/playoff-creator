@@ -11,7 +11,20 @@
       "Bash(npm run:*)",
       "Bash(firebase deploy:*)",
       "Bash(npm install:*)",
-      "Bash(wc -l /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src/screens/*.jsx)"
+      "Bash(wc -l /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src/screens/*.jsx)",
+      "Bash(grep -r \"blue-[0-9]\\\\{3,\\\\}\" /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src --include=\"*.jsx\")",
+      "Bash(grep -r \"slate-[0-9]\\\\{3,\\\\}\" /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src --include=\"*.jsx\")",
+      "Bash(grep -r \"amber-[0-9]\\\\{3,\\\\}\" /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src --include=\"*.jsx\")",
+      "Bash(grep -r \"emerald-[0-9]\\\\{3,\\\\}\" /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src --include=\"*.jsx\")",
+      "Bash(grep -r \"rose-[0-9]\\\\{3,\\\\}\" /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src --include=\"*.jsx\")",
+      "Bash(grep -r \"violet-[0-9]\\\\{3,\\\\}\" /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src --include=\"*.jsx\")",
+      "Bash(grep -r \"fuchsia-[0-9]\\\\{3,\\\\}\" /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src --include=\"*.jsx\")",
+      "Bash(grep -roh \"blue-[0-9]\\\\{1,3\\\\}\" /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src --include=\"*.jsx\")",
+      "Bash(grep -roh \"slate-[0-9]\\\\{1,3\\\\}\" /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src --include=\"*.jsx\")",
+      "Bash(grep -roh \"indigo-[0-9]\\\\{1,3\\\\}\" /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src --include=\"*.jsx\")",
+      "Bash(grep -roh \"green-[0-9]\\\\{1,3\\\\}\" /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src --include=\"*.jsx\")",
+      "Bash(grep -roh \"[a-z]\\\\+-[0-9]\\\\{3,\\\\}\" /c/Users/ASUS/OneDrive/Desktop/playoff-creator/src --include=\"*.jsx\")",
+      "Bash(npx firebase:*)"
     ]
   }
 }

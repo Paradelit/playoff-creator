@@ -50,3 +50,48 @@ export async function saveMember(member, teamId, { uid, db, appId }) {
 export async function deleteMember(memberId, teamId, { uid, db, appId }) {
   await deleteDoc(doc(membersCol(teamId, uid, db, appId), memberId));
 }
+
+// ── Jugadores interesantes (por equipo) ─────────────────────────────────────
+function jugadoresDoc(teamId, uid, db, appId) {
+  return doc(db, 'artifacts', appId, 'users', uid, 'teams', teamId, 'cuaderno', 'jugadores');
+}
+
+export function subscribeToTeamJugadores(teamId, uid, db, appId, callback) {
+  return onSnapshot(jugadoresDoc(teamId, uid, db, appId), snap => {
+    callback(snap.exists() ? (snap.data().lista ?? []) : []);
+  });
+}
+
+export async function saveTeamJugadores(teamId, lista, { uid, db, appId }) {
+  await setDoc(jugadoresDoc(teamId, uid, db, appId), { lista, updatedAt: serverTimestamp() });
+}
+
+// ── Test de tiro (por equipo) ────────────────────────────────────────────────
+function testTiroDoc(teamId, uid, db, appId) {
+  return doc(db, 'artifacts', appId, 'users', uid, 'teams', teamId, 'cuaderno', 'test-tiro');
+}
+
+export function subscribeToTestTiro(teamId, uid, db, appId, callback) {
+  return onSnapshot(testTiroDoc(teamId, uid, db, appId), snap => {
+    callback(snap.exists() ? (snap.data().tables ?? null) : null);
+  });
+}
+
+export async function saveTestTiro(teamId, tables, { uid, db, appId }) {
+  await setDoc(testTiroDoc(teamId, uid, db, appId), { tables, updatedAt: serverTimestamp() });
+}
+
+// ── Notas del cuaderno (por equipo) ─────────────────────────────────────────
+function notasDoc(teamId, uid, db, appId) {
+  return doc(db, 'artifacts', appId, 'users', uid, 'teams', teamId, 'cuaderno', 'notas');
+}
+
+export function subscribeToTeamNotes(teamId, uid, db, appId, callback) {
+  return onSnapshot(notasDoc(teamId, uid, db, appId), snap => {
+    callback(snap.exists() ? (snap.data().texto ?? '') : '');
+  });
+}
+
+export async function saveTeamNotes(teamId, texto, { uid, db, appId }) {
+  await setDoc(notasDoc(teamId, uid, db, appId), { texto, updatedAt: serverTimestamp() });
+}

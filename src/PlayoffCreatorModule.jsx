@@ -8,6 +8,7 @@ import { buildDynamicBracket, calculateMatchWinner } from './utils/bracketEngine
 import { getUserColor } from './utils/cursorUtils';
 import { extractTextFromFile, callGeminiForBracket, callGeminiForResults } from './services/aiService';
 import { saveBracketToFirestore, toFirestore } from './services/firestoreService';
+import { teamDisplayName } from './screens/TeamsScreen';
 
 import LoadingScreen from './screens/LoadingScreen';
 import DashboardScreen from './screens/DashboardScreen';
@@ -17,9 +18,10 @@ import BracketScreen from './screens/BracketScreen';
 
 // Props:
 //   initialShareCode   – share code extraído de la URL por el padre
+//   initialTeamId      – ID del equipo desde el que se entra (opcional)
 //   onShareCodeConsumed – callback a llamar cuando el share code se ha procesado
 //   shareUrlBase       – base para construir share URLs, ej: "https://app.com/s"
-export default function PlayoffCreatorModule({ initialShareCode, onShareCodeConsumed, shareUrlBase }) {
+export default function PlayoffCreatorModule({ initialShareCode, initialTeamId, onShareCodeConsumed, shareUrlBase }) {
   const { user, handleLogout: authLogout } = useAuth();
   const { db, appId } = useFirebase();
   const firebaseError = !db;
@@ -79,6 +81,9 @@ export default function PlayoffCreatorModule({ initialShareCode, onShareCodeCons
   const [editingBracketName, setEditingBracketName] = useState(false);
   const [bracketNameInput, setBracketNameInput] = useState('');
 
+  const [pendingTeamId, setPendingTeamId] = useState(null);
+  const [pendingTeamObj, setPendingTeamObj] = useState(null);
+
   // Persiste appMode en localStorage (con namespace del módulo)
   useEffect(() => {
     if (appMode === 'dashboard' || appMode === 'bracket' || appMode === 'upload') {
@@ -120,13 +125,24 @@ export default function PlayoffCreatorModule({ initialShareCode, onShareCodeCons
       });
       if (isFirstSnapshot.current) {
         isFirstSnapshot.current = false;
-        const lastMode = localStorage.getItem('playoffs:lastAppMode') || 'dashboard';
-        const lastId = localStorage.getItem('playoffs:lastActiveBracketId');
-        if (lastMode === 'bracket' && lastId && sorted.find(b => b.id === lastId)) {
-          setActiveBracketId(lastId);
-          setAppMode('bracket');
+        if (initialTeamId) {
+          const teamBracket = sorted.find(b => b.teamId === initialTeamId);
+          if (teamBracket) {
+            setActiveBracketId(teamBracket.id);
+            localStorage.setItem('playoffs:lastActiveBracketId', teamBracket.id);
+            setAppMode('bracket');
+          } else {
+            setAppMode('upload');
+          }
         } else {
-          setAppMode('dashboard');
+          const lastMode = localStorage.getItem('playoffs:lastAppMode') || 'dashboard';
+          const lastId = localStorage.getItem('playoffs:lastActiveBracketId');
+          if (lastMode === 'bracket' && lastId && sorted.find(b => b.id === lastId)) {
+            setActiveBracketId(lastId);
+            setAppMode('bracket');
+          } else {
+            setAppMode('dashboard');
+          }
         }
       }
     }, (error) => {
@@ -134,6 +150,20 @@ export default function PlayoffCreatorModule({ initialShareCode, onShareCodeCons
     });
     return () => unsubscribe();
   }, [user]);
+
+  // Fetch del equipo asociado al entrar desde una tarjeta de equipo
+  useEffect(() => {
+    if (!initialTeamId || !db || !user) return;
+    getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'teams', initialTeamId))
+      .then(snap => {
+        if (snap.exists()) {
+          setPendingTeamId(initialTeamId);
+          setPendingTeamObj(snap.data());
+          setNewBracketName(`Playoff ${teamDisplayName(snap.data())}`);
+        }
+      })
+      .catch(() => {});
+  }, [initialTeamId, db, user]);
 
   // Suscripción a cuadros compartidos
   useEffect(() => {
@@ -281,11 +311,19 @@ export default function PlayoffCreatorModule({ initialShareCode, onShareCodeCons
       setAppMode('upload');
       return;
     }
-    setBrackets(prev => [pendingBracket, ...prev]);
-    setActiveBracketId(pendingBracket.id);
-    localStorage.setItem('playoffs:lastActiveBracketId', pendingBracket.id);
+    const bracketToSave = pendingTeamId && pendingTeamObj
+      ? {
+          ...pendingBracket,
+          teamId: pendingTeamId,
+          teamName: teamDisplayName(pendingTeamObj),
+          myTeam: teamDisplayName(pendingTeamObj),
+        }
+      : pendingBracket;
+    setBrackets(prev => [bracketToSave, ...prev]);
+    setActiveBracketId(bracketToSave.id);
+    localStorage.setItem('playoffs:lastActiveBracketId', bracketToSave.id);
     if (user && db) {
-      setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'brackets', pendingBracket.id), toFirestore(pendingBracket))
+      setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'brackets', bracketToSave.id), toFirestore(bracketToSave))
         .catch(e => console.warn("No se pudo guardar en la nube:", e));
     }
     setPendingBracket(null);
@@ -751,6 +789,7 @@ export default function PlayoffCreatorModule({ initialShareCode, onShareCodeCons
       fileInputClasif={fileInputClasif}
       handleProcessDocuments={handleProcessDocuments}
       setAppMode={setAppMode}
+      pendingTeamName={pendingTeamObj ? teamDisplayName(pendingTeamObj) : null}
     />
   );
 

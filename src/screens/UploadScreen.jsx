@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, ChevronLeft, FileText, UploadCloud, CheckCircle, MessageSquare, Loader2, ArrowRight } from 'lucide-react';
+import { Trophy, ChevronLeft, FileText, UploadCloud, CheckCircle, MessageSquare, Loader2, ArrowRight, ShieldHalf } from 'lucide-react';
 
 export default function UploadScreen({
   newBracketName, setNewBracketName,
@@ -9,6 +9,7 @@ export default function UploadScreen({
   isProcessing, processStatus, errorMsg, setErrorMsg,
   fileInputBases, fileInputClasif,
   handleProcessDocuments, setAppMode,
+  pendingTeamName,
 }) {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
@@ -19,6 +20,12 @@ export default function UploadScreen({
           <h1 className="text-3xl font-bold tracking-wide">Bracket IA Dinámico</h1>
         </div>
         <div className="p-8">
+          {pendingTeamName && (
+            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 text-sm text-blue-700 font-semibold mb-6">
+              <ShieldHalf size={15} />
+              Playoff para: <span className="font-bold">{pendingTeamName}</span>
+            </div>
+          )}
           <div className="mb-6">
             <label className="block text-sm font-bold text-slate-700 mb-2">Nombre del Torneo</label>
             <input type="text" value={newBracketName} onChange={(e) => { setNewBracketName(e.target.value); setErrorMsg(''); }} placeholder="Ej. Benjamín Masculino 2º Año" className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500" />

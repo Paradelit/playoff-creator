@@ -17,9 +17,9 @@ const MatchCard = React.memo(({ match, bracketData, onScoreChange, onSelectSorte
       return style + "bg-slate-50 text-slate-400";
     }
     if (teamName && teamName === myTeam) {
-      if (isWinner) style += "bg-fuchsia-200 text-fuchsia-900 font-bold border-l-4 border-l-fuchsia-600 ";
-      else if (isLoser) style += "bg-fuchsia-50 text-fuchsia-400/80 opacity-80 border-l-4 border-l-fuchsia-300 ";
-      else style += "bg-fuchsia-100 text-fuchsia-900 font-semibold border-l-4 border-l-fuchsia-500 ";
+      if (isWinner) style += "bg-amber-200 text-amber-900 font-bold border-l-4 border-l-amber-600 ";
+      else if (isLoser) style += "bg-amber-50 text-amber-600/80 opacity-80 border-l-4 border-l-amber-300 ";
+      else style += "bg-amber-100 text-amber-800 font-semibold border-l-4 border-l-amber-500 ";
     } else {
       if (isWinner) style += "bg-green-100 text-green-800 font-bold border-l-4 border-l-green-500 ";
       else if (isLoser) style += "bg-red-50 text-red-400/80 opacity-70 ";

@@ -47,7 +47,7 @@ export default function BracketScreen({
               <button onClick={() => setShowMobileTools(false)} className="p-1 text-blue-300 hover:text-white"><X size={20} /></button>
             </div>
             {canEdit && (
-              <button onClick={() => { if (!isProcessingResults) fileInputResults.current?.click(); }} className="flex items-center gap-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-md">
+              <button onClick={() => { if (!isProcessingResults) fileInputResults.current?.click(); }} className="flex items-center gap-3 bg-gradient-to-r from-blue-700 to-blue-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-md">
                 <FileDigit size={18} /> ✨ Autocompletar PDF
               </button>
             )}
@@ -171,7 +171,7 @@ export default function BracketScreen({
         </div>
         <div className="hidden lg:flex gap-3 items-center">
           <button onClick={() => handleShare(activeBracket)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md"><Share2 size={16} /> Compartir</button>
-          {canEdit && <button onClick={() => !isProcessingResults && fileInputResults.current?.click()} className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md"><FileDigit size={16} /> ✨ Autocompletar PDF</button>}
+          {canEdit && <button onClick={() => !isProcessingResults && fileInputResults.current?.click()} className="flex items-center gap-2 bg-gradient-to-r from-blue-700 to-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md"><FileDigit size={16} /> ✨ Autocompletar PDF</button>}
           <TeamSearchableSelect key={activeBracketId} teams={activeBracket.allTeams} selectedTeam={activeBracket.myTeam || ""} onSelectTeam={handleSetMyTeam} />
           <div className="flex bg-blue-800 rounded-lg border border-blue-700"><button onClick={() => setZoom(z => Math.max(0.4, z - 0.1))} className="p-2"><ZoomOut size={18} /></button><div className="px-3 py-2 text-sm border-x border-blue-700 w-16 text-center">{Math.round(zoom * 100)}%</div><button onClick={() => setZoom(z => Math.min(1.5, z + 0.1))} className="p-2"><ZoomIn size={18} /></button></div>
           {canEdit && <button onClick={handleUndo} disabled={!canUndo} title="Deshacer" className="flex items-center gap-1 bg-blue-800 hover:bg-blue-700 disabled:opacity-40 text-white px-3 py-2 rounded-lg text-sm font-medium">↩</button>}

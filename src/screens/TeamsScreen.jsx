@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ShieldHalf, Trash2, ArrowRight, X, Users, FolderOpen } from 'lucide-react';
+import { Plus, ShieldHalf, Trash2, ArrowRight, X, Users, FolderOpen, ClipboardList, CalendarDays, Trophy } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { subscribeToTeams, saveTeam, deleteTeam } from '../services/teamsService';
+import { subscribeToProfile, autoAddCoachToTeam } from '../services/settingsService';
 
 export const CATEGORIAS = ['Prebenjamín', 'Benjamín', 'Alevín', 'Infantil', 'Cadete', 'Junior', 'Senior'];
 export const AÑOS = ['1º', '2º'];
@@ -22,7 +23,7 @@ export function teamDisplayName(team) {
   return parts.join(' ') + genero;
 }
 
-const EMPTY_FORM = { categoria: 'Prebenjamín', año: '1º', letra: 'A', genero: 'Masculino', division: '' };
+export const EMPTY_FORM = { categoria: 'Prebenjamín', año: '1º', letra: 'A', genero: 'Masculino', division: '' };
 
 export default function TeamsScreen() {
   const { user } = useAuth();
@@ -35,6 +36,7 @@ export default function TeamsScreen() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deletingTeamId, setDeletingTeamId] = useState(null);
+  const [profile, setProfile] = useState({});
 
   useEffect(() => {
     if (!user || !db) return;
@@ -45,11 +47,20 @@ export default function TeamsScreen() {
     return unsub;
   }, [user, db, appId]);
 
+  useEffect(() => {
+    if (!user || !db) return;
+    return subscribeToProfile(user.uid, db, appId, setProfile);
+  }, [user, db, appId]);
+
   async function handleCreate(e) {
     e.preventDefault();
     setSaving(true);
     try {
-      await saveTeam({ id: crypto.randomUUID(), ...form }, { uid: user.uid, db, appId });
+      const teamId = crypto.randomUUID();
+      await saveTeam({ id: teamId, ...form }, { uid: user.uid, db, appId });
+      if (profile?.autoAddToTeams) {
+        await autoAddCoachToTeam(teamId, profile, { uid: user.uid, db, appId });
+      }
       setShowCreateModal(false);
       setForm(EMPTY_FORM);
     } finally {
@@ -102,28 +113,52 @@ export default function TeamsScreen() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {teams.map(team => (
-              <div key={team.id} className="bg-white rounded-xl shadow-md border border-slate-200 p-6 flex flex-col hover:shadow-xl transition-shadow">
-                <div className="flex items-start justify-between gap-2 mb-2">
+              <div key={team.id} className="bg-white rounded-xl shadow-md border border-slate-200 p-5 flex flex-col hover:shadow-xl transition-shadow">
+                <div className="flex items-start justify-between gap-2 mb-1">
                   <div className="flex items-center gap-3 min-w-0">
                     <ShieldHalf size={20} className="text-blue-600 shrink-0" />
                     <h3 className="text-lg font-bold text-slate-800 truncate">{teamDisplayName(team)}</h3>
                   </div>
-                </div>
-                <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-4">{team.categoria}{team.genero ? ` · ${team.genero}` : ''}</p>
-                <div className="flex justify-between items-center mt-auto border-t border-slate-100 pt-4">
                   <button
-                    onClick={() => navigate(`/teams/${team.id}`)}
-                    className="text-blue-600 font-bold hover:text-blue-800 flex items-center gap-1"
+                    onClick={() => navigate(`/playoffs?teamId=${team.id}`)}
+                    className="text-slate-400 hover:text-amber-500 p-1.5 hover:bg-amber-50 rounded-lg transition-colors shrink-0"
+                    title="Ver playoff del equipo"
                   >
-                    Ver plantilla <ArrowRight size={16} />
+                    <Trophy size={16} />
                   </button>
                   <button
                     onClick={() => setDeletingTeamId(team.id)}
-                    className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                    className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                     title="Eliminar equipo"
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={16} />
                   </button>
+                </div>
+                <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-4 ml-8">{team.categoria}{team.genero ? ` · ${team.genero}` : ''}</p>
+                <div className="mt-auto border-t border-slate-100 pt-4">
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => navigate(`/teams/${team.id}`)}
+                      className="flex flex-col items-center justify-center gap-1 py-2.5 px-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl transition-colors"
+                    >
+                      <Users size={15} />
+                      <span className="text-xs font-bold">Plantilla</span>
+                    </button>
+                    <button
+                      onClick={() => navigate(`/teams/${team.id}/cuaderno`)}
+                      className="flex flex-col items-center justify-center gap-1 py-2.5 px-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl transition-colors"
+                    >
+                      <ClipboardList size={15} />
+                      <span className="text-xs font-bold">Cuaderno</span>
+                    </button>
+                    <button
+                      onClick={() => navigate(`/calendar?teamId=${team.id}`)}
+                      className="flex flex-col items-center justify-center gap-1 py-2.5 px-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl transition-colors"
+                    >
+                      <CalendarDays size={15} />
+                      <span className="text-xs font-bold">Calendario</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
