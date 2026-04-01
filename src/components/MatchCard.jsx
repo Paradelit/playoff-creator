@@ -6,24 +6,24 @@ const MatchCard = React.memo(({ match, bracketData, onScoreChange, onSelectSorte
 
   const getUsedOptions = () => {
     return Object.values(bracketData.state)
-      .filter(m => m.round === 1 && m.id !== match.id)
-      .flatMap(m => [m.team1, m.team2])
+      .filter((m) => m.round === 1 && m.id !== match.id)
+      .flatMap((m) => [m.team1, m.team2])
       .filter(Boolean);
   };
 
   const getRowStyle = (teamName, isWinner, isLoser) => {
-    let style = "flex items-center justify-between px-2 py-2 transition-colors border-b border-slate-100 ";
+    let style = 'flex items-center justify-between px-2 py-2 transition-colors border-b border-slate-100 ';
     if (!teamName && match.team1Options.length === 0 && match.team2Options.length === 0) {
-      return style + "bg-slate-50 text-slate-400";
+      return style + 'bg-slate-50 text-slate-400';
     }
     if (teamName && teamName === myTeam) {
-      if (isWinner) style += "bg-amber-200 text-amber-900 font-bold border-l-4 border-l-amber-600 ";
-      else if (isLoser) style += "bg-amber-50 text-amber-600/80 opacity-80 border-l-4 border-l-amber-300 ";
-      else style += "bg-amber-100 text-amber-800 font-semibold border-l-4 border-l-amber-500 ";
+      if (isWinner) style += 'bg-amber-200 text-amber-900 font-bold border-l-4 border-l-amber-600 ';
+      else if (isLoser) style += 'bg-amber-50 text-amber-600/80 opacity-80 border-l-4 border-l-amber-300 ';
+      else style += 'bg-amber-100 text-amber-800 font-semibold border-l-4 border-l-amber-500 ';
     } else {
-      if (isWinner) style += "bg-green-100 text-green-800 font-bold border-l-4 border-l-green-500 ";
-      else if (isLoser) style += "bg-red-50 text-red-400/80 opacity-70 ";
-      else style += "hover:bg-blue-50 text-slate-800 ";
+      if (isWinner) style += 'bg-green-100 text-green-800 font-bold border-l-4 border-l-green-500 ';
+      else if (isLoser) style += 'bg-red-50 text-red-400/80 opacity-70 ';
+      else style += 'hover:bg-blue-50 text-slate-800 ';
     }
     return style;
   };
@@ -31,8 +31,10 @@ const MatchCard = React.memo(({ match, bracketData, onScoreChange, onSelectSorte
   const isGameDisabled = (gIdx) => {
     if (!isReady) return true;
     if (match.gamesCount === 3 && gIdx === 2) {
-      const s1_1 = parseInt(match.scores[0].s1), s1_2 = parseInt(match.scores[0].s2);
-      const s2_1 = parseInt(match.scores[1].s1), s2_2 = parseInt(match.scores[1].s2);
+      const s1_1 = parseInt(match.scores[0].s1),
+        s1_2 = parseInt(match.scores[0].s2);
+      const s2_1 = parseInt(match.scores[1].s1),
+        s2_2 = parseInt(match.scores[1].s2);
       if (!isNaN(s1_1) && !isNaN(s1_2) && !isNaN(s2_1) && !isNaN(s2_2)) {
         const t1Wins = (s1_1 > s1_2 ? 1 : 0) + (s2_1 > s2_2 ? 1 : 0);
         const t2Wins = (s1_2 > s1_1 ? 1 : 0) + (s2_2 > s2_1 ? 1 : 0);
@@ -48,24 +50,32 @@ const MatchCard = React.memo(({ match, bracketData, onScoreChange, onSelectSorte
     const isDropdown = options && options.length > 0;
 
     return (
-      <div className={getRowStyle(team, isWinner, isLoser) + (teamIndex === 2 ? " border-b-0" : "")}>
+      <div className={getRowStyle(team, isWinner, isLoser) + (teamIndex === 2 ? ' border-b-0' : '')}>
         <div className="flex flex-col flex-1 overflow-hidden pr-3 justify-center">
           {isDropdown ? (
             <select
-              value={team || ""}
+              value={team || ''}
               onChange={(e) => !readOnly && onSelectSorteo(match.id, teamIndex, e.target.value)}
               disabled={readOnly}
               className="w-full text-xs p-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-blue-500 font-normal bg-white disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <option key="default-opt" value="">-- Asignar Equipo --</option>
+              <option key="default-opt" value="">
+                -- Asignar Equipo --
+              </option>
               {options.map((opt, idx) => (
-                <option key={`opt-${match.id}-${teamIndex}-${idx}`} value={opt} disabled={getUsedOptions().includes(opt)}>
+                <option
+                  key={`opt-${match.id}-${teamIndex}-${idx}`}
+                  value={opt}
+                  disabled={getUsedOptions().includes(opt)}
+                >
                   {opt}
                 </option>
               ))}
             </select>
           ) : (
-            <span className="truncate text-sm font-medium" title={team}>{team || 'Por determinar'}</span>
+            <span className="truncate text-sm font-medium" title={team}>
+              {team || 'Por determinar'}
+            </span>
           )}
           {origin && (
             <span className="text-[10px] text-slate-500 truncate mt-0.5 leading-tight font-normal" title={origin}>
@@ -76,8 +86,11 @@ const MatchCard = React.memo(({ match, bracketData, onScoreChange, onSelectSorte
         <div className="flex gap-1 shrink-0">
           {scores.map((scoreObj, gIdx) => {
             const disabledGame = isGameDisabled(gIdx);
-            const inputBaseClass = "w-[72px] h-8 text-center text-sm font-semibold border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
-            const disabledClass = disabledGame ? "bg-slate-200 text-transparent opacity-50 cursor-not-allowed border-transparent" : "disabled:bg-slate-100 disabled:text-transparent";
+            const inputBaseClass =
+              'w-[72px] h-8 text-center text-sm font-semibold border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none';
+            const disabledClass = disabledGame
+              ? 'bg-slate-200 text-transparent opacity-50 cursor-not-allowed border-transparent'
+              : 'disabled:bg-slate-100 disabled:text-transparent';
             return (
               <input
                 key={`score-${match.id}-${teamIndex}-${gIdx}`}
@@ -85,7 +98,7 @@ const MatchCard = React.memo(({ match, bracketData, onScoreChange, onSelectSorte
                 value={teamIndex === 1 ? scoreObj.s1 : scoreObj.s2}
                 onChange={(e) => !readOnly && onScoreChange(match.id, teamIndex, gIdx, e.target.value)}
                 disabled={disabledGame || readOnly}
-                placeholder={!disabledGame && match.gamesCount > 1 ? `J${gIdx + 1}` : "-"}
+                placeholder={!disabledGame && match.gamesCount > 1 ? `J${gIdx + 1}` : '-'}
                 className={`${inputBaseClass} ${disabledClass}`}
               />
             );
@@ -96,8 +109,13 @@ const MatchCard = React.memo(({ match, bracketData, onScoreChange, onSelectSorte
   };
 
   return (
-    <div data-match-id={match.id} className={`relative flex flex-col min-w-[380px] sm:w-[460px] bg-white border ${isFinal ? 'border-amber-400 shadow-amber-200 shadow-lg' : 'border-slate-300 shadow-md'} rounded-lg overflow-hidden transition-all hover:shadow-lg`}>
-      <div className={`relative text-[11px] uppercase tracking-wider font-bold text-center py-1.5 ${isFinal ? 'bg-amber-400 text-white' : 'bg-slate-200 text-slate-700'} flex items-center justify-center gap-1`}>
+    <div
+      data-match-id={match.id}
+      className={`relative flex flex-col min-w-[380px] sm:w-[460px] bg-white border ${isFinal ? 'border-amber-400 shadow-amber-200 shadow-lg' : 'border-slate-300 shadow-md'} rounded-lg overflow-hidden transition-all hover:shadow-lg`}
+    >
+      <div
+        className={`relative text-[11px] uppercase tracking-wider font-bold text-center py-1.5 ${isFinal ? 'bg-amber-400 text-white' : 'bg-slate-200 text-slate-700'} flex items-center justify-center gap-1`}
+      >
         {isFinal && <Trophy size={14} />}
         {match.title}
         {isFinal && <Trophy size={14} />}
@@ -108,7 +126,11 @@ const MatchCard = React.memo(({ match, bracketData, onScoreChange, onSelectSorte
         </div>
         <div className="flex gap-1 justify-end pr-0.5">
           {match.scores.map((_, i) => (
-            <div key={`date-${i}`} className={`w-[72px] text-center text-[10px] font-bold tracking-tight ${isGameDisabled(i) ? 'text-slate-300 opacity-50' : 'text-slate-500'}`} title={match.dates?.[i]}>
+            <div
+              key={`date-${i}`}
+              className={`w-[72px] text-center text-[10px] font-bold tracking-tight ${isGameDisabled(i) ? 'text-slate-300 opacity-50' : 'text-slate-500'}`}
+              title={match.dates?.[i]}
+            >
               {match.dates?.[i] || `J${i + 1}`}
             </div>
           ))}

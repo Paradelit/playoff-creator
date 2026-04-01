@@ -32,7 +32,6 @@ export default function InfoScreen() {
 
   return (
     <div className="min-h-screen bg-gray-200 py-8 px-4 font-serif text-black print:bg-white print:p-0">
-
       {/* Toolbar */}
       <div className="max-w-[800px] mx-auto mb-4 flex items-center justify-between print:hidden font-sans">
         <button
@@ -51,7 +50,6 @@ export default function InfoScreen() {
 
       {/* Documento A4 */}
       <div className="max-w-[800px] mx-auto bg-white border border-gray-400 p-12 shadow-xl print:shadow-none print:border-none print:m-0 print:p-8 min-h-[297mm] relative overflow-hidden">
-
         {/* Marca de agua */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
           <span className="text-[250px] font-black text-gray-100 uppercase tracking-tighter transform -rotate-12 opacity-50 select-none font-sans">
@@ -60,7 +58,6 @@ export default function InfoScreen() {
         </div>
 
         <div className="relative z-10">
-
           {/* Cabecera */}
           <div className="flex justify-between items-start mb-6">
             <div className="w-1/4">
@@ -70,9 +67,7 @@ export default function InfoScreen() {
               <h1 className="font-bold text-xl tracking-wider uppercase underline decoration-2 underline-offset-4 mb-2">
                 {clubName}
               </h1>
-              <h2 className="font-bold text-3xl tracking-wide">
-                El cuaderno.
-              </h2>
+              <h2 className="font-bold text-3xl tracking-wide">El cuaderno.</h2>
             </div>
             <div className="w-1/4 text-right text-sm text-gray-600 flex flex-col items-end pt-2">
               <p>Temporada {temporada}</p>
@@ -81,7 +76,6 @@ export default function InfoScreen() {
 
           {/* Cuerpo del Texto */}
           <div className="text-[14.5px] leading-relaxed text-justify text-gray-900 space-y-4 pr-4">
-
             <p>El cuaderno es de uso obligatorio para las sesiones.</p>
 
             <p>Tenemos escrito bien grande en qué queremos que se apoye nuestra idea de baloncesto:</p>
@@ -90,11 +84,21 @@ export default function InfoScreen() {
               <li className="flex">
                 <span className="mr-3">-</span>
                 <div>
-                  <span className="font-bold">Actitud, Disciplina y Equipo</span> son los 3 pilares de nuestra filosofía.
+                  <span className="font-bold">Actitud, Disciplina y Equipo</span> son los 3 pilares de nuestra
+                  filosofía.
                   <ul className="pl-6 mt-1 space-y-1">
-                    <li className="flex"><span className="mr-2">o</span><span>Actitud.- Premiaremos esta frente a la aptitud de algunos que no se esfuerzan.</span></li>
-                    <li className="flex"><span className="mr-2">o</span><span>Disciplina.- El entrenador debe conseguir que se funcione como él quiere.</span></li>
-                    <li className="flex"><span className="mr-2">o</span><span>Equipo.- Siempre pensando en el equipo antes que en lo individual.</span></li>
+                    <li className="flex">
+                      <span className="mr-2">o</span>
+                      <span>Actitud.- Premiaremos esta frente a la aptitud de algunos que no se esfuerzan.</span>
+                    </li>
+                    <li className="flex">
+                      <span className="mr-2">o</span>
+                      <span>Disciplina.- El entrenador debe conseguir que se funcione como él quiere.</span>
+                    </li>
+                    <li className="flex">
+                      <span className="mr-2">o</span>
+                      <span>Equipo.- Siempre pensando en el equipo antes que en lo individual.</span>
+                    </li>
                   </ul>
                 </div>
               </li>
@@ -102,11 +106,21 @@ export default function InfoScreen() {
               <li className="flex">
                 <span className="mr-3">-</span>
                 <div>
-                  <span className="font-bold">Tiro-Mecánica, Rebote Def-of y Posición Básica</span> son los 3 detalles técnicos en los que tenemos que incidir y no podemos hacer mal.
+                  <span className="font-bold">Tiro-Mecánica, Rebote Def-of y Posición Básica</span> son los 3 detalles
+                  técnicos en los que tenemos que incidir y no podemos hacer mal.
                   <ul className="pl-6 mt-1 space-y-1">
-                    <li className="flex"><span className="mr-2">o</span><span>Tiro.- Especialmente trabajo de asimilar buena mecánica. La eficacia viene sola.</span></li>
-                    <li className="flex"><span className="mr-2">o</span><span>Rebote.- Especialmente defensivo, pero si no trabajamos el ofensivo...</span></li>
-                    <li className="flex"><span className="mr-2">o</span><span>Posición básica.- En todas las situaciones de recepción, de ayuda, etc...</span></li>
+                    <li className="flex">
+                      <span className="mr-2">o</span>
+                      <span>Tiro.- Especialmente trabajo de asimilar buena mecánica. La eficacia viene sola.</span>
+                    </li>
+                    <li className="flex">
+                      <span className="mr-2">o</span>
+                      <span>Rebote.- Especialmente defensivo, pero si no trabajamos el ofensivo...</span>
+                    </li>
+                    <li className="flex">
+                      <span className="mr-2">o</span>
+                      <span>Posición básica.- En todas las situaciones de recepción, de ayuda, etc...</span>
+                    </li>
                   </ul>
                 </div>
               </li>
@@ -114,11 +128,23 @@ export default function InfoScreen() {
               <li className="flex">
                 <span className="mr-3">-</span>
                 <div>
-                  <span className="font-bold">Intensidad, Defensa y Correr</span> son las señas de identidad de nuestra forma de juego.
+                  <span className="font-bold">Intensidad, Defensa y Correr</span> son las señas de identidad de nuestra
+                  forma de juego.
                   <ul className="pl-6 mt-1 space-y-1">
-                    <li className="flex"><span className="mr-2">o</span><span className="font-bold">Intensidad.- Física y Mental. No se puede estar en pista si no es al 100%.</span></li>
-                    <li className="flex"><span className="mr-2">o</span><span>Defensa.- Agresividad y colocación. Defender para correr. Defensa más de equipo.</span></li>
-                    <li className="flex"><span className="mr-2">o</span><span>Correr.- Si defendemos y Cerramos bien el rebote, aseguramos poder correr.</span></li>
+                    <li className="flex">
+                      <span className="mr-2">o</span>
+                      <span className="font-bold">
+                        Intensidad.- Física y Mental. No se puede estar en pista si no es al 100%.
+                      </span>
+                    </li>
+                    <li className="flex">
+                      <span className="mr-2">o</span>
+                      <span>Defensa.- Agresividad y colocación. Defender para correr. Defensa más de equipo.</span>
+                    </li>
+                    <li className="flex">
+                      <span className="mr-2">o</span>
+                      <span>Correr.- Si defendemos y Cerramos bien el rebote, aseguramos poder correr.</span>
+                    </li>
                   </ul>
                 </div>
               </li>
@@ -128,22 +154,37 @@ export default function InfoScreen() {
 
             <p>Una hoja de equipo para tener a mano los datos más importantes de vuestros/as jugadores/as.</p>
 
-            <p>Un plan anual en A3 por si a alguno le sirve para organizarse la distribución de tareas o los objetivos de las sesiones.</p>
+            <p>
+              Un plan anual en A3 por si a alguno le sirve para organizarse la distribución de tareas o los objetivos de
+              las sesiones.
+            </p>
 
-            <p>Las tablas de Test de tiro o de Dominio de balón van encaminadas a hacer un test mensual. Hasta infantil, Test de dominio. De cadete para arriba, Test de tiro.</p>
+            <p>
+              Las tablas de Test de tiro o de Dominio de balón van encaminadas a hacer un test mensual. Hasta infantil,
+              Test de dominio. De cadete para arriba, Test de tiro.
+            </p>
 
             <ul className="pl-12 space-y-1">
               <li className="flex">
                 <span className="mr-3">-</span>
-                <span>El test de Dominio se hará sobre 4 ejercicios siempre iguales y sobre 30 segundos de ejecución.</span>
+                <span>
+                  El test de Dominio se hará sobre 4 ejercicios siempre iguales y sobre 30 segundos de ejecución.
+                </span>
               </li>
               <li className="flex">
                 <span className="mr-3">-</span>
-                <span>El test de tiro se hará sobre 4 ejercicios de tiro siempre los mismos. La anotación puede ser del Resultado (metidas) o de la ejecución (si mecánicamente están bien realizados) o Mixto (anotados con buena mecánica, si no, no cuenta).</span>
+                <span>
+                  El test de tiro se hará sobre 4 ejercicios de tiro siempre los mismos. La anotación puede ser del
+                  Resultado (metidas) o de la ejecución (si mecánicamente están bien realizados) o Mixto (anotados con
+                  buena mecánica, si no, no cuenta).
+                </span>
               </li>
             </ul>
 
-            <p>Los campos son para poder llevar un registro de ciertos ejercicios o en mayores llevar los movimientos que se van introduciendo en el juego a nivel táctico.</p>
+            <p>
+              Los campos son para poder llevar un registro de ciertos ejercicios o en mayores llevar los movimientos que
+              se van introduciendo en el juego a nivel táctico.
+            </p>
 
             <p>Una hoja para anotar los jugadores y jugadoras interesantes de equipos de nuestro entorno.</p>
 
@@ -154,7 +195,9 @@ export default function InfoScreen() {
             <ul className="pl-12 space-y-1">
               <li className="flex">
                 <span className="mr-3">-</span>
-                <span>Anotad las faltas y retrasos para luego pasarlo a la hoja de asistencia de Excel que os enviaré.</span>
+                <span>
+                  Anotad las faltas y retrasos para luego pasarlo a la hoja de asistencia de Excel que os enviaré.
+                </span>
               </li>
               <li className="flex">
                 <span className="mr-3">-</span>
@@ -162,12 +205,16 @@ export default function InfoScreen() {
               </li>
               <li className="flex">
                 <span className="mr-3">-</span>
-                <span>El apartado Observaciones es para poder escribir aquellas cosas de relevancia que se hablen entre entrenador y Director Técnico.</span>
+                <span>
+                  El apartado Observaciones es para poder escribir aquellas cosas de relevancia que se hablen entre
+                  entrenador y Director Técnico.
+                </span>
               </li>
             </ul>
 
-            <p>Habrá que llevar preparados los entrenamientos para que se puedan observar por parte del Director Técnico.</p>
-
+            <p>
+              Habrá que llevar preparados los entrenamientos para que se puedan observar por parte del Director Técnico.
+            </p>
           </div>
         </div>
       </div>

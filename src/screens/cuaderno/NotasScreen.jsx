@@ -32,8 +32,8 @@ export default function NotasScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, data => {
-      setTeam(data.find(t => t.id === teamId) || null);
+    return subscribeToTeams(user.uid, db, appId, (data) => {
+      setTeam(data.find((t) => t.id === teamId) || null);
     });
   }, [user, db, appId, teamId]);
 
@@ -44,7 +44,7 @@ export default function NotasScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToTeamNotes(teamId, user.uid, db, appId, data => {
+    return subscribeToTeamNotes(teamId, user.uid, db, appId, (data) => {
       if (isFirstLoad.current) {
         setTexto(data);
         isFirstLoad.current = false;
@@ -68,7 +68,6 @@ export default function NotasScreen() {
 
   return (
     <div className="min-h-screen bg-gray-200 py-8 px-4 font-serif text-black print:bg-white print:p-0">
-
       {/* Toolbar */}
       <div className="max-w-[800px] mx-auto mb-4 flex items-center justify-between print:hidden font-sans">
         <button
@@ -93,7 +92,6 @@ export default function NotasScreen() {
 
       {/* Documento A4 */}
       <div className="max-w-[800px] mx-auto bg-white border border-gray-400 p-12 shadow-xl print:shadow-none print:border-none print:m-0 print:p-8 min-h-[297mm]">
-
         {/* Cabecera */}
         <div className="flex justify-between items-start mb-8">
           <div className="w-1/4">
@@ -103,9 +101,7 @@ export default function NotasScreen() {
             <h1 className="font-bold text-xl tracking-wider uppercase underline decoration-2 underline-offset-4 mb-3">
               {clubName}
             </h1>
-            <h2 className="font-bold text-2xl tracking-widest uppercase">
-              NOTAS
-            </h2>
+            <h2 className="font-bold text-2xl tracking-widest uppercase">NOTAS</h2>
           </div>
           <div className="w-1/4 text-right text-sm text-gray-600 flex flex-col items-end pt-2">
             <p>Temporada {temporada}</p>
@@ -116,11 +112,10 @@ export default function NotasScreen() {
         {/* Área de notas — hoja en blanco */}
         <textarea
           value={texto}
-          onChange={e => handleChange(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           placeholder="Escribe aquí tus apuntes y notas..."
           className="w-full min-h-[550px] resize-none border-none focus:outline-none bg-transparent font-sans text-sm leading-relaxed text-gray-800 placeholder-gray-300"
         />
-
       </div>
     </div>
   );

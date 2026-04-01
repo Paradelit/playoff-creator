@@ -1,50 +1,43 @@
-import {
-  collection, doc, setDoc, deleteDoc,
-  onSnapshot, serverTimestamp, query, orderBy
-} from 'firebase/firestore';
-
-function teamsCol(uid, db, appId) {
-  return collection(db, 'artifacts', appId, 'users', uid, 'teams');
-}
+import { collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { userColRef, saveUserDoc, deleteUserDoc } from './firestoreHelpers';
 
 function membersCol(teamId, uid, db, appId) {
   return collection(db, 'artifacts', appId, 'users', uid, 'teams', teamId, 'members');
 }
 
 export function subscribeToTeams(uid, db, appId, callback) {
-  const q = query(teamsCol(uid, db, appId), orderBy('createdAt', 'desc'));
-  return onSnapshot(q, snap => {
-    callback(snap.docs.map(d => ({ ...d.data(), id: d.id })));
+  const q = query(userColRef(db, appId, uid, 'teams'), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
   });
 }
 
 export async function saveTeam(team, { uid, db, appId }) {
-  const ref = doc(teamsCol(uid, db, appId), team.id);
-  await setDoc(ref, {
-    ...team,
-    updatedAt: serverTimestamp(),
-    ...(team.createdAt ? {} : { createdAt: serverTimestamp() }),
-  }, { merge: true });
+  await saveUserDoc(db, appId, uid, 'teams', team.id, team);
 }
 
 export async function deleteTeam(teamId, { uid, db, appId }) {
-  await deleteDoc(doc(teamsCol(uid, db, appId), teamId));
+  await deleteUserDoc(db, appId, uid, 'teams', teamId);
 }
 
 export function subscribeToMembers(teamId, uid, db, appId, callback) {
   const q = query(membersCol(teamId, uid, db, appId), orderBy('createdAt', 'asc'));
-  return onSnapshot(q, snap => {
-    callback(snap.docs.map(d => ({ ...d.data(), id: d.id })));
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
   });
 }
 
 export async function saveMember(member, teamId, { uid, db, appId }) {
   const ref = doc(membersCol(teamId, uid, db, appId), member.id);
-  await setDoc(ref, {
-    ...member,
-    updatedAt: serverTimestamp(),
-    ...(member.createdAt ? {} : { createdAt: serverTimestamp() }),
-  }, { merge: true });
+  await setDoc(
+    ref,
+    {
+      ...member,
+      updatedAt: serverTimestamp(),
+      ...(member.createdAt ? {} : { createdAt: serverTimestamp() }),
+    },
+    { merge: true },
+  );
 }
 
 export async function deleteMember(memberId, teamId, { uid, db, appId }) {
@@ -57,7 +50,7 @@ function jugadoresDoc(teamId, uid, db, appId) {
 }
 
 export function subscribeToTeamJugadores(teamId, uid, db, appId, callback) {
-  return onSnapshot(jugadoresDoc(teamId, uid, db, appId), snap => {
+  return onSnapshot(jugadoresDoc(teamId, uid, db, appId), (snap) => {
     callback(snap.exists() ? (snap.data().lista ?? []) : []);
   });
 }
@@ -72,7 +65,7 @@ function testTiroDoc(teamId, uid, db, appId) {
 }
 
 export function subscribeToTestTiro(teamId, uid, db, appId, callback) {
-  return onSnapshot(testTiroDoc(teamId, uid, db, appId), snap => {
+  return onSnapshot(testTiroDoc(teamId, uid, db, appId), (snap) => {
     callback(snap.exists() ? (snap.data().tables ?? null) : null);
   });
 }
@@ -87,7 +80,7 @@ function notasDoc(teamId, uid, db, appId) {
 }
 
 export function subscribeToTeamNotes(teamId, uid, db, appId, callback) {
-  return onSnapshot(notasDoc(teamId, uid, db, appId), snap => {
+  return onSnapshot(notasDoc(teamId, uid, db, appId), (snap) => {
     callback(snap.exists() ? (snap.data().texto ?? '') : '');
   });
 }

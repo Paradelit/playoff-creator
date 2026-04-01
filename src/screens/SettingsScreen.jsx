@@ -1,23 +1,49 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, User, Building2, Database, AlertTriangle,
-  LogOut, Download, Upload, Trash2, Link, Check, ChevronRight,
-  Shield, Phone, Calendar, CreditCard, Stethoscope
+  ArrowLeft,
+  User,
+  Building2,
+  Database,
+  AlertTriangle,
+  LogOut,
+  Download,
+  Upload,
+  Trash2,
+  Link,
+  Check,
+  ChevronRight,
+  Shield,
+  Phone,
+  Calendar,
+  CreditCard,
+  Stethoscope,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import {
-  subscribeToProfile, saveProfile, uploadLogoClub,
-  exportUserData, importUserData, deleteAllUserData
+  subscribeToProfile,
+  saveProfile,
+  uploadLogoClub,
+  exportUserData,
+  importUserData,
+  deleteAllUserData,
 } from '../services/settingsService';
+import logger from '../utils/logger';
 
 const ROLES_STAFF = ['Entrenador', 'Entrenador asistente', 'Fisioterapeuta', 'Delegado', 'Médico', 'Otro'];
 
 const EMPTY_PROFILE = {
-  nombre: '', fechaNacimiento: '', dni: '', telefono: '',
-  licencia: '', alergias: '', rol: 'Entrenador',
-  autoAddToTeams: false, nombreClub: '', logoClub: '',
+  nombre: '',
+  fechaNacimiento: '',
+  dni: '',
+  telefono: '',
+  licencia: '',
+  alergias: '',
+  rol: 'Entrenador',
+  autoAddToTeams: false,
+  nombreClub: '',
+  logoClub: '',
 };
 
 export default function SettingsScreen() {
@@ -25,7 +51,7 @@ export default function SettingsScreen() {
   const { user, handleLogout, handleLinkGoogle, handleDeleteAuthAccount } = useAuth();
   const { db, appId, storage } = useFirebase();
 
-  const [profile, setProfile] = useState(EMPTY_PROFILE);
+  const [, setProfile] = useState(EMPTY_PROFILE);
   const [form, setForm] = useState(EMPTY_PROFILE);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -50,7 +76,7 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToProfile(user.uid, db, appId, data => {
+    return subscribeToProfile(user.uid, db, appId, (data) => {
       const merged = { ...EMPTY_PROFILE, ...data };
       setProfile(merged);
       setForm(merged);
@@ -123,7 +149,7 @@ export default function SettingsScreen() {
     try {
       await handleLinkGoogle();
       setLinkedOk(true);
-    } catch (err) {
+    } catch {
       setLinkError('No se pudo vincular la cuenta. Inténtalo de nuevo.');
     } finally {
       setLinkingGoogle(false);
@@ -138,8 +164,8 @@ export default function SettingsScreen() {
     try {
       await deleteAllUserData(user.uid, db, appId);
       await handleDeleteAuthAccount();
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      logger.error('Error eliminando cuenta de usuario', e);
       setDeletingAccount(false);
       setShowDeleteModal(false);
     }
@@ -150,11 +176,12 @@ export default function SettingsScreen() {
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans pb-24">
-
       {/* Header */}
       <div className="bg-blue-950 px-5 pt-10 pb-6">
-        <button onClick={() => navigate('/')}
-          className="flex items-center gap-1.5 text-blue-400 hover:text-white text-sm font-medium transition mb-4">
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-1.5 text-blue-400 hover:text-white text-sm font-medium transition mb-4"
+        >
           <ArrowLeft size={16} /> Inicio
         </button>
         <h1 className="text-white text-2xl font-bold">Ajustes</h1>
@@ -162,75 +189,111 @@ export default function SettingsScreen() {
       </div>
 
       <div className="max-w-lg mx-auto px-4 pt-6 flex flex-col gap-6">
-
         {/* ─── Perfil ─── */}
         <Section icon={User} title="Mi perfil como entrenador" iconColor="text-blue-600" iconBg="bg-blue-50">
           <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
-
             <Field label="Nombre completo">
-              <input type="text" placeholder="Nombre y apellidos"
-                value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
-                className={inputCls} />
+              <input
+                type="text"
+                placeholder="Nombre y apellidos"
+                value={form.nombre}
+                onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+                className={inputCls}
+              />
             </Field>
 
             <div className="grid grid-cols-2 gap-3">
               <Field label="Fecha de nacimiento">
-                <input type="date" value={form.fechaNacimiento}
-                  onChange={e => setForm(f => ({ ...f, fechaNacimiento: e.target.value }))}
-                  className={inputCls} />
+                <input
+                  type="date"
+                  value={form.fechaNacimiento}
+                  onChange={(e) => setForm((f) => ({ ...f, fechaNacimiento: e.target.value }))}
+                  className={inputCls}
+                />
               </Field>
               <Field label="DNI / NIE">
-                <input type="text" placeholder="00000000X"
-                  value={form.dni} onChange={e => setForm(f => ({ ...f, dni: e.target.value }))}
-                  className={inputCls} />
+                <input
+                  type="text"
+                  placeholder="00000000X"
+                  value={form.dni}
+                  onChange={(e) => setForm((f) => ({ ...f, dni: e.target.value }))}
+                  className={inputCls}
+                />
               </Field>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <Field label="Teléfono">
-                <input type="tel" placeholder="+34 600 000 000"
-                  value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))}
-                  className={inputCls} />
+                <input
+                  type="tel"
+                  placeholder="+34 600 000 000"
+                  value={form.telefono}
+                  onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))}
+                  className={inputCls}
+                />
               </Field>
               <Field label="Nº Licencia FBM">
-                <input type="text" placeholder="Licencia de entrenador"
-                  value={form.licencia} onChange={e => setForm(f => ({ ...f, licencia: e.target.value }))}
-                  className={inputCls} />
+                <input
+                  type="text"
+                  placeholder="Licencia de entrenador"
+                  value={form.licencia}
+                  onChange={(e) => setForm((f) => ({ ...f, licencia: e.target.value }))}
+                  className={inputCls}
+                />
               </Field>
             </div>
 
             <Field label="Alergias / notas médicas">
-              <textarea rows={2} placeholder="Sin alergias conocidas..."
-                value={form.alergias} onChange={e => setForm(f => ({ ...f, alergias: e.target.value }))}
-                className={inputCls + ' resize-none'} />
+              <textarea
+                rows={2}
+                placeholder="Sin alergias conocidas..."
+                value={form.alergias}
+                onChange={(e) => setForm((f) => ({ ...f, alergias: e.target.value }))}
+                className={inputCls + ' resize-none'}
+              />
             </Field>
 
             <div className="border-t border-slate-100 pt-4">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Auto-añadirme al crear equipos</p>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">
+                Auto-añadirme al crear equipos
+              </p>
               <div className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 border border-slate-200">
                 <div>
                   <p className="text-sm font-semibold text-slate-700">Añadirme como staff automáticamente</p>
                   <p className="text-xs text-slate-500">Al crear un equipo, apareceré en el staff con mis datos</p>
                 </div>
-                <Toggle
-                  checked={form.autoAddToTeams}
-                  onChange={v => setForm(f => ({ ...f, autoAddToTeams: v }))}
-                />
+                <Toggle checked={form.autoAddToTeams} onChange={(v) => setForm((f) => ({ ...f, autoAddToTeams: v }))} />
               </div>
 
               {form.autoAddToTeams && (
                 <Field label="Rol por defecto" className="mt-3">
-                  <select value={form.rol} onChange={e => setForm(f => ({ ...f, rol: e.target.value }))}
-                    className={inputCls + ' bg-white'}>
-                    {ROLES_STAFF.map(r => <option key={r}>{r}</option>)}
+                  <select
+                    value={form.rol}
+                    onChange={(e) => setForm((f) => ({ ...f, rol: e.target.value }))}
+                    className={inputCls + ' bg-white'}
+                  >
+                    {ROLES_STAFF.map((r) => (
+                      <option key={r}>{r}</option>
+                    ))}
                   </select>
                 </Field>
               )}
             </div>
 
-            <button type="submit" disabled={savingProfile}
-              className={`w-full font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 ${profileSaved ? 'bg-emerald-500 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'} disabled:opacity-60`}>
-              {profileSaved ? <><Check size={16} /> Guardado</> : savingProfile ? 'Guardando...' : 'Guardar perfil'}
+            <button
+              type="submit"
+              disabled={savingProfile}
+              className={`w-full font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 ${profileSaved ? 'bg-emerald-500 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'} disabled:opacity-60`}
+            >
+              {profileSaved ? (
+                <>
+                  <Check size={16} /> Guardado
+                </>
+              ) : savingProfile ? (
+                'Guardando...'
+              ) : (
+                'Guardar perfil'
+              )}
             </button>
           </form>
         </Section>
@@ -238,9 +301,13 @@ export default function SettingsScreen() {
         {/* ─── Club ─── */}
         <Section icon={Building2} title="Club" iconColor="text-violet-600" iconBg="bg-violet-50">
           <Field label="Nombre del club">
-            <input type="text" placeholder="Uros de Rivas..."
-              value={form.nombreClub} onChange={e => setForm(f => ({ ...f, nombreClub: e.target.value }))}
-              className={inputCls} />
+            <input
+              type="text"
+              placeholder="Uros de Rivas..."
+              value={form.nombreClub}
+              onChange={(e) => setForm((f) => ({ ...f, nombreClub: e.target.value }))}
+              className={inputCls}
+            />
           </Field>
           <p className="text-xs text-slate-500 mt-1.5 mb-4">Aparece en las fichas de entrenamiento y el cuaderno.</p>
 
@@ -251,9 +318,14 @@ export default function SettingsScreen() {
                 src={form.logoClub || '/logo-club.png'}
                 alt="Logo"
                 className="w-full h-full object-contain"
-                onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
               />
-              <span style={{ display: 'none' }} className="text-xs text-slate-400 text-center leading-tight px-1">Sin logo</span>
+              <span style={{ display: 'none' }} className="text-xs text-slate-400 text-center leading-tight px-1">
+                Sin logo
+              </span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-slate-700 mb-1">Logo del club</p>
@@ -271,14 +343,14 @@ export default function SettingsScreen() {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={async e => {
+                onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
                   e.target.value = '';
                   setUploadingLogo(true);
                   try {
                     const url = await uploadLogoClub(file, { uid: user.uid, storage, db, appId });
-                    setForm(f => ({ ...f, logoClub: url }));
+                    setForm((f) => ({ ...f, logoClub: url }));
                   } finally {
                     setUploadingLogo(false);
                   }
@@ -295,7 +367,9 @@ export default function SettingsScreen() {
                 await saveProfile({ nombreClub: form.nombreClub }, { uid: user.uid, db, appId });
                 setProfileSaved(true);
                 setTimeout(() => setProfileSaved(false), 2000);
-              } finally { setSavingProfile(false); }
+              } finally {
+                setSavingProfile(false);
+              }
             }}
             disabled={savingProfile}
             className="mt-3 w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-2.5 rounded-xl transition disabled:opacity-60 text-sm"
@@ -307,13 +381,16 @@ export default function SettingsScreen() {
         {/* ─── Datos ─── */}
         <Section icon={Database} title="Mis datos" iconColor="text-emerald-600" iconBg="bg-emerald-50">
           <p className="text-xs text-slate-500 mb-4">
-            Exporta todos tus datos (equipos, jugadores, entrenamientos, ejercicios y calendario) como copia de seguridad,
-            o impórtalos desde un backup anterior. La importación añade sin borrar datos existentes.
+            Exporta todos tus datos (equipos, jugadores, entrenamientos, ejercicios y calendario) como copia de
+            seguridad, o impórtalos desde un backup anterior. La importación añade sin borrar datos existentes.
           </p>
 
           {/* Export */}
-          <button onClick={handleExport} disabled={exporting}
-            className="w-full flex items-center gap-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-3 px-4 rounded-xl transition disabled:opacity-60 text-sm">
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="w-full flex items-center gap-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-3 px-4 rounded-xl transition disabled:opacity-60 text-sm"
+          >
             <Download size={18} className="shrink-0" />
             <div className="text-left">
               <p className="font-bold">{exporting ? 'Exportando...' : 'Exportar mis datos'}</p>
@@ -322,8 +399,10 @@ export default function SettingsScreen() {
           </button>
 
           {/* Import */}
-          <button onClick={() => importInputRef.current?.click()}
-            className="w-full flex items-center gap-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-3 px-4 rounded-xl transition text-sm mt-3">
+          <button
+            onClick={() => importInputRef.current?.click()}
+            className="w-full flex items-center gap-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-3 px-4 rounded-xl transition text-sm mt-3"
+          >
             <Upload size={18} className="shrink-0" />
             <div className="text-left">
               <p className="font-bold">Importar datos</p>
@@ -332,9 +411,7 @@ export default function SettingsScreen() {
           </button>
           <input ref={importInputRef} type="file" accept=".json" className="hidden" onChange={handleImportFile} />
 
-          {importError && (
-            <p className="text-sm text-red-600 mt-2 bg-red-50 rounded-lg px-3 py-2">{importError}</p>
-          )}
+          {importError && <p className="text-sm text-red-600 mt-2 bg-red-50 rounded-lg px-3 py-2">{importError}</p>}
         </Section>
 
         {/* ─── Cuenta ─── */}
@@ -354,8 +431,11 @@ export default function SettingsScreen() {
                   Vincula tu cuenta con Google para no perder tus datos si cambias de dispositivo o navegador.
                 </p>
                 {linkError && <p className="text-xs text-red-600 mb-2">{linkError}</p>}
-                <button onClick={handleLink} disabled={linkingGoogle}
-                  className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm px-4 py-2 rounded-xl transition disabled:opacity-60">
+                <button
+                  onClick={handleLink}
+                  disabled={linkingGoogle}
+                  className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm px-4 py-2 rounded-xl transition disabled:opacity-60"
+                >
                   <Link size={15} /> {linkingGoogle ? 'Vinculando...' : 'Vincular con Google'}
                 </button>
               </div>
@@ -367,8 +447,10 @@ export default function SettingsScreen() {
               </div>
             )}
 
-            <button onClick={handleLogout}
-              className="flex items-center gap-3 text-slate-600 hover:text-red-600 font-semibold text-sm py-2 transition">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 text-slate-600 hover:text-red-600 font-semibold text-sm py-2 transition"
+            >
               <LogOut size={16} /> Cerrar sesión
             </button>
           </div>
@@ -387,11 +469,15 @@ export default function SettingsScreen() {
           </div>
           <div className="px-5 py-4">
             <p className="text-sm text-slate-600 mb-4">
-              Eliminar tu cuenta borrará permanentemente todos tus equipos, jugadores, entrenamientos, ejercicios y sesiones del calendario.
+              Eliminar tu cuenta borrará permanentemente todos tus equipos, jugadores, entrenamientos, ejercicios y
+              sesiones del calendario.
               <span className="font-semibold text-red-600"> Esta acción no se puede deshacer.</span>
             </p>
             <button
-              onClick={() => { setDeleteConfirmText(''); setShowDeleteModal(true); }}
+              onClick={() => {
+                setDeleteConfirmText('');
+                setShowDeleteModal(true);
+              }}
               className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition"
             >
               <Trash2 size={15} /> Eliminar mi cuenta y todos mis datos
@@ -404,25 +490,41 @@ export default function SettingsScreen() {
 
       {/* ─── Modal preview importación ─── */}
       {importPreview && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
-          onClick={() => setImportPreview(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setImportPreview(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-lg font-bold text-slate-800 mb-1">Confirmar importación</h3>
             <p className="text-slate-500 text-sm mb-4">
-              Backup del <span className="font-semibold">{new Date(importPreview.exportDate).toLocaleDateString('es-ES')}</span>
+              Backup del{' '}
+              <span className="font-semibold">{new Date(importPreview.exportDate).toLocaleDateString('es-ES')}</span>
             </p>
             <div className="bg-slate-50 rounded-xl p-4 flex flex-col gap-2 mb-5 text-sm">
               <ImportCount label="Equipos" count={importPreview.teams?.length || 0} />
               <ImportCount label="Ejercicios" count={importPreview.exercises?.length || 0} />
               <ImportCount label="Sesiones calendario" count={importPreview.calendarSessions?.length || 0} />
-              <ImportCount label="Entrenamientos" count={Object.values(importPreview.trainings || {}).reduce((a, b) => a + b.length, 0)} />
+              <ImportCount
+                label="Entrenamientos"
+                count={Object.values(importPreview.trainings || {}).reduce((a, b) => a + b.length, 0)}
+              />
             </div>
             <p className="text-xs text-slate-500 mb-4">Los datos se añadirán sin borrar tu contenido actual.</p>
             <div className="flex gap-3">
-              <button onClick={() => setImportPreview(null)}
-                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition text-sm">Cancelar</button>
-              <button onClick={handleConfirmImport} disabled={importing}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-60 text-sm">
+              <button
+                onClick={() => setImportPreview(null)}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmImport}
+                disabled={importing}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-60 text-sm"
+              >
                 {importing ? 'Importando...' : 'Importar'}
               </button>
             </div>
@@ -432,9 +534,14 @@ export default function SettingsScreen() {
 
       {/* ─── Modal confirmación borrado cuenta ─── */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
-          onClick={() => setShowDeleteModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setShowDeleteModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center shrink-0">
                 <AlertTriangle size={20} className="text-red-600" />
@@ -442,23 +549,31 @@ export default function SettingsScreen() {
               <h3 className="text-lg font-bold text-slate-800">¿Eliminar tu cuenta?</h3>
             </div>
             <p className="text-slate-600 text-sm mb-4">
-              Esto borrará permanentemente <span className="font-semibold">todos tus datos</span>. Esta acción no puede deshacerse.
+              Esto borrará permanentemente <span className="font-semibold">todos tus datos</span>. Esta acción no puede
+              deshacerse.
             </p>
-            <p className="text-xs font-bold text-slate-500 mb-2">Escribe <span className="text-red-600 font-black">ELIMINAR</span> para confirmar:</p>
+            <p className="text-xs font-bold text-slate-500 mb-2">
+              Escribe <span className="text-red-600 font-black">ELIMINAR</span> para confirmar:
+            </p>
             <input
               type="text"
               value={deleteConfirmText}
-              onChange={e => setDeleteConfirmText(e.target.value)}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
               placeholder="ELIMINAR"
               className="w-full border-2 border-slate-300 focus:border-red-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none mb-4 font-bold tracking-wide"
             />
             <div className="flex gap-3">
-              <button onClick={() => setShowDeleteModal(false)}
-                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition text-sm">Cancelar</button>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition text-sm"
+              >
+                Cancelar
+              </button>
               <button
                 onClick={handleDeleteAccount}
                 disabled={deleteConfirmText !== 'ELIMINAR' || deletingAccount}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-40 text-sm">
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-40 text-sm"
+              >
                 {deletingAccount ? 'Eliminando...' : 'Eliminar todo'}
               </button>
             </div>
@@ -501,7 +616,9 @@ function Toggle({ checked, onChange }) {
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${checked ? 'bg-blue-600' : 'bg-slate-300'}`}
     >
-      <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : 'translate-x-1'}`} />
+      <span
+        className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : 'translate-x-1'}`}
+      />
     </button>
   );
 }
@@ -515,4 +632,5 @@ function ImportCount({ label, count }) {
   );
 }
 
-const inputCls = 'w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400';
+const inputCls =
+  'w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400';

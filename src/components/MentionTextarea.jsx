@@ -5,15 +5,14 @@ import React, { useRef, useState } from 'react';
  * Props: value, onChange, members [{nombre, tipo}], ...rest (textarea props)
  * The final text is plain text (e.g. "Carlos López"), no special markup.
  */
-export default function MentionTextarea({ value, onChange, members = [], ...rest }) {
+const MentionTextarea = React.memo(function MentionTextarea({ value, onChange, members = [], ...rest }) {
   const [query, setQuery] = useState('');
   const [mentionStart, setMentionStart] = useState(null);
   const [selectedIdx, setSelectedIdx] = useState(0);
   const textareaRef = useRef(null);
 
-  const filtered = query !== null
-    ? members.filter(m => m.nombre.toLowerCase().includes(query.toLowerCase())).slice(0, 6)
-    : [];
+  const filtered =
+    query !== null ? members.filter((m) => m.nombre.toLowerCase().includes(query.toLowerCase())).slice(0, 6) : [];
 
   function handleChange(e) {
     const val = e.target.value;
@@ -60,10 +59,10 @@ export default function MentionTextarea({ value, onChange, members = [], ...rest
     if (mentionStart === null || filtered.length === 0) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIdx(i => (i + 1) % filtered.length);
+      setSelectedIdx((i) => (i + 1) % filtered.length);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIdx(i => (i - 1 + filtered.length) % filtered.length);
+      setSelectedIdx((i) => (i - 1 + filtered.length) % filtered.length);
     } else if (e.key === 'Enter' || e.key === 'Tab') {
       if (filtered[selectedIdx]) {
         e.preventDefault();
@@ -79,20 +78,17 @@ export default function MentionTextarea({ value, onChange, members = [], ...rest
 
   return (
     <div className="relative">
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        {...rest}
-      />
+      <textarea ref={textareaRef} value={value} onChange={handleChange} onKeyDown={handleKeyDown} {...rest} />
       {showDropdown && (
         <div className="absolute z-50 left-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg w-56 overflow-hidden print:hidden">
           {filtered.map((m, i) => (
             <button
               key={m.nombre + i}
               type="button"
-              onMouseDown={e => { e.preventDefault(); insertMention(m); }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                insertMention(m);
+              }}
               className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 transition-colors ${i === selectedIdx ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'}`}
             >
               <span className="font-medium truncate">{m.nombre}</span>
@@ -103,4 +99,6 @@ export default function MentionTextarea({ value, onChange, members = [], ...rest
       )}
     </div>
   );
-}
+});
+
+export default MentionTextarea;

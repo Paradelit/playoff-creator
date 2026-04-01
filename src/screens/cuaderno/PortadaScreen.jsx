@@ -26,8 +26,8 @@ export default function PortadaScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, data => {
-      setTeam(data.find(t => t.id === teamId) || null);
+    return subscribeToTeams(user.uid, db, appId, (data) => {
+      setTeam(data.find((t) => t.id === teamId) || null);
     });
   }, [user, db, appId, teamId]);
 
@@ -41,7 +41,6 @@ export default function PortadaScreen() {
 
   return (
     <div className="min-h-screen bg-gray-200 py-8 px-4 font-serif text-black print:bg-white print:p-0 flex flex-col items-center">
-
       {/* Toolbar */}
       <div className="w-full max-w-[800px] mb-4 flex items-center justify-between print:hidden font-sans">
         <button
@@ -60,7 +59,6 @@ export default function PortadaScreen() {
 
       {/* Documento A4 */}
       <div className="w-full max-w-[800px] bg-white border border-gray-400 shadow-xl print:shadow-none print:border-none print:m-0 min-h-[297mm] flex flex-col items-center py-24 px-12 relative">
-
         {/* Título Superior */}
         <h1 className="text-4xl sm:text-5xl font-normal tracking-wide mt-8 mb-20 text-center">
           {clubName.toUpperCase()}
@@ -73,18 +71,13 @@ export default function PortadaScreen() {
 
         {/* Nombre del Equipo */}
         <div className="w-full mb-16 text-center">
-          <p className="text-4xl sm:text-5xl font-normal py-2">
-            {team ? teamDisplayName(team) : ''}
-          </p>
+          <p className="text-4xl sm:text-5xl font-normal py-2">{team ? teamDisplayName(team) : ''}</p>
         </div>
 
         {/* Temporada */}
         <div className="flex flex-col items-center space-y-4">
-          <p className="text-3xl sm:text-4xl font-normal">
-            Temporada {temporada}
-          </p>
+          <p className="text-3xl sm:text-4xl font-normal">Temporada {temporada}</p>
         </div>
-
       </div>
     </div>
   );

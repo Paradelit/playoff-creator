@@ -1,6 +1,17 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { GoogleAuthProvider, signInWithPopup, signInWithCredential, linkWithPopup, deleteUser, signOut, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import {
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithCredential,
+  linkWithPopup,
+  deleteUser,
+  signOut,
+  onAuthStateChanged,
+  signInAnonymously,
+} from 'firebase/auth';
 import { useFirebase } from './FirebaseContext';
+import logger from '../utils/logger';
 
 const AuthContext = createContext(null);
 
@@ -19,6 +30,7 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthReady(true);
+      logger.setUserContext(currentUser ? { uid: currentUser.uid, email: currentUser.email } : {});
     });
     return () => unsubscribe();
   }, [auth]);
@@ -30,10 +42,12 @@ export function AuthProvider({ children }) {
     try {
       await signInWithPopup(auth, provider);
     } catch (error) {
-      console.error('Error al iniciar sesión:', error);
+      logger.error('Error al iniciar sesión', error);
       if (error.code === 'auth/unauthorized-domain') {
         const domain = window.location.hostname || 'scf.usercontent.goog';
-        setAuthError(`Bloqueo de seguridad: Ve a Firebase Console -> Authentication -> Settings -> Authorized domains y añade: ${domain}`);
+        setAuthError(
+          `Bloqueo de seguridad: Ve a Firebase Console -> Authentication -> Settings -> Authorized domains y añade: ${domain}`,
+        );
       } else {
         setAuthError('Error al conectar con Google. Revisa tu configuración de Firebase.');
       }
@@ -48,10 +62,12 @@ export function AuthProvider({ children }) {
     try {
       await signInAnonymously(auth);
     } catch (error) {
-      console.error('Error en login anónimo:', error);
+      logger.error('Error en login anónimo', error);
       if (error.code === 'auth/unauthorized-domain') {
         const domain = window.location.hostname || 'scf.usercontent.goog';
-        setAuthError(`Bloqueo de seguridad: Ve a Firebase Console -> Authentication -> Settings -> Authorized domains y añade: ${domain}`);
+        setAuthError(
+          `Bloqueo de seguridad: Ve a Firebase Console -> Authentication -> Settings -> Authorized domains y añade: ${domain}`,
+        );
       } else {
         setAuthError('Error al iniciar sesión de invitado.');
       }
@@ -64,7 +80,7 @@ export function AuthProvider({ children }) {
     try {
       await signOut(auth);
     } catch (error) {
-      console.error('Error al cerrar sesión', error);
+      logger.error('Error al cerrar sesión', error);
     }
   };
 
@@ -80,7 +96,7 @@ export function AuthProvider({ children }) {
           return;
         }
       }
-      console.error('Error al vincular cuenta:', error);
+      logger.error('Error al vincular cuenta', error);
       throw error;
     }
   };
@@ -89,13 +105,26 @@ export function AuthProvider({ children }) {
     try {
       await deleteUser(auth.currentUser);
     } catch (error) {
-      console.error('Error al eliminar cuenta:', error);
+      logger.error('Error al eliminar cuenta', error);
       throw error;
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoggingIn, authError, setAuthError, authReady, handleLogin, handleAnonymousLogin, handleLogout, handleLinkGoogle, handleDeleteAuthAccount }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoggingIn,
+        authError,
+        setAuthError,
+        authReady,
+        handleLogin,
+        handleAnonymousLogin,
+        handleLogout,
+        handleLinkGoogle,
+        handleDeleteAuthAccount,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

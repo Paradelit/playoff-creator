@@ -1,11 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ShieldHalf, Trash2, ArrowRight, X, Users, FolderOpen, ClipboardList, CalendarDays, Trophy } from 'lucide-react';
+import {
+  Plus,
+  ShieldHalf,
+  Trash2,
+  ArrowRight,
+  X,
+  Users,
+  FolderOpen,
+  ClipboardList,
+  CalendarDays,
+  Trophy,
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { subscribeToTeams, saveTeam, deleteTeam } from '../services/teamsService';
 import { subscribeToProfile, autoAddCoachToTeam } from '../services/settingsService';
 
+/* eslint-disable react-refresh/only-export-components */
 export const CATEGORIAS = ['Prebenjamín', 'Benjamín', 'Alevín', 'Infantil', 'Cadete', 'Junior', 'Senior'];
 export const AÑOS = ['1º', '2º'];
 export const LETRAS_RAPIDAS = ['A', 'B', 'C', 'D', 'E'];
@@ -40,7 +52,7 @@ export default function TeamsScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    const unsub = subscribeToTeams(user.uid, db, appId, data => {
+    const unsub = subscribeToTeams(user.uid, db, appId, (data) => {
       setTeams(data);
       setLoading(false);
     });
@@ -76,7 +88,6 @@ export default function TeamsScreen() {
   return (
     <div className="min-h-screen bg-slate-100 p-6 sm:p-12 font-sans pb-24">
       <div className="max-w-5xl mx-auto">
-
         {/* Cabecera */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-6">
           <div>
@@ -86,7 +97,10 @@ export default function TeamsScreen() {
             <p className="text-slate-500 mt-2">Gestiona plantillas, jugadores y staff técnico.</p>
           </div>
           <button
-            onClick={() => { setForm(EMPTY_FORM); setShowCreateModal(true); }}
+            onClick={() => {
+              setForm(EMPTY_FORM);
+              setShowCreateModal(true);
+            }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-transform hover:scale-105"
           >
             <Plus size={20} /> Nuevo equipo
@@ -104,7 +118,10 @@ export default function TeamsScreen() {
             <h3 className="text-xl font-bold text-slate-700 mb-2">Todavía no tienes equipos</h3>
             <p className="text-slate-500 mb-6">Crea tu primer equipo para empezar a gestionar plantillas.</p>
             <button
-              onClick={() => { setForm(EMPTY_FORM); setShowCreateModal(true); }}
+              onClick={() => {
+                setForm(EMPTY_FORM);
+                setShowCreateModal(true);
+              }}
               className="text-blue-600 font-bold hover:underline"
             >
               Crear equipo ahora
@@ -112,8 +129,11 @@ export default function TeamsScreen() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {teams.map(team => (
-              <div key={team.id} className="bg-white rounded-xl shadow-md border border-slate-200 p-5 flex flex-col hover:shadow-xl transition-shadow">
+            {teams.map((team) => (
+              <div
+                key={team.id}
+                className="bg-white rounded-xl shadow-md border border-slate-200 p-5 flex flex-col hover:shadow-xl transition-shadow"
+              >
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <div className="flex items-center gap-3 min-w-0">
                     <ShieldHalf size={20} className="text-blue-600 shrink-0" />
@@ -134,7 +154,10 @@ export default function TeamsScreen() {
                     <Trash2 size={16} />
                   </button>
                 </div>
-                <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-4 ml-8">{team.categoria}{team.genero ? ` · ${team.genero}` : ''}</p>
+                <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-4 ml-8">
+                  {team.categoria}
+                  {team.genero ? ` · ${team.genero}` : ''}
+                </p>
                 <div className="mt-auto border-t border-slate-100 pt-4">
                   <div className="grid grid-cols-3 gap-2">
                     <button
@@ -168,13 +191,21 @@ export default function TeamsScreen() {
 
       {/* Modal crear equipo */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setShowCreateModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                 <ShieldHalf size={20} className="text-blue-600" /> Nuevo equipo
               </h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
             </div>
 
             <form onSubmit={handleCreate} className="flex flex-col gap-4">
@@ -186,12 +217,18 @@ export default function TeamsScreen() {
               </div>
 
               <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setShowCreateModal(false)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors"
+                >
                   Cancelar
                 </button>
-                <button type="submit" disabled={saving}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-60">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-60"
+                >
                   {saving ? 'Creando...' : 'Crear equipo'}
                 </button>
               </div>
@@ -202,15 +239,31 @@ export default function TeamsScreen() {
 
       {/* Modal confirmar borrado */}
       {deletingTeamId && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setDeletingTeamId(null)}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setDeletingTeamId(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-xl font-bold mb-2 text-slate-800">¿Eliminar equipo?</h3>
-            <p className="text-slate-600 mb-6 text-sm">Esta acción borrará el equipo y todos sus datos permanentemente.</p>
+            <p className="text-slate-600 mb-6 text-sm">
+              Esta acción borrará el equipo y todos sus datos permanentemente.
+            </p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setDeletingTeamId(null)}
-                className="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition">Cancelar</button>
-              <button onClick={() => handleDelete(deletingTeamId)}
-                className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition shadow-sm">Sí, eliminar</button>
+              <button
+                onClick={() => setDeletingTeamId(null)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDelete(deletingTeamId)}
+                className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition shadow-sm"
+              >
+                Sí, eliminar
+              </button>
             </div>
           </div>
         </div>
@@ -229,17 +282,26 @@ export function TeamFormFields({ form, setForm }) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1.5">Categoría</label>
-          <select value={form.categoria}
-            onChange={e => setForm(f => ({ ...f, categoria: e.target.value, division: '', año: '1º' }))}
-            className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
-            {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
+          <select
+            value={form.categoria}
+            onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value, division: '', año: '1º' }))}
+            className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+          >
+            {CATEGORIAS.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
           </select>
         </div>
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1.5">Género</label>
-          <select value={form.genero} onChange={e => setForm(f => ({ ...f, genero: e.target.value }))}
-            className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
-            {GENEROS.map(g => <option key={g}>{g}</option>)}
+          <select
+            value={form.genero}
+            onChange={(e) => setForm((f) => ({ ...f, genero: e.target.value }))}
+            className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+          >
+            {GENEROS.map((g) => (
+              <option key={g}>{g}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -247,9 +309,13 @@ export function TeamFormFields({ form, setForm }) {
       {/* División (solo Senior) */}
       {esSenior && (
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">División <span className="text-slate-400 font-normal">(opcional)</span></label>
-          <input type="text" value={form.division || ''}
-            onChange={e => setForm(f => ({ ...f, division: e.target.value }))}
+          <label className="block text-xs font-semibold text-slate-600 mb-1.5">
+            División <span className="text-slate-400 font-normal">(opcional)</span>
+          </label>
+          <input
+            type="text"
+            value={form.division || ''}
+            onChange={(e) => setForm((f) => ({ ...f, division: e.target.value }))}
             placeholder="Nacional, Sub22, Autonómica..."
             className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
@@ -261,12 +327,15 @@ export function TeamFormFields({ form, setForm }) {
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1.5">Año</label>
           <div className="flex gap-2">
-            {AÑOS.map(a => (
-              <button key={a} type="button"
-                onClick={() => setForm(f => ({ ...f, año: a }))}
+            {AÑOS.map((a) => (
+              <button
+                key={a}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, año: a }))}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
                   form.año === a ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}>
+                }`}
+              >
                 {a}
               </button>
             ))}
@@ -279,18 +348,23 @@ export function TeamFormFields({ form, setForm }) {
         <label className="block text-xs font-semibold text-slate-600 mb-1.5">Letra</label>
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5">
-            {LETRAS_RAPIDAS.map(l => (
-              <button key={l} type="button"
-                onClick={() => setForm(f => ({ ...f, letra: l }))}
+            {LETRAS_RAPIDAS.map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, letra: l }))}
                 className={`w-9 h-9 rounded-lg text-sm font-bold transition-colors ${
                   form.letra === l ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}>
+                }`}
+              >
                 {l}
               </button>
             ))}
           </div>
-          <input type="text" value={form.letra || ''}
-            onChange={e => setForm(f => ({ ...f, letra: e.target.value.toUpperCase() }))}
+          <input
+            type="text"
+            value={form.letra || ''}
+            onChange={(e) => setForm((f) => ({ ...f, letra: e.target.value.toUpperCase() }))}
             placeholder="F…"
             maxLength={4}
             className="flex-1 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-blue-400"

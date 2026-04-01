@@ -30,20 +30,44 @@ const BracketNode = React.memo(({ nodeId, bracketData, onScoreChange, onSelectSo
       />
       {!isLeaf && (
         <>
-          <div className={`w-[2px] h-6 transition-colors duration-300 ${nodeHasTeam ? 'bg-amber-500' : 'bg-slate-300'}`}></div>
+          <div
+            className={`w-[2px] h-6 transition-colors duration-300 ${nodeHasTeam ? 'bg-amber-500' : 'bg-slate-300'}`}
+          ></div>
           <div className="flex items-start">
             <div className="flex flex-col items-center relative w-full">
-              <div className={`absolute top-0 right-0 w-1/2 h-[2px] transition-colors duration-300 ${child0HasTeam ? 'bg-amber-500 z-10' : 'bg-slate-300'}`}></div>
-              <div className={`w-[2px] h-6 transition-colors duration-300 ${child0HasTeam ? 'bg-amber-500 z-10' : 'bg-slate-300'}`}></div>
+              <div
+                className={`absolute top-0 right-0 w-1/2 h-[2px] transition-colors duration-300 ${child0HasTeam ? 'bg-amber-500 z-10' : 'bg-slate-300'}`}
+              ></div>
+              <div
+                className={`w-[2px] h-6 transition-colors duration-300 ${child0HasTeam ? 'bg-amber-500 z-10' : 'bg-slate-300'}`}
+              ></div>
               <div className="px-2 sm:px-4">
-                <BracketNode nodeId={node.children[0]} bracketData={bracketData} onScoreChange={onScoreChange} onSelectSorteo={onSelectSorteo} myTeam={myTeam} readOnly={readOnly} />
+                <BracketNode
+                  nodeId={node.children[0]}
+                  bracketData={bracketData}
+                  onScoreChange={onScoreChange}
+                  onSelectSorteo={onSelectSorteo}
+                  myTeam={myTeam}
+                  readOnly={readOnly}
+                />
               </div>
             </div>
             <div className="flex flex-col items-center relative w-full">
-              <div className={`absolute top-0 left-0 w-1/2 h-[2px] transition-colors duration-300 ${child1HasTeam ? 'bg-amber-500 z-10' : 'bg-slate-300'}`}></div>
-              <div className={`w-[2px] h-6 transition-colors duration-300 ${child1HasTeam ? 'bg-amber-500 z-10' : 'bg-slate-300'}`}></div>
+              <div
+                className={`absolute top-0 left-0 w-1/2 h-[2px] transition-colors duration-300 ${child1HasTeam ? 'bg-amber-500 z-10' : 'bg-slate-300'}`}
+              ></div>
+              <div
+                className={`w-[2px] h-6 transition-colors duration-300 ${child1HasTeam ? 'bg-amber-500 z-10' : 'bg-slate-300'}`}
+              ></div>
               <div className="px-2 sm:px-4">
-                <BracketNode nodeId={node.children[1]} bracketData={bracketData} onScoreChange={onScoreChange} onSelectSorteo={onSelectSorteo} myTeam={myTeam} readOnly={readOnly} />
+                <BracketNode
+                  nodeId={node.children[1]}
+                  bracketData={bracketData}
+                  onScoreChange={onScoreChange}
+                  onSelectSorteo={onSelectSorteo}
+                  myTeam={myTeam}
+                  readOnly={readOnly}
+                />
               </div>
             </div>
           </div>

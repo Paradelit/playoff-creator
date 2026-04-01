@@ -2,17 +2,33 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import {
-  CalendarDays, ChevronLeft, ChevronRight, Plus, Pencil, Trash2,
-  X, ClipboardList, ArrowRight, Upload, Trophy, MapPin, Sparkles, AlertTriangle
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  ClipboardList,
+  ArrowRight,
+  Upload,
+  Trophy,
+  MapPin,
+  Sparkles,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { subscribeToTeams } from '../services/teamsService';
 import { saveTraining } from '../services/trainingsService';
 import {
-  subscribeToCalendarSessions, saveCalendarSession, deleteCalendarSession,
-  bulkImportCalendarSessions, linkTrainingToSession,
-  getCalendarSessionsInRange, deleteCalendarSessionsByTeamAndRange
+  subscribeToCalendarSessions,
+  saveCalendarSession,
+  deleteCalendarSession,
+  bulkImportCalendarSessions,
+  linkTrainingToSession,
+  getCalendarSessionsInRange,
+  deleteCalendarSessionsByTeamAndRange,
 } from '../services/calendarService';
 import { callGeminiForCalendar } from '../services/aiService';
 import { teamDisplayName } from './TeamsScreen';
@@ -33,6 +49,7 @@ function teamColorIndex(teamId) {
   return teamId.charCodeAt(0) % TEAM_COLORS.length;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function toYMD(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
@@ -43,11 +60,24 @@ function formatDateDisplay(ymd) {
   return `${d}/${m}/${y}`;
 }
 
-const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const MONTH_NAMES_SHORT = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-const DAY_HEADERS = ['L','M','X','J','V','S','D'];
-const DAY_NAMES_SHORT = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
-const DAY_NAMES_FULL  = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const MONTH_NAMES = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+];
+const MONTH_NAMES_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const DAY_HEADERS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+const DAY_NAMES_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const DAY_NAMES_FULL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
 function getMonday(date) {
   const d = new Date(date);
@@ -60,7 +90,7 @@ function getMonday(date) {
 function buildWeekDays(currentDate, sessions) {
   const monday = getMonday(currentDate);
   const sessionsByDate = {};
-  sessions.forEach(s => {
+  sessions.forEach((s) => {
     if (!sessionsByDate[s.fecha]) sessionsByDate[s.fecha] = [];
     sessionsByDate[s.fecha].push(s);
   });
@@ -81,7 +111,7 @@ function buildCalendarDays(currentMonth, sessions) {
   startDow = startDow === 0 ? 6 : startDow - 1;
 
   const sessionsByDate = {};
-  sessions.forEach(s => {
+  sessions.forEach((s) => {
     if (!sessionsByDate[s.fecha]) sessionsByDate[s.fecha] = [];
     sessionsByDate[s.fecha].push(s);
   });
@@ -126,19 +156,19 @@ function defaultSeasonDates() {
   return { startDate: `${startYear}-09-01`, endDate: `${startYear + 1}-06-30` };
 }
 
-const DAY_NAMES_ES = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const DAY_NAMES_ES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
 function expandRecurring(patterns, startDate, endDate) {
   const sessions = [];
   const start = new Date(startDate + 'T00:00:00');
-  const end   = new Date(endDate   + 'T00:00:00');
+  const end = new Date(endDate + 'T00:00:00');
   const countByTeam = {};
   for (const p of patterns) {
     if (!p._teamId) continue;
     const targetDow = p.diaSemana;
     const d = new Date(start);
     const curDow = d.getDay() === 0 ? 6 : d.getDay() - 1;
-    d.setDate(d.getDate() + (targetDow - curDow + 7) % 7);
+    d.setDate(d.getDate() + ((targetDow - curDow + 7) % 7));
     while (d <= end) {
       countByTeam[p._teamId] = (countByTeam[p._teamId] || 0) + 1;
       sessions.push({
@@ -167,9 +197,7 @@ export default function CalendarScreen() {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
 
-  const [filterTeamId, setFilterTeamId] = useState(
-    () => new URLSearchParams(location.search).get('teamId') || null
-  );
+  const [filterTeamId, setFilterTeamId] = useState(() => new URLSearchParams(location.search).get('teamId') || null);
   const [viewMode, setViewMode] = useState('month');
 
   const today = new Date();
@@ -196,18 +224,22 @@ export default function CalendarScreen() {
   function getDateRange(date, mode) {
     if (mode === 'month') {
       const start = new Date(date.getFullYear(), date.getMonth() - 1, 1);
-      const end   = new Date(date.getFullYear(), date.getMonth() + 2, 0);
+      const end = new Date(date.getFullYear(), date.getMonth() + 2, 0);
       return [toYMD(start), toYMD(end)];
     }
     if (mode === 'week') {
       const monday = getMonday(date);
-      const start = new Date(monday); start.setDate(monday.getDate() - 7);
-      const end   = new Date(monday); end.setDate(monday.getDate() + 13);
+      const start = new Date(monday);
+      start.setDate(monday.getDate() - 7);
+      const end = new Date(monday);
+      end.setDate(monday.getDate() + 13);
       return [toYMD(start), toYMD(end)];
     }
     // day
-    const start = new Date(date); start.setDate(date.getDate() - 1);
-    const end   = new Date(date); end.setDate(date.getDate() + 1);
+    const start = new Date(date);
+    start.setDate(date.getDate() - 1);
+    const end = new Date(date);
+    end.setDate(date.getDate() + 1);
     return [toYMD(start), toYMD(end)];
   }
 
@@ -220,14 +252,14 @@ export default function CalendarScreen() {
     if (!user || !db) return;
     const [start, end] = getDateRange(currentDate, viewMode);
     setLoading(true);
-    return subscribeToCalendarSessions(user.uid, db, appId, start, end, data => {
+    return subscribeToCalendarSessions(user.uid, db, appId, start, end, (data) => {
       setSessions(data);
       setLoading(false);
     });
   }, [user, db, appId, currentDate, viewMode]);
 
   function goBack() {
-    setCurrentDate(d => {
+    setCurrentDate((d) => {
       const n = new Date(d);
       if (viewMode === 'month') n.setMonth(d.getMonth() - 1);
       else if (viewMode === 'week') n.setDate(d.getDate() - 7);
@@ -236,7 +268,7 @@ export default function CalendarScreen() {
     });
   }
   function goForward() {
-    setCurrentDate(d => {
+    setCurrentDate((d) => {
       const n = new Date(d);
       if (viewMode === 'month') n.setMonth(d.getMonth() + 1);
       else if (viewMode === 'week') n.setDate(d.getDate() + 7);
@@ -249,13 +281,16 @@ export default function CalendarScreen() {
     e.preventDefault();
     setSavingSession(true);
     try {
-      const teamObj = teams.find(t => t.id === editingSession.teamId);
-      await saveCalendarSession({
-        ...editingSession,
-        id: editingSession.id || crypto.randomUUID(),
-        teamName: teamObj ? teamDisplayName(teamObj) : '',
-        sessionNumber: Number(editingSession.sessionNumber) || 1,
-      }, { uid: user.uid, db, appId });
+      const teamObj = teams.find((t) => t.id === editingSession.teamId);
+      await saveCalendarSession(
+        {
+          ...editingSession,
+          id: editingSession.id || crypto.randomUUID(),
+          teamName: teamObj ? teamDisplayName(teamObj) : '',
+          sessionNumber: Number(editingSession.sessionNumber) || 1,
+        },
+        { uid: user.uid, db, appId },
+      );
       setEditingSession(null);
       setSelectedSession(null);
     } finally {
@@ -273,17 +308,26 @@ export default function CalendarScreen() {
     setCreatingTraining(true);
     try {
       const trainingId = crypto.randomUUID();
-      await saveTraining({
-        id: trainingId, teamId: session.teamId,
-        meta: {
-          numero: session.sessionNumber, fecha: session.fecha,
-          horaInicio: session.horaInicio, horaFin: session.horaFin,
-          lugar: session.lugar || '', dia: '',
-          equipo: session.teamName || '',
+      await saveTraining(
+        {
+          id: trainingId,
+          teamId: session.teamId,
+          meta: {
+            numero: session.sessionNumber,
+            fecha: session.fecha,
+            horaInicio: session.horaInicio,
+            horaFin: session.horaFin,
+            lugar: session.lugar || '',
+            dia: '',
+            equipo: session.teamName || '',
+          },
+          objetivos: '',
+          ejercicios: [],
+          cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
         },
-        objetivos: '', ejercicios: [],
-        cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
-      }, session.teamId, { uid: user.uid, db, appId });
+        session.teamId,
+        { uid: user.uid, db, appId },
+      );
       await linkTrainingToSession(session.id, trainingId, { uid: user.uid, db, appId });
       navigate(`/teams/${session.teamId}/trainings/${trainingId}`);
     } finally {
@@ -304,15 +348,17 @@ export default function CalendarScreen() {
     try {
       const buffer = await file.arrayBuffer();
       const wb = XLSX.read(buffer, { type: 'array' });
-      const csvParts = wb.SheetNames.map(name => `--- HOJA: ${name} ---\n${XLSX.utils.sheet_to_csv(wb.Sheets[name])}`);
-      const teamList = teams.map(t => ({ id: t.id, teamName: teamDisplayName(t) }));
+      const csvParts = wb.SheetNames.map(
+        (name) => `--- HOJA: ${name} ---\n${XLSX.utils.sheet_to_csv(wb.Sheets[name])}`,
+      );
+      const teamList = teams.map((t) => ({ id: t.id, teamName: teamDisplayName(t) }));
       setImportStatus('La IA está analizando el cuadrante...');
       const result = await callGeminiForCalendar(csvParts.join('\n\n'), teamList, {
         onStatus: setImportStatus,
-        onError: msg => setImportError(msg),
+        onError: (msg) => setImportError(msg),
       });
-      const recurring = (result?.recurring || []).map(p => ({ ...p, _teamId: p.teamId || '' }));
-      const specific  = (result?.specific  || []).map(s => ({ ...s, _teamId: s.teamId || '' }));
+      const recurring = (result?.recurring || []).map((p) => ({ ...p, _teamId: p.teamId || '' }));
+      const specific = (result?.specific || []).map((s) => ({ ...s, _teamId: s.teamId || '' }));
       if (!recurring.length && !specific.length) {
         setImportError('La IA no encontró sesiones en el archivo.');
         return;
@@ -330,18 +376,25 @@ export default function CalendarScreen() {
     if (!importPreview) return [];
     const { recurring, specific, startDate, endDate } = importPreview;
     const expanded = expandRecurring(recurring, startDate, endDate);
-    const specs = specific.filter(s => s._teamId).map(s => {
-      const teamObj = teams.find(t => t.id === s._teamId);
-      return {
-        teamId: s._teamId,
-        teamName: teamObj ? teamDisplayName(teamObj) : s.teamName,
-        sessionNumber: 1,
-        fecha: s.fecha, horaInicio: s.horaInicio || '',
-        horaFin: s.horaFin || '', lugar: s.lugar || '',
-        tipo: s.tipo || 'entrenamiento', rival: s.rival || '', esLocal: true,
-        trainingId: null, importedFrom: 'excel-ai',
-      };
-    });
+    const specs = specific
+      .filter((s) => s._teamId)
+      .map((s) => {
+        const teamObj = teams.find((t) => t.id === s._teamId);
+        return {
+          teamId: s._teamId,
+          teamName: teamObj ? teamDisplayName(teamObj) : s.teamName,
+          sessionNumber: 1,
+          fecha: s.fecha,
+          horaInicio: s.horaInicio || '',
+          horaFin: s.horaFin || '',
+          lugar: s.lugar || '',
+          tipo: s.tipo || 'entrenamiento',
+          rival: s.rival || '',
+          esLocal: true,
+          trainingId: null,
+          importedFrom: 'excel-ai',
+        };
+      });
     return [...expanded, ...specs];
   }
 
@@ -349,9 +402,9 @@ export default function CalendarScreen() {
     const toImport = buildImportSessions();
     if (!toImport.length) return;
     const { startDate, endDate } = importPreview;
-    const teamIds = [...new Set(toImport.map(s => s.teamId).filter(Boolean))];
+    const teamIds = [...new Set(toImport.map((s) => s.teamId).filter(Boolean))];
     const existing = await getCalendarSessionsInRange(user.uid, db, appId, startDate, endDate);
-    const conflicts = existing.filter(s => teamIds.includes(s.teamId));
+    const conflicts = existing.filter((s) => teamIds.includes(s.teamId));
     if (conflicts.length > 0) {
       setDuplicateConflict({ count: conflicts.length, teamIds, toImport });
     } else {
@@ -374,11 +427,11 @@ export default function CalendarScreen() {
     }
   }
 
-  const filterTeam = filterTeamId ? teams.find(t => t.id === filterTeamId) || null : null;
-  const visibleSessions = filterTeamId ? sessions.filter(s => s.teamId === filterTeamId) : sessions;
-  const calendarDays   = viewMode === 'month' ? buildCalendarDays(currentDate, visibleSessions) : [];
-  const weekDays       = viewMode === 'week'  ? buildWeekDays(currentDate, visibleSessions) : [];
-  const daySessionList = viewMode === 'day'   ? visibleSessions.filter(s => s.fecha === toYMD(currentDate)) : [];
+  const filterTeam = filterTeamId ? teams.find((t) => t.id === filterTeamId) || null : null;
+  const visibleSessions = filterTeamId ? sessions.filter((s) => s.teamId === filterTeamId) : sessions;
+  const calendarDays = viewMode === 'month' ? buildCalendarDays(currentDate, visibleSessions) : [];
+  const weekDays = viewMode === 'week' ? buildWeekDays(currentDate, visibleSessions) : [];
+  const daySessionList = viewMode === 'day' ? visibleSessions.filter((s) => s.fecha === toYMD(currentDate)) : [];
   const todayYMD = toYMD(today);
 
   function getNavLabel() {
@@ -387,7 +440,8 @@ export default function CalendarScreen() {
     }
     if (viewMode === 'week') {
       const monday = getMonday(currentDate);
-      const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
       if (monday.getMonth() === sunday.getMonth()) {
         return `${monday.getDate()} – ${sunday.getDate()} ${MONTH_NAMES_SHORT[monday.getMonth()]} ${monday.getFullYear()}`;
       }
@@ -403,7 +457,6 @@ export default function CalendarScreen() {
   return (
     <div className="min-h-screen bg-slate-100 p-4 sm:p-8 font-sans pb-24">
       <div className="max-w-4xl mx-auto">
-
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
@@ -413,14 +466,20 @@ export default function CalendarScreen() {
           </div>
           <div className="flex gap-3 flex-wrap">
             <button
-              onClick={() => { setImportError(''); setImportPreview(null); setImportSetup(defaultSeasonDates()); }}
+              onClick={() => {
+                setImportError('');
+                setImportPreview(null);
+                setImportSetup(defaultSeasonDates());
+              }}
               className="bg-gradient-to-r from-orange-500 to-blue-700 hover:from-orange-600 hover:to-blue-800 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition text-sm"
             >
               <Sparkles size={16} /> Importar con IA
             </button>
             <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
             <button
-              onClick={() => setEditingSession({ ...EMPTY_SESSION(teams), ...(filterTeamId ? { teamId: filterTeamId } : {}) })}
+              onClick={() =>
+                setEditingSession({ ...EMPTY_SESSION(teams), ...(filterTeamId ? { teamId: filterTeamId } : {}) })
+              }
               className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-transform hover:scale-105 text-sm"
             >
               <Plus size={18} /> Nueva sesión
@@ -432,11 +491,17 @@ export default function CalendarScreen() {
         <div className="flex items-center justify-between gap-3 mb-4 bg-white rounded-xl shadow-sm border border-slate-200 px-4 py-3 flex-wrap gap-y-2">
           {/* Izquierda: prev / label / next */}
           <div className="flex items-center gap-2">
-            <button onClick={goBack} className="text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100 transition">
+            <button
+              onClick={goBack}
+              className="text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100 transition"
+            >
               <ChevronLeft size={20} />
             </button>
             <h2 className="text-base font-bold text-slate-800 min-w-[170px] text-center">{getNavLabel()}</h2>
-            <button onClick={goForward} className="text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100 transition">
+            <button
+              onClick={goForward}
+              className="text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100 transition"
+            >
               <ChevronRight size={20} />
             </button>
           </div>
@@ -444,14 +509,22 @@ export default function CalendarScreen() {
           <div className="flex items-center gap-3 flex-wrap">
             <select
               value={filterTeamId ?? ''}
-              onChange={e => setFilterTeamId(e.target.value || null)}
+              onChange={(e) => setFilterTeamId(e.target.value || null)}
               className="border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
             >
               <option value="">Todos los equipos</option>
-              {teams.map(t => <option key={t.id} value={t.id}>{teamDisplayName(t)}</option>)}
+              {teams.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {teamDisplayName(t)}
+                </option>
+              ))}
             </select>
             <div className="flex rounded-xl overflow-hidden border border-slate-200">
-              {[['month','Mes'],['week','Semana'],['day','Día']].map(([mode, label], i) => (
+              {[
+                ['month', 'Mes'],
+                ['week', 'Semana'],
+                ['day', 'Día'],
+              ].map(([mode, label], i) => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
@@ -468,8 +541,10 @@ export default function CalendarScreen() {
         {viewMode === 'month' && (
           <div className="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
             <div className="grid grid-cols-7 border-b border-slate-200">
-              {DAY_HEADERS.map(d => (
-                <div key={d} className="text-center py-2 text-xs font-bold text-slate-500">{d}</div>
+              {DAY_HEADERS.map((d) => (
+                <div key={d} className="text-center py-2 text-xs font-bold text-slate-500">
+                  {d}
+                </div>
               ))}
             </div>
             {loading ? (
@@ -482,21 +557,30 @@ export default function CalendarScreen() {
                   const ymd = toYMD(date);
                   const isToday = ymd === todayYMD;
                   return (
-                    <div key={idx} className={`min-h-[72px] sm:min-h-[88px] border-b border-r border-slate-100 p-1.5 ${!isCurrentMonth ? 'opacity-40 bg-slate-50' : ''}`}>
+                    <div
+                      key={idx}
+                      className={`min-h-[72px] sm:min-h-[88px] border-b border-r border-slate-100 p-1.5 ${!isCurrentMonth ? 'opacity-40 bg-slate-50' : ''}`}
+                    >
                       <div className="mb-1">
-                        <span className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-amber-400 text-white' : 'text-slate-600'}`}>
+                        <span
+                          className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-amber-400 text-white' : 'text-slate-600'}`}
+                        >
                           {date.getDate()}
                         </span>
                       </div>
                       <div className="flex flex-col gap-0.5">
-                        {daySessions.map(s => {
+                        {daySessions.map((s) => {
                           const isPartido = s.tipo === 'partido';
                           return (
                             <button
                               key={s.id}
                               onClick={() => setSelectedSession(s)}
                               className={`w-full text-left rounded px-1.5 py-0.5 text-xs font-semibold truncate transition-opacity hover:opacity-80 ${isPartido ? 'bg-rose-500 text-white' : TEAM_COLORS[teamColorIndex(s.teamId)]}`}
-                              title={isPartido ? `${s.teamName} vs ${s.rival || 'Rival'}` : `${s.teamName} #${s.sessionNumber}`}
+                              title={
+                                isPartido
+                                  ? `${s.teamName} vs ${s.rival || 'Rival'}`
+                                  : `${s.teamName} #${s.sessionNumber}`
+                              }
                             >
                               {isPartido ? `vs ${s.rival || 'Rival'}` : s.teamName}
                             </button>
@@ -524,32 +608,48 @@ export default function CalendarScreen() {
 
       {/* Modal Detalle */}
       {selectedSession && !editingSession && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSelectedSession(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setSelectedSession(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-start justify-between px-5 pt-5 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${selectedSession.tipo === 'partido' ? 'bg-rose-100' : 'bg-blue-100'}`}>
-                  {selectedSession.tipo === 'partido'
-                    ? <Trophy size={18} className="text-rose-600" />
-                    : <ClipboardList size={18} className="text-blue-600" />
-                  }
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${selectedSession.tipo === 'partido' ? 'bg-rose-100' : 'bg-blue-100'}`}
+                >
+                  {selectedSession.tipo === 'partido' ? (
+                    <Trophy size={18} className="text-rose-600" />
+                  ) : (
+                    <ClipboardList size={18} className="text-blue-600" />
+                  )}
                 </div>
                 <div>
                   <p className="font-bold text-slate-800">
-                    {selectedSession.tipo === 'partido' ? `vs ${selectedSession.rival || 'Rival'}` : `Entrenamiento #${selectedSession.sessionNumber}`}
+                    {selectedSession.tipo === 'partido'
+                      ? `vs ${selectedSession.rival || 'Rival'}`
+                      : `Entrenamiento #${selectedSession.sessionNumber}`}
                   </p>
                   <p className="text-xs text-slate-500">{selectedSession.teamName}</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedSession(null)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
+              <button onClick={() => setSelectedSession(null)} className="text-slate-400 hover:text-slate-600">
+                <X size={18} />
+              </button>
             </div>
             <div className="px-5 py-4 flex flex-col gap-2">
               <DetailRow label="Fecha" value={formatDateDisplay(selectedSession.fecha)} />
-              <DetailRow label="Horario" value={
-                selectedSession.horaInicio && selectedSession.horaFin
-                  ? `${selectedSession.horaInicio} – ${selectedSession.horaFin}`
-                  : selectedSession.horaInicio || '—'
-              } />
+              <DetailRow
+                label="Horario"
+                value={
+                  selectedSession.horaInicio && selectedSession.horaFin
+                    ? `${selectedSession.horaInicio} – ${selectedSession.horaFin}`
+                    : selectedSession.horaInicio || '—'
+                }
+              />
               {selectedSession.lugar && <DetailRow label="Lugar" value={selectedSession.lugar} />}
               {selectedSession.tipo === 'partido' && (
                 <>
@@ -559,8 +659,8 @@ export default function CalendarScreen() {
               )}
             </div>
             <div className="px-5 pb-5 flex flex-col gap-2">
-              {selectedSession.tipo !== 'partido' && (
-                selectedSession.trainingId ? (
+              {selectedSession.tipo !== 'partido' &&
+                (selectedSession.trainingId ? (
                   <button
                     onClick={() => navigate(`/teams/${selectedSession.teamId}/trainings/${selectedSession.trainingId}`)}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
@@ -576,15 +676,18 @@ export default function CalendarScreen() {
                     <ClipboardList size={16} />
                     {creatingTraining ? 'Creando...' : 'Crear entrenamiento'}
                   </button>
-                )
-              )}
+                ))}
               <div className="flex gap-2">
-                <button onClick={() => setEditingSession({ ...selectedSession })}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition">
+                <button
+                  onClick={() => setEditingSession({ ...selectedSession })}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition"
+                >
                   <Pencil size={14} /> Editar
                 </button>
-                <button onClick={() => setDeletingId(selectedSession.id)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-sm transition">
+                <button
+                  onClick={() => setDeletingId(selectedSession.id)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-sm transition"
+                >
                   <Trash2 size={14} /> Eliminar
                 </button>
               </div>
@@ -595,23 +698,38 @@ export default function CalendarScreen() {
 
       {/* Modal Crear/Editar */}
       {editingSession && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm" onClick={() => setEditingSession(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setEditingSession(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
-              <h3 className="text-lg font-bold text-slate-800">{editingSession.id ? 'Editar sesión' : 'Nueva sesión'}</h3>
-              <button onClick={() => setEditingSession(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+              <h3 className="text-lg font-bold text-slate-800">
+                {editingSession.id ? 'Editar sesión' : 'Nueva sesión'}
+              </h3>
+              <button onClick={() => setEditingSession(null)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
             </div>
             <form onSubmit={handleSaveSession} className="px-5 py-4 flex flex-col gap-4">
-
               {/* Tipo */}
               <FormField label="Tipo de sesión">
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => setEditingSession(s => ({ ...s, tipo: 'entrenamiento' }))}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 ${editingSession.tipo === 'entrenamiento' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                  <button
+                    type="button"
+                    onClick={() => setEditingSession((s) => ({ ...s, tipo: 'entrenamiento' }))}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 ${editingSession.tipo === 'entrenamiento' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                  >
                     <ClipboardList size={15} /> Entrenamiento
                   </button>
-                  <button type="button" onClick={() => setEditingSession(s => ({ ...s, tipo: 'partido' }))}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 ${editingSession.tipo === 'partido' ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                  <button
+                    type="button"
+                    onClick={() => setEditingSession((s) => ({ ...s, tipo: 'partido' }))}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 ${editingSession.tipo === 'partido' ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                  >
                     <Trophy size={15} /> Partido
                   </button>
                 </div>
@@ -623,10 +741,18 @@ export default function CalendarScreen() {
                     {teamDisplayName(filterTeam)}
                   </div>
                 ) : (
-                  <select value={editingSession.teamId} onChange={e => setEditingSession(s => ({ ...s, teamId: e.target.value }))} required
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                  <select
+                    value={editingSession.teamId}
+                    onChange={(e) => setEditingSession((s) => ({ ...s, teamId: e.target.value }))}
+                    required
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                  >
                     <option value="">Selecciona un equipo</option>
-                    {teams.map(t => <option key={t.id} value={t.id}>{teamDisplayName(t)}</option>)}
+                    {teams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {teamDisplayName(t)}
+                      </option>
+                    ))}
                   </select>
                 )}
               </FormField>
@@ -635,19 +761,28 @@ export default function CalendarScreen() {
               {editingSession.tipo === 'partido' && (
                 <>
                   <FormField label="Rival">
-                    <input type="text" placeholder="Nombre del equipo rival..."
+                    <input
+                      type="text"
+                      placeholder="Nombre del equipo rival..."
                       value={editingSession.rival || ''}
-                      onChange={e => setEditingSession(s => ({ ...s, rival: e.target.value }))}
-                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                      onChange={(e) => setEditingSession((s) => ({ ...s, rival: e.target.value }))}
+                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
                   </FormField>
                   <FormField label="Campo">
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => setEditingSession(s => ({ ...s, esLocal: true }))}
-                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1.5 ${editingSession.esLocal ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                      <button
+                        type="button"
+                        onClick={() => setEditingSession((s) => ({ ...s, esLocal: true }))}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1.5 ${editingSession.esLocal ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                      >
                         <MapPin size={14} /> Local
                       </button>
-                      <button type="button" onClick={() => setEditingSession(s => ({ ...s, esLocal: false }))}
-                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1.5 ${!editingSession.esLocal ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                      <button
+                        type="button"
+                        onClick={() => setEditingSession((s) => ({ ...s, esLocal: false }))}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1.5 ${!editingSession.esLocal ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                      >
                         <ArrowRight size={14} /> Visitante
                       </button>
                     </div>
@@ -655,43 +790,69 @@ export default function CalendarScreen() {
                 </>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField label="Fecha">
-                  <input type="date" required value={editingSession.fecha}
-                    onChange={e => setEditingSession(s => ({ ...s, fecha: e.target.value }))}
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  <input
+                    type="date"
+                    required
+                    value={editingSession.fecha}
+                    onChange={(e) => setEditingSession((s) => ({ ...s, fecha: e.target.value }))}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
                 </FormField>
                 {editingSession.tipo === 'entrenamiento' && (
                   <FormField label="Nº sesión">
-                    <input type="number" min="1" value={editingSession.sessionNumber}
-                      onChange={e => setEditingSession(s => ({ ...s, sessionNumber: e.target.value }))}
-                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    <input
+                      type="number"
+                      min="1"
+                      value={editingSession.sessionNumber}
+                      onChange={(e) => setEditingSession((s) => ({ ...s, sessionNumber: e.target.value }))}
+                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
                   </FormField>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Hora inicio">
-                  <input type="time" value={editingSession.horaInicio}
-                    onChange={e => setEditingSession(s => ({ ...s, horaInicio: e.target.value }))}
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  <input
+                    type="time"
+                    value={editingSession.horaInicio}
+                    onChange={(e) => setEditingSession((s) => ({ ...s, horaInicio: e.target.value }))}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
                 </FormField>
                 <FormField label="Hora fin">
-                  <input type="time" value={editingSession.horaFin}
-                    onChange={e => setEditingSession(s => ({ ...s, horaFin: e.target.value }))}
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  <input
+                    type="time"
+                    value={editingSession.horaFin}
+                    onChange={(e) => setEditingSession((s) => ({ ...s, horaFin: e.target.value }))}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
                 </FormField>
               </div>
               <FormField label="Lugar">
-                <input type="text" placeholder="Pabellón, pista..." value={editingSession.lugar}
-                  onChange={e => setEditingSession(s => ({ ...s, lugar: e.target.value }))}
-                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input
+                  type="text"
+                  placeholder="Pabellón, pista..."
+                  value={editingSession.lugar}
+                  onChange={(e) => setEditingSession((s) => ({ ...s, lugar: e.target.value }))}
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
               </FormField>
 
               <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setEditingSession(null)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition">Cancelar</button>
-                <button type="submit" disabled={savingSession}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-60">
+                <button
+                  type="button"
+                  onClick={() => setEditingSession(null)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingSession}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-60"
+                >
                   {savingSession ? 'Guardando...' : 'Guardar'}
                 </button>
               </div>
@@ -702,13 +863,29 @@ export default function CalendarScreen() {
 
       {/* Modal Confirmar Borrado */}
       {deletingId && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setDeletingId(null)}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setDeletingId(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-xl font-bold mb-2 text-slate-800">¿Eliminar sesión?</h3>
             <p className="text-slate-600 mb-6 text-sm">El entrenamiento vinculado no se borrará.</p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setDeletingId(null)} className="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition">Cancelar</button>
-              <button onClick={() => handleDelete(deletingId)} className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition">Sí, eliminar</button>
+              <button
+                onClick={() => setDeletingId(null)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDelete(deletingId)}
+                className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition"
+              >
+                Sí, eliminar
+              </button>
             </div>
           </div>
         </div>
@@ -716,29 +893,46 @@ export default function CalendarScreen() {
 
       {/* Modal Setup — rango de fechas */}
       {importSetup && !importing && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setImportSetup(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setImportSetup(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="px-6 pt-6 pb-4 border-b border-slate-100">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                   <Sparkles size={18} className="text-orange-300" /> Importar cuadrante con IA
                 </h3>
-                <button onClick={() => setImportSetup(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+                <button onClick={() => setImportSetup(null)} className="text-slate-400 hover:text-slate-600">
+                  <X size={20} />
+                </button>
               </div>
-              <p className="text-sm text-slate-500">La IA detectará los horarios de tus equipos en el Excel y generará todos los eventos del calendario automáticamente.</p>
+              <p className="text-sm text-slate-500">
+                La IA detectará los horarios de tus equipos en el Excel y generará todos los eventos del calendario
+                automáticamente.
+              </p>
             </div>
             <div className="px-6 py-5 flex flex-col gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1.5">Generar eventos desde</label>
-                <input type="date" value={importSetup.startDate}
-                  onChange={e => setImportSetup(s => ({ ...s, startDate: e.target.value }))}
-                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input
+                  type="date"
+                  value={importSetup.startDate}
+                  onChange={(e) => setImportSetup((s) => ({ ...s, startDate: e.target.value }))}
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1.5">Hasta</label>
-                <input type="date" value={importSetup.endDate}
-                  onChange={e => setImportSetup(s => ({ ...s, endDate: e.target.value }))}
-                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <input
+                  type="date"
+                  value={importSetup.endDate}
+                  onChange={(e) => setImportSetup((s) => ({ ...s, endDate: e.target.value }))}
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
               </div>
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -754,15 +948,33 @@ export default function CalendarScreen() {
 
       {/* Modal Procesando / Preview */}
       {(importing || importPreview || importError) && !duplicateConflict && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
-          onClick={() => { if (!importing && !bulkSaving) { setImportPreview(null); setImportError(''); } }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => {
+            if (!importing && !bulkSaving) {
+              setImportPreview(null);
+              setImportError('');
+            }
+          }}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[88vh] flex flex-col animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <Sparkles size={18} className="text-orange-300" /> Importar con IA
               </h3>
               {!importing && !bulkSaving && (
-                <button onClick={() => { setImportPreview(null); setImportError(''); }} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+                <button
+                  onClick={() => {
+                    setImportPreview(null);
+                    setImportError('');
+                  }}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X size={20} />
+                </button>
               )}
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-4">
@@ -775,93 +987,159 @@ export default function CalendarScreen() {
               {importError && !importing && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">{importError}</div>
               )}
-              {importPreview && !importing && (() => {
-                const { recurring, specific, startDate, endDate } = importPreview;
-                const expandedCount = expandRecurring(recurring, startDate, endDate).length;
-                const totalCount = expandedCount + specific.filter(s => s._teamId).length;
-                return (
-                  <>
-                    {/* Resumen */}
-                    <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 mb-4 text-sm text-orange-800">
-                      <span className="font-bold">{totalCount} eventos</span> a crear entre <span className="font-bold">{startDate.split('-').reverse().join('/')}</span> y <span className="font-bold">{endDate.split('-').reverse().join('/')}</span>
-                    </div>
-
-                    {/* Horarios recurrentes */}
-                    {recurring.length > 0 && (
-                      <div className="mb-5">
-                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Horarios recurrentes ({recurring.length} patrones)</h4>
-                        <div className="flex flex-col gap-2">
-                          {recurring.map((p, i) => {
-                            const weekCount = expandRecurring([p], startDate, endDate).length;
-                            return (
-                              <div key={i} className="flex items-center gap-3 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-200">
-                                <div className="flex-1 min-w-0">
-                                  <select value={p._teamId}
-                                    onChange={e => setImportPreview(prev => ({ ...prev, recurring: prev.recurring.map((r, ri) => ri === i ? { ...r, _teamId: e.target.value } : r) }))}
-                                    className="border border-slate-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white w-full max-w-[160px]">
-                                    <option value="">Sin asignar</option>
-                                    {teams.map(t => <option key={t.id} value={t.id}>{teamDisplayName(t)}</option>)}
-                                  </select>
-                                </div>
-                                <span className="text-xs font-semibold text-slate-700 shrink-0">{DAY_NAMES_ES[p.diaSemana]}</span>
-                                <span className="text-xs text-slate-500 shrink-0">{p.horaInicio}{p.horaFin ? `–${p.horaFin}` : ''}</span>
-                                {p.lugar && <span className="text-xs text-slate-400 truncate max-w-[80px]">{p.lugar}</span>}
-                                <span className="text-xs font-bold text-blue-600 shrink-0">×{weekCount}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
+              {importPreview &&
+                !importing &&
+                (() => {
+                  const { recurring, specific, startDate, endDate } = importPreview;
+                  const expandedCount = expandRecurring(recurring, startDate, endDate).length;
+                  const totalCount = expandedCount + specific.filter((s) => s._teamId).length;
+                  return (
+                    <>
+                      {/* Resumen */}
+                      <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 mb-4 text-sm text-orange-800">
+                        <span className="font-bold">{totalCount} eventos</span> a crear entre{' '}
+                        <span className="font-bold">{startDate.split('-').reverse().join('/')}</span> y{' '}
+                        <span className="font-bold">{endDate.split('-').reverse().join('/')}</span>
                       </div>
-                    )}
 
-                    {/* Fechas especiales */}
-                    {specific.length > 0 && (
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Fechas especiales ({specific.length})</h4>
-                        <table className="w-full text-xs border-collapse">
-                          <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200">
-                              <th className="text-left py-2 px-2 font-semibold text-slate-600">Equipo</th>
-                              <th className="text-left py-2 px-2 font-semibold text-slate-600">Tipo</th>
-                              <th className="text-left py-2 px-2 font-semibold text-slate-600">Fecha</th>
-                              <th className="text-left py-2 px-2 font-semibold text-slate-600">Hora</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {specific.map((s, i) => (
-                              <tr key={i} className="border-b border-slate-100 hover:bg-slate-50">
-                                <td className="py-1.5 px-2">
-                                  <select value={s._teamId}
-                                    onChange={e => setImportPreview(prev => ({ ...prev, specific: prev.specific.map((r, ri) => ri === i ? { ...r, _teamId: e.target.value } : r) }))}
-                                    className="border border-slate-300 rounded-lg px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white w-full max-w-[140px]">
-                                    <option value="">Sin asignar</option>
-                                    {teams.map(t => <option key={t.id} value={t.id}>{teamDisplayName(t)}</option>)}
-                                  </select>
-                                </td>
-                                <td className="py-1.5 px-2">
-                                  <span className={`px-1.5 py-0.5 rounded text-xs font-semibold ${s.tipo === 'partido' ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'}`}>
-                                    {s.tipo === 'partido' ? 'Partido' : 'Entreno'}
+                      {/* Horarios recurrentes */}
+                      {recurring.length > 0 && (
+                        <div className="mb-5">
+                          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                            Horarios recurrentes ({recurring.length} patrones)
+                          </h4>
+                          <div className="flex flex-col gap-2">
+                            {recurring.map((p, i) => {
+                              const weekCount = expandRecurring([p], startDate, endDate).length;
+                              return (
+                                <div
+                                  key={i}
+                                  className="flex items-center gap-3 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-200"
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <select
+                                      value={p._teamId}
+                                      onChange={(e) =>
+                                        setImportPreview((prev) => ({
+                                          ...prev,
+                                          recurring: prev.recurring.map((r, ri) =>
+                                            ri === i ? { ...r, _teamId: e.target.value } : r,
+                                          ),
+                                        }))
+                                      }
+                                      className="border border-slate-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white w-full sm:max-w-[160px]"
+                                    >
+                                      <option value="">Sin asignar</option>
+                                      {teams.map((t) => (
+                                        <option key={t.id} value={t.id}>
+                                          {teamDisplayName(t)}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <span className="text-xs font-semibold text-slate-700 shrink-0">
+                                    {DAY_NAMES_ES[p.diaSemana]}
                                   </span>
-                                </td>
-                                <td className="py-1.5 px-2 text-slate-700">{s.fecha ? s.fecha.split('-').reverse().join('/') : '—'}</td>
-                                <td className="py-1.5 px-2 text-slate-700">{s.horaInicio && s.horaFin ? `${s.horaInicio}–${s.horaFin}` : s.horaInicio || '—'}</td>
+                                  <span className="text-xs text-slate-500 shrink-0">
+                                    {p.horaInicio}
+                                    {p.horaFin ? `–${p.horaFin}` : ''}
+                                  </span>
+                                  {p.lugar && (
+                                    <span className="text-xs text-slate-400 truncate max-w-[80px]">{p.lugar}</span>
+                                  )}
+                                  <span className="text-xs font-bold text-blue-600 shrink-0">×{weekCount}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Fechas especiales */}
+                      {specific.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                            Fechas especiales ({specific.length})
+                          </h4>
+                          <table className="w-full text-xs border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50 border-b border-slate-200">
+                                <th className="text-left py-2 px-2 font-semibold text-slate-600">Equipo</th>
+                                <th className="text-left py-2 px-2 font-semibold text-slate-600">Tipo</th>
+                                <th className="text-left py-2 px-2 font-semibold text-slate-600">Fecha</th>
+                                <th className="text-left py-2 px-2 font-semibold text-slate-600">Hora</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
+                            </thead>
+                            <tbody>
+                              {specific.map((s, i) => (
+                                <tr key={i} className="border-b border-slate-100 hover:bg-slate-50">
+                                  <td className="py-1.5 px-2">
+                                    <select
+                                      value={s._teamId}
+                                      onChange={(e) =>
+                                        setImportPreview((prev) => ({
+                                          ...prev,
+                                          specific: prev.specific.map((r, ri) =>
+                                            ri === i ? { ...r, _teamId: e.target.value } : r,
+                                          ),
+                                        }))
+                                      }
+                                      className="border border-slate-300 rounded-lg px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white w-full max-w-[140px]"
+                                    >
+                                      <option value="">Sin asignar</option>
+                                      {teams.map((t) => (
+                                        <option key={t.id} value={t.id}>
+                                          {teamDisplayName(t)}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </td>
+                                  <td className="py-1.5 px-2">
+                                    <span
+                                      className={`px-1.5 py-0.5 rounded text-xs font-semibold ${s.tipo === 'partido' ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'}`}
+                                    >
+                                      {s.tipo === 'partido' ? 'Partido' : 'Entreno'}
+                                    </span>
+                                  </td>
+                                  <td className="py-1.5 px-2 text-slate-700">
+                                    {s.fecha ? s.fecha.split('-').reverse().join('/') : '—'}
+                                  </td>
+                                  <td className="py-1.5 px-2 text-slate-700">
+                                    {s.horaInicio && s.horaFin ? `${s.horaInicio}–${s.horaFin}` : s.horaInicio || '—'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
             </div>
             {importPreview && !importing && (
               <div className="px-5 pb-5 pt-3 border-t border-slate-100 flex gap-3">
-                <button onClick={() => { setImportPreview(null); setImportError(''); }}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition text-sm">Cancelar</button>
-                <button onClick={handleRequestImport} disabled={bulkSaving}
-                  className="flex-1 bg-gradient-to-r from-orange-500 to-blue-700 hover:from-orange-600 hover:to-blue-800 text-white font-bold py-3 rounded-xl transition disabled:opacity-60 text-sm flex items-center justify-center gap-2">
-                  {bulkSaving ? 'Creando eventos...' : <><Sparkles size={15} /> Generar eventos</>}
+                <button
+                  onClick={() => {
+                    setImportPreview(null);
+                    setImportError('');
+                  }}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleRequestImport}
+                  disabled={bulkSaving}
+                  className="flex-1 bg-gradient-to-r from-orange-500 to-blue-700 hover:from-orange-600 hover:to-blue-800 text-white font-bold py-3 rounded-xl transition disabled:opacity-60 text-sm flex items-center justify-center gap-2"
+                >
+                  {bulkSaving ? (
+                    'Creando eventos...'
+                  ) : (
+                    <>
+                      <Sparkles size={15} /> Generar eventos
+                    </>
+                  )}
                 </button>
               </div>
             )}
@@ -871,7 +1149,7 @@ export default function CalendarScreen() {
 
       {/* Modal Duplicados */}
       {duplicateConflict && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
@@ -879,20 +1157,38 @@ export default function CalendarScreen() {
               </div>
               <div>
                 <h3 className="font-bold text-slate-800">Eventos existentes</h3>
-                <p className="text-xs text-slate-500">Se encontraron {duplicateConflict.count} eventos para estos equipos en el mismo rango de fechas.</p>
+                <p className="text-xs text-slate-500">
+                  Se encontraron {duplicateConflict.count} eventos para estos equipos en el mismo rango de fechas.
+                </p>
               </div>
             </div>
             <p className="text-sm text-slate-600 mb-5">¿Qué quieres hacer con los eventos existentes?</p>
             <div className="flex flex-col gap-2">
               <button
-                onClick={() => doImport(duplicateConflict.toImport, true, duplicateConflict.teamIds, importPreview.startDate, importPreview.endDate)}
+                onClick={() =>
+                  doImport(
+                    duplicateConflict.toImport,
+                    true,
+                    duplicateConflict.teamIds,
+                    importPreview.startDate,
+                    importPreview.endDate,
+                  )
+                }
                 disabled={bulkSaving}
                 className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl transition disabled:opacity-60 text-sm"
               >
                 {bulkSaving ? 'Procesando...' : `Reemplazar (eliminar ${duplicateConflict.count} eventos anteriores)`}
               </button>
               <button
-                onClick={() => doImport(duplicateConflict.toImport, false, duplicateConflict.teamIds, importPreview.startDate, importPreview.endDate)}
+                onClick={() =>
+                  doImport(
+                    duplicateConflict.toImport,
+                    false,
+                    duplicateConflict.teamIds,
+                    importPreview.startDate,
+                    importPreview.endDate,
+                  )
+                }
                 disabled={bulkSaving}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition disabled:opacity-60 text-sm"
               >
@@ -932,12 +1228,14 @@ function WeekView({ weekDays, todayYMD, loading, onSelectSession }) {
             <div key={ymd} className="border-r border-slate-100 last:border-r-0 flex flex-col">
               <div className={`text-center py-2 border-b border-slate-200 ${isToday ? 'bg-amber-50' : ''}`}>
                 <p className="text-xs font-semibold text-slate-500">{DAY_NAMES_SHORT[dow]}</p>
-                <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mx-auto mt-0.5 ${isToday ? 'bg-amber-400 text-white' : 'text-slate-700'}`}>
+                <span
+                  className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mx-auto mt-0.5 ${isToday ? 'bg-amber-400 text-white' : 'text-slate-700'}`}
+                >
                   {date.getDate()}
                 </span>
               </div>
               <div className="flex flex-col gap-1 p-1 min-h-[120px]">
-                {daySessions.map(s => {
+                {daySessions.map((s) => {
                   const isPartido = s.tipo === 'partido';
                   return (
                     <button
@@ -977,17 +1275,23 @@ function DayView({ sessions, loading, onSelectSession }) {
   }
   return (
     <div className="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden divide-y divide-slate-100">
-      {sessions.map(s => {
+      {sessions.map((s) => {
         const isPartido = s.tipo === 'partido';
         const colorClass = TEAM_COLORS[teamColorIndex(s.teamId)].split(' ')[0];
         return (
-          <button key={s.id} onClick={() => onSelectSession(s)}
+          <button
+            key={s.id}
+            onClick={() => onSelectSession(s)}
             className="w-full text-left flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors"
           >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isPartido ? 'bg-rose-100' : 'bg-blue-100'}`}>
-              {isPartido
-                ? <Trophy size={18} className="text-rose-600" />
-                : <ClipboardList size={18} className="text-blue-600" />}
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isPartido ? 'bg-rose-100' : 'bg-blue-100'}`}
+            >
+              {isPartido ? (
+                <Trophy size={18} className="text-rose-600" />
+              ) : (
+                <ClipboardList size={18} className="text-blue-600" />
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-slate-800 text-sm truncate">
@@ -996,7 +1300,9 @@ function DayView({ sessions, loading, onSelectSession }) {
               <p className="text-xs text-slate-500">{s.teamName}</p>
               {s.horaInicio && (
                 <p className="text-xs text-slate-400 mt-0.5">
-                  {s.horaInicio}{s.horaFin ? ` – ${s.horaFin}` : ''}{s.lugar ? ` · ${s.lugar}` : ''}
+                  {s.horaInicio}
+                  {s.horaFin ? ` – ${s.horaFin}` : ''}
+                  {s.lugar ? ` · ${s.lugar}` : ''}
                 </p>
               )}
             </div>

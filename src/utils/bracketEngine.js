@@ -41,7 +41,15 @@ export const buildDynamicBracket = (initialMatches, roundsData = []) => {
 
       state[matchId] = {
         id: matchId,
-        title: rData.name || (previousRound.length === 2 ? "FINAL" : (previousRound.length === 4 ? "SEMIFINALES" : (previousRound.length === 8 ? "CUARTOS DE FINAL" : `Ronda ${roundNum}`))),
+        title:
+          rData.name ||
+          (previousRound.length === 2
+            ? 'FINAL'
+            : previousRound.length === 4
+              ? 'SEMIFINALES'
+              : previousRound.length === 8
+                ? 'CUARTOS DE FINAL'
+                : `Ronda ${roundNum}`),
         team1: null,
         team2: null,
         team1Origin: null,
@@ -74,9 +82,13 @@ export const buildDynamicBracket = (initialMatches, roundsData = []) => {
 };
 
 export const calculateMatchWinner = (match) => {
-  let wins1 = 0, wins2 = 0, total1 = 0, total2 = 0, playedGames = 0;
+  let wins1 = 0,
+    wins2 = 0,
+    total1 = 0,
+    total2 = 0,
+    playedGames = 0;
 
-  match.scores.forEach(g => {
+  match.scores.forEach((g) => {
     const s1 = parseInt(g.s1);
     const s2 = parseInt(g.s2);
     if (!isNaN(s1) && !isNaN(s2)) {

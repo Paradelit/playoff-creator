@@ -17,14 +17,14 @@ function getTemporada() {
 }
 
 const SECTIONS = [
-  { num: 1, title: 'Información',            path: 'info' },
-  { num: 2, title: 'Pilares del club',       path: 'pilares' },
-  { num: 3, title: 'Normas',                 path: 'normas' },
-  { num: 4, title: 'Test de tiro',           path: 'test-tiro' },
-  { num: 5, title: 'Biblioteca',             path: null, external: '/exercises' },
+  { num: 1, title: 'Información', path: 'info' },
+  { num: 2, title: 'Pilares del club', path: 'pilares' },
+  { num: 3, title: 'Normas', path: 'normas' },
+  { num: 4, title: 'Test de tiro', path: 'test-tiro' },
+  { num: 5, title: 'Biblioteca', path: null, external: '/exercises' },
   { num: 6, title: 'Jugadores interesantes', path: 'jugadores' },
-  { num: 7, title: 'Notas',                  path: 'notas' },
-  { num: 8, title: 'Entrenamientos',         path: null, trainings: true },
+  { num: 7, title: 'Notas', path: 'notas' },
+  { num: 8, title: 'Entrenamientos', path: null, trainings: true },
 ];
 
 export default function CuadernoScreen() {
@@ -38,8 +38,8 @@ export default function CuadernoScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, data => {
-      setTeam(data.find(t => t.id === teamId) || null);
+    return subscribeToTeams(user.uid, db, appId, (data) => {
+      setTeam(data.find((t) => t.id === teamId) || null);
     });
   }, [user, db, appId, teamId]);
 
@@ -63,7 +63,6 @@ export default function CuadernoScreen() {
 
   return (
     <div className="min-h-screen bg-gray-200 py-8 px-4 font-serif text-black print:bg-white print:p-0">
-
       {/* Toolbar */}
       <div className="max-w-[800px] mx-auto mb-4 flex items-center justify-between print:hidden font-sans">
         <button
@@ -82,10 +81,8 @@ export default function CuadernoScreen() {
 
       {/* Documento A4 — Portada + Índice */}
       <div className="max-w-[800px] mx-auto bg-white border border-gray-400 shadow-xl print:shadow-none print:border-none print:m-0 min-h-[297mm] flex flex-col">
-
         {/* ── Portada ── */}
         <div className="flex flex-col items-center justify-center flex-1 py-16 px-12 text-center border-b border-gray-200">
-
           {/* Cabecera pequeña */}
           <p className="text-xs font-bold uppercase tracking-widest text-gray-400 font-sans mb-8">
             Temporada {temporada}
@@ -96,14 +93,10 @@ export default function CuadernoScreen() {
           </div>
 
           {/* Club */}
-          <h1 className="text-3xl sm:text-4xl font-bold uppercase tracking-wide mb-3">
-            {clubName}
-          </h1>
+          <h1 className="text-3xl sm:text-4xl font-bold uppercase tracking-wide mb-3">{clubName}</h1>
 
           {/* Equipo */}
-          {team && (
-            <p className="text-lg text-gray-500 mb-6">{teamDisplayName(team)}</p>
-          )}
+          {team && <p className="text-lg text-gray-500 mb-6">{teamDisplayName(team)}</p>}
 
           {/* Título del cuaderno */}
           <div className="flex items-center gap-4 mt-2">
@@ -115,11 +108,9 @@ export default function CuadernoScreen() {
 
         {/* ── Índice ── */}
         <div className="px-12 py-10">
-          <h2 className="font-bold text-xl uppercase tracking-widest text-center mb-8 text-gray-700">
-            Índice
-          </h2>
+          <h2 className="font-bold text-xl uppercase tracking-widest text-center mb-8 text-gray-700">Índice</h2>
           <div>
-            {SECTIONS.map(section => (
+            {SECTIONS.map((section) => (
               <button
                 key={section.num}
                 onClick={() => handleOpen(section)}
@@ -128,12 +119,13 @@ export default function CuadernoScreen() {
                 <span className="w-8 text-gray-400 text-[15px] shrink-0">{section.num}.</span>
                 <span className="text-[15px] text-gray-900 group-hover:text-black shrink-0">{section.title}</span>
                 <span className="flex-1 border-b border-dotted border-gray-300 mx-3 mb-1" />
-                <span className="font-sans text-gray-400 group-hover:text-gray-700 transition-colors text-sm shrink-0">→</span>
+                <span className="font-sans text-gray-400 group-hover:text-gray-700 transition-colors text-sm shrink-0">
+                  →
+                </span>
               </button>
             ))}
           </div>
         </div>
-
       </div>
     </div>
   );

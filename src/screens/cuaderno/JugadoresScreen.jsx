@@ -40,8 +40,8 @@ export default function JugadoresScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, data => {
-      setTeam(data.find(t => t.id === teamId) || null);
+    return subscribeToTeams(user.uid, db, appId, (data) => {
+      setTeam(data.find((t) => t.id === teamId) || null);
     });
   }, [user, db, appId, teamId]);
 
@@ -52,7 +52,7 @@ export default function JugadoresScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToTeamJugadores(teamId, user.uid, db, appId, data => {
+    return subscribeToTeamJugadores(teamId, user.uid, db, appId, (data) => {
       if (isFirstLoad.current) {
         setJugadores(data.length > 0 ? data : emptyGrid());
         isFirstLoad.current = false;
@@ -71,13 +71,13 @@ export default function JugadoresScreen() {
   }
 
   function updateJugador(id, field, value) {
-    const updated = jugadores.map(j => j.id === id ? { ...j, [field]: value } : j);
+    const updated = jugadores.map((j) => (j.id === id ? { ...j, [field]: value } : j));
     setJugadores(updated);
     triggerSave(updated);
   }
 
   function addRow() {
-    const nextId = jugadores.length > 0 ? Math.max(...jugadores.map(j => j.id)) + 1 : 0;
+    const nextId = jugadores.length > 0 ? Math.max(...jugadores.map((j) => j.id)) + 1 : 0;
     const newRow = Array.from({ length: 3 }, (_, i) => emptyJugador(nextId + i));
     const updated = [...jugadores, ...newRow];
     setJugadores(updated);
@@ -96,7 +96,6 @@ export default function JugadoresScreen() {
 
   return (
     <div className="min-h-screen bg-gray-200 font-serif text-black print:bg-white print:p-0">
-
       {/* Toolbar */}
       <div className="print:hidden sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-4 py-2.5 flex items-center justify-between gap-4 font-sans">
         <button
@@ -106,10 +105,17 @@ export default function JugadoresScreen() {
           <ArrowLeft size={16} /> Cuaderno
         </button>
         <div className="flex items-center gap-2">
-          <button onClick={addRow} className="flex items-center px-3 py-1 bg-white border border-gray-400 text-sm hover:bg-gray-50 transition shadow-sm rounded">
+          <button
+            onClick={addRow}
+            className="flex items-center px-3 py-1 bg-white border border-gray-400 text-sm hover:bg-gray-50 transition shadow-sm rounded"
+          >
             <Plus className="w-4 h-4 mr-1" /> Añadir Fila
           </button>
-          <button onClick={removeRow} disabled={jugadores.length <= 3} className="flex items-center px-3 py-1 bg-white border border-red-300 text-red-700 text-sm hover:bg-red-50 transition shadow-sm rounded disabled:opacity-40">
+          <button
+            onClick={removeRow}
+            disabled={jugadores.length <= 3}
+            className="flex items-center px-3 py-1 bg-white border border-red-300 text-red-700 text-sm hover:bg-red-50 transition shadow-sm rounded disabled:opacity-40"
+          >
             <Minus className="w-4 h-4 mr-1" /> Quitar Fila
           </button>
         </div>
@@ -118,7 +124,10 @@ export default function JugadoresScreen() {
             {saveStatus === 'saving' && 'Guardando...'}
             {saveStatus === 'saved' && '✓ Guardado'}
           </span>
-          <button onClick={() => window.print()} className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold transition">
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
+          >
             <Printer size={15} /> Imprimir A4
           </button>
         </div>
@@ -127,7 +136,6 @@ export default function JugadoresScreen() {
       {/* Documento A4 */}
       <div className="py-8 px-4 print:p-0">
         <div className="max-w-[900px] mx-auto bg-white border border-gray-400 p-8 shadow-xl print:shadow-none print:border-none print:p-6">
-
           {/* Cabecera */}
           <div className="flex justify-between items-start mb-6">
             <div className="w-1/4">
@@ -137,9 +145,7 @@ export default function JugadoresScreen() {
               <h1 className="font-bold text-xl tracking-wide uppercase underline decoration-2 underline-offset-4 mb-2">
                 {clubName}
               </h1>
-              <h2 className="font-bold text-lg uppercase tracking-wide">
-                JUGADORES/AS INTERESANTES
-              </h2>
+              <h2 className="font-bold text-lg uppercase tracking-wide">JUGADORES/AS INTERESANTES</h2>
             </div>
             <div className="w-1/4 text-right text-sm text-gray-600 flex flex-col items-end pt-2 font-sans">
               <p>Temporada {temporada}</p>
@@ -166,48 +172,64 @@ export default function JugadoresScreen() {
 
           {/* Cuadrícula de fichas */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-8 px-4">
-            {jugadores.map(jugador => (
+            {jugadores.map((jugador) => (
               <div key={jugador.id} className="border border-black flex flex-col text-sm break-inside-avoid">
                 <div className="flex border-b border-black">
                   <span className="font-bold p-1 w-20">Equipo.-</span>
-                  <input type="text" value={jugador.equipo}
-                    onChange={e => updateJugador(jugador.id, 'equipo', e.target.value)}
-                    className="flex-1 p-1 focus:outline-none bg-transparent font-sans text-sm" />
+                  <input
+                    type="text"
+                    value={jugador.equipo}
+                    onChange={(e) => updateJugador(jugador.id, 'equipo', e.target.value)}
+                    className="flex-1 p-1 focus:outline-none bg-transparent font-sans text-sm"
+                  />
                 </div>
                 <div className="flex border-b border-black">
                   <span className="font-bold p-1 w-12">Nº.-</span>
-                  <input type="text" value={jugador.numero}
-                    onChange={e => updateJugador(jugador.id, 'numero', e.target.value)}
-                    className="flex-1 p-1 focus:outline-none bg-transparent font-sans text-sm" />
+                  <input
+                    type="text"
+                    value={jugador.numero}
+                    onChange={(e) => updateJugador(jugador.id, 'numero', e.target.value)}
+                    className="flex-1 p-1 focus:outline-none bg-transparent font-sans text-sm"
+                  />
                 </div>
                 <div className="flex border-b border-black">
                   <span className="font-bold p-1 w-20">Nombre.-</span>
-                  <input type="text" value={jugador.nombre}
-                    onChange={e => updateJugador(jugador.id, 'nombre', e.target.value)}
-                    className="flex-1 p-1 focus:outline-none bg-transparent font-sans text-sm" />
+                  <input
+                    type="text"
+                    value={jugador.nombre}
+                    onChange={(e) => updateJugador(jugador.id, 'nombre', e.target.value)}
+                    className="flex-1 p-1 focus:outline-none bg-transparent font-sans text-sm"
+                  />
                 </div>
                 <div className="flex border-b border-black">
                   <span className="font-bold p-1 w-24">Categoría.-</span>
-                  <input type="text" value={jugador.categoria}
-                    onChange={e => updateJugador(jugador.id, 'categoria', e.target.value)}
-                    className="flex-1 p-1 focus:outline-none bg-transparent font-sans text-sm" />
+                  <input
+                    type="text"
+                    value={jugador.categoria}
+                    onChange={(e) => updateJugador(jugador.id, 'categoria', e.target.value)}
+                    className="flex-1 p-1 focus:outline-none bg-transparent font-sans text-sm"
+                  />
                 </div>
                 <div className="flex border-b border-black">
                   <span className="font-bold p-1 w-24">Año Nac.-</span>
-                  <input type="text" value={jugador.anioNac}
-                    onChange={e => updateJugador(jugador.id, 'anioNac', e.target.value)}
-                    className="flex-1 p-1 focus:outline-none bg-transparent font-sans text-sm" />
+                  <input
+                    type="text"
+                    value={jugador.anioNac}
+                    onChange={(e) => updateJugador(jugador.id, 'anioNac', e.target.value)}
+                    className="flex-1 p-1 focus:outline-none bg-transparent font-sans text-sm"
+                  />
                 </div>
                 <div className="flex flex-col p-1 min-h-[90px]">
                   <span className="font-bold mb-1">Observaciones.-</span>
-                  <textarea value={jugador.observaciones}
-                    onChange={e => updateJugador(jugador.id, 'observaciones', e.target.value)}
-                    className="w-full flex-1 resize-none focus:outline-none bg-transparent font-sans text-xs leading-tight" />
+                  <textarea
+                    value={jugador.observaciones}
+                    onChange={(e) => updateJugador(jugador.id, 'observaciones', e.target.value)}
+                    className="w-full flex-1 resize-none focus:outline-none bg-transparent font-sans text-xs leading-tight"
+                  />
                 </div>
               </div>
             ))}
           </div>
-
         </div>
       </div>
     </div>

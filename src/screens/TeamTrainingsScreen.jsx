@@ -27,14 +27,14 @@ export default function TeamTrainingsScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, data => {
-      setTeam(data.find(t => t.id === teamId) || null);
+    return subscribeToTeams(user.uid, db, appId, (data) => {
+      setTeam(data.find((t) => t.id === teamId) || null);
     });
   }, [user, db, appId, teamId]);
 
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToTrainings(teamId, user.uid, db, appId, data => {
+    return subscribeToTrainings(teamId, user.uid, db, appId, (data) => {
       setTrainings(data);
       setLoading(false);
     });
@@ -45,14 +45,18 @@ export default function TeamTrainingsScreen() {
     try {
       const id = crypto.randomUUID();
       const numero = trainings.length + 1;
-      await saveTraining({
-        id,
+      await saveTraining(
+        {
+          id,
+          teamId,
+          meta: { numero, dia: '', fecha: '', horaInicio: '', horaFin: '', lugar: '' },
+          objetivos: '',
+          ejercicios: [],
+          cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
+        },
         teamId,
-        meta: { numero, dia: '', fecha: '', horaInicio: '', horaFin: '', lugar: '' },
-        objetivos: '',
-        ejercicios: [],
-        cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
-      }, teamId, { uid: user.uid, db, appId });
+        { uid: user.uid, db, appId },
+      );
       navigate(`/teams/${teamId}/trainings/${id}`);
     } finally {
       setCreating(false);
@@ -67,7 +71,6 @@ export default function TeamTrainingsScreen() {
   return (
     <div className="min-h-screen bg-slate-100 p-6 sm:p-12 font-sans pb-24">
       <div className="max-w-3xl mx-auto">
-
         {/* Navegación */}
         <button
           onClick={() => navigate(`/teams/${teamId}/cuaderno`)}
@@ -123,8 +126,11 @@ export default function TeamTrainingsScreen() {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {trainings.map(t => (
-              <div key={t.id} className="bg-white rounded-xl shadow-md border border-slate-200 px-5 py-4 flex items-center gap-4">
+            {trainings.map((t) => (
+              <div
+                key={t.id}
+                className="bg-white rounded-xl shadow-md border border-slate-200 px-5 py-4 flex items-center gap-4"
+              >
                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
                   <span className="text-blue-700 font-bold text-sm">#{t.meta?.numero ?? '?'}</span>
                 </div>
@@ -134,7 +140,15 @@ export default function TeamTrainingsScreen() {
                     {t.meta?.fecha ? ` · ${formatDate(t.meta.fecha)}` : ''}
                   </p>
                   <p className="text-xs text-slate-500 truncate">
-                    {[t.meta?.dia, t.meta?.horaInicio && t.meta?.horaFin ? `${t.meta.horaInicio}–${t.meta.horaFin}` : t.meta?.horaInicio, t.meta?.lugar].filter(Boolean).join(' · ') || 'Sin detalles'}
+                    {[
+                      t.meta?.dia,
+                      t.meta?.horaInicio && t.meta?.horaFin
+                        ? `${t.meta.horaInicio}–${t.meta.horaFin}`
+                        : t.meta?.horaInicio,
+                      t.meta?.lugar,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || 'Sin detalles'}
                   </p>
                 </div>
                 <button
@@ -157,15 +171,29 @@ export default function TeamTrainingsScreen() {
 
       {/* Modal confirmar borrado */}
       {deletingId && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setDeletingId(null)}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setDeletingId(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-xl font-bold mb-2 text-slate-800">¿Eliminar entrenamiento?</h3>
             <p className="text-slate-600 mb-6 text-sm">Esta acción es permanente y no se puede deshacer.</p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setDeletingId(null)}
-                className="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition">Cancelar</button>
-              <button onClick={() => handleDelete(deletingId)}
-                className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition shadow-sm">Sí, eliminar</button>
+              <button
+                onClick={() => setDeletingId(null)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDelete(deletingId)}
+                className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition shadow-sm"
+              >
+                Sí, eliminar
+              </button>
             </div>
           </div>
         </div>

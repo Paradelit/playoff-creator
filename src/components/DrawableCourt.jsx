@@ -75,7 +75,7 @@ function FullCourtSVG() {
   );
 }
 
-export default function DrawableCourt({ tipo = 'media', trazos = [], setTrazos }) {
+const DrawableCourt = React.memo(function DrawableCourt({ tipo = 'media', trazos = [], setTrazos }) {
   const svgRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
   const [color, setColor] = useState('#000000');
@@ -96,32 +96,41 @@ export default function DrawableCourt({ tipo = 'media', trazos = [], setTrazos }
     return `${svgP.x.toFixed(1)},${svgP.y.toFixed(1)}`;
   }
 
-  const startDraw = useCallback((e) => {
-    if (!setTrazos) return;
-    e.preventDefault();
-    setDrawing(true);
-    const pt = getSVGPoint(e);
-    if (pt) currentStroke.current = [pt];
-  }, [setTrazos]);
+  const startDraw = useCallback(
+    (e) => {
+      if (!setTrazos) return;
+      e.preventDefault();
+      setDrawing(true);
+      const pt = getSVGPoint(e);
+      if (pt) currentStroke.current = [pt];
+    },
+    [setTrazos],
+  );
 
-  const moveDraw = useCallback((e) => {
-    if (!drawing || !setTrazos) return;
-    e.preventDefault();
-    const pt = getSVGPoint(e);
-    if (pt) currentStroke.current = [...currentStroke.current, pt];
-    // Force re-render to show current stroke preview
-    setTrazos(prev => prev); // no-op to trigger re-render trick — we rely on drawing state
-  }, [drawing, setTrazos]);
+  const moveDraw = useCallback(
+    (e) => {
+      if (!drawing || !setTrazos) return;
+      e.preventDefault();
+      const pt = getSVGPoint(e);
+      if (pt) currentStroke.current = [...currentStroke.current, pt];
+      // Force re-render to show current stroke preview
+      setTrazos((prev) => prev); // no-op to trigger re-render trick — we rely on drawing state
+    },
+    [drawing, setTrazos],
+  );
 
-  const endDraw = useCallback((e) => {
-    if (!drawing || !setTrazos) return;
-    e.preventDefault();
-    setDrawing(false);
-    if (currentStroke.current.length > 1) {
-      setTrazos(prev => [...prev, { points: currentStroke.current, color }]);
-    }
-    currentStroke.current = [];
-  }, [drawing, color, setTrazos]);
+  const endDraw = useCallback(
+    (e) => {
+      if (!drawing || !setTrazos) return;
+      e.preventDefault();
+      setDrawing(false);
+      if (currentStroke.current.length > 1) {
+        setTrazos((prev) => [...prev, { points: currentStroke.current, color }]);
+      }
+      currentStroke.current = [];
+    },
+    [drawing, color, setTrazos],
+  );
 
   const pointsToPolyline = (pts) => pts.join(' ');
 
@@ -179,9 +188,11 @@ export default function DrawableCourt({ tipo = 'media', trazos = [], setTrazos }
           />
         ))}
 
-        {/* Trazo en curso */}
+        {/* Trazo en curso — ref read in render is intentional for live preview */}
+        {/* eslint-disable-next-line react-hooks/refs */}
         {drawing && currentStroke.current.length > 1 && (
           <polyline
+            // eslint-disable-next-line react-hooks/refs
             points={pointsToPolyline(currentStroke.current)}
             fill="none"
             stroke={color}
@@ -193,4 +204,6 @@ export default function DrawableCourt({ tipo = 'media', trazos = [], setTrazos }
       </svg>
     </div>
   );
-}
+});
+
+export default DrawableCourt;

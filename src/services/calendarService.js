@@ -1,6 +1,14 @@
 import {
-  collection, doc, setDoc, deleteDoc,
-  onSnapshot, getDocs, serverTimestamp, query, orderBy, where
+  collection,
+  doc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  getDocs,
+  serverTimestamp,
+  query,
+  orderBy,
+  where,
 } from 'firebase/firestore';
 
 function calendarSessionsCol(uid, db, appId) {
@@ -12,20 +20,24 @@ export function subscribeToCalendarSessions(uid, db, appId, startDate, endDate, 
     calendarSessionsCol(uid, db, appId),
     where('fecha', '>=', startDate),
     where('fecha', '<=', endDate),
-    orderBy('fecha', 'asc')
+    orderBy('fecha', 'asc'),
   );
-  return onSnapshot(q, snap => {
-    callback(snap.docs.map(d => ({ ...d.data(), id: d.id })));
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
   });
 }
 
 export async function saveCalendarSession(session, { uid, db, appId }) {
   const ref = doc(calendarSessionsCol(uid, db, appId), session.id);
-  await setDoc(ref, {
-    ...session,
-    updatedAt: serverTimestamp(),
-    ...(session.createdAt ? {} : { createdAt: serverTimestamp() }),
-  }, { merge: true });
+  await setDoc(
+    ref,
+    {
+      ...session,
+      updatedAt: serverTimestamp(),
+      ...(session.createdAt ? {} : { createdAt: serverTimestamp() }),
+    },
+    { merge: true },
+  );
 }
 
 export async function deleteCalendarSession(sessionId, { uid, db, appId }) {
@@ -33,9 +45,7 @@ export async function deleteCalendarSession(sessionId, { uid, db, appId }) {
 }
 
 export async function bulkImportCalendarSessions(sessions, { uid, db, appId }) {
-  await Promise.all(
-    sessions.map(s => saveCalendarSession({ ...s, id: crypto.randomUUID() }, { uid, db, appId }))
-  );
+  await Promise.all(sessions.map((s) => saveCalendarSession({ ...s, id: crypto.randomUUID() }, { uid, db, appId })));
 }
 
 export async function getCalendarSessionsInRange(uid, db, appId, startDate, endDate) {
@@ -43,16 +53,16 @@ export async function getCalendarSessionsInRange(uid, db, appId, startDate, endD
     calendarSessionsCol(uid, db, appId),
     where('fecha', '>=', startDate),
     where('fecha', '<=', endDate),
-    orderBy('fecha', 'asc')
+    orderBy('fecha', 'asc'),
   );
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ ...d.data(), id: d.id }));
+  return snap.docs.map((d) => ({ ...d.data(), id: d.id }));
 }
 
 export async function deleteCalendarSessionsByTeamAndRange(teamIds, startDate, endDate, { uid, db, appId }) {
   const existing = await getCalendarSessionsInRange(uid, db, appId, startDate, endDate);
-  const toDelete = existing.filter(s => teamIds.includes(s.teamId));
-  await Promise.all(toDelete.map(s => deleteCalendarSession(s.id, { uid, db, appId })));
+  const toDelete = existing.filter((s) => teamIds.includes(s.teamId));
+  await Promise.all(toDelete.map((s) => deleteCalendarSession(s.id, { uid, db, appId })));
 }
 
 export async function linkTrainingToSession(sessionId, trainingId, { uid, db, appId }) {

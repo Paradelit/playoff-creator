@@ -22,8 +22,13 @@ function getTemporada() {
 }
 
 const DIAS = [
-  { val: 'L', label: 'L' }, { val: 'M', label: 'M' }, { val: 'X', label: 'X' },
-  { val: 'J', label: 'J' }, { val: 'V', label: 'V' }, { val: 'S', label: 'S' }, { val: 'D', label: 'D' },
+  { val: 'L', label: 'L' },
+  { val: 'M', label: 'M' },
+  { val: 'X', label: 'X' },
+  { val: 'J', label: 'J' },
+  { val: 'V', label: 'V' },
+  { val: 'S', label: 'S' },
+  { val: 'D', label: 'D' },
 ];
 
 function makeEjercicio() {
@@ -72,8 +77,8 @@ export default function TrainingEditorScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, data => {
-      setTeam(data.find(t => t.id === teamId) || null);
+    return subscribeToTeams(user.uid, db, appId, (data) => {
+      setTeam(data.find((t) => t.id === teamId) || null);
     });
   }, [user, db, appId, teamId]);
 
@@ -94,12 +99,13 @@ export default function TrainingEditorScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToTrainings(teamId, user.uid, db, appId, data => {
-      const found = data.find(t => t.id === trainingId);
+    return subscribeToTrainings(teamId, user.uid, db, appId, (data) => {
+      const found = data.find((t) => t.id === trainingId);
       if (isFirstLoad.current) {
-        setTraining(found
-          ? { ...found, ejercicios: (found.ejercicios || []).map(e => ({ ...e, elementos: e.elementos || [] })) }
-          : { id: trainingId, teamId, ...EMPTY_TRAINING() }
+        setTraining(
+          found
+            ? { ...found, ejercicios: (found.ejercicios || []).map((e) => ({ ...e, elementos: e.elementos || [] })) }
+            : { id: trainingId, teamId, ...EMPTY_TRAINING() },
         );
         isFirstLoad.current = false;
       }
@@ -107,25 +113,30 @@ export default function TrainingEditorScreen() {
     });
   }, [user, db, appId, teamId, trainingId]);
 
-  const triggerSave = useCallback((t) => {
-    setSaveStatus('saving');
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(async () => {
-      try {
-        await saveTraining(t, teamId, { uid: user.uid, db, appId });
-        setSaveStatus('saved');
-      } catch {
-        setSaveStatus('saved');
-      }
-    }, 1500);
-  }, [teamId, user, db, appId]);
+  const triggerSave = useCallback(
+    (t) => {
+      setSaveStatus('saving');
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(async () => {
+        try {
+          await saveTraining(t, teamId, { uid: user.uid, db, appId });
+          setSaveStatus('saved');
+        } catch {
+          setSaveStatus('saved');
+        }
+      }, 1500);
+    },
+    [teamId, user, db, appId],
+  );
 
   useEffect(() => {
-    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
   }, []);
 
   function updateTraining(updater) {
-    setTraining(prev => {
+    setTraining((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
       triggerSave(next);
       return next;
@@ -133,50 +144,54 @@ export default function TrainingEditorScreen() {
   }
 
   function updateMeta(field, value) {
-    updateTraining(t => ({ ...t, meta: { ...t.meta, [field]: value } }));
+    updateTraining((t) => ({ ...t, meta: { ...t.meta, [field]: value } }));
   }
 
   function updateCierre(field, value) {
-    updateTraining(t => ({ ...t, cierre: { ...t.cierre, [field]: value } }));
+    updateTraining((t) => ({ ...t, cierre: { ...t.cierre, [field]: value } }));
   }
 
   function addEjercicio() {
-    updateTraining(t => ({ ...t, ejercicios: [...(t.ejercicios || []), makeEjercicio()] }));
+    updateTraining((t) => ({ ...t, ejercicios: [...(t.ejercicios || []), makeEjercicio()] }));
   }
 
   function removeLastEjercicio() {
-    updateTraining(t => {
+    updateTraining((t) => {
       if ((t.ejercicios || []).length <= 1) return t;
       return { ...t, ejercicios: t.ejercicios.slice(0, -1) };
     });
   }
 
   function removeEjercicio(id) {
-    updateTraining(t => {
+    updateTraining((t) => {
       if ((t.ejercicios || []).length <= 1) return t;
-      return { ...t, ejercicios: t.ejercicios.filter(e => e.id !== id) };
+      return { ...t, ejercicios: t.ejercicios.filter((e) => e.id !== id) };
     });
   }
 
   function updateEjercicio(id, field, value) {
-    updateTraining(t => ({
+    updateTraining((t) => ({
       ...t,
-      ejercicios: t.ejercicios.map(e => e.id === id ? { ...e, [field]: value } : e),
+      ejercicios: t.ejercicios.map((e) => (e.id === id ? { ...e, [field]: value } : e)),
     }));
   }
 
   function loadFromLibrary(ejercicioId, libExercise) {
-    updateTraining(t => ({
+    updateTraining((t) => ({
       ...t,
-      ejercicios: t.ejercicios.map(e => e.id === ejercicioId ? {
-        ...e,
-        contenido: libExercise.contenido || e.contenido,
-        descripcion: libExercise.descripcion || e.descripcion,
-        tipoPista: libExercise.tipoPista || e.tipoPista,
-        elementos: libExercise.elementos || [],
-        libExerciseId: libExercise.id,
-        libExerciseName: libExercise.nombre,
-      } : e),
+      ejercicios: t.ejercicios.map((e) =>
+        e.id === ejercicioId
+          ? {
+              ...e,
+              contenido: libExercise.contenido || e.contenido,
+              descripcion: libExercise.descripcion || e.descripcion,
+              tipoPista: libExercise.tipoPista || e.tipoPista,
+              elementos: libExercise.elementos || [],
+              libExerciseId: libExercise.id,
+              libExerciseName: libExercise.nombre,
+            }
+          : e,
+      ),
     }));
     setShowLibrary(null);
     setLibrarySearch('');
@@ -185,14 +200,17 @@ export default function TrainingEditorScreen() {
   async function saveToLibrary(ejercicio) {
     const nombre = window.prompt('Nombre para guardar en biblioteca:', ejercicio.contenido || '');
     if (!nombre) return;
-    await saveExercise({
-      id: crypto.randomUUID(),
-      nombre: nombre.trim(),
-      contenido: ejercicio.contenido,
-      descripcion: ejercicio.descripcion,
-      tipoPista: ejercicio.tipoPista,
-      elementos: ejercicio.elementos || [],
-    }, { uid: user.uid, db, appId });
+    await saveExercise(
+      {
+        id: crypto.randomUUID(),
+        nombre: nombre.trim(),
+        contenido: ejercicio.contenido,
+        descripcion: ejercicio.descripcion,
+        tipoPista: ejercicio.tipoPista,
+        elementos: ejercicio.elementos || [],
+      },
+      { uid: user.uid, db, appId },
+    );
   }
 
   if (loading) {
@@ -205,19 +223,19 @@ export default function TrainingEditorScreen() {
   if (!training) return null;
 
   const ejercicios = training.ejercicios || [];
-  const ejModal = ejercicios.find(e => e.id === modalEjercicioId);
+  const ejModal = ejercicios.find((e) => e.id === modalEjercicioId);
   const clubName = profile?.nombreClub?.trim() || 'Uros de Rivas';
   const temporada = getTemporada();
-  const libraryFiltered = exercises.filter(ex =>
-    ex.nombre?.toLowerCase().includes(librarySearch.toLowerCase()) ||
-    ex.contenido?.toLowerCase().includes(librarySearch.toLowerCase())
+  const libraryFiltered = exercises.filter(
+    (ex) =>
+      ex.nombre?.toLowerCase().includes(librarySearch.toLowerCase()) ||
+      ex.contenido?.toLowerCase().includes(librarySearch.toLowerCase()),
   );
 
   const TOOLS = COURT_TOOLS;
 
   return (
     <div className="min-h-screen bg-gray-200 py-6 px-4 font-sans text-black print:bg-white print:p-0 print:py-0">
-
       {/* ─── TOOLBAR WEB ─── */}
       <div className="max-w-[820px] mx-auto mb-4 flex items-center justify-between print:hidden gap-3">
         <button
@@ -228,16 +246,24 @@ export default function TrainingEditorScreen() {
         </button>
 
         <div className="flex gap-2">
-          <button onClick={addEjercicio} className="flex items-center px-3 py-1.5 bg-white border border-gray-300 text-sm hover:bg-gray-50 transition shadow-sm rounded-lg gap-1">
+          <button
+            onClick={addEjercicio}
+            className="flex items-center px-3 py-1.5 bg-white border border-gray-300 text-sm hover:bg-gray-50 transition shadow-sm rounded-lg gap-1"
+          >
             <Plus size={14} /> Fila Extra
           </button>
-          <button onClick={removeLastEjercicio} className="flex items-center px-3 py-1.5 bg-white border border-red-300 text-red-700 text-sm hover:bg-red-50 transition shadow-sm rounded-lg gap-1">
+          <button
+            onClick={removeLastEjercicio}
+            className="flex items-center px-3 py-1.5 bg-white border border-red-300 text-red-700 text-sm hover:bg-red-50 transition shadow-sm rounded-lg gap-1"
+          >
             <Minus size={14} /> Quitar Fila
           </button>
         </div>
 
         <div className="flex items-center gap-3">
-          <span className={`text-xs font-medium transition-colors ${saveStatus === 'saving' ? 'text-amber-500' : 'text-emerald-600'}`}>
+          <span
+            className={`text-xs font-medium transition-colors ${saveStatus === 'saving' ? 'text-amber-500' : 'text-emerald-600'}`}
+          >
             {saveStatus === 'saving' ? 'Guardando...' : '✓ Guardado'}
           </span>
           <button
@@ -257,7 +283,6 @@ export default function TrainingEditorScreen() {
 
       {/* ─── DOCUMENTO A4 ─── */}
       <div className="max-w-[820px] mx-auto bg-white border border-gray-400 p-6 shadow-xl print:shadow-none print:border-none print:p-4 print:max-w-none">
-
         {/* Cabecera */}
         <div className="flex justify-between items-start mb-4">
           <div className="w-1/4">
@@ -274,7 +299,7 @@ export default function TrainingEditorScreen() {
               <input
                 type="text"
                 value={training.meta?.numero || ''}
-                onChange={e => updateMeta('numero', e.target.value)}
+                onChange={(e) => updateMeta('numero', e.target.value)}
                 className="w-10 border-b border-black text-center focus:outline-none bg-transparent"
               />
             </p>
@@ -290,7 +315,7 @@ export default function TrainingEditorScreen() {
               <input
                 type="text"
                 value={training.meta?.equipo || ''}
-                onChange={e => updateMeta('equipo', e.target.value)}
+                onChange={(e) => updateMeta('equipo', e.target.value)}
                 className="w-full ml-2 focus:outline-none bg-transparent"
               />
             </div>
@@ -299,16 +324,20 @@ export default function TrainingEditorScreen() {
               <span className="font-bold whitespace-nowrap">Fecha.-</span>
               <select
                 value={training.meta?.dia || ''}
-                onChange={e => updateMeta('dia', e.target.value)}
+                onChange={(e) => updateMeta('dia', e.target.value)}
                 className="ml-1 text-xs bg-transparent focus:outline-none cursor-pointer font-bold appearance-none"
               >
                 <option value="">Día</option>
-                {DIAS.map(d => <option key={d.val} value={d.val}>{d.label}</option>)}
+                {DIAS.map((d) => (
+                  <option key={d.val} value={d.val}>
+                    {d.label}
+                  </option>
+                ))}
               </select>
               <input
                 type="date"
                 value={training.meta?.fecha || ''}
-                onChange={e => updateMeta('fecha', e.target.value)}
+                onChange={(e) => updateMeta('fecha', e.target.value)}
                 className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
               />
             </div>
@@ -318,14 +347,14 @@ export default function TrainingEditorScreen() {
               <input
                 type="time"
                 value={training.meta?.horaInicio || ''}
-                onChange={e => updateMeta('horaInicio', e.target.value)}
+                onChange={(e) => updateMeta('horaInicio', e.target.value)}
                 className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
               />
               <span className="font-bold">-</span>
               <input
                 type="time"
                 value={training.meta?.horaFin || ''}
-                onChange={e => updateMeta('horaFin', e.target.value)}
+                onChange={(e) => updateMeta('horaFin', e.target.value)}
                 className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
               />
             </div>
@@ -335,7 +364,7 @@ export default function TrainingEditorScreen() {
               <input
                 type="text"
                 value={training.meta?.lugar || ''}
-                onChange={e => updateMeta('lugar', e.target.value)}
+                onChange={(e) => updateMeta('lugar', e.target.value)}
                 className="w-full ml-2 focus:outline-none bg-transparent"
               />
             </div>
@@ -345,7 +374,7 @@ export default function TrainingEditorScreen() {
             <span className="font-bold">Objetivos de la semana.-</span>
             <textarea
               value={training.objetivos || ''}
-              onChange={e => updateTraining(t => ({ ...t, objetivos: e.target.value }))}
+              onChange={(e) => updateTraining((t) => ({ ...t, objetivos: e.target.value }))}
               className="w-full flex-1 focus:outline-none bg-transparent resize-none leading-tight mt-1 text-sm"
             />
           </div>
@@ -368,20 +397,23 @@ export default function TrainingEditorScreen() {
                 <input
                   type="text"
                   value={ej.tiempo || ''}
-                  onChange={e => updateEjercicio(ej.id, 'tiempo', e.target.value)}
+                  onChange={(e) => updateEjercicio(ej.id, 'tiempo', e.target.value)}
                   className="w-full h-full text-center focus:outline-none bg-transparent text-xs"
                 />
               </div>
               {/* Contenido */}
               <div className="w-32 border-r border-black p-1 relative">
                 {ej.libExerciseId && (
-                  <span className="absolute top-1 right-1 print:hidden" title={`Enlazado: ${ej.libExerciseName || 'Biblioteca'}`}>
+                  <span
+                    className="absolute top-1 right-1 print:hidden"
+                    title={`Enlazado: ${ej.libExerciseName || 'Biblioteca'}`}
+                  >
                     <BookOpen size={9} className="text-amber-500" />
                   </span>
                 )}
                 <textarea
                   value={ej.contenido || ''}
-                  onChange={e => updateEjercicio(ej.id, 'contenido', e.target.value)}
+                  onChange={(e) => updateEjercicio(ej.id, 'contenido', e.target.value)}
                   className="w-full h-full resize-none focus:outline-none bg-transparent leading-tight text-xs"
                 />
               </div>
@@ -389,7 +421,7 @@ export default function TrainingEditorScreen() {
               <div className="flex-1 border-r border-black p-1">
                 <textarea
                   value={ej.descripcion || ''}
-                  onChange={e => updateEjercicio(ej.id, 'descripcion', e.target.value)}
+                  onChange={(e) => updateEjercicio(ej.id, 'descripcion', e.target.value)}
                   className="w-full h-full resize-none focus:outline-none bg-transparent leading-tight text-xs text-justify pb-2 pr-1"
                 />
               </div>
@@ -403,24 +435,43 @@ export default function TrainingEditorScreen() {
                 </div>
                 {/* Controles flotantes — ocultos al imprimir */}
                 <div className="absolute bottom-1 right-1 flex gap-1 print:hidden opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-white p-1 rounded border border-gray-200 shadow-sm">
-                  <button onClick={() => setModalEjercicioId(ej.id)} className="text-blue-600 hover:text-blue-800" title="Abrir editor">
+                  <button
+                    onClick={() => setModalEjercicioId(ej.id)}
+                    className="text-blue-600 hover:text-blue-800"
+                    title="Abrir editor"
+                  >
                     <Maximize2 size={11} />
                   </button>
-                  <button onClick={() => { setShowLibrary(ej.id); setLibrarySearch(''); }} className="text-indigo-500 hover:text-indigo-700" title="Cargar de biblioteca">
+                  <button
+                    onClick={() => {
+                      setShowLibrary(ej.id);
+                      setLibrarySearch('');
+                    }}
+                    className="text-indigo-500 hover:text-indigo-700"
+                    title="Cargar de biblioteca"
+                  >
                     <BookOpen size={11} />
                   </button>
-                  <button onClick={() => saveToLibrary(ej)} className="text-emerald-600 hover:text-emerald-800" title="Guardar en biblioteca">
+                  <button
+                    onClick={() => saveToLibrary(ej)}
+                    className="text-emerald-600 hover:text-emerald-800"
+                    title="Guardar en biblioteca"
+                  >
                     <Save size={11} />
                   </button>
                   <select
                     value={ej.tipoPista}
-                    onChange={e => updateEjercicio(ej.id, 'tipoPista', e.target.value)}
+                    onChange={(e) => updateEjercicio(ej.id, 'tipoPista', e.target.value)}
                     className="text-[10px] border border-gray-300 bg-white cursor-pointer focus:outline-none"
                   >
                     <option value="media">1/2</option>
                     <option value="entera">Full</option>
                   </select>
-                  <button onClick={() => removeEjercicio(ej.id)} className="text-red-500 hover:text-red-700" title="Eliminar fila">
+                  <button
+                    onClick={() => removeEjercicio(ej.id)}
+                    className="text-red-500 hover:text-red-700"
+                    title="Eliminar fila"
+                  >
                     <Trash2 size={11} />
                   </button>
                 </div>
@@ -436,7 +487,7 @@ export default function TrainingEditorScreen() {
               <span className="font-bold">Faltas.-</span>
               <MentionTextarea
                 value={training.cierre?.faltas || ''}
-                onChange={e => updateCierre('faltas', e.target.value)}
+                onChange={(e) => updateCierre('faltas', e.target.value)}
                 members={members}
                 placeholder=""
                 rows={2}
@@ -447,7 +498,7 @@ export default function TrainingEditorScreen() {
               <span className="font-bold">Retrasos.-</span>
               <MentionTextarea
                 value={training.cierre?.retrasos || ''}
-                onChange={e => updateCierre('retrasos', e.target.value)}
+                onChange={(e) => updateCierre('retrasos', e.target.value)}
                 members={members}
                 placeholder=""
                 rows={2}
@@ -460,7 +511,7 @@ export default function TrainingEditorScreen() {
               <span className="font-bold">Anotaciones.-</span>
               <MentionTextarea
                 value={training.cierre?.anotaciones || ''}
-                onChange={e => updateCierre('anotaciones', e.target.value)}
+                onChange={(e) => updateCierre('anotaciones', e.target.value)}
                 members={members}
                 placeholder=""
                 rows={2}
@@ -471,46 +522,46 @@ export default function TrainingEditorScreen() {
               <span className="font-bold">Observaciones.-</span>
               <textarea
                 value={training.cierre?.observaciones || ''}
-                onChange={e => updateCierre('observaciones', e.target.value)}
+                onChange={(e) => updateCierre('observaciones', e.target.value)}
                 className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
               />
             </div>
           </div>
         </div>
-
       </div>
 
       {/* ─── MODAL PLAYBOOK EDITOR ─── */}
       {ejModal && (
         <div className="fixed inset-0 z-50 bg-gray-900/90 flex flex-col items-center justify-center p-4 touch-none print:hidden">
           <div className="bg-white w-full max-w-5xl h-[85vh] rounded-lg shadow-2xl flex flex-col overflow-hidden">
-
             {/* Header modal */}
-            <div className="flex justify-between items-center p-3 border-b border-gray-200 bg-gray-50">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-wrap justify-between items-center gap-2 p-3 border-b border-gray-200 bg-gray-50">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                 <h3 className="font-bold text-gray-800">Playbook Editor</h3>
-                <div className="flex gap-1 border-l border-gray-300 pl-4">
+                <div className="flex gap-1">
                   <button
                     onClick={() => updateEjercicio(ejModal.id, 'elementos', (ejModal.elementos || []).slice(0, -1))}
                     className="p-1.5 text-gray-600 hover:bg-gray-200 rounded flex items-center text-sm"
                     title="Deshacer último"
                   >
-                    <Undo size={14} className="mr-1" /> Deshacer
+                    <Undo size={14} className="mr-1" /> <span className="hidden sm:inline">Deshacer</span>
                   </button>
                   <button
                     onClick={() => updateEjercicio(ejModal.id, 'elementos', [])}
                     className="p-1.5 text-red-600 hover:bg-red-50 rounded flex items-center text-sm"
                     title="Limpiar pizarra"
                   >
-                    <Trash2 size={14} className="mr-1" /> Limpiar
+                    <Trash2 size={14} className="mr-1" /> <span className="hidden sm:inline">Limpiar</span>
                   </button>
-                  {/* Selector de pista en el modal */}
-                  <div className="flex gap-1 border-l border-gray-300 pl-3 ml-1">
-                    {[['media', 'Media pista'], ['entera', 'Pista entera']].map(([val, label]) => (
+                  <div className="flex gap-1 border-l border-gray-300 pl-2 ml-1">
+                    {[
+                      ['media', 'Media'],
+                      ['entera', 'Entera'],
+                    ].map(([val, label]) => (
                       <button
                         key={val}
                         onClick={() => updateEjercicio(ejModal.id, 'tipoPista', val)}
-                        className={`px-3 py-1 rounded text-sm font-semibold transition-colors ${ejModal.tipoPista === val ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-semibold transition-colors ${ejModal.tipoPista === val ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                       >
                         {label}
                       </button>
@@ -527,34 +578,49 @@ export default function TrainingEditorScreen() {
               </button>
             </div>
 
-            <div className="flex flex-1 overflow-hidden bg-gray-100">
-              {/* Sidebar herramientas */}
-              <div className="w-48 bg-white border-r border-gray-200 flex flex-col p-2 gap-1 overflow-y-auto">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2 mt-2 mb-1">Herramientas</p>
-                {TOOLS.map((t, idx) => t.divider ? (
-                  <div key={idx} className="h-px bg-gray-200 my-1 mx-2" />
-                ) : (
+            <div className="flex flex-col sm:flex-row flex-1 overflow-hidden bg-gray-100">
+              {/* Toolbar móvil */}
+              <div className="flex sm:hidden flex-wrap gap-1 p-2 bg-white border-b border-gray-200 overflow-x-auto">
+                {TOOLS.filter((t) => !t.divider).map((t) => (
                   <button
                     key={t.id}
                     onClick={() => setActiveTool(t.id)}
-                    className={`flex items-center gap-3 px-3 py-2 rounded text-sm transition-colors ${activeTool === t.id ? 'bg-blue-100 text-blue-800 border border-blue-200 font-semibold' : 'text-gray-600 hover:bg-gray-50 border border-transparent'}`}
+                    className={`flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-colors ${activeTool === t.id ? 'bg-blue-100 text-blue-800 border border-blue-200 font-semibold' : 'text-gray-600 hover:bg-gray-50 border border-transparent'}`}
                   >
-                    <div className="w-6 flex justify-center shrink-0">{t.icon}</div>
-                    <span className="text-xs leading-tight">{t.label}</span>
+                    <div className="w-5 flex justify-center shrink-0">{t.icon}</div>
+                    <span className="leading-tight">{t.label}</span>
                   </button>
                 ))}
+              </div>
+              {/* Sidebar herramientas (desktop) */}
+              <div className="hidden sm:flex w-48 bg-white border-r border-gray-200 flex-col p-2 gap-1 overflow-y-auto">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2 mt-2 mb-1">Herramientas</p>
+                {TOOLS.map((t, idx) =>
+                  t.divider ? (
+                    <div key={idx} className="h-px bg-gray-200 my-1 mx-2" />
+                  ) : (
+                    <button
+                      key={t.id}
+                      onClick={() => setActiveTool(t.id)}
+                      className={`flex items-center gap-3 px-3 py-2 rounded text-sm transition-colors ${activeTool === t.id ? 'bg-blue-100 text-blue-800 border border-blue-200 font-semibold' : 'text-gray-600 hover:bg-gray-50 border border-transparent'}`}
+                    >
+                      <div className="w-6 flex justify-center shrink-0">{t.icon}</div>
+                      <span className="text-xs leading-tight">{t.label}</span>
+                    </button>
+                  ),
+                )}
                 <div className="mt-auto p-3 bg-blue-50 rounded text-xs text-blue-800 leading-relaxed border border-blue-100 mx-1">
                   <b>Tip:</b> Objetos: clic para colocar. Líneas: clic y arrastra.
                 </div>
               </div>
 
               {/* Lienzo */}
-              <div className="flex-1 flex items-center justify-center p-6 select-none">
+              <div className="flex-1 flex items-center justify-center p-2 sm:p-6 select-none">
                 <div className="bg-white shadow border border-gray-300 w-full h-full flex items-center justify-center">
                   <CourtCanvas
                     tipo={ejModal.tipoPista}
                     elementos={ejModal.elementos || []}
-                    setElementos={nuevos => updateEjercicio(ejModal.id, 'elementos', nuevos)}
+                    setElementos={(nuevos) => updateEjercicio(ejModal.id, 'elementos', nuevos)}
                     readOnly={false}
                     activeTool={activeTool}
                   />
@@ -567,18 +633,28 @@ export default function TrainingEditorScreen() {
 
       {/* ─── MODAL BIBLIOTECA ─── */}
       {showLibrary && (
-        <div className="fixed inset-0 bg-slate-900/70 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm print:hidden" onClick={() => setShowLibrary(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/70 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm print:hidden"
+          onClick={() => setShowLibrary(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2"><BookOpen size={16} className="text-blue-600" /> Biblioteca de ejercicios</h3>
-              <button onClick={() => setShowLibrary(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <BookOpen size={16} className="text-blue-600" /> Biblioteca de ejercicios
+              </h3>
+              <button onClick={() => setShowLibrary(null)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
             </div>
             <div className="px-4 py-3 border-b border-slate-100">
               <input
                 type="text"
                 placeholder="Buscar..."
                 value={librarySearch}
-                onChange={e => setLibrarySearch(e.target.value)}
+                onChange={(e) => setLibrarySearch(e.target.value)}
                 className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
             </div>
@@ -586,7 +662,7 @@ export default function TrainingEditorScreen() {
               {libraryFiltered.length === 0 ? (
                 <p className="text-center text-slate-500 text-sm py-12">No hay ejercicios en la biblioteca.</p>
               ) : (
-                libraryFiltered.map(ex => (
+                libraryFiltered.map((ex) => (
                   <button
                     key={ex.id}
                     onClick={() => loadFromLibrary(showLibrary, ex)}

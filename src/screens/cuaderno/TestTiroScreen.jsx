@@ -21,11 +21,13 @@ function createInitialTable() {
   return {
     fecha: '',
     headers: Array(8).fill(''),
-    rows: Array(15).fill(null).map((_, i) => ({
-      id: i,
-      jugador: '',
-      scores: Array(8).fill(''),
-    })),
+    rows: Array(15)
+      .fill(null)
+      .map((_, i) => ({
+        id: i,
+        jugador: '',
+        scores: Array(8).fill(''),
+      })),
   };
 }
 
@@ -44,8 +46,8 @@ export default function TestTiroScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, data => {
-      setTeam(data.find(t => t.id === teamId) || null);
+    return subscribeToTeams(user.uid, db, appId, (data) => {
+      setTeam(data.find((t) => t.id === teamId) || null);
     });
   }, [user, db, appId, teamId]);
 
@@ -56,7 +58,7 @@ export default function TestTiroScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToTestTiro(teamId, user.uid, db, appId, data => {
+    return subscribeToTestTiro(teamId, user.uid, db, appId, (data) => {
       if (isFirstLoad.current) {
         if (data) setTables(data);
         isFirstLoad.current = false;
@@ -75,7 +77,7 @@ export default function TestTiroScreen() {
   }
 
   function updateFecha(tIndex, value) {
-    const updated = tables.map((t, i) => i === tIndex ? { ...t, fecha: value } : t);
+    const updated = tables.map((t, i) => (i === tIndex ? { ...t, fecha: value } : t));
     setTables(updated);
     triggerSave(updated);
   }
@@ -94,7 +96,7 @@ export default function TestTiroScreen() {
   function updateRow(tIndex, rowId, field, value, colIndex = null) {
     const updated = tables.map((t, i) => {
       if (i !== tIndex) return t;
-      const rows = t.rows.map(r => {
+      const rows = t.rows.map((r) => {
         if (r.id !== rowId) return r;
         if (field === 'jugador') return { ...r, jugador: value };
         if (field === 'score') {
@@ -111,8 +113,8 @@ export default function TestTiroScreen() {
   }
 
   function addRowToBoth() {
-    const updated = tables.map(t => {
-      const newId = t.rows.length > 0 ? Math.max(...t.rows.map(r => r.id)) + 1 : 0;
+    const updated = tables.map((t) => {
+      const newId = t.rows.length > 0 ? Math.max(...t.rows.map((r) => r.id)) + 1 : 0;
       return { ...t, rows: [...t.rows, { id: newId, jugador: '', scores: Array(8).fill('') }] };
     });
     setTables(updated);
@@ -121,7 +123,7 @@ export default function TestTiroScreen() {
 
   function removeRowFromBoth() {
     if (tables[0].rows.length <= 1) return;
-    const updated = tables.map(t => ({ ...t, rows: t.rows.slice(0, -1) }));
+    const updated = tables.map((t) => ({ ...t, rows: t.rows.slice(0, -1) }));
     setTables(updated);
     triggerSave(updated);
   }
@@ -138,7 +140,6 @@ export default function TestTiroScreen() {
 
   return (
     <div className="min-h-screen bg-gray-200 font-serif text-black print:bg-white print:p-0">
-
       {/* Toolbar */}
       <div className="print:hidden sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-4 py-2.5 flex items-center justify-between gap-4 font-sans">
         <button
@@ -148,10 +149,17 @@ export default function TestTiroScreen() {
           <ArrowLeft size={16} /> Cuaderno
         </button>
         <div className="flex items-center gap-2">
-          <button onClick={addRowToBoth} className="flex items-center px-3 py-1 bg-white border border-gray-400 text-sm hover:bg-gray-50 transition shadow-sm rounded">
+          <button
+            onClick={addRowToBoth}
+            className="flex items-center px-3 py-1 bg-white border border-gray-400 text-sm hover:bg-gray-50 transition shadow-sm rounded"
+          >
             <Plus className="w-4 h-4 mr-1" /> Añadir Fila
           </button>
-          <button onClick={removeRowFromBoth} disabled={tables[0].rows.length <= 1} className="flex items-center px-3 py-1 bg-white border border-red-300 text-red-700 text-sm hover:bg-red-50 transition shadow-sm rounded disabled:opacity-40">
+          <button
+            onClick={removeRowFromBoth}
+            disabled={tables[0].rows.length <= 1}
+            className="flex items-center px-3 py-1 bg-white border border-red-300 text-red-700 text-sm hover:bg-red-50 transition shadow-sm rounded disabled:opacity-40"
+          >
             <Minus className="w-4 h-4 mr-1" /> Quitar Fila
           </button>
         </div>
@@ -160,10 +168,16 @@ export default function TestTiroScreen() {
             {saveStatus === 'saving' && 'Guardando...'}
             {saveStatus === 'saved' && '✓ Guardado'}
           </span>
-          <button onClick={resetAll} className="flex items-center px-3 py-1 bg-white border border-gray-400 text-gray-700 text-sm hover:bg-gray-50 transition shadow-sm rounded">
+          <button
+            onClick={resetAll}
+            className="flex items-center px-3 py-1 bg-white border border-gray-400 text-gray-700 text-sm hover:bg-gray-50 transition shadow-sm rounded"
+          >
             <RotateCcw className="w-4 h-4 mr-1" /> Limpiar
           </button>
-          <button onClick={() => window.print()} className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold transition">
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
+          >
             <Printer size={15} /> Imprimir A4
           </button>
         </div>
@@ -172,7 +186,6 @@ export default function TestTiroScreen() {
       {/* Documento A4 */}
       <div className="py-8 px-4 print:p-0">
         <div className="max-w-[800px] mx-auto bg-white border border-gray-400 pt-10 pb-10 px-12 shadow-xl print:shadow-none print:border-none print:m-0 print:p-8 min-h-[297mm]">
-
           {/* Cabecera */}
           <div className="flex justify-between items-start mb-8">
             <div className="w-1/4">
@@ -198,7 +211,7 @@ export default function TestTiroScreen() {
                   <input
                     type="text"
                     value={table.fecha}
-                    onChange={e => updateFecha(tIndex, e.target.value)}
+                    onChange={(e) => updateFecha(tIndex, e.target.value)}
                     className="w-48 border-b border-black focus:outline-none bg-transparent font-sans text-sm pb-px px-1"
                   />
                 </div>
@@ -212,7 +225,7 @@ export default function TestTiroScreen() {
                           <input
                             type="text"
                             value={headerText}
-                            onChange={e => updateHeader(tIndex, colIdx, e.target.value)}
+                            onChange={(e) => updateHeader(tIndex, colIdx, e.target.value)}
                             className="w-full h-full text-center focus:outline-none bg-transparent font-sans text-xs px-1"
                             placeholder={`Test ${colIdx + 1}`}
                           />
@@ -221,13 +234,13 @@ export default function TestTiroScreen() {
                     </tr>
                   </thead>
                   <tbody>
-                    {table.rows.map(row => (
+                    {table.rows.map((row) => (
                       <tr key={row.id}>
                         <td className="border border-black p-0 h-6">
                           <input
                             type="text"
                             value={row.jugador}
-                            onChange={e => updateRow(tIndex, row.id, 'jugador', e.target.value)}
+                            onChange={(e) => updateRow(tIndex, row.id, 'jugador', e.target.value)}
                             className="w-full h-full focus:outline-none bg-transparent font-sans text-sm px-2"
                           />
                         </td>
@@ -236,7 +249,7 @@ export default function TestTiroScreen() {
                             <input
                               type="text"
                               value={score}
-                              onChange={e => updateRow(tIndex, row.id, 'score', e.target.value, colIdx)}
+                              onChange={(e) => updateRow(tIndex, row.id, 'score', e.target.value, colIdx)}
                               className="w-full h-full text-center focus:outline-none bg-transparent font-sans text-sm font-semibold text-blue-900 print:text-black"
                             />
                           </td>
@@ -248,7 +261,6 @@ export default function TestTiroScreen() {
               </div>
             ))}
           </div>
-
         </div>
       </div>
     </div>

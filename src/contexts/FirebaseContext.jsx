@@ -1,4 +1,6 @@
+/* eslint-disable react-refresh/only-export-components, no-undef */
 import React, { createContext, useContext } from 'react';
+import logger from '../utils/logger';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -18,9 +20,7 @@ const firebaseConfig = {
 
 let _app, _auth, _db, _storage, _appId;
 try {
-  const configToUse = typeof __firebase_config !== 'undefined'
-    ? JSON.parse(__firebase_config)
-    : firebaseConfig;
+  const configToUse = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : firebaseConfig;
 
   if (configToUse.apiKey) {
     _app = getApps().length ? getApps()[0] : initializeApp(configToUse);
@@ -30,7 +30,7 @@ try {
     _appId = typeof __app_id !== 'undefined' ? __app_id : 'uros-fbm-app';
   }
 } catch (error) {
-  console.error('Error inicializando Firebase:', error);
+  logger.error('Error inicializando Firebase', error);
 }
 
 export function FirebaseProvider({ children }) {

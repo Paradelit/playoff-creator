@@ -40,8 +40,8 @@ export default function TeamDetailScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    const unsub = subscribeToTeams(user.uid, db, appId, data => {
-      const found = data.find(t => t.id === teamId);
+    const unsub = subscribeToTeams(user.uid, db, appId, (data) => {
+      const found = data.find((t) => t.id === teamId);
       setTeam(found || null);
       setLoadingTeam(false);
     });
@@ -89,8 +89,8 @@ export default function TeamDetailScreen() {
     }
   }
 
-  const staff = members.filter(m => m.tipo === 'staff');
-  const jugadores = members.filter(m => m.tipo === 'jugador');
+  const staff = members.filter((m) => m.tipo === 'staff');
+  const jugadores = members.filter((m) => m.tipo === 'jugador');
 
   if (loadingTeam) {
     return (
@@ -104,7 +104,9 @@ export default function TeamDetailScreen() {
     return (
       <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center gap-4 font-sans">
         <p className="text-slate-600">Equipo no encontrado</p>
-        <button onClick={() => navigate('/teams')} className="text-blue-600 font-bold hover:underline">Volver a Equipos</button>
+        <button onClick={() => navigate('/teams')} className="text-blue-600 font-bold hover:underline">
+          Volver a Equipos
+        </button>
       </div>
     );
   }
@@ -112,7 +114,6 @@ export default function TeamDetailScreen() {
   return (
     <div className="min-h-screen bg-slate-100 p-6 sm:p-8 font-sans pb-24">
       <div className="max-w-2xl mx-auto">
-
         {/* Navegación y título */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
@@ -136,7 +137,13 @@ export default function TeamDetailScreen() {
             </div>
             <button
               onClick={() => {
-                setTeamForm({ categoria: team.categoria, año: team.año || '1º', letra: team.letra || '', genero: team.genero, division: team.division || '' });
+                setTeamForm({
+                  categoria: team.categoria,
+                  año: team.año || '1º',
+                  letra: team.letra || '',
+                  genero: team.genero,
+                  division: team.division || '',
+                });
                 setEditingTeam(true);
               }}
               className="shrink-0 flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-sm font-bold transition-colors border border-slate-300"
@@ -145,7 +152,8 @@ export default function TeamDetailScreen() {
             </button>
           </div>
           <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mt-2 ml-10">
-            {team.categoria}{team.genero ? ` · ${team.genero}` : ''}
+            {team.categoria}
+            {team.genero ? ` · ${team.genero}` : ''}
           </p>
         </div>
 
@@ -154,7 +162,9 @@ export default function TeamDetailScreen() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
               Staff técnico
-              <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-0.5 rounded-full normal-case tracking-normal">{staff.length}</span>
+              <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-0.5 rounded-full normal-case tracking-normal">
+                {staff.length}
+              </span>
             </h2>
             <button
               onClick={() => setEditingMember(emptyMember('staff'))}
@@ -167,7 +177,7 @@ export default function TeamDetailScreen() {
             {staff.length === 0 ? (
               <EmptySection text="Sin miembros de staff" />
             ) : (
-              staff.map(m => (
+              staff.map((m) => (
                 <MemberRow
                   key={m.id}
                   primary={m.nombre}
@@ -185,7 +195,9 @@ export default function TeamDetailScreen() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
               Jugadores
-              <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-0.5 rounded-full normal-case tracking-normal">{jugadores.length}</span>
+              <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-0.5 rounded-full normal-case tracking-normal">
+                {jugadores.length}
+              </span>
             </h2>
             <button
               onClick={() => setEditingMember(emptyMember('jugador'))}
@@ -198,7 +210,7 @@ export default function TeamDetailScreen() {
             {jugadores.length === 0 ? (
               <EmptySection text="Sin jugadores" />
             ) : (
-              jugadores.map(m => (
+              jugadores.map((m) => (
                 <MemberRow
                   key={m.id}
                   primary={m.nombre}
@@ -210,58 +222,81 @@ export default function TeamDetailScreen() {
             )}
           </div>
         </div>
-
       </div>
 
       {/* Modal miembro */}
       {editingMember && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm" onClick={() => setEditingMember(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setEditingMember(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl">
               <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                 <User size={18} className="text-blue-600" />
                 {editingMember.id ? 'Editar' : 'Añadir'} {editingMember.tipo === 'staff' ? 'staff' : 'jugador'}
               </h3>
-              <button onClick={() => setEditingMember(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+              <button onClick={() => setEditingMember(null)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
             </div>
 
             <form onSubmit={handleSaveMember} className="px-6 py-5 flex flex-col gap-4">
               <Field label="Nombre *">
-                <input type="text" required value={editingMember.nombre}
-                  onChange={e => setEditingMember(m => ({ ...m, nombre: e.target.value }))}
+                <input
+                  type="text"
+                  required
+                  value={editingMember.nombre}
+                  onChange={(e) => setEditingMember((m) => ({ ...m, nombre: e.target.value }))}
                   placeholder="Nombre completo"
-                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Fecha de nacimiento">
-                  <input type="date" value={editingMember.fechaNacimiento || ''}
-                    onChange={e => setEditingMember(m => ({ ...m, fechaNacimiento: e.target.value }))}
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  <input
+                    type="date"
+                    value={editingMember.fechaNacimiento || ''}
+                    onChange={(e) => setEditingMember((m) => ({ ...m, fechaNacimiento: e.target.value }))}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
                 </Field>
                 <Field label="DNI / NIE">
-                  <input type="text" value={editingMember.dni || ''}
-                    onChange={e => setEditingMember(m => ({ ...m, dni: e.target.value }))}
+                  <input
+                    type="text"
+                    value={editingMember.dni || ''}
+                    onChange={(e) => setEditingMember((m) => ({ ...m, dni: e.target.value }))}
                     placeholder="00000000X"
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
                 </Field>
               </div>
 
               <Field label="Alergias / notas médicas">
-                <textarea value={editingMember.alergias || ''}
-                  onChange={e => setEditingMember(m => ({ ...m, alergias: e.target.value }))}
+                <textarea
+                  value={editingMember.alergias || ''}
+                  onChange={(e) => setEditingMember((m) => ({ ...m, alergias: e.target.value }))}
                   placeholder="Sin alergias conocidas..."
                   rows={2}
-                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
+                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+                />
               </Field>
 
               {editingMember.tipo === 'staff' && (
                 <Field label="Rol">
-                  <select value={editingMember.rol || ''}
-                    onChange={e => setEditingMember(m => ({ ...m, rol: e.target.value }))}
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                  <select
+                    value={editingMember.rol || ''}
+                    onChange={(e) => setEditingMember((m) => ({ ...m, rol: e.target.value }))}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                  >
                     <option value="">Sin especificar</option>
-                    {ROLES_STAFF.map(r => <option key={r}>{r}</option>)}
+                    {ROLES_STAFF.map((r) => (
+                      <option key={r}>{r}</option>
+                    ))}
                   </select>
                 </Field>
               )}
@@ -269,35 +304,55 @@ export default function TeamDetailScreen() {
               {editingMember.tipo === 'jugador' && (
                 <div className="grid grid-cols-3 gap-3">
                   <Field label="Dorsal">
-                    <input type="number" min="0" max="99" value={editingMember.dorsal ?? ''}
-                      onChange={e => setEditingMember(m => ({ ...m, dorsal: e.target.value }))}
+                    <input
+                      type="number"
+                      min="0"
+                      max="99"
+                      value={editingMember.dorsal ?? ''}
+                      onChange={(e) => setEditingMember((m) => ({ ...m, dorsal: e.target.value }))}
                       placeholder="—"
-                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
                   </Field>
                   <Field label="Altura (cm)">
-                    <input type="number" min="100" max="250" value={editingMember.altura ?? ''}
-                      onChange={e => setEditingMember(m => ({ ...m, altura: e.target.value }))}
+                    <input
+                      type="number"
+                      min="100"
+                      max="250"
+                      value={editingMember.altura ?? ''}
+                      onChange={(e) => setEditingMember((m) => ({ ...m, altura: e.target.value }))}
                       placeholder="—"
-                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
                   </Field>
                   <Field label="Posición">
-                    <select value={editingMember.posicion || ''}
-                      onChange={e => setEditingMember(m => ({ ...m, posicion: e.target.value }))}
-                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+                    <select
+                      value={editingMember.posicion || ''}
+                      onChange={(e) => setEditingMember((m) => ({ ...m, posicion: e.target.value }))}
+                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    >
                       <option value="">—</option>
-                      {POSICIONES.map(p => <option key={p}>{p}</option>)}
+                      {POSICIONES.map((p) => (
+                        <option key={p}>{p}</option>
+                      ))}
                     </select>
                   </Field>
                 </div>
               )}
 
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setEditingMember(null)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setEditingMember(null)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors"
+                >
                   Cancelar
                 </button>
-                <button type="submit" disabled={savingMember}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-60">
+                <button
+                  type="submit"
+                  disabled={savingMember}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-60"
+                >
                   {savingMember ? 'Guardando...' : 'Guardar'}
                 </button>
               </div>
@@ -308,15 +363,29 @@ export default function TeamDetailScreen() {
 
       {/* Modal confirmar borrado miembro */}
       {deletingMemberId && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setDeletingMemberId(null)}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setDeletingMemberId(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-xl font-bold mb-2 text-slate-800">¿Eliminar miembro?</h3>
             <p className="text-slate-600 mb-6 text-sm">Se eliminarán todos sus datos de forma permanente.</p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setDeletingMemberId(null)}
-                className="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition">Cancelar</button>
-              <button onClick={() => handleDeleteMember(deletingMemberId)}
-                className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition shadow-sm">Sí, eliminar</button>
+              <button
+                onClick={() => setDeletingMemberId(null)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDeleteMember(deletingMemberId)}
+                className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition shadow-sm"
+              >
+                Sí, eliminar
+              </button>
             </div>
           </div>
         </div>
@@ -324,21 +393,35 @@ export default function TeamDetailScreen() {
 
       {/* Modal editar equipo */}
       {editingTeam && teamForm && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm" onClick={() => setEditingTeam(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setEditingTeam(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-xl font-bold text-slate-800">Editar equipo</h3>
-              <button onClick={() => setEditingTeam(false)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+              <button onClick={() => setEditingTeam(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
             </div>
             <form onSubmit={handleSaveTeam} className="flex flex-col gap-4">
               <TeamFormFields form={teamForm} setForm={setTeamForm} />
               <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setEditingTeam(false)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setEditingTeam(false)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors"
+                >
                   Cancelar
                 </button>
-                <button type="submit" disabled={savingTeam}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-60">
+                <button
+                  type="submit"
+                  disabled={savingTeam}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-60"
+                >
                   {savingTeam ? 'Guardando...' : 'Guardar'}
                 </button>
               </div>
@@ -361,8 +444,20 @@ function MemberRow({ primary, secondary, onEdit, onDelete }) {
         <p className="text-xs text-slate-500 truncate">{secondary}</p>
       </div>
       <div className="flex items-center gap-1 shrink-0">
-        <button onClick={onEdit} className="text-slate-400 hover:text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition-colors" title="Editar"><Pencil size={15} /></button>
-        <button onClick={onDelete} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar"><Trash2 size={15} /></button>
+        <button
+          onClick={onEdit}
+          className="text-slate-400 hover:text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+          title="Editar"
+        >
+          <Pencil size={15} />
+        </button>
+        <button
+          onClick={onDelete}
+          className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors"
+          title="Eliminar"
+        >
+          <Trash2 size={15} />
+        </button>
       </div>
     </div>
   );

@@ -39,7 +39,6 @@ export default function PilaresScreen() {
 
   return (
     <div className="min-h-screen bg-gray-200 py-8 px-4 font-serif text-black print:bg-white print:p-0 flex flex-col items-center gap-8 print:block">
-
       {/* Toolbar */}
       <div className="w-full max-w-[800px] flex items-center justify-between print:hidden font-sans">
         <button

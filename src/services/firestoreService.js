@@ -1,4 +1,6 @@
 import { doc, setDoc } from 'firebase/firestore';
+import { userDocRef } from './firestoreHelpers';
+import logger from '../utils/logger';
 
 export const toFirestore = (bracket, forShared = false) => {
   // eslint-disable-next-line no-unused-vars
@@ -13,13 +15,17 @@ export const saveBracketToFirestore = async (bracket, updatedBracket, { user, db
     if (bracket.shareCode) {
       await setDoc(doc(db, 'artifacts', appId, 'shared', bracket.shareCode), toFirestore(updatedBracket, true));
       if (updatedBracket.myTeam !== undefined) {
-        setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'brackets', updatedBracket.id), { myTeam: updatedBracket.myTeam || null }, { merge: true }).catch(() => {});
+        setDoc(
+          userDocRef(db, appId, user.uid, 'brackets', updatedBracket.id),
+          { myTeam: updatedBracket.myTeam || null },
+          { merge: true },
+        ).catch((e) => logger.warn('Error guardando myTeam en shared bracket', e));
       }
     } else {
-      await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'brackets', updatedBracket.id), toFirestore(updatedBracket));
+      await setDoc(userDocRef(db, appId, user.uid, 'brackets', updatedBracket.id), toFirestore(updatedBracket));
     }
   } catch (e) {
-    console.error("Error guardando en la nube", e);
+    logger.error('Error guardando en la nube', e);
     if (onError) onError('No se pudo guardar en la nube. Comprueba tu conexión.');
   }
 };

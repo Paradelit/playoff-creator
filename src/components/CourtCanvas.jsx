@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { useRef, useState } from 'react';
 
 // ─── SVG markers ─────────────────────────────────────────────────────────────
@@ -44,30 +45,84 @@ export const RenderElement = ({ el }) => {
     return (
       <g>
         <circle cx={el.x} cy={el.y} r="5.5" fill="white" stroke="black" strokeWidth="1.2" />
-        <text x={el.x} y={el.y + 3} textAnchor="middle" fontSize="9" fontWeight="bold" fill="black" className="select-none pointer-events-none">{el.num}</text>
+        <text
+          x={el.x}
+          y={el.y + 3}
+          textAnchor="middle"
+          fontSize="9"
+          fontWeight="bold"
+          fill="black"
+          className="select-none pointer-events-none"
+        >
+          {el.num}
+        </text>
       </g>
     );
   }
   if (el.type === 'X') {
     return (
-      <path d={`M ${el.x - 4.5} ${el.y - 4.5} L ${el.x + 4.5} ${el.y + 4.5} M ${el.x - 4.5} ${el.y + 4.5} L ${el.x + 4.5} ${el.y - 4.5}`} stroke="black" strokeWidth="1.5" />
+      <path
+        d={`M ${el.x - 4.5} ${el.y - 4.5} L ${el.x + 4.5} ${el.y + 4.5} M ${el.x - 4.5} ${el.y + 4.5} L ${el.x + 4.5} ${el.y - 4.5}`}
+        stroke="black"
+        strokeWidth="1.5"
+      />
     );
   }
   if (el.type === 'ball') {
     return <circle cx={el.x} cy={el.y} r="3.5" fill="#f97316" stroke="black" strokeWidth="1" />;
   }
   if (el.type === 'cone') {
-    return <path d={`M ${el.x} ${el.y - 4} L ${el.x + 4} ${el.y + 4} L ${el.x - 4} ${el.y + 4} Z`} fill="#ef4444" stroke="black" strokeWidth="1" />;
+    return (
+      <path
+        d={`M ${el.x} ${el.y - 4} L ${el.x + 4} ${el.y + 4} L ${el.x - 4} ${el.y + 4} Z`}
+        fill="#ef4444"
+        stroke="black"
+        strokeWidth="1"
+      />
+    );
   }
   if (el.type === 'line') {
     if (el.lineType === 'move')
-      return <path d={`M ${el.x1} ${el.y1} L ${el.x2} ${el.y2}`} stroke="black" strokeWidth="1.5" fill="none" markerEnd="url(#arrow)" />;
+      return (
+        <path
+          d={`M ${el.x1} ${el.y1} L ${el.x2} ${el.y2}`}
+          stroke="black"
+          strokeWidth="1.5"
+          fill="none"
+          markerEnd="url(#arrow)"
+        />
+      );
     if (el.lineType === 'pass')
-      return <path d={`M ${el.x1} ${el.y1} L ${el.x2} ${el.y2}`} stroke="black" strokeWidth="1.5" fill="none" strokeDasharray="4,3" markerEnd="url(#arrow)" />;
+      return (
+        <path
+          d={`M ${el.x1} ${el.y1} L ${el.x2} ${el.y2}`}
+          stroke="black"
+          strokeWidth="1.5"
+          fill="none"
+          strokeDasharray="4,3"
+          markerEnd="url(#arrow)"
+        />
+      );
     if (el.lineType === 'dribble')
-      return <path d={getZigZagPath(el.x1, el.y1, el.x2, el.y2)} stroke="black" strokeWidth="1.5" fill="none" markerEnd="url(#arrow)" />;
+      return (
+        <path
+          d={getZigZagPath(el.x1, el.y1, el.x2, el.y2)}
+          stroke="black"
+          strokeWidth="1.5"
+          fill="none"
+          markerEnd="url(#arrow)"
+        />
+      );
     if (el.lineType === 'screen')
-      return <path d={`M ${el.x1} ${el.y1} L ${el.x2} ${el.y2}`} stroke="black" strokeWidth="1.5" fill="none" markerEnd="url(#screenBar)" />;
+      return (
+        <path
+          d={`M ${el.x1} ${el.y1} L ${el.x2} ${el.y2}`}
+          stroke="black"
+          strokeWidth="1.5"
+          fill="none"
+          markerEnd="url(#screenBar)"
+        />
+      );
   }
   return null;
 };
@@ -108,7 +163,13 @@ const PistaEntera = () => (
 
 // ─── CourtCanvas ──────────────────────────────────────────────────────────────
 
-export default function CourtCanvas({ tipo, elementos = [], setElementos, readOnly = false, activeTool }) {
+const CourtCanvas = React.memo(function CourtCanvas({
+  tipo,
+  elementos = [],
+  setElementos,
+  readOnly = false,
+  activeTool,
+}) {
   const svgRef = useRef(null);
   const [dragStart, setDragStart] = useState(null);
   const [previewEnd, setPreviewEnd] = useState(null);
@@ -127,8 +188,11 @@ export default function CourtCanvas({ tipo, elementos = [], setElementos, readOn
     e.preventDefault();
     const coords = getCoords(e);
     if (['O', 'X', 'ball', 'cone'].includes(activeTool)) {
-      const nextNum = (elementos.filter(el => el.type === 'O').length % 5) + 1;
-      setElementos([...elementos, { id: Date.now(), type: activeTool, x: coords.x, y: coords.y, num: activeTool === 'O' ? nextNum : null }]);
+      const nextNum = (elementos.filter((el) => el.type === 'O').length % 5) + 1;
+      setElementos([
+        ...elementos,
+        { id: Date.now(), type: activeTool, x: coords.x, y: coords.y, num: activeTool === 'O' ? nextNum : null },
+      ]);
       return;
     }
     if (['move', 'pass', 'dribble', 'screen'].includes(activeTool)) {
@@ -147,10 +211,18 @@ export default function CourtCanvas({ tipo, elementos = [], setElementos, readOn
     if (readOnly || !dragStart) return;
     const dist = Math.hypot(previewEnd.x - dragStart.x, previewEnd.y - dragStart.y);
     if (dist > 5) {
-      setElementos([...elementos, {
-        id: Date.now(), type: 'line', lineType: activeTool,
-        x1: dragStart.x, y1: dragStart.y, x2: previewEnd.x, y2: previewEnd.y,
-      }]);
+      setElementos([
+        ...elementos,
+        {
+          id: Date.now(),
+          type: 'line',
+          lineType: activeTool,
+          x1: dragStart.x,
+          y1: dragStart.y,
+          x2: previewEnd.x,
+          y2: previewEnd.y,
+        },
+      ]);
     }
     setDragStart(null);
     setPreviewEnd(null);
@@ -163,32 +235,103 @@ export default function CourtCanvas({ tipo, elementos = [], setElementos, readOn
       ref={svgRef}
       viewBox={viewBox}
       className={`w-full h-full text-black ${readOnly ? '' : 'cursor-crosshair touch-none'}`}
-      onMouseDown={handleDown} onMouseMove={handleMove} onMouseUp={handleUp} onMouseLeave={handleUp}
-      onTouchStart={handleDown} onTouchMove={handleMove} onTouchEnd={handleUp}
+      onMouseDown={handleDown}
+      onMouseMove={handleMove}
+      onMouseUp={handleUp}
+      onMouseLeave={handleUp}
+      onTouchStart={handleDown}
+      onTouchMove={handleMove}
+      onTouchEnd={handleUp}
       style={{ touchAction: 'none' }}
     >
       <SvgDefs />
-      <g className="opacity-70 pointer-events-none">
-        {tipo === 'media' ? <MediaPista /> : <PistaEntera />}
-      </g>
-      {elementos.map(el => <RenderElement key={el.id} el={el} />)}
+      <g className="opacity-70 pointer-events-none">{tipo === 'media' ? <MediaPista /> : <PistaEntera />}</g>
+      {elementos.map((el) => (
+        <RenderElement key={el.id} el={el} />
+      ))}
       {dragStart && previewEnd && (
-        <RenderElement el={{ type: 'line', lineType: activeTool, x1: dragStart.x, y1: dragStart.y, x2: previewEnd.x, y2: previewEnd.y }} />
+        <RenderElement
+          el={{
+            type: 'line',
+            lineType: activeTool,
+            x1: dragStart.x,
+            y1: dragStart.y,
+            x2: previewEnd.x,
+            y2: previewEnd.y,
+          }}
+        />
       )}
     </svg>
   );
-}
+});
+
+export default CourtCanvas;
 
 // ─── Playbook Editor (modal reutilizable) ─────────────────────────────────────
 
 export const COURT_TOOLS = [
-  { id: 'O',       label: 'Atacante (Auto 1-5)', icon: <div className="w-4 h-4 rounded-full border border-black text-[10px] flex items-center justify-center font-bold">1</div> },
-  { id: 'X',       label: 'Defensor',            icon: <span className="font-bold text-sm">X</span> },
-  { id: 'ball',    label: 'Balón',               icon: <div className="w-3 h-3 rounded-full bg-orange-500 border border-black" /> },
-  { id: 'cone',    label: 'Cono',                icon: <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[8px] border-l-transparent border-r-transparent border-b-red-500" /> },
+  {
+    id: 'O',
+    label: 'Atacante (Auto 1-5)',
+    icon: (
+      <div className="w-4 h-4 rounded-full border border-black text-[10px] flex items-center justify-center font-bold">
+        1
+      </div>
+    ),
+  },
+  { id: 'X', label: 'Defensor', icon: <span className="font-bold text-sm">X</span> },
+  { id: 'ball', label: 'Balón', icon: <div className="w-3 h-3 rounded-full bg-orange-500 border border-black" /> },
+  {
+    id: 'cone',
+    label: 'Cono',
+    icon: (
+      <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-b-[8px] border-l-transparent border-r-transparent border-b-red-500" />
+    ),
+  },
   { divider: true },
-  { id: 'move',    label: 'Corte (Sólida)',      icon: <svg width="20" height="10"><line x1="2" y1="5" x2="18" y2="5" stroke="black" strokeWidth="1.5" markerEnd="url(#arrow)" /></svg> },
-  { id: 'pass',    label: 'Pase (Discontinua)',  icon: <svg width="20" height="10"><line x1="2" y1="5" x2="18" y2="5" stroke="black" strokeWidth="1.5" strokeDasharray="3,2" markerEnd="url(#arrow)" /></svg> },
-  { id: 'dribble', label: 'Bote (ZigZag)',       icon: <svg width="20" height="10"><path d="M2,5 L6,2 L10,8 L14,2 L18,5" stroke="black" fill="none" strokeWidth="1.5" /></svg> },
-  { id: 'screen',  label: 'Bloqueo (Tope)',      icon: <svg width="20" height="10"><path d="M2,5 L16,5 M16,2 L16,8" stroke="black" strokeWidth="1.5" /></svg> },
+  {
+    id: 'move',
+    label: 'Corte (Sólida)',
+    icon: (
+      <svg width="20" height="10">
+        <line x1="2" y1="5" x2="18" y2="5" stroke="black" strokeWidth="1.5" markerEnd="url(#arrow)" />
+      </svg>
+    ),
+  },
+  {
+    id: 'pass',
+    label: 'Pase (Discontinua)',
+    icon: (
+      <svg width="20" height="10">
+        <line
+          x1="2"
+          y1="5"
+          x2="18"
+          y2="5"
+          stroke="black"
+          strokeWidth="1.5"
+          strokeDasharray="3,2"
+          markerEnd="url(#arrow)"
+        />
+      </svg>
+    ),
+  },
+  {
+    id: 'dribble',
+    label: 'Bote (ZigZag)',
+    icon: (
+      <svg width="20" height="10">
+        <path d="M2,5 L6,2 L10,8 L14,2 L18,5" stroke="black" fill="none" strokeWidth="1.5" />
+      </svg>
+    ),
+  },
+  {
+    id: 'screen',
+    label: 'Bloqueo (Tope)',
+    icon: (
+      <svg width="20" height="10">
+        <path d="M2,5 L16,5 M16,2 L16,8" stroke="black" strokeWidth="1.5" />
+      </svg>
+    ),
+  },
 ];

@@ -1,3 +1,4 @@
+import logger from '../utils/logger';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.js?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
@@ -8,7 +9,7 @@ export const extractTextFromFile = async (file) => {
   }
   if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
     const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('El PDF tardó demasiado en procesarse. Prueba con otro archivo.')), 30000)
+      setTimeout(() => reject(new Error('El PDF tardó demasiado en procesarse. Prueba con otro archivo.')), 30000),
     );
     const extract = async () => {
       const arrayBuffer = await file.arrayBuffer();
@@ -17,7 +18,7 @@ export const extractTextFromFile = async (file) => {
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        text += content.items.map(item => item.str).join(' ') + '\n';
+        text += content.items.map((item) => item.str).join(' ') + '\n';
       }
       return text;
     };
@@ -33,16 +34,17 @@ export const extractTextFromFile = async (file) => {
 };
 
 const callGemini = async (prompt, onStatus) => {
-  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
   const models = geminiApiKey
     ? ['gemini-flash-latest', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b']
     : ['gemini-2.5-flash-preview-09-2025', 'gemini-2.0-flash', 'gemini-1.5-flash'];
   let modelIndex = 0;
-  const getUrl = () => `https://generativelanguage.googleapis.com/v1beta/models/${models[modelIndex]}:generateContent?key=${geminiApiKey}`;
+  const getUrl = () =>
+    `https://generativelanguage.googleapis.com/v1beta/models/${models[modelIndex]}:generateContent?key=${geminiApiKey}`;
 
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { responseMimeType: "application/json" }
+    generationConfig: { responseMimeType: 'application/json' },
   };
 
   while (modelIndex < models.length) {
@@ -51,33 +53,39 @@ const callGemini = async (prompt, onStatus) => {
       const response = await fetch(getUrl(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
-      if (response.status === 429) throw new Error("RATE_LIMIT");
-      if (response.status === 403) throw new Error("FORBIDDEN");
+      if (response.status === 429) throw new Error('RATE_LIMIT');
+      if (response.status === 403) throw new Error('FORBIDDEN');
       if (response.status === 503) {
-        console.warn(`Modelo ${models[modelIndex]} saturado, probando siguiente...`);
+        logger.warn(`Modelo ${models[modelIndex]} saturado, probando siguiente...`);
         modelIndex++;
-        if (modelIndex < models.length) await new Promise(res => setTimeout(res, 1000));
+        if (modelIndex < models.length) await new Promise((res) => setTimeout(res, 1000));
         continue;
       }
       if (!response.ok) {
         const errData = await response.text();
-        console.error("Detalle del error de Gemini:", errData);
+        logger.error('Detalle del error de Gemini', new Error(errData));
         throw new Error('API Error');
       }
       const data = await response.json();
       const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+      const cleanText = responseText
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
       return JSON.parse(cleanText);
     } catch (err) {
-      if (err.message === "RATE_LIMIT" || err.message === "FORBIDDEN") throw err;
-      if (err.message !== 'API Error') { modelIndex++; continue; }
-      throw new Error("Fallo en la comunicación con la IA.");
+      if (err.message === 'RATE_LIMIT' || err.message === 'FORBIDDEN') throw err;
+      if (err.message !== 'API Error') {
+        modelIndex++;
+        continue;
+      }
+      throw new Error('Fallo en la comunicación con la IA.');
     }
   }
-  throw new Error("Todos los modelos de Gemini están saturados. Inténtalo más tarde.");
+  throw new Error('Todos los modelos de Gemini están saturados. Inténtalo más tarde.');
 };
 
 export const callGeminiForBracket = async (basesText, clasifText, userInstructions, { onStatus, onError }) => {
@@ -134,14 +142,14 @@ export const callGeminiForBracket = async (basesText, clasifText, userInstructio
   try {
     return await callGemini(prompt, onStatus);
   } catch (err) {
-    if (err.message === "RATE_LIMIT") onError("Demasiadas peticiones a Gemini. Espera 60 segundos.");
-    else if (err.message === "FORBIDDEN") onError("Error 403: La API Key no tiene acceso a la IA.");
+    if (err.message === 'RATE_LIMIT') onError('Demasiadas peticiones a Gemini. Espera 60 segundos.');
+    else if (err.message === 'FORBIDDEN') onError('Error 403: La API Key no tiene acceso a la IA.');
     throw err;
   }
 };
 
 export const callGeminiForCalendar = async (excelText, teams, { onStatus, onError }) => {
-  const teamsJson = JSON.stringify(teams.map(t => ({ id: t.id, teamName: t.teamName })));
+  const teamsJson = JSON.stringify(teams.map((t) => ({ id: t.id, teamName: t.teamName })));
   const prompt = `
 Eres un asistente de planificación deportiva para un club de baloncesto.
 Se te entrega el contenido de un archivo Excel que contiene el CUADRANTE DE ENTRENAMIENTOS del club para la temporada.
@@ -207,8 +215,8 @@ DEVUELVE ÚNICAMENTE UN JSON ESTRICTAMENTE VÁLIDO con esta estructura:
   try {
     return await callGemini(prompt, onStatus);
   } catch (err) {
-    if (err.message === "RATE_LIMIT") onError("Demasiadas peticiones a Gemini. Espera 60 segundos.");
-    else if (err.message === "FORBIDDEN") onError("Error 403: La API Key no tiene acceso a la IA.");
+    if (err.message === 'RATE_LIMIT') onError('Demasiadas peticiones a Gemini. Espera 60 segundos.');
+    else if (err.message === 'FORBIDDEN') onError('Error 403: La API Key no tiene acceso a la IA.');
     throw err;
   }
 };
@@ -231,8 +239,8 @@ export const callGeminiForResults = async (bracketStateSimplified, resultsText, 
   try {
     return await callGemini(prompt, null);
   } catch (err) {
-    if (err.message === "RATE_LIMIT") onError("Límite de peticiones de Google alcanzado. Espera un minuto.");
-    else if (err.message === "FORBIDDEN") onError("Error 403: API Key incorrecta para la IA de Gemini.");
+    if (err.message === 'RATE_LIMIT') onError('Límite de peticiones de Google alcanzado. Espera un minuto.');
+    else if (err.message === 'FORBIDDEN') onError('Error 403: API Key incorrecta para la IA de Gemini.');
     throw err;
   }
 };

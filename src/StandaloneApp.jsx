@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import LoadingScreen from './screens/LoadingScreen';
 import LoginScreen from './screens/LoginScreen';
@@ -24,14 +24,15 @@ export default function StandaloneApp() {
 
   if (!authReady) return <LoadingScreen />;
 
-  if (!user) return (
-    <LoginScreen
-      errorMsg={authError}
-      isLoggingIn={isLoggingIn}
-      handleLogin={handleLogin}
-      handleAnonymousLogin={handleAnonymousLogin}
-    />
-  );
+  if (!user)
+    return (
+      <LoginScreen
+        errorMsg={authError}
+        isLoggingIn={isLoggingIn}
+        handleLogin={handleLogin}
+        handleAnonymousLogin={handleAnonymousLogin}
+      />
+    );
 
   return (
     <PlayoffCreatorModule

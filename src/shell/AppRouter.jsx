@@ -1,23 +1,33 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
-import TeamsScreen from '../screens/TeamsScreen';
-import TeamDetailScreen from '../screens/TeamDetailScreen';
-import TeamTrainingsScreen from '../screens/TeamTrainingsScreen';
-import TrainingEditorScreen from '../screens/TrainingEditorScreen';
-import ExerciseLibraryScreen from '../screens/ExerciseLibraryScreen';
-import CalendarScreen from '../screens/CalendarScreen';
-import SettingsScreen from '../screens/SettingsScreen';
-import PlayoffCreatorModule from '../PlayoffCreatorModule';
-import CuadernoScreen from '../screens/CuadernoScreen';
-import InfoScreen from '../screens/cuaderno/InfoScreen';
-import PilaresScreen from '../screens/cuaderno/PilaresScreen';
-import NormasScreen from '../screens/cuaderno/NormasScreen';
-import TestTiroScreen from '../screens/cuaderno/TestTiroScreen';
-import JugadoresScreen from '../screens/cuaderno/JugadoresScreen';
-import NotasScreen from '../screens/cuaderno/NotasScreen';
+
+const TeamsScreen = lazy(() => import('../screens/TeamsScreen'));
+const TeamDetailScreen = lazy(() => import('../screens/TeamDetailScreen'));
+const TeamTrainingsScreen = lazy(() => import('../screens/TeamTrainingsScreen'));
+const TrainingEditorScreen = lazy(() => import('../screens/TrainingEditorScreen'));
+const ExerciseLibraryScreen = lazy(() => import('../screens/ExerciseLibraryScreen'));
+const CalendarScreen = lazy(() => import('../screens/CalendarScreen'));
+const SettingsScreen = lazy(() => import('../screens/SettingsScreen'));
+const PlayoffCreatorModule = lazy(() => import('../PlayoffCreatorModule'));
+const CuadernoScreen = lazy(() => import('../screens/CuadernoScreen'));
+const InfoScreen = lazy(() => import('../screens/cuaderno/InfoScreen'));
+const PilaresScreen = lazy(() => import('../screens/cuaderno/PilaresScreen'));
+const NormasScreen = lazy(() => import('../screens/cuaderno/NormasScreen'));
+const TestTiroScreen = lazy(() => import('../screens/cuaderno/TestTiroScreen'));
+const JugadoresScreen = lazy(() => import('../screens/cuaderno/JugadoresScreen'));
+const NotasScreen = lazy(() => import('../screens/cuaderno/NotasScreen'));
+
+function LazyFallback() {
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <Loader2 size={48} className="text-blue-600 animate-spin" />
+    </div>
+  );
+}
 
 // Guard genérico para rutas autenticadas
 function AuthGuard({ children }) {
@@ -128,27 +138,78 @@ function LoginRoute() {
 
 export default function AppRouter() {
   return (
-    <Routes>
-      <Route path="/" element={<HomeRoute />} />
-      <Route path="/login" element={<LoginRoute />} />
-      <Route path="/playoffs" element={<PlayoffsRoute />} />
-      <Route path="/teams" element={<TeamsRoute />} />
-      <Route path="/teams/:teamId" element={<TeamDetailRoute />} />
-      <Route path="/teams/:teamId/cuaderno" element={<AuthGuard><CuadernoScreen /></AuthGuard>} />
-      <Route path="/teams/:teamId/cuaderno/info" element={<AuthGuard><InfoScreen /></AuthGuard>} />
-      <Route path="/teams/:teamId/cuaderno/pilares" element={<AuthGuard><PilaresScreen /></AuthGuard>} />
-      <Route path="/teams/:teamId/cuaderno/normas" element={<AuthGuard><NormasScreen /></AuthGuard>} />
-      <Route path="/teams/:teamId/cuaderno/test-tiro" element={<AuthGuard><TestTiroScreen /></AuthGuard>} />
-      <Route path="/teams/:teamId/cuaderno/jugadores" element={<AuthGuard><JugadoresScreen /></AuthGuard>} />
-      <Route path="/teams/:teamId/cuaderno/notas" element={<AuthGuard><NotasScreen /></AuthGuard>} />
-      <Route path="/teams/:teamId/trainings" element={<TeamTrainingsRoute />} />
-      <Route path="/teams/:teamId/trainings/:trainingId" element={<TrainingEditorRoute />} />
-      <Route path="/exercises" element={<ExercisesRoute />} />
-      <Route path="/calendar" element={<CalendarRoute />} />
-      <Route path="/settings" element={<SettingsRoute />} />
-      <Route path="/s/:code" element={<ShareRedirect />} />
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <Suspense fallback={<LazyFallback />}>
+      <Routes>
+        <Route path="/" element={<HomeRoute />} />
+        <Route path="/login" element={<LoginRoute />} />
+        <Route path="/playoffs" element={<PlayoffsRoute />} />
+        <Route path="/teams" element={<TeamsRoute />} />
+        <Route path="/teams/:teamId" element={<TeamDetailRoute />} />
+        <Route
+          path="/teams/:teamId/cuaderno"
+          element={
+            <AuthGuard>
+              <CuadernoScreen />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/teams/:teamId/cuaderno/info"
+          element={
+            <AuthGuard>
+              <InfoScreen />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/teams/:teamId/cuaderno/pilares"
+          element={
+            <AuthGuard>
+              <PilaresScreen />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/teams/:teamId/cuaderno/normas"
+          element={
+            <AuthGuard>
+              <NormasScreen />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/teams/:teamId/cuaderno/test-tiro"
+          element={
+            <AuthGuard>
+              <TestTiroScreen />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/teams/:teamId/cuaderno/jugadores"
+          element={
+            <AuthGuard>
+              <JugadoresScreen />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/teams/:teamId/cuaderno/notas"
+          element={
+            <AuthGuard>
+              <NotasScreen />
+            </AuthGuard>
+          }
+        />
+        <Route path="/teams/:teamId/trainings" element={<TeamTrainingsRoute />} />
+        <Route path="/teams/:teamId/trainings/:trainingId" element={<TrainingEditorRoute />} />
+        <Route path="/exercises" element={<ExercisesRoute />} />
+        <Route path="/calendar" element={<CalendarRoute />} />
+        <Route path="/settings" element={<SettingsRoute />} />
+        <Route path="/s/:code" element={<ShareRedirect />} />
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
