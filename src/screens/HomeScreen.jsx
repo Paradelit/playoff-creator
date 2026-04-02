@@ -244,7 +244,14 @@ export default function HomeScreen() {
   const handleEventAction = useCallback(
     (session) => {
       if (session.tipo === 'playoff') {
-        navigate(`/playoffs?teamId=${session.teamId}`);
+        const team = teams.find((t) => t.id === session.teamId);
+        if (isMinibasketSextos(team)) {
+          navigate(`/calendar/${session.id}/planilla`, {
+            state: { playoffSession: session },
+          });
+        } else {
+          navigate(`/playoffs?teamId=${session.teamId}`);
+        }
       } else if (session.tipo === 'entrenamiento') {
         if (session.trainingId) {
           navigate(`/teams/${session.teamId}/trainings/${session.trainingId}`);
@@ -512,7 +519,11 @@ function EmptyTeamCard({ navigate }) {
 }
 
 function getActionLabel(session, teams) {
-  if (session.tipo === 'playoff') return 'Ver cuadro';
+  if (session.tipo === 'playoff') {
+    const team = teams.find((t) => t.id === session.teamId);
+    if (isMinibasketSextos(team)) return 'Planilla de sextos';
+    return 'Ver cuadro';
+  }
   if (session.tipo === 'entrenamiento') return session.trainingId ? 'Abrir entrenamiento' : 'Crear entrenamiento';
   if (session.tipo === 'partido') {
     const team = teams.find((t) => t.id === session.teamId);

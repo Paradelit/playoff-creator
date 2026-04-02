@@ -767,15 +767,30 @@ export default function CalendarScreen() {
             </div>
             <div className="px-5 pb-5 flex flex-col gap-2">
               {selectedSession.tipo === 'playoff' ? (
-                <button
-                  onClick={() => {
-                    setSelectedSession(null);
-                    navigate(`/playoffs?teamId=${selectedSession.teamId}`);
-                  }}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
-                >
-                  <Trophy size={16} /> Ver cuadro de playoff <ArrowRight size={15} />
-                </button>
+                <>
+                  {isMinibasketSextos(teams.find((t) => t.id === selectedSession.teamId)) && (
+                    <button
+                      onClick={() => {
+                        setSelectedSession(null);
+                        navigate(`/calendar/${selectedSession.id}/planilla`, {
+                          state: { playoffSession: selectedSession },
+                        });
+                      }}
+                      className="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
+                    >
+                      <ClipboardList size={16} /> Planilla de Sextos <ArrowRight size={15} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedSession(null);
+                      navigate(`/playoffs?teamId=${selectedSession.teamId}`);
+                    }}
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
+                  >
+                    <Trophy size={16} /> Ver cuadro de playoff <ArrowRight size={15} />
+                  </button>
+                </>
               ) : (
                 <>
                   {selectedSession.tipo === 'entrenamiento' && (
