@@ -36,6 +36,7 @@ import { callGeminiForCalendar } from '../services/aiService';
 import { teamDisplayName } from './TeamsScreen';
 import { isMinibasketSextos } from '../utils/minibasketUtils';
 import { deletePlanilla } from '../services/planillaService';
+import { buildPlayoffSessions } from '../utils/calendarUtils';
 
 const TEAM_COLORS = [
   'bg-blue-600 text-white',
@@ -201,11 +202,21 @@ export default function CalendarScreen() {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
 
-  const [filterTeamId, setFilterTeamId] = useState(() => new URLSearchParams(location.search).get('teamId') || null);
-  const [viewMode, setViewMode] = useState('month');
+  const searchParams = new URLSearchParams(location.search);
+  const [filterTeamId, setFilterTeamId] = useState(() => searchParams.get('teamId') || null);
 
+  const initialDate = (() => {
+    const dateParam = new URLSearchParams(location.search).get('date');
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      const [y, m, d] = dateParam.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    const t = new Date();
+    return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  })();
+  const [viewMode, setViewMode] = useState(new URLSearchParams(location.search).get('date') ? 'day' : 'month');
   const today = new Date();
-  const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
+  const [currentDate, setCurrentDate] = useState(initialDate);
   const [sessions, setSessions] = useState([]);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -499,56 +510,7 @@ export default function CalendarScreen() {
     }
   }
 
-  // Extract playoff matches as virtual calendar sessions
-  const playoffSessions = React.useMemo(() => {
-    const result = [];
-    const teamIds = new Set(teams.map((t) => t.id));
-    for (const b of brackets) {
-      if (!b.teamId || !teamIds.has(b.teamId) || !b.bracketData?.state) continue;
-      const team = teams.find((t) => t.id === b.teamId);
-      const teamName = team ? teamDisplayName(team) : '';
-      const myTeam = b.myTeam;
-      for (const match of Object.values(b.bracketData.state)) {
-        if (!myTeam || (match.team1 !== myTeam && match.team2 !== myTeam)) continue;
-        const dates = match.dates || [];
-        if (dates.length === 0) continue;
-        const rival = match.team1 === myTeam ? match.team2 : match.team1;
-        for (let gi = 0; gi < dates.length; gi++) {
-          const d = dates[gi];
-          if (!d) continue;
-          if (typeof d !== 'string' || !d) continue;
-          let dateStr = null;
-          if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
-            dateStr = d.slice(0, 10);
-          } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
-            const [dd, mm, yyyy] = d.split('/');
-            dateStr = `${yyyy}-${mm}-${dd}`;
-          }
-          if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) continue;
-          result.push({
-            id: `playoff-${b.id}-${match.id}-${gi}`,
-            teamId: b.teamId,
-            teamName,
-            tipo: 'playoff',
-            fecha: dateStr,
-            horaInicio: '',
-            horaFin: '',
-            lugar: '',
-            rival: rival || 'Por definir',
-            esLocal: true,
-            bracketId: b.id,
-            bracketName: b.name || b.tournamentNameDetected || 'Playoff',
-            matchTitle: match.title || '',
-            gameIndex: gi,
-            gamesCount: match.gamesCount || 1,
-            scores: match.scores,
-            isPlayoff: true,
-          });
-        }
-      }
-    }
-    return result;
-  }, [brackets, teams]);
+  const playoffSessions = React.useMemo(() => buildPlayoffSessions(brackets, teams), [brackets, teams]);
 
   const allSessions = React.useMemo(() => [...sessions, ...playoffSessions], [sessions, playoffSessions]);
   const filterTeam = filterTeamId ? teams.find((t) => t.id === filterTeamId) || null : null;

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
   ZoomIn,
@@ -80,7 +81,13 @@ export default function BracketScreen() {
     handleUnlinkTeam,
   } = useBracket();
 
+  const navigate = useNavigate();
   const [showLinkDropdown, setShowLinkDropdown] = useState(false);
+
+  const handleDateClick = activeBracket?.teamId
+    ? (isoDate) => navigate(`/calendar?date=${isoDate}&teamId=${activeBracket.teamId}`)
+    : undefined;
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 animate-in fade-in duration-700">
       {isProcessingResults && (
@@ -599,6 +606,7 @@ export default function BracketScreen() {
               onSelectSorteo={handleSorteoSelect}
               myTeam={activeBracket.myTeam || ''}
               readOnly={!canEdit}
+              onDateClick={handleDateClick}
             />
           </div>
         </div>
