@@ -17,6 +17,7 @@ import {
   Sparkles,
   AlertTriangle,
 } from 'lucide-react';
+import { onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { subscribeToTeams } from '../services/teamsService';
@@ -30,8 +31,11 @@ import {
   getCalendarSessionsInRange,
   deleteCalendarSessionsByTeamAndRange,
 } from '../services/calendarService';
+import { userColRef } from '../services/firestoreHelpers';
 import { callGeminiForCalendar } from '../services/aiService';
 import { teamDisplayName } from './TeamsScreen';
+import { isMinibasketSextos } from '../utils/minibasketUtils';
+import { deletePlanilla } from '../services/planillaService';
 
 const TEAM_COLORS = [
   'bg-blue-600 text-white',
@@ -243,9 +247,18 @@ export default function CalendarScreen() {
     return [toYMD(start), toYMD(end)];
   }
 
+  const [brackets, setBrackets] = useState([]);
+
   useEffect(() => {
     if (!user || !db) return;
     return subscribeToTeams(user.uid, db, appId, setTeams);
+  }, [user, db, appId]);
+
+  useEffect(() => {
+    if (!user || !db) return;
+    return onSnapshot(userColRef(db, appId, user.uid, 'brackets'), (snap) => {
+      setBrackets(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
+    });
   }, [user, db, appId]);
 
   useEffect(() => {
@@ -281,16 +294,45 @@ export default function CalendarScreen() {
     e.preventDefault();
     setSavingSession(true);
     try {
+      const isNew = !editingSession.id;
       const teamObj = teams.find((t) => t.id === editingSession.teamId);
+      const sessionId = editingSession.id || crypto.randomUUID();
+      const teamName = teamObj ? teamDisplayName(teamObj) : '';
+      const sessionNumber = Number(editingSession.sessionNumber) || 1;
       await saveCalendarSession(
         {
           ...editingSession,
-          id: editingSession.id || crypto.randomUUID(),
-          teamName: teamObj ? teamDisplayName(teamObj) : '',
-          sessionNumber: Number(editingSession.sessionNumber) || 1,
+          id: sessionId,
+          teamName,
+          sessionNumber,
         },
         { uid: user.uid, db, appId },
       );
+      // Auto-crear entrenamiento si es nueva sesión de tipo entrenamiento
+      if (isNew && editingSession.tipo === 'entrenamiento' && !editingSession.trainingId) {
+        const trainingId = crypto.randomUUID();
+        await saveTraining(
+          {
+            id: trainingId,
+            teamId: editingSession.teamId,
+            meta: {
+              numero: sessionNumber,
+              fecha: editingSession.fecha,
+              horaInicio: editingSession.horaInicio,
+              horaFin: editingSession.horaFin,
+              lugar: editingSession.lugar || '',
+              dia: '',
+              equipo: teamName,
+            },
+            objetivos: '',
+            ejercicios: [],
+            cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
+          },
+          editingSession.teamId,
+          { uid: user.uid, db, appId },
+        );
+        await linkTrainingToSession(sessionId, trainingId, { uid: user.uid, db, appId });
+      }
       setEditingSession(null);
       setSelectedSession(null);
     } finally {
@@ -300,6 +342,7 @@ export default function CalendarScreen() {
 
   async function handleDelete(id) {
     await deleteCalendarSession(id, { uid: user.uid, db, appId });
+    deletePlanilla(id, { uid: user.uid, db, appId }).catch(() => {});
     setDeletingId(null);
     setSelectedSession(null);
   }
@@ -418,7 +461,36 @@ export default function CalendarScreen() {
       if (replace) {
         await deleteCalendarSessionsByTeamAndRange(teamIds, startDate, endDate, { uid: user.uid, db, appId });
       }
-      await bulkImportCalendarSessions(toImport, { uid: user.uid, db, appId });
+      // Asignar IDs y crear entrenamientos para sesiones de tipo entrenamiento
+      const sessionsWithIds = toImport.map((s) => ({ ...s, id: s.id || crypto.randomUUID() }));
+      await bulkImportCalendarSessions(sessionsWithIds, { uid: user.uid, db, appId });
+      const entrenamientos = sessionsWithIds.filter((s) => s.tipo === 'entrenamiento' && s.teamId);
+      await Promise.all(
+        entrenamientos.map(async (s) => {
+          const trainingId = crypto.randomUUID();
+          await saveTraining(
+            {
+              id: trainingId,
+              teamId: s.teamId,
+              meta: {
+                numero: s.sessionNumber || 1,
+                fecha: s.fecha || '',
+                horaInicio: s.horaInicio || '',
+                horaFin: s.horaFin || '',
+                lugar: s.lugar || '',
+                dia: '',
+                equipo: s.teamName || '',
+              },
+              objetivos: '',
+              ejercicios: [],
+              cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
+            },
+            s.teamId,
+            { uid: user.uid, db, appId },
+          );
+          await linkTrainingToSession(s.id, trainingId, { uid: user.uid, db, appId });
+        }),
+      );
       setImportPreview(null);
       setImportError('');
       setDuplicateConflict(null);
@@ -427,8 +499,60 @@ export default function CalendarScreen() {
     }
   }
 
+  // Extract playoff matches as virtual calendar sessions
+  const playoffSessions = React.useMemo(() => {
+    const result = [];
+    const teamIds = new Set(teams.map((t) => t.id));
+    for (const b of brackets) {
+      if (!b.teamId || !teamIds.has(b.teamId) || !b.bracketData?.state) continue;
+      const team = teams.find((t) => t.id === b.teamId);
+      const teamName = team ? teamDisplayName(team) : '';
+      const myTeam = b.myTeam;
+      for (const match of Object.values(b.bracketData.state)) {
+        if (!myTeam || (match.team1 !== myTeam && match.team2 !== myTeam)) continue;
+        const dates = match.dates || [];
+        if (dates.length === 0) continue;
+        const rival = match.team1 === myTeam ? match.team2 : match.team1;
+        for (let gi = 0; gi < dates.length; gi++) {
+          const d = dates[gi];
+          if (!d) continue;
+          if (typeof d !== 'string' || !d) continue;
+          let dateStr = null;
+          if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
+            dateStr = d.slice(0, 10);
+          } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
+            const [dd, mm, yyyy] = d.split('/');
+            dateStr = `${yyyy}-${mm}-${dd}`;
+          }
+          if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) continue;
+          result.push({
+            id: `playoff-${b.id}-${match.id}-${gi}`,
+            teamId: b.teamId,
+            teamName,
+            tipo: 'playoff',
+            fecha: dateStr,
+            horaInicio: '',
+            horaFin: '',
+            lugar: '',
+            rival: rival || 'Por definir',
+            esLocal: true,
+            bracketId: b.id,
+            bracketName: b.name || b.tournamentNameDetected || 'Playoff',
+            matchTitle: match.title || '',
+            gameIndex: gi,
+            gamesCount: match.gamesCount || 1,
+            scores: match.scores,
+            isPlayoff: true,
+          });
+        }
+      }
+    }
+    return result;
+  }, [brackets, teams]);
+
+  const allSessions = React.useMemo(() => [...sessions, ...playoffSessions], [sessions, playoffSessions]);
   const filterTeam = filterTeamId ? teams.find((t) => t.id === filterTeamId) || null : null;
-  const visibleSessions = filterTeamId ? sessions.filter((s) => s.teamId === filterTeamId) : sessions;
+  const visibleSessions = filterTeamId ? allSessions.filter((s) => s.teamId === filterTeamId) : allSessions;
   const calendarDays = viewMode === 'month' ? buildCalendarDays(currentDate, visibleSessions) : [];
   const weekDays = viewMode === 'week' ? buildWeekDays(currentDate, visibleSessions) : [];
   const daySessionList = viewMode === 'day' ? visibleSessions.filter((s) => s.fecha === toYMD(currentDate)) : [];
@@ -571,18 +695,21 @@ export default function CalendarScreen() {
                       <div className="flex flex-col gap-0.5">
                         {daySessions.map((s) => {
                           const isPartido = s.tipo === 'partido';
+                          const isPlayoff = s.tipo === 'playoff';
                           return (
                             <button
                               key={s.id}
                               onClick={() => setSelectedSession(s)}
-                              className={`w-full text-left rounded px-1.5 py-0.5 text-xs font-semibold truncate transition-opacity hover:opacity-80 ${isPartido ? 'bg-rose-500 text-white' : TEAM_COLORS[teamColorIndex(s.teamId)]}`}
+                              className={`w-full text-left rounded px-1.5 py-0.5 text-xs font-semibold truncate transition-opacity hover:opacity-80 ${isPlayoff ? 'bg-amber-500 text-white' : isPartido ? 'bg-rose-500 text-white' : TEAM_COLORS[teamColorIndex(s.teamId)]}`}
                               title={
-                                isPartido
-                                  ? `${s.teamName} vs ${s.rival || 'Rival'}`
-                                  : `${s.teamName} #${s.sessionNumber}`
+                                isPlayoff
+                                  ? `${s.teamName} Playoff vs ${s.rival}`
+                                  : isPartido
+                                    ? `${s.teamName} vs ${s.rival || 'Rival'}`
+                                    : `${s.teamName} #${s.sessionNumber}`
                               }
                             >
-                              {isPartido ? `vs ${s.rival || 'Rival'}` : s.teamName}
+                              {isPlayoff ? `PO vs ${s.rival}` : isPartido ? `vs ${s.rival || 'Rival'}` : s.teamName}
                             </button>
                           );
                         })}
@@ -619,9 +746,11 @@ export default function CalendarScreen() {
             <div className="flex items-start justify-between px-5 pt-5 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${selectedSession.tipo === 'partido' ? 'bg-rose-100' : 'bg-blue-100'}`}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${selectedSession.tipo === 'playoff' ? 'bg-amber-100' : selectedSession.tipo === 'partido' ? 'bg-rose-100' : 'bg-blue-100'}`}
                 >
-                  {selectedSession.tipo === 'partido' ? (
+                  {selectedSession.tipo === 'playoff' ? (
+                    <Trophy size={18} className="text-amber-600" />
+                  ) : selectedSession.tipo === 'partido' ? (
                     <Trophy size={18} className="text-rose-600" />
                   ) : (
                     <ClipboardList size={18} className="text-blue-600" />
@@ -629,9 +758,11 @@ export default function CalendarScreen() {
                 </div>
                 <div>
                   <p className="font-bold text-slate-800">
-                    {selectedSession.tipo === 'partido'
-                      ? `vs ${selectedSession.rival || 'Rival'}`
-                      : `Entrenamiento #${selectedSession.sessionNumber}`}
+                    {selectedSession.tipo === 'playoff'
+                      ? `Playoff vs ${selectedSession.rival}`
+                      : selectedSession.tipo === 'partido'
+                        ? `vs ${selectedSession.rival || 'Rival'}`
+                        : `Entrenamiento #${selectedSession.sessionNumber}`}
                   </p>
                   <p className="text-xs text-slate-500">{selectedSession.teamName}</p>
                 </div>
@@ -642,15 +773,29 @@ export default function CalendarScreen() {
             </div>
             <div className="px-5 py-4 flex flex-col gap-2">
               <DetailRow label="Fecha" value={formatDateDisplay(selectedSession.fecha)} />
-              <DetailRow
-                label="Horario"
-                value={
-                  selectedSession.horaInicio && selectedSession.horaFin
-                    ? `${selectedSession.horaInicio} – ${selectedSession.horaFin}`
-                    : selectedSession.horaInicio || '—'
-                }
-              />
+              {selectedSession.tipo !== 'playoff' && (
+                <DetailRow
+                  label="Horario"
+                  value={
+                    selectedSession.horaInicio && selectedSession.horaFin
+                      ? `${selectedSession.horaInicio} – ${selectedSession.horaFin}`
+                      : selectedSession.horaInicio || '—'
+                  }
+                />
+              )}
               {selectedSession.lugar && <DetailRow label="Lugar" value={selectedSession.lugar} />}
+              {selectedSession.tipo === 'playoff' && (
+                <>
+                  <DetailRow label="Torneo" value={selectedSession.bracketName} />
+                  <DetailRow label="Ronda" value={selectedSession.matchTitle} />
+                  {selectedSession.gamesCount > 1 && (
+                    <DetailRow
+                      label="Partido"
+                      value={`${selectedSession.gameIndex + 1} de ${selectedSession.gamesCount}`}
+                    />
+                  )}
+                </>
+              )}
               {selectedSession.tipo === 'partido' && (
                 <>
                   {selectedSession.rival && <DetailRow label="Rival" value={selectedSession.rival} />}
@@ -659,38 +804,63 @@ export default function CalendarScreen() {
               )}
             </div>
             <div className="px-5 pb-5 flex flex-col gap-2">
-              {selectedSession.tipo !== 'partido' &&
-                (selectedSession.trainingId ? (
-                  <button
-                    onClick={() => navigate(`/teams/${selectedSession.teamId}/trainings/${selectedSession.trainingId}`)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
-                  >
-                    <ClipboardList size={16} /> Abrir entrenamiento <ArrowRight size={15} />
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleCreateTraining(selectedSession)}
-                    disabled={creatingTraining || !selectedSession.teamId}
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-60"
-                  >
-                    <ClipboardList size={16} />
-                    {creatingTraining ? 'Creando...' : 'Crear entrenamiento'}
-                  </button>
-                ))}
-              <div className="flex gap-2">
+              {selectedSession.tipo === 'playoff' ? (
                 <button
-                  onClick={() => setEditingSession({ ...selectedSession })}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition"
+                  onClick={() => {
+                    setSelectedSession(null);
+                    navigate(`/playoffs?teamId=${selectedSession.teamId}`);
+                  }}
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
                 >
-                  <Pencil size={14} /> Editar
+                  <Trophy size={16} /> Ver cuadro de playoff <ArrowRight size={15} />
                 </button>
-                <button
-                  onClick={() => setDeletingId(selectedSession.id)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-sm transition"
-                >
-                  <Trash2 size={14} /> Eliminar
-                </button>
-              </div>
+              ) : (
+                <>
+                  {selectedSession.tipo === 'entrenamiento' && (
+                    <button
+                      onClick={() => {
+                        if (selectedSession.trainingId) {
+                          navigate(`/teams/${selectedSession.teamId}/trainings/${selectedSession.trainingId}`);
+                        } else {
+                          handleCreateTraining(selectedSession);
+                        }
+                      }}
+                      disabled={creatingTraining || !selectedSession.teamId}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-60"
+                    >
+                      <ClipboardList size={16} />
+                      {creatingTraining ? 'Abriendo...' : 'Abrir entrenamiento'}
+                      <ArrowRight size={15} />
+                    </button>
+                  )}
+                  {selectedSession.tipo === 'partido' &&
+                    isMinibasketSextos(teams.find((t) => t.id === selectedSession.teamId)) && (
+                      <button
+                        onClick={() => {
+                          setSelectedSession(null);
+                          navigate(`/calendar/${selectedSession.id}/planilla`);
+                        }}
+                        className="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
+                      >
+                        <ClipboardList size={16} /> Planilla de Sextos <ArrowRight size={15} />
+                      </button>
+                    )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingSession({ ...selectedSession })}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition"
+                    >
+                      <Pencil size={14} /> Editar
+                    </button>
+                    <button
+                      onClick={() => setDeletingId(selectedSession.id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-sm transition"
+                    >
+                      <Trash2 size={14} /> Eliminar
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -1237,14 +1407,21 @@ function WeekView({ weekDays, todayYMD, loading, onSelectSession }) {
               <div className="flex flex-col gap-1 p-1 min-h-[120px]">
                 {daySessions.map((s) => {
                   const isPartido = s.tipo === 'partido';
+                  const isPlayoff = s.tipo === 'playoff';
                   return (
                     <button
                       key={s.id}
                       onClick={() => onSelectSession(s)}
-                      className={`w-full text-left rounded px-1.5 py-1 text-xs font-semibold truncate transition-opacity hover:opacity-80 ${isPartido ? 'bg-rose-500 text-white' : TEAM_COLORS[teamColorIndex(s.teamId)]}`}
-                      title={isPartido ? `${s.teamName} vs ${s.rival || 'Rival'}` : `${s.teamName} #${s.sessionNumber}`}
+                      className={`w-full text-left rounded px-1.5 py-1 text-xs font-semibold truncate transition-opacity hover:opacity-80 ${isPlayoff ? 'bg-amber-500 text-white' : isPartido ? 'bg-rose-500 text-white' : TEAM_COLORS[teamColorIndex(s.teamId)]}`}
+                      title={
+                        isPlayoff
+                          ? `Playoff vs ${s.rival}`
+                          : isPartido
+                            ? `${s.teamName} vs ${s.rival || 'Rival'}`
+                            : `${s.teamName} #${s.sessionNumber}`
+                      }
                     >
-                      {isPartido ? `vs ${s.rival || 'Rival'}` : s.teamName}
+                      {isPlayoff ? `PO vs ${s.rival}` : isPartido ? `vs ${s.rival || 'Rival'}` : s.teamName}
                     </button>
                   );
                 })}
@@ -1277,6 +1454,7 @@ function DayView({ sessions, loading, onSelectSession }) {
     <div className="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden divide-y divide-slate-100">
       {sessions.map((s) => {
         const isPartido = s.tipo === 'partido';
+        const isPlayoff = s.tipo === 'playoff';
         const colorClass = TEAM_COLORS[teamColorIndex(s.teamId)].split(' ')[0];
         return (
           <button
@@ -1285,9 +1463,11 @@ function DayView({ sessions, loading, onSelectSession }) {
             className="w-full text-left flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors"
           >
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isPartido ? 'bg-rose-100' : 'bg-blue-100'}`}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isPlayoff ? 'bg-amber-100' : isPartido ? 'bg-rose-100' : 'bg-blue-100'}`}
             >
-              {isPartido ? (
+              {isPlayoff ? (
+                <Trophy size={18} className="text-amber-600" />
+              ) : isPartido ? (
                 <Trophy size={18} className="text-rose-600" />
               ) : (
                 <ClipboardList size={18} className="text-blue-600" />
@@ -1295,7 +1475,11 @@ function DayView({ sessions, loading, onSelectSession }) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-slate-800 text-sm truncate">
-                {isPartido ? `vs ${s.rival || 'Rival'}` : `Entrenamiento #${s.sessionNumber}`}
+                {isPlayoff
+                  ? `Playoff vs ${s.rival}`
+                  : isPartido
+                    ? `vs ${s.rival || 'Rival'}`
+                    : `Entrenamiento #${s.sessionNumber}`}
               </p>
               <p className="text-xs text-slate-500">{s.teamName}</p>
               {s.horaInicio && (
