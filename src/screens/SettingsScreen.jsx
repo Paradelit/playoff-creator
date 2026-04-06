@@ -18,6 +18,7 @@ import {
   Calendar,
   CreditCard,
   Stethoscope,
+  Bell,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
@@ -74,12 +75,21 @@ export default function SettingsScreen() {
 
   const importInputRef = useRef(null);
 
+  // Notification preferences
+  const [notifEnabled, setNotifEnabled] = useState(false);
+  const [notifAntelacion, setNotifAntelacion] = useState(30);
+  const [notifPermission, setNotifPermission] = useState(
+    typeof Notification !== 'undefined' ? Notification.permission : 'default',
+  );
+
   useEffect(() => {
     if (!user || !db) return;
     return subscribeToProfile(user.uid, db, appId, (data) => {
       const merged = { ...EMPTY_PROFILE, ...data };
       setProfile(merged);
       setForm(merged);
+      if (data?.notifEnabled !== undefined) setNotifEnabled(data.notifEnabled);
+      if (data?.notifAntelacion !== undefined) setNotifAntelacion(data.notifAntelacion);
     });
   }, [user, db, appId]);
 
@@ -376,6 +386,79 @@ export default function SettingsScreen() {
           >
             {savingProfile ? 'Guardando...' : 'Guardar nombre'}
           </button>
+        </Section>
+
+        {/* ─── Recordatorios ─── */}
+        <Section icon={Bell} title="Recordatorios" iconColor="text-orange-600" iconBg="bg-orange-50">
+          <p className="text-xs text-slate-500 mb-4">
+            Recibe recordatorios en el navegador antes de tus sesiones. Necesita permiso de notificaciones.
+          </p>
+
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-semibold text-slate-700">Activar recordatorios</span>
+            <button
+              onClick={async () => {
+                const next = !notifEnabled;
+                setNotifEnabled(next);
+                await saveProfile({ ...form, notifEnabled: next, notifAntelacion }, { uid: user.uid, db, appId });
+              }}
+              className={`w-12 h-7 rounded-full transition-colors relative ${notifEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}
+              aria-label={notifEnabled ? 'Desactivar recordatorios' : 'Activar recordatorios'}
+            >
+              <div
+                className={`w-5 h-5 bg-white rounded-full shadow absolute top-1 transition-transform ${notifEnabled ? 'translate-x-6' : 'translate-x-1'}`}
+              />
+            </button>
+          </div>
+
+          {notifEnabled && (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-slate-600">Avisar con antelación</span>
+                <select
+                  value={notifAntelacion}
+                  onChange={async (e) => {
+                    const val = Number(e.target.value);
+                    setNotifAntelacion(val);
+                    await saveProfile({ ...form, notifEnabled, notifAntelacion: val }, { uid: user.uid, db, appId });
+                  }}
+                  className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                >
+                  <option value={15}>15 minutos</option>
+                  <option value={30}>30 minutos</option>
+                  <option value={60}>1 hora</option>
+                  <option value={120}>2 horas</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-slate-700">Notificaciones del navegador</p>
+                  <p className="text-xs text-slate-500">
+                    {notifPermission === 'granted'
+                      ? 'Permiso concedido'
+                      : notifPermission === 'denied'
+                        ? 'Permiso denegado (cambia en ajustes del navegador)'
+                        : 'No solicitado'}
+                  </p>
+                </div>
+                {notifPermission !== 'granted' && notifPermission !== 'denied' && (
+                  <button
+                    onClick={async () => {
+                      if (typeof Notification !== 'undefined') {
+                        const perm = await Notification.requestPermission();
+                        setNotifPermission(perm);
+                      }
+                    }}
+                    className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition"
+                  >
+                    Permitir
+                  </button>
+                )}
+                {notifPermission === 'granted' && <Check size={18} className="text-emerald-600 shrink-0" />}
+              </div>
+            </>
+          )}
         </Section>
 
         {/* ─── Datos ─── */}

@@ -32,6 +32,7 @@ import { teamDisplayName } from './TeamsScreen';
 import { buildPlayoffSessions } from '../utils/calendarUtils';
 import { isMinibasketSextos } from '../utils/minibasketUtils';
 import { toYMD } from '../utils/dateUtils';
+import { useReminders } from '../hooks/useReminders';
 
 function getExtendedRange() {
   const now = new Date();
@@ -136,6 +137,9 @@ export default function HomeScreen() {
   // Merge calendar sessions + playoff virtual sessions
   const playoffSessions = useMemo(() => buildPlayoffSessions(brackets, teams), [brackets, teams]);
   const allSessions = useMemo(() => [...sessions, ...playoffSessions], [sessions, playoffSessions]);
+
+  // Reminders
+  useReminders(allSessions);
 
   // TODAY's events
   const todayEvents = useMemo(
