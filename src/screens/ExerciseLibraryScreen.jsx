@@ -39,6 +39,7 @@ export default function ExerciseLibraryScreen() {
   const [loading, setLoading] = useState(true);
   const [editingExercise, setEditingExercise] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [exerciseErrors, setExerciseErrors] = useState({});
   const [deletingId, setDeletingId] = useState(null);
   const [search, setSearch] = useState('');
   const [showPlaybook, setShowPlaybook] = useState(false);
@@ -64,7 +65,10 @@ export default function ExerciseLibraryScreen() {
 
   async function handleSave(e) {
     e.preventDefault();
-    if (!editingExercise.nombre.trim()) return;
+    const errors = {};
+    if (!editingExercise.nombre.trim()) errors.nombre = 'El nombre es obligatorio';
+    setExerciseErrors(errors);
+    if (Object.keys(errors).length > 0) return;
     setSaving(true);
     try {
       const toSave = {
@@ -77,6 +81,7 @@ export default function ExerciseLibraryScreen() {
         await propagateExerciseUpdate(toSave, { uid: user.uid, db, appId });
       }
       setEditingExercise(null);
+      setExerciseErrors({});
       setShowPlaybook(false);
     } finally {
       setSaving(false);
@@ -465,10 +470,14 @@ export default function ExerciseLibraryScreen() {
                   type="text"
                   required
                   value={editingExercise.nombre}
-                  onChange={(e) => setEditingExercise((ex) => ({ ...ex, nombre: e.target.value }))}
+                  onChange={(e) => {
+                    setEditingExercise((ex) => ({ ...ex, nombre: e.target.value }));
+                    if (exerciseErrors.nombre) setExerciseErrors((prev) => ({ ...prev, nombre: undefined }));
+                  }}
                   placeholder="Nombre del ejercicio"
-                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${exerciseErrors.nombre ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-blue-400'}`}
                 />
+                {exerciseErrors.nombre && <p className="text-xs text-red-500 mt-1">{exerciseErrors.nombre}</p>}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1.5">Categoría / Contenido</label>

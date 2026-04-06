@@ -215,6 +215,7 @@ export default function CalendarScreen() {
   const [editingSession, setEditingSession] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [savingSession, setSavingSession] = useState(false);
+  const [sessionErrors, setSessionErrors] = useState({});
   const [creatingTraining, setCreatingTraining] = useState(false);
 
   const fileInputRef = useRef(null);
@@ -288,6 +289,13 @@ export default function CalendarScreen() {
 
   async function handleSaveSession(e) {
     e.preventDefault();
+    const errors = {};
+    if (!editingSession.teamId) errors.teamId = 'Selecciona un equipo';
+    if (!editingSession.fecha) errors.fecha = 'La fecha es obligatoria';
+    if (editingSession.horaInicio && editingSession.horaFin && editingSession.horaInicio >= editingSession.horaFin)
+      errors.horaFin = 'La hora fin debe ser posterior a la hora inicio';
+    setSessionErrors(errors);
+    if (Object.keys(errors).length > 0) return;
     setSavingSession(true);
     try {
       const isNew = !editingSession.id;
@@ -548,9 +556,10 @@ export default function CalendarScreen() {
             </button>
             <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
             <button
-              onClick={() =>
-                setEditingSession({ ...EMPTY_SESSION(teams), ...(filterTeamId ? { teamId: filterTeamId } : {}) })
-              }
+              onClick={() => {
+                setSessionErrors({});
+                setEditingSession({ ...EMPTY_SESSION(teams), ...(filterTeamId ? { teamId: filterTeamId } : {}) });
+              }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-transform hover:scale-105 text-sm"
             >
               <Plus size={18} /> Nueva sesión
@@ -809,7 +818,10 @@ export default function CalendarScreen() {
                     )}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setEditingSession({ ...selectedSession })}
+                      onClick={() => {
+                        setSessionErrors({});
+                        setEditingSession({ ...selectedSession });
+                      }}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition"
                     >
                       <Pencil size={14} /> Editar
@@ -867,7 +879,7 @@ export default function CalendarScreen() {
                 </div>
               </FormField>
 
-              <FormField label="Equipo">
+              <FormField label="Equipo" error={sessionErrors.teamId}>
                 {filterTeamId && filterTeam ? (
                   <div className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 text-slate-700 font-medium">
                     {teamDisplayName(filterTeam)}
@@ -875,9 +887,12 @@ export default function CalendarScreen() {
                 ) : (
                   <select
                     value={editingSession.teamId}
-                    onChange={(e) => setEditingSession((s) => ({ ...s, teamId: e.target.value }))}
+                    onChange={(e) => {
+                      setEditingSession((s) => ({ ...s, teamId: e.target.value }));
+                      if (sessionErrors.teamId) setSessionErrors((prev) => ({ ...prev, teamId: undefined }));
+                    }}
                     required
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 bg-white ${sessionErrors.teamId ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-blue-400'}`}
                   >
                     <option value="">Selecciona un equipo</option>
                     {teams.map((t) => (
@@ -923,13 +938,16 @@ export default function CalendarScreen() {
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FormField label="Fecha">
+                <FormField label="Fecha" error={sessionErrors.fecha}>
                   <input
                     type="date"
                     required
                     value={editingSession.fecha}
-                    onChange={(e) => setEditingSession((s) => ({ ...s, fecha: e.target.value }))}
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    onChange={(e) => {
+                      setEditingSession((s) => ({ ...s, fecha: e.target.value }));
+                      if (sessionErrors.fecha) setSessionErrors((prev) => ({ ...prev, fecha: undefined }));
+                    }}
+                    className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${sessionErrors.fecha ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-blue-400'}`}
                   />
                 </FormField>
                 {editingSession.tipo === 'entrenamiento' && (
@@ -953,12 +971,15 @@ export default function CalendarScreen() {
                     className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
                 </FormField>
-                <FormField label="Hora fin">
+                <FormField label="Hora fin" error={sessionErrors.horaFin}>
                   <input
                     type="time"
                     value={editingSession.horaFin}
-                    onChange={(e) => setEditingSession((s) => ({ ...s, horaFin: e.target.value }))}
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    onChange={(e) => {
+                      setEditingSession((s) => ({ ...s, horaFin: e.target.value }));
+                      if (sessionErrors.horaFin) setSessionErrors((prev) => ({ ...prev, horaFin: undefined }));
+                    }}
+                    className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${sessionErrors.horaFin ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-blue-400'}`}
                   />
                 </FormField>
               </div>
@@ -1469,11 +1490,12 @@ function DetailRow({ label, value }) {
   );
 }
 
-function FormField({ label, children }) {
+function FormField({ label, error, children }) {
   return (
     <div>
       <label className="block text-xs font-semibold text-slate-600 mb-1.5">{label}</label>
       {children}
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
   );
 }

@@ -45,9 +45,25 @@ export default function TeamDetailScreen() {
     return unsub;
   }, [user, db, appId, teamId]);
 
+  const [memberErrors, setMemberErrors] = useState({});
+
+  function validateMember(m) {
+    const errors = {};
+    if (!m.nombre.trim()) errors.nombre = 'El nombre es obligatorio';
+    if (m.tipo === 'jugador') {
+      const d = m.dorsal !== '' && m.dorsal != null ? Number(m.dorsal) : null;
+      if (d != null && (d < 0 || d > 99)) errors.dorsal = 'El dorsal debe estar entre 0 y 99';
+      const a = m.altura !== '' && m.altura != null ? Number(m.altura) : null;
+      if (a != null && (a < 100 || a > 250)) errors.altura = 'Altura entre 100 y 250 cm';
+    }
+    return errors;
+  }
+
   async function handleSaveMember(e) {
     e.preventDefault();
-    if (!editingMember.nombre.trim()) return;
+    const errors = validateMember(editingMember);
+    setMemberErrors(errors);
+    if (Object.keys(errors).length > 0) return;
     setSavingMember(true);
     try {
       const member = {
@@ -59,6 +75,7 @@ export default function TeamDetailScreen() {
       };
       await saveMember(member, teamId, { uid: user.uid, db, appId });
       setEditingMember(null);
+      setMemberErrors({});
     } finally {
       setSavingMember(false);
     }
@@ -236,14 +253,17 @@ export default function TeamDetailScreen() {
             </div>
 
             <form onSubmit={handleSaveMember} className="px-6 py-5 flex flex-col gap-4">
-              <Field label="Nombre *">
+              <Field label="Nombre *" error={memberErrors.nombre}>
                 <input
                   type="text"
                   required
                   value={editingMember.nombre}
-                  onChange={(e) => setEditingMember((m) => ({ ...m, nombre: e.target.value }))}
+                  onChange={(e) => {
+                    setEditingMember((m) => ({ ...m, nombre: e.target.value }));
+                    if (memberErrors.nombre) setMemberErrors((prev) => ({ ...prev, nombre: undefined }));
+                  }}
                   placeholder="Nombre completo"
-                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${memberErrors.nombre ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-blue-400'}`}
                 />
               </Field>
 
@@ -294,26 +314,32 @@ export default function TeamDetailScreen() {
 
               {editingMember.tipo === 'jugador' && (
                 <div className="grid grid-cols-3 gap-3">
-                  <Field label="Dorsal">
+                  <Field label="Dorsal" error={memberErrors.dorsal}>
                     <input
                       type="number"
                       min="0"
                       max="99"
                       value={editingMember.dorsal ?? ''}
-                      onChange={(e) => setEditingMember((m) => ({ ...m, dorsal: e.target.value }))}
+                      onChange={(e) => {
+                        setEditingMember((m) => ({ ...m, dorsal: e.target.value }));
+                        if (memberErrors.dorsal) setMemberErrors((prev) => ({ ...prev, dorsal: undefined }));
+                      }}
                       placeholder="—"
-                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${memberErrors.dorsal ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-blue-400'}`}
                     />
                   </Field>
-                  <Field label="Altura (cm)">
+                  <Field label="Altura (cm)" error={memberErrors.altura}>
                     <input
                       type="number"
                       min="100"
                       max="250"
                       value={editingMember.altura ?? ''}
-                      onChange={(e) => setEditingMember((m) => ({ ...m, altura: e.target.value }))}
+                      onChange={(e) => {
+                        setEditingMember((m) => ({ ...m, altura: e.target.value }));
+                        if (memberErrors.altura) setMemberErrors((prev) => ({ ...prev, altura: undefined }));
+                      }}
                       placeholder="—"
-                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${memberErrors.altura ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-blue-400'}`}
                     />
                   </Field>
                   <Field label="Posición">
@@ -462,11 +488,12 @@ function EmptySection({ text }) {
   );
 }
 
-function Field({ label, children }) {
+function Field({ label, error, children }) {
   return (
     <div>
       <label className="block text-xs font-semibold text-slate-600 mb-1.5">{label}</label>
       {children}
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
   );
 }
