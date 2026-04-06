@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useToast } from '../contexts/ToastContext';
 import {
   subscribeToExercises,
   saveExercise,
@@ -33,6 +34,7 @@ export default function ExerciseLibraryScreen() {
   const { db, appId } = useFirebase();
   const importRef = useRef(null);
 
+  const toast = useToast();
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingExercise, setEditingExercise] = useState(null);
@@ -144,12 +146,12 @@ export default function ExerciseLibraryScreen() {
         const data = JSON.parse(ev.target.result);
         const list = Array.isArray(data.exercises) ? data.exercises : Array.isArray(data) ? data : null;
         if (!list) {
-          alert('Archivo no válido.');
+          toast('Archivo no válido.', 'error');
           return;
         }
         setImportPreview(list.map((ex) => ({ ...ex, _import: true })));
       } catch {
-        alert('El archivo no es un JSON válido.');
+        toast('El archivo no es un JSON válido.', 'error');
       }
     };
     reader.readAsText(file);

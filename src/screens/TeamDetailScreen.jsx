@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Pencil, Trash2, X, User, Users, ShieldHalf, CalendarDays } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
-import { subscribeToTeams, saveTeam, subscribeToMembers, saveMember, deleteMember } from '../services/teamsService';
+import { saveTeam, subscribeToMembers, saveMember, deleteMember } from '../services/teamsService';
 import { teamDisplayName, TeamFormFields } from './TeamsScreen';
+import { useTeams } from '../hooks/useTeams';
 
 const ROLES_STAFF = ['Entrenador', 'Entrenador asistente', 'Fisioterapeuta', 'Delegado', 'Médico', 'Otro'];
 const POSICIONES = ['Base', 'Escolta', 'Alero', 'Ala-Pívot', 'Pívot'];
@@ -26,9 +27,9 @@ export default function TeamDetailScreen() {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
 
-  const [team, setTeam] = useState(null);
+  const { teams, loading: loadingTeam } = useTeams();
+  const team = teams.find((t) => t.id === teamId) || null;
   const [members, setMembers] = useState([]);
-  const [loadingTeam, setLoadingTeam] = useState(true);
 
   const [editingMember, setEditingMember] = useState(null);
   const [savingMember, setSavingMember] = useState(false);
@@ -37,16 +38,6 @@ export default function TeamDetailScreen() {
   const [editingTeam, setEditingTeam] = useState(false);
   const [teamForm, setTeamForm] = useState(null);
   const [savingTeam, setSavingTeam] = useState(false);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    const unsub = subscribeToTeams(user.uid, db, appId, (data) => {
-      const found = data.find((t) => t.id === teamId);
-      setTeam(found || null);
-      setLoadingTeam(false);
-    });
-    return unsub;
-  }, [user, db, appId, teamId]);
 
   useEffect(() => {
     if (!user || !db) return;

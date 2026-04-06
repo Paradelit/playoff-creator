@@ -4,18 +4,11 @@ import { ArrowLeft, Printer } from 'lucide-react';
 import ClubLogo from '../../components/ClubLogo';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
-import { subscribeToTeams } from '../../services/teamsService';
-import { subscribeToProfile } from '../../services/settingsService';
 import { subscribeToTeamNotes, saveTeamNotes } from '../../services/teamsService';
 import { teamDisplayName } from '../TeamsScreen';
-
-function getTemporada() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const startYear = month >= 9 ? year : year - 1;
-  return `${startYear}-${String(startYear + 1).slice(2)}`;
-}
+import { useTeams } from '../../hooks/useTeams';
+import { useProfile } from '../../hooks/useProfile';
+import { getTemporada } from '../../utils/dateUtils';
 
 export default function NotasScreen() {
   const { teamId } = useParams();
@@ -23,24 +16,13 @@ export default function NotasScreen() {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
 
-  const [team, setTeam] = useState(null);
-  const [profile, setProfile] = useState({});
+  const { teams } = useTeams();
+  const { profile } = useProfile();
+  const team = teams.find((t) => t.id === teamId) || null;
   const [texto, setTexto] = useState('');
   const [saveStatus, setSaveStatus] = useState('saved');
   const debounceRef = useRef(null);
   const isFirstLoad = useRef(true);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, (data) => {
-      setTeam(data.find((t) => t.id === teamId) || null);
-    });
-  }, [user, db, appId, teamId]);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToProfile(user.uid, db, appId, setProfile);
-  }, [user, db, appId]);
 
   useEffect(() => {
     if (!user || !db) return;

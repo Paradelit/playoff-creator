@@ -3,15 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, ArrowRight, ClipboardList, BookOpen, FolderOpen, ShieldHalf } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
-import { subscribeToTeams } from '../services/teamsService';
 import { subscribeToTrainings, saveTraining, deleteTraining } from '../services/trainingsService';
 import { teamDisplayName } from './TeamsScreen';
-
-function formatDate(dateStr) {
-  if (!dateStr) return '—';
-  const [y, m, d] = dateStr.split('-');
-  return `${d}/${m}/${y}`;
-}
+import { useTeams } from '../hooks/useTeams';
+import { formatDateDisplay } from '../utils/dateUtils';
 
 export default function TeamTrainingsScreen() {
   const { teamId } = useParams();
@@ -19,18 +14,12 @@ export default function TeamTrainingsScreen() {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
 
-  const [team, setTeam] = useState(null);
+  const { teams } = useTeams();
+  const team = teams.find((t) => t.id === teamId) || null;
   const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, (data) => {
-      setTeam(data.find((t) => t.id === teamId) || null);
-    });
-  }, [user, db, appId, teamId]);
 
   useEffect(() => {
     if (!user || !db) return;
@@ -137,7 +126,7 @@ export default function TeamTrainingsScreen() {
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-slate-800 text-sm">
                     Entrenamiento {t.meta?.numero ?? ''}
-                    {t.meta?.fecha ? ` · ${formatDate(t.meta.fecha)}` : ''}
+                    {t.meta?.fecha ? ` · ${formatDateDisplay(t.meta.fecha)}` : ''}
                   </p>
                   <p className="text-xs text-slate-500 truncate">
                     {[

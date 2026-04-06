@@ -3,23 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Minus, Trash2, BookOpen, Save, X, Printer, Undo, Maximize2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
-import { subscribeToTeams, subscribeToMembers } from '../services/teamsService';
+import { subscribeToMembers } from '../services/teamsService';
 import { subscribeToTrainings, saveTraining, subscribeToExercises, saveExercise } from '../services/trainingsService';
-import { subscribeToProfile } from '../services/settingsService';
 import { teamDisplayName } from './TeamsScreen';
 import MentionTextarea from '../components/MentionTextarea';
 import CourtCanvas, { COURT_TOOLS } from '../components/CourtCanvas';
 import ClubLogo from '../components/ClubLogo';
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function getTemporada() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1; // 1-12
-  const startYear = month >= 9 ? year : year - 1;
-  return `${startYear}-${String(startYear + 1).slice(-2)}`;
-}
+import { useTeams } from '../hooks/useTeams';
+import { useProfile } from '../hooks/useProfile';
+import { getTemporada } from '../utils/dateUtils';
 
 const DIAS = [
   { val: 'L', label: 'L' },
@@ -60,11 +52,12 @@ export default function TrainingEditorScreen() {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
 
-  const [team, setTeam] = useState(null);
+  const { teams } = useTeams();
+  const { profile } = useProfile();
+  const team = teams.find((t) => t.id === teamId) || null;
   const [members, setMembers] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [training, setTraining] = useState(null);
-  const [profile, setProfile] = useState({});
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState('saved');
   const [modalEjercicioId, setModalEjercicioId] = useState(null);
@@ -77,24 +70,12 @@ export default function TrainingEditorScreen() {
 
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, (data) => {
-      setTeam(data.find((t) => t.id === teamId) || null);
-    });
-  }, [user, db, appId, teamId]);
-
-  useEffect(() => {
-    if (!user || !db) return;
     return subscribeToMembers(teamId, user.uid, db, appId, setMembers);
   }, [user, db, appId, teamId]);
 
   useEffect(() => {
     if (!user || !db) return;
     return subscribeToExercises(user.uid, db, appId, setExercises);
-  }, [user, db, appId]);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToProfile(user.uid, db, appId, setProfile);
   }, [user, db, appId]);
 
   useEffect(() => {
@@ -239,7 +220,7 @@ export default function TrainingEditorScreen() {
       {/* ─── TOOLBAR WEB ─── */}
       <div className="max-w-[820px] mx-auto mb-4 flex items-center justify-between print:hidden gap-3">
         <button
-          onClick={() => navigate(`/teams/${teamId}/trainings`)}
+          onClick={() => navigate(`/teams/${teamId}/cuaderno/entrenamientos`)}
           className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-sm font-medium transition"
         >
           <ArrowLeft size={16} /> Entrenamientos
@@ -282,249 +263,251 @@ export default function TrainingEditorScreen() {
       </div>
 
       {/* ─── DOCUMENTO A4 ─── */}
-      <div className="max-w-[820px] mx-auto bg-white border border-gray-400 p-6 shadow-xl print:shadow-none print:border-none print:p-4 print:max-w-none">
-        {/* Cabecera */}
-        <div className="flex justify-between items-start mb-4">
-          <div className="w-1/4">
-            <ClubLogo logoUrl={profile?.logoClub} />
-          </div>
-          <div className="w-1/2 text-center pt-2">
-            <h1 className="font-bold text-2xl tracking-widest uppercase">{clubName}</h1>
-            <p className="text-xs text-gray-500 mt-1">Temporada {temporada}</p>
-          </div>
-          <div className="w-1/4 text-right text-sm">
-            <p className="font-bold">{team ? teamDisplayName(team) : ''}</p>
-            <p className="mt-2 text-sm">
-              Entrenamiento N°:&nbsp;
-              <input
-                type="text"
-                value={training.meta?.numero || ''}
-                onChange={(e) => updateMeta('numero', e.target.value)}
-                className="w-10 border-b border-black text-center focus:outline-none bg-transparent"
-              />
-            </p>
-          </div>
-        </div>
-
-        {/* Metadatos */}
-        <div className="border border-black flex flex-col mb-4 text-sm">
-          <div className="flex border-b border-black">
-            {/* Equipo */}
-            <div className="flex-1 border-r border-black p-1.5 flex items-center">
-              <span className="font-bold whitespace-nowrap">Equipo.-</span>
-              <input
-                type="text"
-                value={training.meta?.equipo || ''}
-                onChange={(e) => updateMeta('equipo', e.target.value)}
-                className="w-full ml-2 focus:outline-none bg-transparent"
-              />
+      <div className="max-w-[820px] mx-auto overflow-x-auto">
+        <div className="bg-white border border-gray-400 p-6 shadow-xl print:shadow-none print:border-none print:p-4 print:max-w-none min-w-[700px]">
+          {/* Cabecera */}
+          <div className="flex justify-between items-start mb-4">
+            <div className="w-1/4">
+              <ClubLogo logoUrl={profile?.logoClub} />
             </div>
-            {/* Fecha */}
-            <div className="w-52 border-r border-black p-1.5 flex items-center gap-1">
-              <span className="font-bold whitespace-nowrap">Fecha.-</span>
-              <select
-                value={training.meta?.dia || ''}
-                onChange={(e) => updateMeta('dia', e.target.value)}
-                className="ml-1 text-xs bg-transparent focus:outline-none cursor-pointer font-bold appearance-none"
-              >
-                <option value="">Día</option>
-                {DIAS.map((d) => (
-                  <option key={d.val} value={d.val}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="date"
-                value={training.meta?.fecha || ''}
-                onChange={(e) => updateMeta('fecha', e.target.value)}
-                className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
-              />
+            <div className="w-1/2 text-center pt-2">
+              <h1 className="font-bold text-2xl tracking-widest uppercase">{clubName}</h1>
+              <p className="text-xs text-gray-500 mt-1">Temporada {temporada}</p>
             </div>
-            {/* Hora */}
-            <div className="w-48 border-r border-black p-1.5 flex items-center gap-1">
-              <span className="font-bold whitespace-nowrap">Hora.-</span>
-              <input
-                type="time"
-                value={training.meta?.horaInicio || ''}
-                onChange={(e) => updateMeta('horaInicio', e.target.value)}
-                className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
-              />
-              <span className="font-bold">-</span>
-              <input
-                type="time"
-                value={training.meta?.horaFin || ''}
-                onChange={(e) => updateMeta('horaFin', e.target.value)}
-                className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
-              />
-            </div>
-            {/* Lugar */}
-            <div className="flex-1 p-1.5 flex items-center">
-              <span className="font-bold whitespace-nowrap">Lugar.-</span>
-              <input
-                type="text"
-                value={training.meta?.lugar || ''}
-                onChange={(e) => updateMeta('lugar', e.target.value)}
-                className="w-full ml-2 focus:outline-none bg-transparent"
-              />
-            </div>
-          </div>
-          {/* Objetivos */}
-          <div className="p-1.5 flex flex-col min-h-[52px]">
-            <span className="font-bold">Objetivos de la semana.-</span>
-            <textarea
-              value={training.objetivos || ''}
-              onChange={(e) => updateTraining((t) => ({ ...t, objetivos: e.target.value }))}
-              className="w-full flex-1 focus:outline-none bg-transparent resize-none leading-tight mt-1 text-sm"
-            />
-          </div>
-        </div>
-
-        {/* Tabla ejercicios */}
-        <div className="border border-black flex flex-col mb-4 text-sm">
-          {/* Cabecera columnas */}
-          <div className="flex border-b border-black font-bold text-center bg-gray-50 print:bg-transparent">
-            <div className="w-14 border-r border-black p-1 text-xs">Tiempo</div>
-            <div className="w-32 border-r border-black p-1 text-xs">Contenido</div>
-            <div className="flex-1 border-r border-black p-1 text-xs text-left pl-2">Ejercicio</div>
-            <div className="w-40 p-1 text-xs">Pizarra</div>
-          </div>
-
-          {ejercicios.map((ej) => (
-            <div key={ej.id} className="group relative flex border-b border-black last:border-b-0 min-h-[100px]">
-              {/* Tiempo */}
-              <div className="w-14 border-r border-black p-1">
+            <div className="w-1/4 text-right text-sm">
+              <p className="font-bold">{team ? teamDisplayName(team) : ''}</p>
+              <p className="mt-2 text-sm">
+                Entrenamiento N°:&nbsp;
                 <input
                   type="text"
-                  value={ej.tiempo || ''}
-                  onChange={(e) => updateEjercicio(ej.id, 'tiempo', e.target.value)}
-                  className="w-full h-full text-center focus:outline-none bg-transparent text-xs"
+                  value={training.meta?.numero || ''}
+                  onChange={(e) => updateMeta('numero', e.target.value)}
+                  className="w-10 border-b border-black text-center focus:outline-none bg-transparent"
                 />
-              </div>
-              {/* Contenido */}
-              <div className="w-32 border-r border-black p-1 relative">
-                {ej.libExerciseId && (
-                  <span
-                    className="absolute top-1 right-1 print:hidden"
-                    title={`Enlazado: ${ej.libExerciseName || 'Biblioteca'}`}
-                  >
-                    <BookOpen size={9} className="text-amber-500" />
-                  </span>
-                )}
-                <textarea
-                  value={ej.contenido || ''}
-                  onChange={(e) => updateEjercicio(ej.id, 'contenido', e.target.value)}
-                  className="w-full h-full resize-none focus:outline-none bg-transparent leading-tight text-xs"
-                />
-              </div>
-              {/* Descripción */}
-              <div className="flex-1 border-r border-black p-1">
-                <textarea
-                  value={ej.descripcion || ''}
-                  onChange={(e) => updateEjercicio(ej.id, 'descripcion', e.target.value)}
-                  className="w-full h-full resize-none focus:outline-none bg-transparent leading-tight text-xs text-justify pb-2 pr-1"
-                />
-              </div>
-              {/* Pizarra miniatura */}
-              <div className="w-40 flex flex-col items-center justify-center relative bg-white overflow-hidden">
-                <div
-                  className="w-full h-full max-h-[110px] p-1 cursor-pointer hover:bg-gray-50 transition print:cursor-default"
-                  onClick={() => setModalEjercicioId(ej.id)}
-                >
-                  <CourtCanvas tipo={ej.tipoPista} elementos={ej.elementos || []} readOnly={true} />
-                </div>
-                {/* Controles flotantes — ocultos al imprimir */}
-                <div className="absolute bottom-1 right-1 flex gap-1 print:hidden opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-white p-1 rounded border border-gray-200 shadow-sm">
-                  <button
-                    onClick={() => setModalEjercicioId(ej.id)}
-                    className="text-blue-600 hover:text-blue-800"
-                    title="Abrir editor"
-                  >
-                    <Maximize2 size={11} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowLibrary(ej.id);
-                      setLibrarySearch('');
-                    }}
-                    className="text-indigo-500 hover:text-indigo-700"
-                    title="Cargar de biblioteca"
-                  >
-                    <BookOpen size={11} />
-                  </button>
-                  <button
-                    onClick={() => saveToLibrary(ej)}
-                    className="text-emerald-600 hover:text-emerald-800"
-                    title="Guardar en biblioteca"
-                  >
-                    <Save size={11} />
-                  </button>
-                  <select
-                    value={ej.tipoPista}
-                    onChange={(e) => updateEjercicio(ej.id, 'tipoPista', e.target.value)}
-                    className="text-[10px] border border-gray-300 bg-white cursor-pointer focus:outline-none"
-                  >
-                    <option value="media">1/2</option>
-                    <option value="entera">Full</option>
-                  </select>
-                  <button
-                    onClick={() => removeEjercicio(ej.id)}
-                    className="text-red-500 hover:text-red-700"
-                    title="Eliminar fila"
-                  >
-                    <Trash2 size={11} />
-                  </button>
-                </div>
-              </div>
+              </p>
             </div>
-          ))}
-        </div>
+          </div>
 
-        {/* Footer cierre */}
-        <div className="border border-black flex text-sm" style={{ minHeight: 120 }}>
-          <div className="w-1/2 flex flex-col border-r border-black">
-            <div className="flex-1 border-b border-black p-1.5 flex flex-col">
-              <span className="font-bold">Faltas.-</span>
-              <MentionTextarea
-                value={training.cierre?.faltas || ''}
-                onChange={(e) => updateCierre('faltas', e.target.value)}
-                members={members}
-                placeholder=""
-                rows={2}
-                className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
-              />
+          {/* Metadatos */}
+          <div className="border border-black flex flex-col mb-4 text-sm">
+            <div className="flex border-b border-black">
+              {/* Equipo */}
+              <div className="flex-1 border-r border-black p-1.5 flex items-center">
+                <span className="font-bold whitespace-nowrap">Equipo.-</span>
+                <input
+                  type="text"
+                  value={training.meta?.equipo || ''}
+                  onChange={(e) => updateMeta('equipo', e.target.value)}
+                  className="w-full ml-2 focus:outline-none bg-transparent"
+                />
+              </div>
+              {/* Fecha */}
+              <div className="w-52 border-r border-black p-1.5 flex items-center gap-1">
+                <span className="font-bold whitespace-nowrap">Fecha.-</span>
+                <select
+                  value={training.meta?.dia || ''}
+                  onChange={(e) => updateMeta('dia', e.target.value)}
+                  className="ml-1 text-xs bg-transparent focus:outline-none cursor-pointer font-bold appearance-none"
+                >
+                  <option value="">Día</option>
+                  {DIAS.map((d) => (
+                    <option key={d.val} value={d.val}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="date"
+                  value={training.meta?.fecha || ''}
+                  onChange={(e) => updateMeta('fecha', e.target.value)}
+                  className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
+                />
+              </div>
+              {/* Hora */}
+              <div className="w-48 border-r border-black p-1.5 flex items-center gap-1">
+                <span className="font-bold whitespace-nowrap">Hora.-</span>
+                <input
+                  type="time"
+                  value={training.meta?.horaInicio || ''}
+                  onChange={(e) => updateMeta('horaInicio', e.target.value)}
+                  className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
+                />
+                <span className="font-bold">-</span>
+                <input
+                  type="time"
+                  value={training.meta?.horaFin || ''}
+                  onChange={(e) => updateMeta('horaFin', e.target.value)}
+                  className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
+                />
+              </div>
+              {/* Lugar */}
+              <div className="flex-1 p-1.5 flex items-center">
+                <span className="font-bold whitespace-nowrap">Lugar.-</span>
+                <input
+                  type="text"
+                  value={training.meta?.lugar || ''}
+                  onChange={(e) => updateMeta('lugar', e.target.value)}
+                  className="w-full ml-2 focus:outline-none bg-transparent"
+                />
+              </div>
             </div>
-            <div className="flex-1 p-1.5 flex flex-col">
-              <span className="font-bold">Retrasos.-</span>
-              <MentionTextarea
-                value={training.cierre?.retrasos || ''}
-                onChange={(e) => updateCierre('retrasos', e.target.value)}
-                members={members}
-                placeholder=""
-                rows={2}
-                className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
+            {/* Objetivos */}
+            <div className="p-1.5 flex flex-col min-h-[52px]">
+              <span className="font-bold">Objetivos de la semana.-</span>
+              <textarea
+                value={training.objetivos || ''}
+                onChange={(e) => updateTraining((t) => ({ ...t, objetivos: e.target.value }))}
+                className="w-full flex-1 focus:outline-none bg-transparent resize-none leading-tight mt-1 text-sm"
               />
             </div>
           </div>
-          <div className="w-1/2 flex flex-col">
-            <div className="flex-1 border-b border-black p-1.5 flex flex-col">
-              <span className="font-bold">Anotaciones.-</span>
-              <MentionTextarea
-                value={training.cierre?.anotaciones || ''}
-                onChange={(e) => updateCierre('anotaciones', e.target.value)}
-                members={members}
-                placeholder=""
-                rows={2}
-                className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
-              />
+
+          {/* Tabla ejercicios */}
+          <div className="border border-black flex flex-col mb-4 text-sm">
+            {/* Cabecera columnas */}
+            <div className="flex border-b border-black font-bold text-center bg-gray-50 print:bg-transparent">
+              <div className="w-14 border-r border-black p-1 text-xs">Tiempo</div>
+              <div className="w-32 border-r border-black p-1 text-xs">Contenido</div>
+              <div className="flex-1 border-r border-black p-1 text-xs text-left pl-2">Ejercicio</div>
+              <div className="w-40 p-1 text-xs">Pizarra</div>
             </div>
-            <div className="flex-1 p-1.5 flex flex-col">
-              <span className="font-bold">Observaciones.-</span>
-              <textarea
-                value={training.cierre?.observaciones || ''}
-                onChange={(e) => updateCierre('observaciones', e.target.value)}
-                className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
-              />
+
+            {ejercicios.map((ej) => (
+              <div key={ej.id} className="group relative flex border-b border-black last:border-b-0 min-h-[100px]">
+                {/* Tiempo */}
+                <div className="w-14 border-r border-black p-1">
+                  <input
+                    type="text"
+                    value={ej.tiempo || ''}
+                    onChange={(e) => updateEjercicio(ej.id, 'tiempo', e.target.value)}
+                    className="w-full h-full text-center focus:outline-none bg-transparent text-xs"
+                  />
+                </div>
+                {/* Contenido */}
+                <div className="w-32 border-r border-black p-1 relative">
+                  {ej.libExerciseId && (
+                    <span
+                      className="absolute top-1 right-1 print:hidden"
+                      title={`Enlazado: ${ej.libExerciseName || 'Biblioteca'}`}
+                    >
+                      <BookOpen size={9} className="text-amber-500" />
+                    </span>
+                  )}
+                  <textarea
+                    value={ej.contenido || ''}
+                    onChange={(e) => updateEjercicio(ej.id, 'contenido', e.target.value)}
+                    className="w-full h-full resize-none focus:outline-none bg-transparent leading-tight text-xs"
+                  />
+                </div>
+                {/* Descripción */}
+                <div className="flex-1 border-r border-black p-1">
+                  <textarea
+                    value={ej.descripcion || ''}
+                    onChange={(e) => updateEjercicio(ej.id, 'descripcion', e.target.value)}
+                    className="w-full h-full resize-none focus:outline-none bg-transparent leading-tight text-xs text-justify pb-2 pr-1"
+                  />
+                </div>
+                {/* Pizarra miniatura */}
+                <div className="w-40 flex flex-col items-center justify-center relative bg-white overflow-hidden">
+                  <div
+                    className="w-full h-full max-h-[110px] p-1 cursor-pointer hover:bg-gray-50 transition print:cursor-default"
+                    onClick={() => setModalEjercicioId(ej.id)}
+                  >
+                    <CourtCanvas tipo={ej.tipoPista} elementos={ej.elementos || []} readOnly={true} />
+                  </div>
+                  {/* Controles flotantes — ocultos al imprimir */}
+                  <div className="absolute bottom-1 right-1 flex gap-1 print:hidden opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-white p-1 rounded border border-gray-200 shadow-sm">
+                    <button
+                      onClick={() => setModalEjercicioId(ej.id)}
+                      className="text-blue-600 hover:text-blue-800"
+                      title="Abrir editor"
+                    >
+                      <Maximize2 size={11} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowLibrary(ej.id);
+                        setLibrarySearch('');
+                      }}
+                      className="text-indigo-500 hover:text-indigo-700"
+                      title="Cargar de biblioteca"
+                    >
+                      <BookOpen size={11} />
+                    </button>
+                    <button
+                      onClick={() => saveToLibrary(ej)}
+                      className="text-emerald-600 hover:text-emerald-800"
+                      title="Guardar en biblioteca"
+                    >
+                      <Save size={11} />
+                    </button>
+                    <select
+                      value={ej.tipoPista}
+                      onChange={(e) => updateEjercicio(ej.id, 'tipoPista', e.target.value)}
+                      className="text-[10px] border border-gray-300 bg-white cursor-pointer focus:outline-none"
+                    >
+                      <option value="media">1/2</option>
+                      <option value="entera">Full</option>
+                    </select>
+                    <button
+                      onClick={() => removeEjercicio(ej.id)}
+                      className="text-red-500 hover:text-red-700"
+                      title="Eliminar fila"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer cierre */}
+          <div className="border border-black flex text-sm" style={{ minHeight: 120 }}>
+            <div className="w-1/2 flex flex-col border-r border-black">
+              <div className="flex-1 border-b border-black p-1.5 flex flex-col">
+                <span className="font-bold">Faltas.-</span>
+                <MentionTextarea
+                  value={training.cierre?.faltas || ''}
+                  onChange={(e) => updateCierre('faltas', e.target.value)}
+                  members={members}
+                  placeholder=""
+                  rows={2}
+                  className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
+                />
+              </div>
+              <div className="flex-1 p-1.5 flex flex-col">
+                <span className="font-bold">Retrasos.-</span>
+                <MentionTextarea
+                  value={training.cierre?.retrasos || ''}
+                  onChange={(e) => updateCierre('retrasos', e.target.value)}
+                  members={members}
+                  placeholder=""
+                  rows={2}
+                  className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
+                />
+              </div>
+            </div>
+            <div className="w-1/2 flex flex-col">
+              <div className="flex-1 border-b border-black p-1.5 flex flex-col">
+                <span className="font-bold">Anotaciones.-</span>
+                <MentionTextarea
+                  value={training.cierre?.anotaciones || ''}
+                  onChange={(e) => updateCierre('anotaciones', e.target.value)}
+                  members={members}
+                  placeholder=""
+                  rows={2}
+                  className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
+                />
+              </div>
+              <div className="flex-1 p-1.5 flex flex-col">
+                <span className="font-bold">Observaciones.-</span>
+                <textarea
+                  value={training.cierre?.observaciones || ''}
+                  onChange={(e) => updateCierre('observaciones', e.target.value)}
+                  className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -616,7 +599,7 @@ export default function TrainingEditorScreen() {
 
               {/* Lienzo */}
               <div className="flex-1 flex items-center justify-center p-2 sm:p-6 select-none">
-                <div className="bg-white shadow border border-gray-300 w-full h-full flex items-center justify-center">
+                <div className="bg-white shadow border border-gray-300 w-full flex items-center justify-center">
                   <CourtCanvas
                     tipo={ejModal.tipoPista}
                     elementos={ejModal.elementos || []}

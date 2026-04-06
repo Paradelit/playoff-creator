@@ -20,17 +20,14 @@ import {
 import { onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
-import { subscribeToTeams } from '../services/teamsService';
 import { saveTraining } from '../services/trainingsService';
+import { useTeams } from '../hooks/useTeams';
 import { subscribeToCalendarSessions, linkTrainingToSession } from '../services/calendarService';
 import { userColRef } from '../services/firestoreHelpers';
 import { teamDisplayName } from './TeamsScreen';
 import { buildPlayoffSessions } from '../utils/calendarUtils';
 import { isMinibasketSextos } from '../utils/minibasketUtils';
-
-function toYMD(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
+import { toYMD } from '../utils/dateUtils';
 
 function getExtendedRange() {
   const now = new Date();
@@ -91,10 +88,9 @@ export default function HomeScreen() {
   const carouselRef = useRef(null);
   const cardRefs = useRef([]);
 
-  const [teams, setTeams] = useState([]);
+  const { teams, loading: loadingTeams } = useTeams();
   const [sessions, setSessions] = useState([]);
   const [brackets, setBrackets] = useState([]);
-  const [loadingTeams, setLoadingTeams] = useState(true);
   const [activeIdx, setActiveIdx] = useState(0);
   const [creatingTraining, setCreatingTraining] = useState(null); // sessionId being created
 
@@ -105,14 +101,6 @@ export default function HomeScreen() {
   const today = useMemo(() => new Date(), []);
   const todayYMD = useMemo(() => toYMD(today), [today]);
   const { startStr, endStr } = useMemo(() => getExtendedRange(), []);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, (data) => {
-      setTeams(data);
-      setLoadingTeams(false);
-    });
-  }, [user, db, appId]);
 
   useEffect(() => {
     if (!user || !db) return;

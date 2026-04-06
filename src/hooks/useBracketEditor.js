@@ -6,6 +6,7 @@ import { toPng } from 'html-to-image';
 import { buildDynamicBracket, calculateMatchWinner } from '../utils/bracketEngine';
 import { extractTextFromFile, callGeminiForResults } from '../services/aiService';
 import { saveBracketToFirestore } from '../services/firestoreService';
+import { useToast } from '../contexts/ToastContext';
 
 export function useBracketEditor({
   user,
@@ -19,6 +20,7 @@ export function useBracketEditor({
   appMode,
   setErrorMsg,
 }) {
+  const toast = useToast();
   const [zoom, setZoom] = useState(1);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showMobileTools, setShowMobileTools] = useState(false);
@@ -270,7 +272,7 @@ export function useBracketEditor({
       a.click();
     } catch (e) {
       logger.error('Error generando imagen', e);
-      alert('No se pudo generar la imagen. Inténtalo de nuevo.');
+      toast('No se pudo generar la imagen. Inténtalo de nuevo.', 'error');
     }
     setIsExportingImage(false);
   };

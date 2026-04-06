@@ -1,11 +1,63 @@
-import React from 'react';
-import { ChevronLeft, ZoomOut, ZoomIn, CheckCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ChevronLeft, ZoomOut, ZoomIn, CheckCircle, ShieldHalf, ChevronDown } from 'lucide-react';
 import BracketNode from '../components/BracketNode';
 import { useBracket } from '../contexts/BracketContext';
+import { useProfile } from '../hooks/useProfile';
+
+function bestTeamMatch(allTeams, clubName, teamName) {
+  if (!allTeams || allTeams.length === 0) return null;
+  const needles = [clubName, teamName].filter(Boolean).map((s) => s.toLowerCase().trim());
+  if (needles.length === 0) return null;
+
+  let best = null;
+  let bestScore = 0;
+  for (const t of allTeams) {
+    const lower = t.toLowerCase();
+    let score = 0;
+    for (const needle of needles) {
+      // Check if any word from needle appears in the team name
+      const words = needle.split(/\s+/).filter((w) => w.length > 2);
+      for (const word of words) {
+        if (lower.includes(word)) score += word.length;
+      }
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      best = t;
+    }
+  }
+  // Only return if we matched at least one significant word
+  return bestScore >= 3 ? best : null;
+}
 
 export default function PreviewScreen() {
-  const { pendingBracket, setPendingBracket, previewZoom, setPreviewZoom, handleConfirmBracket, setAppMode } =
-    useBracket();
+  const {
+    pendingBracket,
+    setPendingBracket,
+    previewZoom,
+    setPreviewZoom,
+    handleConfirmBracket,
+    setAppMode,
+    pendingTeamObj,
+  } = useBracket();
+  const { profile } = useProfile();
+  const [showTeamPicker, setShowTeamPicker] = useState(false);
+
+  const allTeams = pendingBracket?.allTeams || [];
+  const clubName = profile?.nombreClub || '';
+
+  // Auto-detect best matching team when bracket is loaded
+  useEffect(() => {
+    if (!pendingBracket || pendingBracket.myTeam || allTeams.length === 0) return;
+    const teamName = pendingTeamObj ? `${pendingTeamObj.categoria || ''} ${pendingTeamObj.letra || ''}` : '';
+    const suggested = bestTeamMatch(allTeams, clubName, teamName);
+    if (suggested) {
+      setPendingBracket((prev) => ({ ...prev, myTeam: suggested }));
+    }
+  }, [allTeams.length, clubName, pendingTeamObj]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const myTeam = pendingBracket?.myTeam || '';
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
       <header className="bg-blue-900 text-white px-4 py-3 shadow-md flex items-center justify-between gap-3 z-10 relative">
@@ -63,6 +115,54 @@ export default function PreviewScreen() {
           </button>
         </div>
       </header>
+
+      {/* Team selector banner */}
+      <div className="bg-blue-950 border-b border-blue-800 px-4 py-2.5 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <ShieldHalf size={16} className="text-amber-400 shrink-0" />
+          <span className="text-blue-300 text-sm font-medium shrink-0">Mi equipo en el cuadro:</span>
+          <div className="relative">
+            <button
+              onClick={() => setShowTeamPicker(!showTeamPicker)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition ${myTeam ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-blue-800 text-blue-300 border border-blue-700'}`}
+            >
+              {myTeam || 'Seleccionar equipo'}
+              <ChevronDown size={14} />
+            </button>
+            {showTeamPicker && (
+              <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-2xl border border-slate-200 max-h-60 overflow-y-auto z-50 min-w-[240px]">
+                <button
+                  onClick={() => {
+                    setPendingBracket((prev) => ({ ...prev, myTeam: null }));
+                    setShowTeamPicker(false);
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm text-slate-400 hover:bg-slate-50 border-b border-slate-100"
+                >
+                  Ninguno
+                </button>
+                {allTeams.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => {
+                      setPendingBracket((prev) => ({ ...prev, myTeam: t }));
+                      setShowTeamPicker(false);
+                    }}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 transition ${t === myTeam ? 'bg-amber-50 text-amber-700 font-bold' : 'text-slate-700'}`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        {myTeam && (
+          <span className="text-xs text-blue-400 shrink-0 hidden sm:block">
+            Se destacará en el cuadro y aparecerá en tu calendario
+          </span>
+        )}
+      </div>
+
       <div className="flex-1 overflow-auto bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px] p-4">
         <div
           className="absolute min-w-max p-12 w-full flex justify-center pb-32"
@@ -73,7 +173,7 @@ export default function PreviewScreen() {
             bracketData={pendingBracket.bracketData}
             onScoreChange={() => {}}
             onSelectSorteo={() => {}}
-            myTeam=""
+            myTeam={myTeam}
             readOnly={true}
           />
         </div>

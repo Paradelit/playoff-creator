@@ -4,6 +4,7 @@ import { userDocRef, userColRef } from '../services/firestoreHelpers';
 import logger from '../utils/logger';
 import { toFirestore } from '../services/firestoreService';
 import { teamDisplayName } from '../screens/TeamsScreen';
+import { useToast } from '../contexts/ToastContext';
 
 export function useBracketSync({
   user,
@@ -15,6 +16,7 @@ export function useBracketSync({
   appMode,
   setAppMode,
 }) {
+  const toast = useToast();
   const [brackets, setBrackets] = useState([]);
   const [activeBracketId, setActiveBracketId] = useState(null);
   const activeBracket = useMemo(() => brackets.find((b) => b.id === activeBracketId), [brackets, activeBracketId]);
@@ -138,7 +140,7 @@ export function useBracketSync({
     getDoc(doc(db, 'artifacts', appId, 'shared', pendingShareCode))
       .then((snap) => {
         if (!snap.exists()) {
-          alert('El enlace no es válido o el cuadro no existe.');
+          toast('El enlace no es válido o el cuadro no existe.', 'error');
           setPendingShareCode(null);
           onShareCodeConsumed?.();
           return;
@@ -151,7 +153,7 @@ export function useBracketSync({
           cfg.linkAccess === 'edit' ||
           (user.email && cfg.invites?.[user.email]);
         if (!hasAccess) {
-          alert('No tienes acceso a este cuadro compartido.');
+          toast('No tienes acceso a este cuadro compartido.', 'warning');
           setPendingShareCode(null);
           onShareCodeConsumed?.();
           return;
@@ -184,7 +186,7 @@ export function useBracketSync({
         onShareCodeConsumed?.();
       })
       .catch(() => {
-        alert('Error al acceder al cuadro. Inténtalo de nuevo.');
+        toast('Error al acceder al cuadro. Inténtalo de nuevo.', 'error');
         setPendingShareCode(null);
         onShareCodeConsumed?.();
       });
@@ -227,7 +229,7 @@ export function useBracketSync({
       const text = await file.text();
       const data = JSON.parse(text);
       if (!data.bracketData || !data.name) {
-        alert('El archivo no es un cuadro válido.');
+        toast('El archivo no es un cuadro válido.', 'error');
         return;
       }
       const imported = {
@@ -245,7 +247,7 @@ export function useBracketSync({
         );
       }
     } catch {
-      alert('Error al leer el archivo. Asegúrate de que es un cuadro exportado válido.');
+      toast('Error al leer el archivo. Asegúrate de que es un cuadro exportado válido.', 'error');
     }
   };
 

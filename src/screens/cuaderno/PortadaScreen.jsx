@@ -1,40 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useFirebase } from '../../contexts/FirebaseContext';
-import { subscribeToTeams } from '../../services/teamsService';
-import { subscribeToProfile } from '../../services/settingsService';
+import { useTeams } from '../../hooks/useTeams';
+import { useProfile } from '../../hooks/useProfile';
 import { teamDisplayName } from '../TeamsScreen';
-
-function getTemporada() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const startYear = month >= 9 ? year : year - 1;
-  return `${startYear}-${String(startYear + 1).slice(2)}`;
-}
+import { getTemporada } from '../../utils/dateUtils';
 
 export default function PortadaScreen() {
   const { teamId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { db, appId } = useFirebase();
-
-  const [team, setTeam] = useState(null);
-  const [profile, setProfile] = useState({});
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, (data) => {
-      setTeam(data.find((t) => t.id === teamId) || null);
-    });
-  }, [user, db, appId, teamId]);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToProfile(user.uid, db, appId, setProfile);
-  }, [user, db, appId]);
+  const { teams } = useTeams();
+  const { profile } = useProfile();
+  const team = teams.find((t) => t.id === teamId) || null;
 
   const clubName = profile.nombreClub || 'Mi Club';
   const temporada = getTemporada();

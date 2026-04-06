@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus,
@@ -14,8 +14,10 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
-import { subscribeToTeams, saveTeam, deleteTeam } from '../services/teamsService';
-import { subscribeToProfile, autoAddCoachToTeam } from '../services/settingsService';
+import { saveTeam, deleteTeam } from '../services/teamsService';
+import { autoAddCoachToTeam } from '../services/settingsService';
+import { useTeams } from '../hooks/useTeams';
+import { useProfile } from '../hooks/useProfile';
 
 /* eslint-disable react-refresh/only-export-components */
 export const CATEGORIAS = ['Prebenjamín', 'Benjamín', 'Alevín', 'Infantil', 'Cadete', 'Junior', 'Senior'];
@@ -42,27 +44,12 @@ export default function TeamsScreen() {
   const { db, appId } = useFirebase();
   const navigate = useNavigate();
 
-  const [teams, setTeams] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { teams, loading } = useTeams();
+  const { profile } = useProfile();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deletingTeamId, setDeletingTeamId] = useState(null);
-  const [profile, setProfile] = useState({});
-
-  useEffect(() => {
-    if (!user || !db) return;
-    const unsub = subscribeToTeams(user.uid, db, appId, (data) => {
-      setTeams(data);
-      setLoading(false);
-    });
-    return unsub;
-  }, [user, db, appId]);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToProfile(user.uid, db, appId, setProfile);
-  }, [user, db, appId]);
 
   async function handleCreate(e) {
     e.preventDefault();

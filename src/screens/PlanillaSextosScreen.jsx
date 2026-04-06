@@ -5,8 +5,9 @@ import { ArrowLeft, Printer, RotateCcw, Plus, Minus } from 'lucide-react';
 import ClubLogo from '../components/ClubLogo';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
-import { subscribeToTeams, subscribeToMembers } from '../services/teamsService';
-import { subscribeToProfile } from '../services/settingsService';
+import { subscribeToMembers } from '../services/teamsService';
+import { useTeams } from '../hooks/useTeams';
+import { useProfile } from '../hooks/useProfile';
 import { subscribeToPlanilla, savePlanilla } from '../services/planillaService';
 import { userDocRef } from '../services/firestoreHelpers';
 import { teamDisplayName } from './TeamsScreen';
@@ -22,8 +23,9 @@ export default function PlanillaSextosScreen() {
   const { db, appId } = useFirebase();
 
   const [session, setSession] = useState(null);
-  const [team, setTeam] = useState(null);
-  const [profile, setProfile] = useState({});
+  const { teams } = useTeams();
+  const { profile } = useProfile();
+  const team = session?.teamId ? teams.find((t) => t.id === session.teamId) || null : null;
   const [jugadores, setJugadores] = useState([]);
   const [meta, setMeta] = useState({ fase: '', jornada: '' });
   const [saveStatus, setSaveStatus] = useState('saved');
@@ -44,20 +46,6 @@ export default function PlanillaSextosScreen() {
       }
     });
   }, [user, db, appId, sessionId, location.state]);
-
-  // Load profile
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToProfile(user.uid, db, appId, setProfile);
-  }, [user, db, appId]);
-
-  // Load team
-  useEffect(() => {
-    if (!user || !db || !session?.teamId) return;
-    return subscribeToTeams(user.uid, db, appId, (teams) => {
-      setTeam(teams.find((t) => t.id === session.teamId) || null);
-    });
-  }, [user, db, appId, session?.teamId]);
 
   // Load or create planilla
   useEffect(() => {

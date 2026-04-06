@@ -1,31 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer } from 'lucide-react';
 import ClubLogo from '../../components/ClubLogo';
-import { useAuth } from '../../contexts/AuthContext';
-import { useFirebase } from '../../contexts/FirebaseContext';
-import { subscribeToProfile } from '../../services/settingsService';
-
-function getTemporada() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const startYear = month >= 9 ? year : year - 1;
-  return `${startYear}-${String(startYear + 1).slice(2)}`;
-}
+import { useProfile } from '../../hooks/useProfile';
+import { getTemporada } from '../../utils/dateUtils';
 
 export default function NormasScreen() {
   const { teamId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { db, appId } = useFirebase();
-
-  const [profile, setProfile] = useState({});
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToProfile(user.uid, db, appId, setProfile);
-  }, [user, db, appId]);
+  const { profile } = useProfile();
 
   const clubName = profile.nombreClub || 'Uros de Rivas';
   const temporada = getTemporada();

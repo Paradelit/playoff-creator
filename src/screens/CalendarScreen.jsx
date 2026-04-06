@@ -20,7 +20,7 @@ import {
 import { onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
-import { subscribeToTeams } from '../services/teamsService';
+import { useTeams } from '../hooks/useTeams';
 import { saveTraining } from '../services/trainingsService';
 import {
   subscribeToCalendarSessions,
@@ -37,6 +37,7 @@ import { teamDisplayName } from './TeamsScreen';
 import { isMinibasketSextos } from '../utils/minibasketUtils';
 import { deletePlanilla } from '../services/planillaService';
 import { buildPlayoffSessions } from '../utils/calendarUtils';
+import { toYMD, formatDateDisplay } from '../utils/dateUtils';
 
 const TEAM_COLORS = [
   'bg-blue-600 text-white',
@@ -52,17 +53,6 @@ const TEAM_COLORS = [
 function teamColorIndex(teamId) {
   if (!teamId) return 0;
   return teamId.charCodeAt(0) % TEAM_COLORS.length;
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export function toYMD(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function formatDateDisplay(ymd) {
-  if (!ymd) return '—';
-  const [y, m, d] = ymd.split('-');
-  return `${d}/${m}/${y}`;
 }
 
 const MONTH_NAMES = [
@@ -218,7 +208,7 @@ export default function CalendarScreen() {
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(initialDate);
   const [sessions, setSessions] = useState([]);
-  const [teams, setTeams] = useState([]);
+  const { teams } = useTeams();
   const [loading, setLoading] = useState(true);
 
   const [selectedSession, setSelectedSession] = useState(null);
@@ -259,11 +249,6 @@ export default function CalendarScreen() {
   }
 
   const [brackets, setBrackets] = useState([]);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, setTeams);
-  }, [user, db, appId]);
 
   useEffect(() => {
     if (!user || !db) return;
