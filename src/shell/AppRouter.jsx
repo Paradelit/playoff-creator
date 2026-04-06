@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,6 +25,14 @@ const PlanillaSextosScreen = lazy(() => import('../screens/PlanillaSextosScreen'
 const ScoutingScreen = lazy(() => import('../screens/ScoutingScreen'));
 const AnalysisScreen = lazy(() => import('../screens/AnalysisScreen'));
 const EntrenamientosScreen = lazy(() => import('../screens/cuaderno/EntrenamientosScreen'));
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
 
 function LazyFallback() {
   return (
@@ -157,6 +165,7 @@ export default function AppRouter() {
 
   return (
     <Suspense fallback={<LazyFallback />}>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomeRoute />} />
         <Route path="/login" element={<LoginRoute />} />
