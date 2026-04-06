@@ -16,6 +16,10 @@ import {
   Clock,
   History,
   FastForward,
+  Swords,
+  MapPin,
+  Search,
+  BarChart3,
 } from 'lucide-react';
 import { onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
@@ -195,6 +199,54 @@ export default function HomeScreen() {
       });
   }, [brackets, teams]);
 
+  // Match day widget: match today or tomorrow
+  const tomorrowYMD = useMemo(() => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + 1);
+    return toYMD(d);
+  }, [today]);
+
+  const matchDayEvent = useMemo(() => {
+    const matches = allSessions.filter(
+      (s) => s.tipo === 'partido' && (s.fecha === todayYMD || s.fecha === tomorrowYMD),
+    );
+    if (matches.length === 0) return null;
+    // Prefer today's match, then earliest tomorrow
+    const todayMatch = matches.find((s) => s.fecha === todayYMD);
+    if (todayMatch) return todayMatch;
+    return matches.sort((a, b) => (a.horaInicio || '').localeCompare(b.horaInicio || ''))[0];
+  }, [allSessions, todayYMD, tomorrowYMD]);
+
+  // Weekly summary
+  const weeklySummary = useMemo(() => {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=Sun
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + mondayOffset);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const monYMD = toYMD(monday);
+    const sunYMD = toYMD(sunday);
+    const weekSessions = allSessions.filter((s) => s.fecha >= monYMD && s.fecha <= sunYMD);
+    const entrenamientos = weekSessions.filter((s) => s.tipo === 'entrenamiento').length;
+    const partidos = weekSessions.filter((s) => s.tipo === 'partido').length;
+    const playoffs = weekSessions.filter((s) => s.tipo === 'playoff').length;
+    return { entrenamientos, partidos, playoffs, total: weekSessions.length };
+  }, [allSessions]);
+
+  // Next match per team (for team card quick stats)
+  const nextMatchByTeam = useMemo(() => {
+    const map = {};
+    const futureMatches = allSessions
+      .filter((s) => s.tipo === 'partido' && s.fecha >= todayYMD)
+      .sort((a, b) => a.fecha.localeCompare(b.fecha));
+    for (const s of futureMatches) {
+      if (!map[s.teamId]) map[s.teamId] = s;
+    }
+    return map;
+  }, [allSessions, todayYMD]);
+
   const handleCreateTraining = useCallback(
     async (session) => {
       setCreatingTraining(session.id);
@@ -339,6 +391,28 @@ export default function HomeScreen() {
                       <ShieldHalf size={22} className="text-white/30 shrink-0 mt-0.5" />
                     </div>
 
+                    {/* Quick stats: next match */}
+                    {nextMatchByTeam[team.id] && (
+                      <p className="text-xs text-blue-200/80 mt-2 truncate">
+                        Próx. partido: vs {nextMatchByTeam[team.id].rival || 'Rival'} —{' '}
+                        {(() => {
+                          const f = nextMatchByTeam[team.id].fecha;
+                          const d = parseInt(f.split('-')[2]);
+                          const m = MONTHS[parseInt(f.split('-')[1]) - 1];
+                          return `${d} ${m}`;
+                        })()}
+                      </p>
+                    )}
+                    {activePlayoffs.find((p) => p.teamId === team.id && p.rival) && (
+                      <p className="text-xs text-amber-300/80 mt-0.5 truncate">
+                        Playoff: vs {activePlayoffs.find((p) => p.teamId === team.id && p.rival).rival}
+                        {(() => {
+                          const p = activePlayoffs.find((ap) => ap.teamId === team.id && ap.rival);
+                          return p?.series ? ` (${p.series.wins}-${p.series.losses})` : '';
+                        })()}
+                      </p>
+                    )}
+
                     <div className="w-12 h-0.5 bg-white/20 rounded-full my-4" />
 
                     <div className="flex gap-5">
@@ -376,6 +450,34 @@ export default function HomeScreen() {
             </>
           )}
         </div>
+
+        {/* MATCH DAY WIDGET */}
+        {matchDayEvent && (
+          <MatchDayWidget session={matchDayEvent} teams={teams} todayYMD={todayYMD} navigate={navigate} />
+        )}
+
+        {/* WEEKLY SUMMARY */}
+        {weeklySummary.total > 0 && (
+          <div className="mt-4 bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex items-center gap-2 text-xs text-slate-600 font-medium">
+            <CalendarDays size={14} className="text-slate-400 shrink-0" />
+            <span>Esta semana:</span>
+            {weeklySummary.entrenamientos > 0 && (
+              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">
+                {weeklySummary.entrenamientos} entren.
+              </span>
+            )}
+            {weeklySummary.partidos > 0 && (
+              <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold">
+                {weeklySummary.partidos} {weeklySummary.partidos === 1 ? 'partido' : 'partidos'}
+              </span>
+            )}
+            {weeklySummary.playoffs > 0 && (
+              <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">
+                {weeklySummary.playoffs} playoff
+              </span>
+            )}
+          </div>
+        )}
 
         {/* HOY */}
         <div className="mt-6">
@@ -507,6 +609,62 @@ function EmptyTeamCard({ navigate }) {
       >
         <Plus size={16} /> Crear equipo
       </button>
+    </div>
+  );
+}
+
+function MatchDayWidget({ session, teams, todayYMD, navigate }) {
+  const team = teams.find((t) => t.id === session.teamId);
+  const isToday = session.fecha === todayYMD;
+  const isFuture = session.fecha >= todayYMD;
+
+  // Time until match
+  let timeLabel = isToday ? 'Hoy' : 'Mañana';
+  if (isToday && session.horaInicio) {
+    const [h, m] = session.horaInicio.split(':').map(Number);
+    const now = new Date();
+    const matchTime = new Date();
+    matchTime.setHours(h, m, 0, 0);
+    const diffMs = matchTime - now;
+    if (diffMs > 0) {
+      const diffH = Math.floor(diffMs / 3600000);
+      const diffM = Math.floor((diffMs % 3600000) / 60000);
+      timeLabel = diffH > 0 ? `En ${diffH}h ${diffM}m` : `En ${diffM} min`;
+    } else {
+      timeLabel = 'En curso';
+    }
+  }
+
+  const actionRoute = isFuture ? `/calendar/${session.id}/scouting` : `/calendar/${session.id}/analysis`;
+  const actionLabel = isFuture ? 'Scouting' : 'Análisis';
+  const ActionIcon = isFuture ? Search : BarChart3;
+
+  return (
+    <div className="mt-4 bg-gradient-to-r from-rose-500 to-rose-600 rounded-2xl p-4 text-white shadow-lg">
+      <div className="flex items-center gap-2 mb-2">
+        <Swords size={16} className="text-rose-200" />
+        <span className="text-xs font-bold uppercase tracking-wider text-rose-200">Día de partido</span>
+        <span className="ml-auto text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full">{timeLabel}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="min-w-0">
+          <p className="font-bold text-lg truncate">
+            vs {session.rival || 'Rival'} {session.esLocal ? '(Local)' : '(Visitante)'}
+          </p>
+          <p className="text-rose-100 text-xs truncate">
+            {team ? teamDisplayName(team) : ''}
+            {session.horaInicio ? ` · ${session.horaInicio}` : ''}
+            {session.lugar ? ` · ${session.lugar}` : ''}
+          </p>
+        </div>
+        <button
+          onClick={() => navigate(actionRoute)}
+          className="shrink-0 bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-3 py-2 rounded-xl flex items-center gap-1.5 transition ml-3"
+        >
+          <ActionIcon size={14} />
+          {actionLabel}
+        </button>
+      </div>
     </div>
   );
 }
