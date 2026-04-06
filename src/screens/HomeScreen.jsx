@@ -250,12 +250,14 @@ export default function HomeScreen() {
         const team = teams.find((t) => t.id === session.teamId);
         if (isMinibasketSextos(team)) {
           navigate(`/calendar/${session.id}/planilla`);
+        } else if (session.fecha < todayYMD) {
+          navigate(`/calendar/${session.id}/analysis`);
         } else {
-          navigate(`/calendar?date=${session.fecha}&teamId=${session.teamId}`);
+          navigate(`/calendar/${session.id}/scouting`);
         }
       }
     },
-    [navigate, teams, handleCreateTraining],
+    [navigate, teams, handleCreateTraining, todayYMD],
   );
 
   const hora = today.getHours();
@@ -519,7 +521,7 @@ function getActionLabel(session, teams) {
   if (session.tipo === 'partido') {
     const team = teams.find((t) => t.id === session.teamId);
     if (isMinibasketSextos(team)) return 'Planilla de sextos';
-    return 'Ver en calendario';
+    return session.fecha < toYMD(new Date()) ? 'Ver análisis' : 'Scouting';
   }
   return 'Ver';
 }

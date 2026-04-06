@@ -16,6 +16,8 @@ import {
   MapPin,
   Sparkles,
   AlertTriangle,
+  Search,
+  BarChart3,
 } from 'lucide-react';
 import { onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
@@ -810,18 +812,39 @@ export default function CalendarScreen() {
                       <ArrowRight size={15} />
                     </button>
                   )}
-                  {selectedSession.tipo === 'partido' &&
-                    isMinibasketSextos(teams.find((t) => t.id === selectedSession.teamId)) && (
+                  {selectedSession.tipo === 'partido' && (
+                    <>
+                      {isMinibasketSextos(teams.find((t) => t.id === selectedSession.teamId)) && (
+                        <button
+                          onClick={() => {
+                            setSelectedSession(null);
+                            navigate(`/calendar/${selectedSession.id}/planilla`);
+                          }}
+                          className="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
+                        >
+                          <ClipboardList size={16} /> Planilla de Sextos <ArrowRight size={15} />
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           setSelectedSession(null);
-                          navigate(`/calendar/${selectedSession.id}/planilla`);
+                          navigate(`/calendar/${selectedSession.id}/scouting`);
                         }}
-                        className="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
+                        className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
                       >
-                        <ClipboardList size={16} /> Planilla de Sextos <ArrowRight size={15} />
+                        <Search size={16} /> Scouting rival <ArrowRight size={15} />
                       </button>
-                    )}
+                      <button
+                        onClick={() => {
+                          setSelectedSession(null);
+                          navigate(`/calendar/${selectedSession.id}/analysis`);
+                        }}
+                        className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
+                      >
+                        <BarChart3 size={16} /> Análisis post-partido <ArrowRight size={15} />
+                      </button>
+                    </>
+                  )}
                   <div className="flex gap-2">
                     <button
                       onClick={() => {

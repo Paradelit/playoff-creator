@@ -22,6 +22,8 @@ const TestTiroScreen = lazy(() => import('../screens/cuaderno/TestTiroScreen'));
 const JugadoresScreen = lazy(() => import('../screens/cuaderno/JugadoresScreen'));
 const NotasScreen = lazy(() => import('../screens/cuaderno/NotasScreen'));
 const PlanillaSextosScreen = lazy(() => import('../screens/PlanillaSextosScreen'));
+const ScoutingScreen = lazy(() => import('../screens/ScoutingScreen'));
+const AnalysisScreen = lazy(() => import('../screens/AnalysisScreen'));
 const EntrenamientosScreen = lazy(() => import('../screens/cuaderno/EntrenamientosScreen'));
 
 function LazyFallback() {
@@ -299,6 +301,26 @@ export default function AppRouter() {
           element={
             <AuthGuard>
               <PlanillaSextosScreen />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/calendar/:sessionId/scouting"
+          element={
+            <AuthGuard>
+              <ModuleBoundary name="Scouting">
+                <ScoutingScreen />
+              </ModuleBoundary>
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/calendar/:sessionId/analysis"
+          element={
+            <AuthGuard>
+              <ModuleBoundary name="Análisis">
+                <AnalysisScreen />
+              </ModuleBoundary>
             </AuthGuard>
           }
         />
