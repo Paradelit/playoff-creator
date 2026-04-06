@@ -281,6 +281,7 @@ export default function HomeScreen() {
             <button
               onClick={() => navigate('/exercises')}
               className="text-blue-400 hover:text-white transition p-1.5"
+              aria-label="Biblioteca de ejercicios"
               title="Biblioteca de ejercicios"
             >
               <BookOpen size={18} />
@@ -288,6 +289,7 @@ export default function HomeScreen() {
             <button
               onClick={() => navigate('/settings')}
               className="text-blue-400 hover:text-white transition p-1.5"
+              aria-label="Ajustes"
               title="Ajustes"
             >
               <Settings size={18} />
@@ -295,6 +297,7 @@ export default function HomeScreen() {
             <button
               onClick={handleLogout}
               className="text-blue-400 hover:text-white transition p-1.5"
+              aria-label="Cerrar sesión"
               title="Cerrar sesión"
             >
               <LogOut size={18} />

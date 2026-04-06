@@ -67,6 +67,7 @@ export default function PreviewScreen() {
               setAppMode('upload');
               setPendingBracket(null);
             }}
+            aria-label="Volver"
             className="p-2 bg-blue-800 rounded-lg shrink-0"
           >
             <ChevronLeft size={20} />
@@ -88,13 +89,21 @@ export default function PreviewScreen() {
         </div>
         <div className="flex items-center gap-2">
           <div className="flex bg-blue-800 rounded-lg border border-blue-700">
-            <button onClick={() => setPreviewZoom((z) => Math.max(0.3, z - 0.1))} className="p-2">
+            <button
+              onClick={() => setPreviewZoom((z) => Math.max(0.3, z - 0.1))}
+              aria-label="Reducir zoom"
+              className="p-2"
+            >
               <ZoomOut size={18} />
             </button>
             <div className="px-3 py-2 text-sm border-x border-blue-700 w-16 text-center">
               {Math.round(previewZoom * 100)}%
             </div>
-            <button onClick={() => setPreviewZoom((z) => Math.min(1.5, z + 0.1))} className="p-2">
+            <button
+              onClick={() => setPreviewZoom((z) => Math.min(1.5, z + 0.1))}
+              aria-label="Aumentar zoom"
+              className="p-2"
+            >
               <ZoomIn size={18} />
             </button>
           </div>

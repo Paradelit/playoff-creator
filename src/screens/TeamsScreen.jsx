@@ -190,7 +190,11 @@ export default function TeamsScreen() {
               <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                 <ShieldHalf size={20} className="text-blue-600" /> Nuevo equipo
               </h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                aria-label="Cerrar"
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X size={20} />
               </button>
             </div>

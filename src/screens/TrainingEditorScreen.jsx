@@ -635,7 +635,11 @@ export default function TrainingEditorScreen() {
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
                 <BookOpen size={16} className="text-blue-600" /> Biblioteca de ejercicios
               </h3>
-              <button onClick={() => setShowLibrary(null)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setShowLibrary(null)}
+                aria-label="Cerrar"
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X size={20} />
               </button>
             </div>

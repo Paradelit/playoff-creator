@@ -187,7 +187,11 @@ export default function EntrenamientosScreen() {
                     autoFocus
                   />
                   {searchQuery && (
-                    <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-slate-600">
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      aria-label="Limpiar búsqueda"
+                      className="text-slate-400 hover:text-slate-600"
+                    >
                       <X size={14} />
                     </button>
                   )}

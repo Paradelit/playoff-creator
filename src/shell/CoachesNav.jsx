@@ -163,7 +163,7 @@ function CreateSheet({ onClose }) {
         <div className="px-4 pb-4">
           <div className="flex items-center justify-between mb-4 px-1 pt-1">
             <h3 className="text-xl font-bold text-slate-800">Crear</h3>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1">
+            <button onClick={onClose} aria-label="Cerrar" className="text-slate-400 hover:text-slate-600 p-1">
               <X size={20} />
             </button>
           </div>

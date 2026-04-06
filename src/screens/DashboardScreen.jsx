@@ -77,7 +77,11 @@ export default function DashboardScreen() {
               <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                 <Share2 size={20} className="text-blue-600" /> Compartir cuadro
               </h3>
-              <button onClick={() => setSharingBracket(null)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setSharingBracket(null)}
+                aria-label="Cerrar"
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -421,6 +425,7 @@ export default function DashboardScreen() {
                       <button
                         onClick={() => handleShare(b)}
                         className="text-slate-400 hover:text-purple-600 p-2 hover:bg-purple-50 rounded-lg transition-colors"
+                        aria-label="Compartir cuadro"
                         title="Compartir cuadro"
                       >
                         <Share2 size={18} />
@@ -428,6 +433,7 @@ export default function DashboardScreen() {
                       <button
                         onClick={() => handleExport(b)}
                         className="text-slate-400 hover:text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                        aria-label="Exportar cuadro"
                         title="Exportar cuadro"
                       >
                         <Download size={18} />
@@ -435,6 +441,7 @@ export default function DashboardScreen() {
                       <button
                         onClick={() => handleDeleteBracket(b.id)}
                         className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                        aria-label="Eliminar cuadro"
                         title="Eliminar cuadro"
                       >
                         <Trash2 size={18} />

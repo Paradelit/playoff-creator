@@ -573,6 +573,7 @@ export default function CalendarScreen() {
           <div className="flex items-center gap-2">
             <button
               onClick={goBack}
+              aria-label="Período anterior"
               className="text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100 transition"
             >
               <ChevronLeft size={20} />
@@ -580,6 +581,7 @@ export default function CalendarScreen() {
             <h2 className="text-base font-bold text-slate-800 min-w-[170px] text-center">{getNavLabel()}</h2>
             <button
               onClick={goForward}
+              aria-label="Período siguiente"
               className="text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100 transition"
             >
               <ChevronRight size={20} />
@@ -723,7 +725,11 @@ export default function CalendarScreen() {
                   <p className="text-xs text-slate-500">{selectedSession.teamName}</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedSession(null)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setSelectedSession(null)}
+                aria-label="Cerrar"
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -854,7 +860,11 @@ export default function CalendarScreen() {
               <h3 className="text-lg font-bold text-slate-800">
                 {editingSession.id ? 'Editar sesión' : 'Nueva sesión'}
               </h3>
-              <button onClick={() => setEditingSession(null)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setEditingSession(null)}
+                aria-label="Cerrar"
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -1059,7 +1069,11 @@ export default function CalendarScreen() {
                 <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                   <Sparkles size={18} className="text-orange-300" /> Importar cuadrante con IA
                 </h3>
-                <button onClick={() => setImportSetup(null)} className="text-slate-400 hover:text-slate-600">
+                <button
+                  onClick={() => setImportSetup(null)}
+                  aria-label="Cerrar"
+                  className="text-slate-400 hover:text-slate-600"
+                >
                   <X size={20} />
                 </button>
               </div>

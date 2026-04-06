@@ -327,7 +327,11 @@ export default function ExerciseLibraryScreen() {
               <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                 <Download size={18} className="text-blue-600" /> Exportar ejercicios
               </h3>
-              <button onClick={() => setShowExport(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setShowExport(false)}
+                aria-label="Cerrar"
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -401,7 +405,11 @@ export default function ExerciseLibraryScreen() {
               <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                 <Upload size={18} className="text-blue-600" /> Importar ejercicios
               </h3>
-              <button onClick={() => setImportPreview(null)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setImportPreview(null)}
+                aria-label="Cerrar"
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -458,7 +466,11 @@ export default function ExerciseLibraryScreen() {
                 <BookOpen size={18} className="text-blue-600" />
                 {editingExercise.id ? 'Editar ejercicio' : 'Nuevo ejercicio'}
               </h3>
-              <button onClick={() => setEditingExercise(null)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setEditingExercise(null)}
+                aria-label="Cerrar"
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X size={20} />
               </button>
             </div>

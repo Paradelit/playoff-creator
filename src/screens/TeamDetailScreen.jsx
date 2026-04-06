@@ -247,7 +247,11 @@ export default function TeamDetailScreen() {
                 <User size={18} className="text-blue-600" />
                 {editingMember.id ? 'Editar' : 'Añadir'} {editingMember.tipo === 'staff' ? 'staff' : 'jugador'}
               </h3>
-              <button onClick={() => setEditingMember(null)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setEditingMember(null)}
+                aria-label="Cerrar"
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -420,7 +424,11 @@ export default function TeamDetailScreen() {
           >
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-xl font-bold text-slate-800">Editar equipo</h3>
-              <button onClick={() => setEditingTeam(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setEditingTeam(false)}
+                aria-label="Cerrar"
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X size={20} />
               </button>
             </div>

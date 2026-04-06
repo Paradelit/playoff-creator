@@ -144,7 +144,11 @@ export default function BracketScreen() {
           >
             <div className="flex justify-between items-center mb-1">
               <span className="text-white font-bold text-base">Herramientas</span>
-              <button onClick={() => setShowMobileTools(false)} className="p-1 text-blue-300 hover:text-white">
+              <button
+                onClick={() => setShowMobileTools(false)}
+                aria-label="Cerrar"
+                className="p-1 text-blue-300 hover:text-white"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -237,6 +241,7 @@ export default function BracketScreen() {
               <div className="flex bg-blue-800 rounded-lg border border-blue-700 flex-1">
                 <button
                   onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))}
+                  aria-label="Reducir zoom"
                   className="p-3 flex-1 flex justify-center"
                 >
                   <ZoomOut size={18} />
@@ -246,6 +251,7 @@ export default function BracketScreen() {
                 </div>
                 <button
                   onClick={() => setZoom((z) => Math.min(1.5, z + 0.1))}
+                  aria-label="Aumentar zoom"
                   className="p-3 flex-1 flex justify-center"
                 >
                   <ZoomIn size={18} />
@@ -300,7 +306,11 @@ export default function BracketScreen() {
               <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                 <Share2 size={20} className="text-blue-600" /> Compartir cuadro
               </h3>
-              <button onClick={() => setSharingBracket(null)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setSharingBracket(null)}
+                aria-label="Cerrar"
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -418,7 +428,11 @@ export default function BracketScreen() {
         {/* Row 1: Navigation + Info + Mobile menu */}
         <div className="flex items-center justify-between gap-3 px-4 py-2.5 lg:px-6 lg:py-3">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setAppMode('dashboard')} className="p-2 bg-blue-800 rounded-lg shrink-0">
+            <button
+              onClick={() => setAppMode('dashboard')}
+              aria-label="Volver"
+              className="p-2 bg-blue-800 rounded-lg shrink-0"
+            >
               <ChevronLeft size={20} />
             </button>
             <div className="min-w-0">
@@ -515,7 +529,11 @@ export default function BracketScreen() {
               </div>
             </div>
           </div>
-          <button onClick={() => setShowMobileTools(true)} className="lg:hidden p-2 bg-blue-800 rounded-lg shrink-0">
+          <button
+            onClick={() => setShowMobileTools(true)}
+            aria-label="Herramientas"
+            className="lg:hidden p-2 bg-blue-800 rounded-lg shrink-0"
+          >
             <MoreVertical size={20} />
           </button>
         </div>
@@ -542,13 +560,13 @@ export default function BracketScreen() {
             onSelectTeam={handleSetMyTeam}
           />
           <div className="flex bg-blue-800 rounded-lg border border-blue-700">
-            <button onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))} className="p-1.5">
+            <button onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))} aria-label="Reducir zoom" className="p-1.5">
               <ZoomOut size={15} />
             </button>
             <div className="px-2 py-1.5 text-xs border-x border-blue-700 w-12 text-center">
               {Math.round(zoom * 100)}%
             </div>
-            <button onClick={() => setZoom((z) => Math.min(1.5, z + 0.1))} className="p-1.5">
+            <button onClick={() => setZoom((z) => Math.min(1.5, z + 0.1))} aria-label="Aumentar zoom" className="p-1.5">
               <ZoomIn size={15} />
             </button>
           </div>
