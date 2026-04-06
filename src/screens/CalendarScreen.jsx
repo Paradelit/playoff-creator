@@ -698,10 +698,10 @@ export default function CalendarScreen() {
           onClick={() => setSelectedSession(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between px-5 pt-5 pb-3 border-b border-slate-100">
+            <div className="flex items-start justify-between px-5 pt-5 pb-3 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
               <div className="flex items-center gap-3">
                 <div
                   className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${selectedSession.tipo === 'playoff' ? 'bg-amber-100' : selectedSession.tipo === 'partido' ? 'bg-rose-100' : 'bg-blue-100'}`}

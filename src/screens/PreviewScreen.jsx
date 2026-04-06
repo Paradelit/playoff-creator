@@ -172,7 +172,7 @@ export default function PreviewScreen() {
         )}
       </div>
 
-      <div className="flex-1 overflow-auto bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px] p-4">
+      <div className="flex-1 overflow-auto relative bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px] p-4">
         <div
           className="absolute min-w-max p-12 w-full flex justify-center pb-32"
           style={{ transform: `scale(${previewZoom})`, transformOrigin: 'top center' }}
