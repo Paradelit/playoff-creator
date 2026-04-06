@@ -74,7 +74,7 @@ export function useSharing({ user, db, appId, setBrackets, activeBracket, appMod
     if (!db) return;
     let finalBracket = bracket;
     if (!bracket.shareCode || !bracket.shareConfig) {
-      const shareCode = bracket.shareCode || Math.random().toString(36).slice(2, 8).toUpperCase();
+      const shareCode = bracket.shareCode || crypto.randomUUID().slice(0, 8).toUpperCase();
       const shareConfig = {
         ownerId: user?.uid || 'anon',
         ownerEmail: user?.email || null,

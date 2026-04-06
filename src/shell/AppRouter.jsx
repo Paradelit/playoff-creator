@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import ModuleBoundary from '../components/ModuleBoundary';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 
@@ -157,14 +158,37 @@ export default function AppRouter() {
       <Routes>
         <Route path="/" element={<HomeRoute />} />
         <Route path="/login" element={<LoginRoute />} />
-        <Route path="/playoffs" element={<PlayoffsRoute />} />
-        <Route path="/teams" element={<TeamsRoute />} />
-        <Route path="/teams/:teamId" element={<TeamDetailRoute />} />
+        <Route
+          path="/playoffs"
+          element={
+            <ModuleBoundary name="Playoffs">
+              <PlayoffsRoute />
+            </ModuleBoundary>
+          }
+        />
+        <Route
+          path="/teams"
+          element={
+            <ModuleBoundary name="Equipos">
+              <TeamsRoute />
+            </ModuleBoundary>
+          }
+        />
+        <Route
+          path="/teams/:teamId"
+          element={
+            <ModuleBoundary name="Equipos">
+              <TeamDetailRoute />
+            </ModuleBoundary>
+          }
+        />
         <Route
           path="/teams/:teamId/cuaderno"
           element={
             <AuthGuard>
-              <CuadernoScreen />
+              <ModuleBoundary name="Cuaderno">
+                <CuadernoScreen />
+              </ModuleBoundary>
             </AuthGuard>
           }
         />
@@ -172,7 +196,9 @@ export default function AppRouter() {
           path="/teams/:teamId/cuaderno/info"
           element={
             <AuthGuard>
-              <InfoScreen />
+              <ModuleBoundary name="Cuaderno">
+                <InfoScreen />
+              </ModuleBoundary>
             </AuthGuard>
           }
         />
@@ -180,7 +206,9 @@ export default function AppRouter() {
           path="/teams/:teamId/cuaderno/pilares"
           element={
             <AuthGuard>
-              <PilaresScreen />
+              <ModuleBoundary name="Cuaderno">
+                <PilaresScreen />
+              </ModuleBoundary>
             </AuthGuard>
           }
         />
@@ -188,7 +216,9 @@ export default function AppRouter() {
           path="/teams/:teamId/cuaderno/normas"
           element={
             <AuthGuard>
-              <NormasScreen />
+              <ModuleBoundary name="Cuaderno">
+                <NormasScreen />
+              </ModuleBoundary>
             </AuthGuard>
           }
         />
@@ -196,7 +226,9 @@ export default function AppRouter() {
           path="/teams/:teamId/cuaderno/test-tiro"
           element={
             <AuthGuard>
-              <TestTiroScreen />
+              <ModuleBoundary name="Cuaderno">
+                <TestTiroScreen />
+              </ModuleBoundary>
             </AuthGuard>
           }
         />
@@ -204,7 +236,9 @@ export default function AppRouter() {
           path="/teams/:teamId/cuaderno/jugadores"
           element={
             <AuthGuard>
-              <JugadoresScreen />
+              <ModuleBoundary name="Cuaderno">
+                <JugadoresScreen />
+              </ModuleBoundary>
             </AuthGuard>
           }
         />
@@ -212,7 +246,9 @@ export default function AppRouter() {
           path="/teams/:teamId/cuaderno/notas"
           element={
             <AuthGuard>
-              <NotasScreen />
+              <ModuleBoundary name="Cuaderno">
+                <NotasScreen />
+              </ModuleBoundary>
             </AuthGuard>
           }
         />
@@ -220,14 +256,44 @@ export default function AppRouter() {
           path="/teams/:teamId/cuaderno/entrenamientos"
           element={
             <AuthGuard>
-              <EntrenamientosScreen />
+              <ModuleBoundary name="Cuaderno">
+                <EntrenamientosScreen />
+              </ModuleBoundary>
             </AuthGuard>
           }
         />
-        <Route path="/teams/:teamId/trainings" element={<TeamTrainingsRoute />} />
-        <Route path="/teams/:teamId/trainings/:trainingId" element={<TrainingEditorRoute />} />
-        <Route path="/exercises" element={<ExercisesRoute />} />
-        <Route path="/calendar" element={<CalendarRoute />} />
+        <Route
+          path="/teams/:teamId/trainings"
+          element={
+            <ModuleBoundary name="Entrenamientos">
+              <TeamTrainingsRoute />
+            </ModuleBoundary>
+          }
+        />
+        <Route
+          path="/teams/:teamId/trainings/:trainingId"
+          element={
+            <ModuleBoundary name="Entrenamientos">
+              <TrainingEditorRoute />
+            </ModuleBoundary>
+          }
+        />
+        <Route
+          path="/exercises"
+          element={
+            <ModuleBoundary name="Ejercicios">
+              <ExercisesRoute />
+            </ModuleBoundary>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <ModuleBoundary name="Calendario">
+              <CalendarRoute />
+            </ModuleBoundary>
+          }
+        />
         <Route
           path="/calendar/:sessionId/planilla"
           element={
