@@ -9,6 +9,7 @@ import { teamDisplayName } from './TeamsScreen';
 import MentionTextarea from '../components/MentionTextarea';
 import CourtCanvas, { COURT_TOOLS } from '../components/CourtCanvas';
 import ClubLogo from '../components/ClubLogo';
+import PromptDialog from '../components/PromptDialog';
 import { useTeams } from '../hooks/useTeams';
 import { useProfile } from '../hooks/useProfile';
 import { getTemporada } from '../utils/dateUtils';
@@ -61,6 +62,7 @@ export default function TrainingEditorScreen() {
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState('saved');
   const [modalEjercicioId, setModalEjercicioId] = useState(null);
+  const [libraryPrompt, setLibraryPrompt] = useState(null); // ejercicio to save
   const [activeTool, setActiveTool] = useState('O');
   const [showLibrary, setShowLibrary] = useState(null);
   const [librarySearch, setLibrarySearch] = useState('');
@@ -178,13 +180,18 @@ export default function TrainingEditorScreen() {
     setLibrarySearch('');
   }
 
-  async function saveToLibrary(ejercicio) {
-    const nombre = window.prompt('Nombre para guardar en biblioteca:', ejercicio.contenido || '');
-    if (!nombre) return;
+  function saveToLibrary(ejercicio) {
+    setLibraryPrompt(ejercicio);
+  }
+
+  async function handleLibrarySave(nombre) {
+    const ejercicio = libraryPrompt;
+    setLibraryPrompt(null);
+    if (!ejercicio) return;
     await saveExercise(
       {
         id: crypto.randomUUID(),
-        nombre: nombre.trim(),
+        nombre,
         contenido: ejercicio.contenido,
         descripcion: ejercicio.descripcion,
         tipoPista: ejercicio.tipoPista,
@@ -661,6 +668,16 @@ export default function TrainingEditorScreen() {
           </div>
         </div>
       )}
+
+      <PromptDialog
+        open={!!libraryPrompt}
+        title="Guardar en biblioteca"
+        message="Introduce un nombre para el ejercicio:"
+        defaultValue={libraryPrompt?.contenido || ''}
+        placeholder="Nombre del ejercicio"
+        onConfirm={handleLibrarySave}
+        onCancel={() => setLibraryPrompt(null)}
+      />
     </div>
   );
 }

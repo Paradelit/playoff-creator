@@ -9,6 +9,7 @@ import { teamDisplayName } from '../TeamsScreen';
 import { useTeams } from '../../hooks/useTeams';
 import { useProfile } from '../../hooks/useProfile';
 import { getTemporada } from '../../utils/dateUtils';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 function createInitialTable() {
   return {
@@ -37,6 +38,7 @@ export default function TestTiroScreen() {
   const [saveStatus, setSaveStatus] = useState('saved');
   const debounceRef = useRef(null);
   const isFirstLoad = useRef(true);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
     if (!user || !db) return;
@@ -111,7 +113,11 @@ export default function TestTiroScreen() {
   }
 
   function resetAll() {
-    if (!window.confirm('¿Estás seguro de que quieres limpiar todos los datos?')) return;
+    setShowResetConfirm(true);
+  }
+
+  function confirmReset() {
+    setShowResetConfirm(false);
     const fresh = [createInitialTable(), createInitialTable()];
     setTables(fresh);
     triggerSave(fresh);
@@ -245,6 +251,16 @@ export default function TestTiroScreen() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showResetConfirm}
+        title="Limpiar datos"
+        message="¿Estás seguro de que quieres limpiar todos los datos del test de tiro? Esta acción no se puede deshacer."
+        confirmLabel="Limpiar"
+        destructive
+        onConfirm={confirmReset}
+        onCancel={() => setShowResetConfirm(false)}
+      />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { subscribeToPlanilla, savePlanilla } from '../services/planillaService';
 import { userDocRef } from '../services/firestoreHelpers';
 import { teamDisplayName } from './TeamsScreen';
 import { validateSextos } from '../utils/minibasketUtils';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const SEXTO_LABELS = ['1º', '2º', '3º', '4º', '5º', '6º'];
 
@@ -30,6 +31,7 @@ export default function PlanillaSextosScreen() {
   const [meta, setMeta] = useState({ fase: '', jornada: '' });
   const [saveStatus, setSaveStatus] = useState('saved');
   const [loading, setLoading] = useState(true);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const debounceRef = useRef(null);
   const initializedRef = useRef(false);
@@ -153,7 +155,11 @@ export default function PlanillaSextosScreen() {
   }
 
   function resetAll() {
-    if (!window.confirm('¿Borrar todos los sextos de esta planilla?')) return;
+    setShowResetConfirm(true);
+  }
+
+  function confirmReset() {
+    setShowResetConfirm(false);
     const updated = jugadores.map((j) => ({
       ...j,
       sextos: [false, false, false, false, false, false],
@@ -351,6 +357,16 @@ export default function PlanillaSextosScreen() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showResetConfirm}
+        title="Borrar sextos"
+        message="¿Borrar todos los sextos de esta planilla? Esta acción no se puede deshacer."
+        confirmLabel="Borrar"
+        destructive
+        onConfirm={confirmReset}
+        onCancel={() => setShowResetConfirm(false)}
+      />
     </div>
   );
 }
