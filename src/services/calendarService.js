@@ -45,7 +45,9 @@ export async function deleteCalendarSession(sessionId, { uid, db, appId }) {
 }
 
 export async function bulkImportCalendarSessions(sessions, { uid, db, appId }) {
-  await Promise.all(sessions.map((s) => saveCalendarSession({ ...s, id: crypto.randomUUID() }, { uid, db, appId })));
+  await Promise.all(
+    sessions.map((s) => saveCalendarSession({ ...s, id: s.id || crypto.randomUUID() }, { uid, db, appId })),
+  );
 }
 
 export async function getCalendarSessionsInRange(uid, db, appId, startDate, endDate) {
@@ -63,6 +65,18 @@ export async function deleteCalendarSessionsByTeamAndRange(teamIds, startDate, e
   const existing = await getCalendarSessionsInRange(uid, db, appId, startDate, endDate);
   const toDelete = existing.filter((s) => teamIds.includes(s.teamId));
   await Promise.all(toDelete.map((s) => deleteCalendarSession(s.id, { uid, db, appId })));
+}
+
+export function subscribeToTeamSessions(uid, db, appId, teamId, tipo, callback) {
+  const q = query(
+    calendarSessionsCol(uid, db, appId),
+    where('teamId', '==', teamId),
+    where('tipo', '==', tipo),
+    orderBy('fecha', 'asc'),
+  );
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
+  });
 }
 
 export async function linkTrainingToSession(sessionId, trainingId, { uid, db, appId }) {

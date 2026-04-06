@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Trophy, Users, CalendarDays, Plus, X, ShieldHalf, ClipboardList, BookOpen } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
-import { subscribeToTeams, saveTeam } from '../services/teamsService';
+import { saveTeam } from '../services/teamsService';
 import { saveTraining } from '../services/trainingsService';
-import { subscribeToProfile, autoAddCoachToTeam } from '../services/settingsService';
+import { autoAddCoachToTeam } from '../services/settingsService';
+import { useTeams } from '../hooks/useTeams';
+import { useProfile } from '../hooks/useProfile';
 import { teamDisplayName, TeamFormFields, EMPTY_FORM } from '../screens/TeamsScreen';
 
 const LEFT_ITEMS = [
@@ -41,22 +43,12 @@ function CreateSheet({ onClose }) {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
 
-  const [teams, setTeams] = useState([]);
+  const { teams } = useTeams();
+  const { profile } = useProfile();
   const [step, setStep] = useState('main'); // 'main' | 'new-team' | 'pick-team'
   const [pendingAction, setPendingAction] = useState(null); // 'training'
   const [teamForm, setTeamForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState({});
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, setTeams);
-  }, [user, db, appId]);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToProfile(user.uid, db, appId, setProfile);
-  }, [user, db, appId]);
 
   async function handleCreateTeam(e) {
     e.preventDefault();

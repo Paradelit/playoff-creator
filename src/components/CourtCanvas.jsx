@@ -234,7 +234,7 @@ const CourtCanvas = React.memo(function CourtCanvas({
     <svg
       ref={svgRef}
       viewBox={viewBox}
-      className={`w-full h-full text-black ${readOnly ? '' : 'cursor-crosshair touch-none'}`}
+      className={`w-full h-auto text-black ${readOnly ? '' : 'cursor-crosshair touch-none'}`}
       onMouseDown={handleDown}
       onMouseMove={handleMove}
       onMouseUp={handleUp}

@@ -113,7 +113,7 @@ const MatchCard = React.memo(
     return (
       <div
         data-match-id={match.id}
-        className={`relative flex flex-col min-w-[380px] sm:w-[460px] bg-white border ${isFinal ? 'border-amber-400 shadow-amber-200 shadow-lg' : 'border-slate-300 shadow-md'} rounded-lg overflow-hidden transition-all hover:shadow-lg`}
+        className={`relative flex flex-col w-full min-w-0 sm:min-w-[380px] sm:w-[460px] bg-white border ${isFinal ? 'border-amber-400 shadow-amber-200 shadow-lg' : 'border-slate-300 shadow-md'} rounded-lg overflow-hidden transition-all hover:shadow-lg`}
       >
         <div
           className={`relative text-[11px] uppercase tracking-wider font-bold text-center py-1.5 ${isFinal ? 'bg-amber-400 text-white' : 'bg-slate-200 text-slate-700'} flex items-center justify-center gap-1`}

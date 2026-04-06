@@ -117,7 +117,8 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
             ...pendingBracket,
             teamId: pendingTeamId,
             teamName: teamDisplayName(pendingTeamObj),
-            myTeam: teamDisplayName(pendingTeamObj),
+            // myTeam comes from pendingBracket (set in preview via team selector)
+            myTeam: pendingBracket.myTeam || null,
           }
         : pendingBracket;
     setBrackets((prev) => [bracketToSave, ...prev]);

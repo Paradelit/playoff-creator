@@ -20,6 +20,8 @@ const NormasScreen = lazy(() => import('../screens/cuaderno/NormasScreen'));
 const TestTiroScreen = lazy(() => import('../screens/cuaderno/TestTiroScreen'));
 const JugadoresScreen = lazy(() => import('../screens/cuaderno/JugadoresScreen'));
 const NotasScreen = lazy(() => import('../screens/cuaderno/NotasScreen'));
+const PlanillaSextosScreen = lazy(() => import('../screens/PlanillaSextosScreen'));
+const EntrenamientosScreen = lazy(() => import('../screens/cuaderno/EntrenamientosScreen'));
 
 function LazyFallback() {
   return (
@@ -137,6 +139,19 @@ function LoginRoute() {
 }
 
 export default function AppRouter() {
+  const { authReady } = useAuth();
+
+  if (!authReady) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-400 text-sm font-medium">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Suspense fallback={<LazyFallback />}>
       <Routes>
@@ -201,10 +216,26 @@ export default function AppRouter() {
             </AuthGuard>
           }
         />
+        <Route
+          path="/teams/:teamId/cuaderno/entrenamientos"
+          element={
+            <AuthGuard>
+              <EntrenamientosScreen />
+            </AuthGuard>
+          }
+        />
         <Route path="/teams/:teamId/trainings" element={<TeamTrainingsRoute />} />
         <Route path="/teams/:teamId/trainings/:trainingId" element={<TrainingEditorRoute />} />
         <Route path="/exercises" element={<ExercisesRoute />} />
         <Route path="/calendar" element={<CalendarRoute />} />
+        <Route
+          path="/calendar/:sessionId/planilla"
+          element={
+            <AuthGuard>
+              <PlanillaSextosScreen />
+            </AuthGuard>
+          }
+        />
         <Route path="/settings" element={<SettingsRoute />} />
         <Route path="/s/:code" element={<ShareRedirect />} />
         {/* Fallback */}
