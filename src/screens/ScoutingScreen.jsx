@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getDoc } from 'firebase/firestore';
 import { ArrowLeft, Printer, RotateCcw, Plus, Trash2, Search, Shield } from 'lucide-react';
 import ClubLogo from '../components/ClubLogo';
@@ -31,6 +31,7 @@ function emptyScoutingData(session) {
 export default function ScoutingScreen() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { db, appId } = useFirebase();
 
@@ -47,14 +48,18 @@ export default function ScoutingScreen() {
   const debounceRef = useRef(null);
   const initializedRef = useRef(false);
 
-  // Load session
+  // Load session (from Firestore or from route state for virtual playoff sessions)
   useEffect(() => {
     if (!user || !db || !sessionId) return;
     const ref = userDocRef(db, appId, user.uid, 'calendarSessions', sessionId);
     getDoc(ref).then((snap) => {
-      if (snap.exists()) setSession({ ...snap.data(), id: snap.id });
+      if (snap.exists()) {
+        setSession({ ...snap.data(), id: snap.id });
+      } else if (location.state?.playoffSession) {
+        setSession({ ...location.state.playoffSession, id: sessionId });
+      }
     });
-  }, [user, db, appId, sessionId]);
+  }, [user, db, appId, sessionId, location.state]);
 
   // Load or create scouting
   useEffect(() => {

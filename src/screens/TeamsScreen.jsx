@@ -179,7 +179,7 @@ export default function TeamsScreen() {
       {/* Modal crear equipo */}
       {showCreateModal && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm"
           onClick={() => setShowCreateModal(false)}
         >
           <div
@@ -231,7 +231,7 @@ export default function TeamsScreen() {
       {/* Modal confirmar borrado */}
       {deletingTeamId && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm"
           onClick={() => setDeletingTeamId(null)}
         >
           <div

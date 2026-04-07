@@ -235,11 +235,11 @@ export default function TeamDetailScreen() {
       {/* Modal miembro */}
       {editingMember && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-2 pb-20 sm:pb-4 backdrop-blur-sm overflow-y-auto"
           onClick={() => setEditingMember(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[calc(100vh-5.5rem)] sm:max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200 my-auto shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl">
@@ -385,7 +385,7 @@ export default function TeamDetailScreen() {
       {/* Modal confirmar borrado miembro */}
       {deletingMemberId && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm"
           onClick={() => setDeletingMemberId(null)}
         >
           <div
@@ -415,7 +415,7 @@ export default function TeamDetailScreen() {
       {/* Modal editar equipo */}
       {editingTeam && teamForm && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm"
           onClick={() => setEditingTeam(false)}
         >
           <div

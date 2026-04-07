@@ -66,11 +66,11 @@ export default function DashboardScreen() {
       {/* Modal de compartir */}
       {sharingBracket?.shareConfig && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-2 pb-20 sm:pb-4 backdrop-blur-sm overflow-y-auto"
           onClick={() => setSharingBracket(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[calc(100vh-5.5rem)] sm:max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200 my-auto shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-5">
@@ -197,7 +197,7 @@ export default function DashboardScreen() {
 
       {/* Modal de eliminar */}
       {bracketToDelete && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm transition-opacity">
           <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
             <h3 className="text-xl font-bold mb-2 text-slate-800">¿Eliminar Torneo?</h3>
             <p className="text-slate-600 mb-6 text-sm">
@@ -313,7 +313,8 @@ export default function DashboardScreen() {
               (b) =>
                 dashboardSearch === '' ||
                 b.name.toLowerCase().includes(dashboardSearch.toLowerCase()) ||
-                (b.tournamentNameDetected || '').toLowerCase().includes(dashboardSearch.toLowerCase()),
+                (b.tournamentNameDetected || '').toLowerCase().includes(dashboardSearch.toLowerCase()) ||
+                (b.teamName || '').toLowerCase().includes(dashboardSearch.toLowerCase()),
             )
             .sort((a, b) => {
               if (dashboardSort === 'recent') return b.createdAt - a.createdAt;

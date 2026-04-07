@@ -522,7 +522,7 @@ export default function TrainingEditorScreen() {
 
       {/* ─── MODAL PLAYBOOK EDITOR ─── */}
       {ejModal && (
-        <div className="fixed inset-0 z-50 bg-gray-900/90 flex flex-col items-center justify-center p-4 touch-none print:hidden">
+        <div className="fixed inset-0 z-[110] bg-gray-900/90 flex flex-col items-center justify-center p-4 touch-none print:hidden">
           <div className="bg-white w-full max-w-5xl h-[85vh] rounded-lg shadow-2xl flex flex-col overflow-hidden">
             {/* Header modal */}
             <div className="flex flex-wrap justify-between items-center gap-2 p-3 border-b border-gray-200 bg-gray-50">
@@ -624,7 +624,7 @@ export default function TrainingEditorScreen() {
       {/* ─── MODAL BIBLIOTECA ─── */}
       {showLibrary && (
         <div
-          className="fixed inset-0 bg-slate-900/70 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm print:hidden"
+          className="fixed inset-0 bg-slate-900/70 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm print:hidden"
           onClick={() => setShowLibrary(null)}
         >
           <div

@@ -316,7 +316,7 @@ export default function ExerciseLibraryScreen() {
       {/* ─── Modal exportar ─── */}
       {showExport && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm"
           onClick={() => setShowExport(false)}
         >
           <div
@@ -394,7 +394,7 @@ export default function ExerciseLibraryScreen() {
       {/* ─── Modal importar preview ─── */}
       {importPreview && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm"
           onClick={() => setImportPreview(null)}
         >
           <div
@@ -454,11 +454,11 @@ export default function ExerciseLibraryScreen() {
       {/* ─── Modal crear/editar ─── */}
       {editingExercise && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-2 pb-20 sm:pb-4 backdrop-blur-sm overflow-y-auto"
           onClick={() => setEditingExercise(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100vh-5.5rem)] sm:max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200 my-auto shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
@@ -669,7 +669,7 @@ export default function ExerciseLibraryScreen() {
       {/* ─── Modal confirmar borrado ─── */}
       {deletingId && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm"
           onClick={() => setDeletingId(null)}
         >
           <div

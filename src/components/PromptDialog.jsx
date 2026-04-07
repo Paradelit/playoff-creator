@@ -44,7 +44,7 @@ export default function PromptDialog({
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm">
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 animate-slide-up">
         <h3 className="font-semibold text-slate-900 text-lg mb-1">{title}</h3>
         {message && <p className="text-slate-600 text-sm mb-3">{message}</p>}

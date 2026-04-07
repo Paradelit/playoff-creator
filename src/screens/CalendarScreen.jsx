@@ -18,8 +18,9 @@ import {
   AlertTriangle,
   Search,
   BarChart3,
+  Repeat,
 } from 'lucide-react';
-import { onSnapshot } from 'firebase/firestore';
+import { onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { useTeams } from '../hooks/useTeams';
@@ -32,13 +33,18 @@ import {
   linkTrainingToSession,
   getCalendarSessionsInRange,
   deleteCalendarSessionsByTeamAndRange,
+  getSessionsByRecurrenceId,
+  batchUpdateCalendarSessions,
+  deleteSessionsByRecurrenceId,
 } from '../services/calendarService';
-import { userColRef } from '../services/firestoreHelpers';
+import RecurrenceChoiceDialog from '../components/RecurrenceChoiceDialog';
+import { userColRef, userDocRef } from '../services/firestoreHelpers';
 import { callGeminiForCalendar } from '../services/aiService';
 import { teamDisplayName } from './TeamsScreen';
 import { isMinibasketSextos } from '../utils/minibasketUtils';
 import { deletePlanilla } from '../services/planillaService';
 import { buildPlayoffSessions } from '../utils/calendarUtils';
+import { calculateMatchWinner } from '../utils/bracketEngine';
 import { toYMD, formatDateDisplay } from '../utils/dateUtils';
 
 const TEAM_COLORS = [
@@ -162,6 +168,7 @@ function expandRecurring(patterns, startDate, endDate) {
   const countByTeam = {};
   for (const p of patterns) {
     if (!p._teamId) continue;
+    const recurrenceId = crypto.randomUUID();
     const targetDow = p.diaSemana;
     const d = new Date(start);
     const curDow = d.getDay() === 0 ? 6 : d.getDay() - 1;
@@ -181,6 +188,7 @@ function expandRecurring(patterns, startDate, endDate) {
         esLocal: true,
         trainingId: null,
         importedFrom: 'excel-ai',
+        recurrenceId,
       });
       d.setDate(d.getDate() + 7);
     }
@@ -216,6 +224,8 @@ export default function CalendarScreen() {
   const [selectedSession, setSelectedSession] = useState(null);
   const [editingSession, setEditingSession] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [recurrenceAction, setRecurrenceAction] = useState(null); // null | { mode: 'edit'|'delete', session }
+  const [pendingEditData, setPendingEditData] = useState(null); // stores editingSession while waiting for recurrence choice
   const [savingSession, setSavingSession] = useState(false);
   const [sessionErrors, setSessionErrors] = useState({});
   const [creatingTraining, setCreatingTraining] = useState(false);
@@ -298,35 +308,69 @@ export default function CalendarScreen() {
       errors.horaFin = 'La hora fin debe ser posterior a la hora inicio';
     setSessionErrors(errors);
     if (Object.keys(errors).length > 0) return;
+
+    // If editing an existing recurring session, ask the user what to do
+    if (editingSession.id && editingSession.recurrenceId && !editingSession.recurrenceDetached) {
+      setPendingEditData(editingSession);
+      setRecurrenceAction({ mode: 'edit', session: editingSession });
+      return;
+    }
+
+    await doSaveSession(editingSession, 'single');
+  }
+
+  async function doSaveSession(sessionData, choice) {
     setSavingSession(true);
     try {
-      const isNew = !editingSession.id;
-      const teamObj = teams.find((t) => t.id === editingSession.teamId);
-      const sessionId = editingSession.id || crypto.randomUUID();
+      const isNew = !sessionData.id;
+      const teamObj = teams.find((t) => t.id === sessionData.teamId);
+      const sessionId = sessionData.id || crypto.randomUUID();
       const teamName = teamObj ? teamDisplayName(teamObj) : '';
-      const sessionNumber = Number(editingSession.sessionNumber) || 1;
-      await saveCalendarSession(
-        {
-          ...editingSession,
-          id: sessionId,
-          teamName,
-          sessionNumber,
-        },
-        { uid: user.uid, db, appId },
-      );
+      const sessionNumber = Number(sessionData.sessionNumber) || 1;
+
+      const sessionToSave = {
+        ...sessionData,
+        id: sessionId,
+        teamName,
+        sessionNumber,
+        ...(choice === 'single' && sessionData.recurrenceId ? { recurrenceDetached: true } : {}),
+      };
+
+      await saveCalendarSession(sessionToSave, { uid: user.uid, db, appId });
+
+      // Propagate changes to future sessions if requested
+      if (choice === 'thisAndFuture' && sessionData.recurrenceId) {
+        const futureSessions = await getSessionsByRecurrenceId(
+          user.uid,
+          db,
+          appId,
+          sessionData.recurrenceId,
+          sessionData.fecha,
+        );
+        const toUpdate = futureSessions.filter((s) => s.id !== sessionId && !s.recurrenceDetached);
+        if (toUpdate.length > 0) {
+          const bulkFields = {};
+          if (sessionData.horaInicio !== undefined) bulkFields.horaInicio = sessionData.horaInicio;
+          if (sessionData.horaFin !== undefined) bulkFields.horaFin = sessionData.horaFin;
+          if (sessionData.lugar !== undefined) bulkFields.lugar = sessionData.lugar;
+          if (sessionData.tipo !== undefined) bulkFields.tipo = sessionData.tipo;
+          await batchUpdateCalendarSessions(toUpdate, bulkFields, { uid: user.uid, db, appId });
+        }
+      }
+
       // Auto-crear entrenamiento si es nueva sesión de tipo entrenamiento
-      if (isNew && editingSession.tipo === 'entrenamiento' && !editingSession.trainingId) {
+      if (isNew && sessionData.tipo === 'entrenamiento' && !sessionData.trainingId) {
         const trainingId = crypto.randomUUID();
         await saveTraining(
           {
             id: trainingId,
-            teamId: editingSession.teamId,
+            teamId: sessionData.teamId,
             meta: {
               numero: sessionNumber,
-              fecha: editingSession.fecha,
-              horaInicio: editingSession.horaInicio,
-              horaFin: editingSession.horaFin,
-              lugar: editingSession.lugar || '',
+              fecha: sessionData.fecha,
+              horaInicio: sessionData.horaInicio,
+              horaFin: sessionData.horaFin,
+              lugar: sessionData.lugar || '',
               dia: '',
               equipo: teamName,
             },
@@ -334,13 +378,14 @@ export default function CalendarScreen() {
             ejercicios: [],
             cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
           },
-          editingSession.teamId,
+          sessionData.teamId,
           { uid: user.uid, db, appId },
         );
         await linkTrainingToSession(sessionId, trainingId, { uid: user.uid, db, appId });
       }
       setEditingSession(null);
       setSelectedSession(null);
+      setPendingEditData(null);
     } finally {
       setSavingSession(false);
     }
@@ -351,6 +396,36 @@ export default function CalendarScreen() {
     deletePlanilla(id, { uid: user.uid, db, appId }).catch(() => {});
     setDeletingId(null);
     setSelectedSession(null);
+  }
+
+  function handleDeleteRequest(session) {
+    if (session.recurrenceId && !session.recurrenceDetached) {
+      setRecurrenceAction({ mode: 'delete', session });
+    } else {
+      setDeletingId(session.id);
+    }
+  }
+
+  async function handleRecurrenceChoice(choice) {
+    const { mode, session } = recurrenceAction || {};
+    setRecurrenceAction(null);
+
+    if (!choice || !session) {
+      setPendingEditData(null);
+      return;
+    }
+
+    if (mode === 'edit' && pendingEditData) {
+      await doSaveSession(pendingEditData, choice);
+    } else if (mode === 'delete') {
+      if (choice === 'single') {
+        await handleDelete(session.id);
+      } else if (choice === 'thisAndFuture') {
+        const deleted = await deleteSessionsByRecurrenceId(user.uid, db, appId, session.recurrenceId, session.fecha);
+        deleted.forEach((s) => deletePlanilla(s.id, { uid: user.uid, db, appId }).catch(() => {}));
+        setSelectedSession(null);
+      }
+    }
   }
 
   async function handleCreateTraining(session) {
@@ -696,15 +771,15 @@ export default function CalendarScreen() {
       {/* Modal Detalle */}
       {selectedSession && !editingSession && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-2 pb-20 sm:pb-4 backdrop-blur-sm overflow-y-auto"
           onClick={() => setSelectedSession(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[calc(100vh-5.5rem)] sm:max-h-[92vh] overflow-y-auto overflow-x-hidden animate-in zoom-in-95 duration-200 my-auto shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between px-5 pt-5 pb-3 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div
                   className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${selectedSession.tipo === 'playoff' ? 'bg-amber-100' : selectedSession.tipo === 'partido' ? 'bg-rose-100' : 'bg-blue-100'}`}
                 >
@@ -716,15 +791,15 @@ export default function CalendarScreen() {
                     <ClipboardList size={18} className="text-blue-600" />
                   )}
                 </div>
-                <div>
-                  <p className="font-bold text-slate-800">
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-800 truncate">
                     {selectedSession.tipo === 'playoff'
                       ? `Playoff vs ${selectedSession.rival}`
                       : selectedSession.tipo === 'partido'
                         ? `vs ${selectedSession.rival || 'Rival'}`
                         : `Entrenamiento #${selectedSession.sessionNumber}`}
                   </p>
-                  <p className="text-xs text-slate-500">{selectedSession.teamName}</p>
+                  <p className="text-xs text-slate-500 truncate">{selectedSession.teamName}</p>
                 </div>
               </div>
               <button
@@ -737,16 +812,21 @@ export default function CalendarScreen() {
             </div>
             <div className="px-5 py-4 flex flex-col gap-2">
               <DetailRow label="Fecha" value={formatDateDisplay(selectedSession.fecha)} />
-              {selectedSession.tipo !== 'playoff' && (
-                <DetailRow
-                  label="Horario"
-                  value={
-                    selectedSession.horaInicio && selectedSession.horaFin
-                      ? `${selectedSession.horaInicio} – ${selectedSession.horaFin}`
-                      : selectedSession.horaInicio || '—'
-                  }
-                />
+              {selectedSession.recurrenceId && !selectedSession.recurrenceDetached && (
+                <div className="flex items-center gap-1.5 -mt-1 mb-0.5">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                    <Repeat size={10} /> Semanal
+                  </span>
+                </div>
               )}
+              <DetailRow
+                label="Horario"
+                value={
+                  selectedSession.horaInicio && selectedSession.horaFin
+                    ? `${selectedSession.horaInicio} – ${selectedSession.horaFin}`
+                    : selectedSession.horaInicio || '—'
+                }
+              />
               {selectedSession.lugar && <DetailRow label="Lugar" value={selectedSession.lugar} />}
               {selectedSession.tipo === 'playoff' && (
                 <>
@@ -760,7 +840,7 @@ export default function CalendarScreen() {
                   )}
                 </>
               )}
-              {selectedSession.tipo === 'partido' && (
+              {(selectedSession.tipo === 'partido' || selectedSession.tipo === 'playoff') && (
                 <>
                   {selectedSession.rival && <DetailRow label="Rival" value={selectedSession.rival} />}
                   <DetailRow label="Campo" value={selectedSession.esLocal ? 'Local' : 'Visitante'} />
@@ -772,28 +852,105 @@ export default function CalendarScreen() {
                       </p>
                     </div>
                   )}
-                  {/* Quick resultado */}
-                  <QuickResultado
-                    session={selectedSession}
-                    onSave={async (resultado) => {
-                      const updated = { ...selectedSession, resultado };
-                      await saveCalendarSession(updated, { uid: user.uid, db, appId });
-                      setSelectedSession(updated);
-                    }}
-                  />
+                  {selectedSession.tipo === 'partido' && (
+                    <QuickResultado
+                      session={selectedSession}
+                      onSave={async (resultado) => {
+                        const updated = { ...selectedSession, resultado };
+                        await saveCalendarSession(updated, { uid: user.uid, db, appId });
+                        setSelectedSession(updated);
+                      }}
+                    />
+                  )}
+                  {selectedSession.tipo === 'playoff' && (
+                    <QuickResultado
+                      session={{
+                        ...selectedSession,
+                        resultado: (() => {
+                          const sc = selectedSession.scores?.[selectedSession.gameIndex];
+                          if (!sc) return { local: '', visitante: '' };
+                          const myS = selectedSession.isMyTeamTeam1 ? sc.s1 : sc.s2;
+                          const rivS = selectedSession.isMyTeamTeam1 ? sc.s2 : sc.s1;
+                          return { local: myS || '', visitante: rivS || '' };
+                        })(),
+                      }}
+                      onSave={async (resultado) => {
+                        const { bracketId, bracketMatchId, gameIndex, isMyTeamTeam1 } = selectedSession;
+                        if (!bracketId || !bracketMatchId) return;
+                        const bracketRef = userDocRef(db, appId, user.uid, 'brackets', bracketId);
+                        const snap = await getDoc(bracketRef);
+                        if (!snap.exists()) return;
+                        const bracketDoc = snap.data();
+                        const match = bracketDoc.bracketData?.state?.[bracketMatchId];
+                        if (!match) return;
+                        const newScores = [...(match.scores || [])];
+                        newScores[gameIndex] = {
+                          s1: isMyTeamTeam1 ? resultado.local : resultado.visitante,
+                          s2: isMyTeamTeam1 ? resultado.visitante : resultado.local,
+                        };
+                        const updatedMatch = { ...match, scores: newScores };
+                        const winner = calculateMatchWinner(updatedMatch);
+                        const updatedState = {
+                          ...bracketDoc.bracketData.state,
+                          [bracketMatchId]: { ...updatedMatch, winner },
+                        };
+                        if (winner && match.nextId && match.slot) {
+                          updatedState[match.nextId] = {
+                            ...updatedState[match.nextId],
+                            [match.slot]: winner,
+                          };
+                        }
+                        await setDoc(bracketRef, {
+                          ...bracketDoc,
+                          bracketData: { ...bracketDoc.bracketData, state: updatedState },
+                        });
+                        setSelectedSession({ ...selectedSession, scores: newScores });
+                      }}
+                    />
+                  )}
                 </>
               )}
             </div>
             <div className="px-5 pb-5 flex flex-col gap-2">
-              {selectedSession.tipo === 'playoff' ? (
+              {selectedSession.tipo === 'playoff' && (
+                <button
+                  onClick={() => {
+                    setSelectedSession(null);
+                    navigate(`/playoffs?teamId=${selectedSession.teamId}`);
+                  }}
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
+                >
+                  <Trophy size={16} /> Ver cuadro de playoff <ArrowRight size={15} />
+                </button>
+              )}
+              {selectedSession.tipo === 'entrenamiento' && (
+                <button
+                  onClick={() => {
+                    if (selectedSession.trainingId) {
+                      navigate(`/teams/${selectedSession.teamId}/trainings/${selectedSession.trainingId}`);
+                    } else {
+                      handleCreateTraining(selectedSession);
+                    }
+                  }}
+                  disabled={creatingTraining || !selectedSession.teamId}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-60"
+                >
+                  <ClipboardList size={16} />
+                  {creatingTraining ? 'Abriendo...' : 'Abrir entrenamiento'}
+                  <ArrowRight size={15} />
+                </button>
+              )}
+              {(selectedSession.tipo === 'partido' || selectedSession.tipo === 'playoff') && (
                 <>
                   {isMinibasketSextos(teams.find((t) => t.id === selectedSession.teamId)) && (
                     <button
                       onClick={() => {
+                        const navState =
+                          selectedSession.tipo === 'playoff'
+                            ? { state: { playoffSession: selectedSession } }
+                            : undefined;
                         setSelectedSession(null);
-                        navigate(`/calendar/${selectedSession.id}/planilla`, {
-                          state: { playoffSession: selectedSession },
-                        });
+                        navigate(`/calendar/${selectedSession.id}/planilla`, navState);
                       }}
                       className="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
                     >
@@ -802,85 +959,45 @@ export default function CalendarScreen() {
                   )}
                   <button
                     onClick={() => {
+                      const navState =
+                        selectedSession.tipo === 'playoff' ? { state: { playoffSession: selectedSession } } : undefined;
                       setSelectedSession(null);
-                      navigate(`/playoffs?teamId=${selectedSession.teamId}`);
+                      navigate(`/calendar/${selectedSession.id}/scouting`, navState);
                     }}
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
+                    className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
                   >
-                    <Trophy size={16} /> Ver cuadro de playoff <ArrowRight size={15} />
+                    <Search size={16} /> Scouting rival <ArrowRight size={15} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      const navState =
+                        selectedSession.tipo === 'playoff' ? { state: { playoffSession: selectedSession } } : undefined;
+                      setSelectedSession(null);
+                      navigate(`/calendar/${selectedSession.id}/analysis`, navState);
+                    }}
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
+                  >
+                    <BarChart3 size={16} /> Análisis post-partido <ArrowRight size={15} />
                   </button>
                 </>
-              ) : (
-                <>
-                  {selectedSession.tipo === 'entrenamiento' && (
-                    <button
-                      onClick={() => {
-                        if (selectedSession.trainingId) {
-                          navigate(`/teams/${selectedSession.teamId}/trainings/${selectedSession.trainingId}`);
-                        } else {
-                          handleCreateTraining(selectedSession);
-                        }
-                      }}
-                      disabled={creatingTraining || !selectedSession.teamId}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-60"
-                    >
-                      <ClipboardList size={16} />
-                      {creatingTraining ? 'Abriendo...' : 'Abrir entrenamiento'}
-                      <ArrowRight size={15} />
-                    </button>
-                  )}
-                  {selectedSession.tipo === 'partido' && (
-                    <>
-                      {isMinibasketSextos(teams.find((t) => t.id === selectedSession.teamId)) && (
-                        <button
-                          onClick={() => {
-                            setSelectedSession(null);
-                            navigate(`/calendar/${selectedSession.id}/planilla`);
-                          }}
-                          className="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
-                        >
-                          <ClipboardList size={16} /> Planilla de Sextos <ArrowRight size={15} />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          setSelectedSession(null);
-                          navigate(`/calendar/${selectedSession.id}/scouting`);
-                        }}
-                        className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
-                      >
-                        <Search size={16} /> Scouting rival <ArrowRight size={15} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedSession(null);
-                          navigate(`/calendar/${selectedSession.id}/analysis`);
-                        }}
-                        className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
-                      >
-                        <BarChart3 size={16} /> Análisis post-partido <ArrowRight size={15} />
-                      </button>
-                    </>
-                  )}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setSessionErrors({});
-                        setEditingSession({ ...selectedSession });
-                      }}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition"
-                    >
-                      <Pencil size={14} /> Editar
-                    </button>
-                    <button
-                      onClick={() => setDeletingId(selectedSession.id)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-sm transition"
-                    >
-                      <Trash2 size={14} /> Eliminar
-                    </button>
-                  </div>
-                </>
               )}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setSessionErrors({});
+                    setEditingSession({ ...selectedSession });
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition"
+                >
+                  <Pencil size={14} /> Editar
+                </button>
+                <button
+                  onClick={() => handleDeleteRequest(selectedSession)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-sm transition"
+                >
+                  <Trash2 size={14} /> Eliminar
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -889,11 +1006,11 @@ export default function CalendarScreen() {
       {/* Modal Crear/Editar */}
       {editingSession && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-2 pb-20 sm:pb-4 backdrop-blur-sm overflow-y-auto"
           onClick={() => setEditingSession(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[calc(100vh-5.5rem)] sm:max-h-[92vh] overflow-y-auto overflow-x-hidden animate-in zoom-in-95 duration-200 my-auto shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
@@ -1076,7 +1193,7 @@ export default function CalendarScreen() {
       {/* Modal Confirmar Borrado */}
       {deletingId && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm"
           onClick={() => setDeletingId(null)}
         >
           <div
@@ -1103,10 +1220,17 @@ export default function CalendarScreen() {
         </div>
       )}
 
+      {/* Modal — Recurrence choice (edit/delete recurring sessions) */}
+      <RecurrenceChoiceDialog
+        open={recurrenceAction !== null}
+        mode={recurrenceAction?.mode || 'edit'}
+        onChoice={handleRecurrenceChoice}
+      />
+
       {/* Modal Setup — rango de fechas */}
       {importSetup && !importing && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm"
           onClick={() => setImportSetup(null)}
         >
           <div
@@ -1165,7 +1289,7 @@ export default function CalendarScreen() {
       {/* Modal Procesando / Preview */}
       {(importing || importPreview || importError) && !duplicateConflict && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-2 pb-20 sm:pb-4 backdrop-blur-sm overflow-y-auto"
           onClick={() => {
             if (!importing && !bulkSaving) {
               setImportPreview(null);
@@ -1174,7 +1298,7 @@ export default function CalendarScreen() {
           }}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[88vh] flex flex-col animate-in zoom-in-95 duration-200"
+            className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[calc(100vh-5.5rem)] sm:max-h-[88vh] flex flex-col animate-in zoom-in-95 duration-200 my-auto shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
@@ -1228,11 +1352,8 @@ export default function CalendarScreen() {
                             {recurring.map((p, i) => {
                               const weekCount = expandRecurring([p], startDate, endDate).length;
                               return (
-                                <div
-                                  key={i}
-                                  className="flex items-center gap-3 bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-200"
-                                >
-                                  <div className="flex-1 min-w-0">
+                                <div key={i} className="bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-200">
+                                  <div className="mb-1.5">
                                     <select
                                       value={p._teamId}
                                       onChange={(e) =>
@@ -1243,7 +1364,7 @@ export default function CalendarScreen() {
                                           ),
                                         }))
                                       }
-                                      className="border border-slate-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white w-full sm:max-w-[160px]"
+                                      className="border border-slate-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white w-full"
                                     >
                                       <option value="">Sin asignar</option>
                                       {teams.map((t) => (
@@ -1253,17 +1374,17 @@ export default function CalendarScreen() {
                                       ))}
                                     </select>
                                   </div>
-                                  <span className="text-xs font-semibold text-slate-700 shrink-0">
-                                    {DAY_NAMES_ES[p.diaSemana]}
-                                  </span>
-                                  <span className="text-xs text-slate-500 shrink-0">
-                                    {p.horaInicio}
-                                    {p.horaFin ? `–${p.horaFin}` : ''}
-                                  </span>
-                                  {p.lugar && (
-                                    <span className="text-xs text-slate-400 truncate max-w-[80px]">{p.lugar}</span>
-                                  )}
-                                  <span className="text-xs font-bold text-blue-600 shrink-0">×{weekCount}</span>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs font-semibold text-slate-700">
+                                      {DAY_NAMES_ES[p.diaSemana]}
+                                    </span>
+                                    <span className="text-xs text-slate-500">
+                                      {p.horaInicio}
+                                      {p.horaFin ? `–${p.horaFin}` : ''}
+                                    </span>
+                                    {p.lugar && <span className="text-xs text-slate-400 truncate">{p.lugar}</span>}
+                                    <span className="text-xs font-bold text-blue-600 ml-auto">×{weekCount}</span>
+                                  </div>
                                 </div>
                               );
                             })}
@@ -1277,56 +1398,46 @@ export default function CalendarScreen() {
                           <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                             Fechas especiales ({specific.length})
                           </h4>
-                          <table className="w-full text-xs border-collapse">
-                            <thead>
-                              <tr className="bg-slate-50 border-b border-slate-200">
-                                <th className="text-left py-2 px-2 font-semibold text-slate-600">Equipo</th>
-                                <th className="text-left py-2 px-2 font-semibold text-slate-600">Tipo</th>
-                                <th className="text-left py-2 px-2 font-semibold text-slate-600">Fecha</th>
-                                <th className="text-left py-2 px-2 font-semibold text-slate-600">Hora</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {specific.map((s, i) => (
-                                <tr key={i} className="border-b border-slate-100 hover:bg-slate-50">
-                                  <td className="py-1.5 px-2">
-                                    <select
-                                      value={s._teamId}
-                                      onChange={(e) =>
-                                        setImportPreview((prev) => ({
-                                          ...prev,
-                                          specific: prev.specific.map((r, ri) =>
-                                            ri === i ? { ...r, _teamId: e.target.value } : r,
-                                          ),
-                                        }))
-                                      }
-                                      className="border border-slate-300 rounded-lg px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white w-full max-w-[140px]"
-                                    >
-                                      <option value="">Sin asignar</option>
-                                      {teams.map((t) => (
-                                        <option key={t.id} value={t.id}>
-                                          {teamDisplayName(t)}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </td>
-                                  <td className="py-1.5 px-2">
-                                    <span
-                                      className={`px-1.5 py-0.5 rounded text-xs font-semibold ${s.tipo === 'partido' ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'}`}
-                                    >
-                                      {s.tipo === 'partido' ? 'Partido' : 'Entreno'}
-                                    </span>
-                                  </td>
-                                  <td className="py-1.5 px-2 text-slate-700">
+                          <div className="flex flex-col gap-2">
+                            {specific.map((s, i) => (
+                              <div key={i} className="bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-200">
+                                <div className="mb-1.5">
+                                  <select
+                                    value={s._teamId}
+                                    onChange={(e) =>
+                                      setImportPreview((prev) => ({
+                                        ...prev,
+                                        specific: prev.specific.map((r, ri) =>
+                                          ri === i ? { ...r, _teamId: e.target.value } : r,
+                                        ),
+                                      }))
+                                    }
+                                    className="border border-slate-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white w-full"
+                                  >
+                                    <option value="">Sin asignar</option>
+                                    {teams.map((t) => (
+                                      <option key={t.id} value={t.id}>
+                                        {teamDisplayName(t)}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded text-xs font-semibold ${s.tipo === 'partido' ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'}`}
+                                  >
+                                    {s.tipo === 'partido' ? 'Partido' : 'Entreno'}
+                                  </span>
+                                  <span className="text-xs text-slate-700">
                                     {s.fecha ? s.fecha.split('-').reverse().join('/') : '—'}
-                                  </td>
-                                  <td className="py-1.5 px-2 text-slate-700">
+                                  </span>
+                                  <span className="text-xs text-slate-500">
                                     {s.horaInicio && s.horaFin ? `${s.horaInicio}–${s.horaFin}` : s.horaInicio || '—'}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </>
@@ -1365,7 +1476,7 @@ export default function CalendarScreen() {
 
       {/* Modal Duplicados */}
       {duplicateConflict && (
-        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end sm:items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
@@ -1548,7 +1659,7 @@ function DetailRow({ label, value }) {
   return (
     <div className="flex justify-between items-baseline gap-4">
       <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide shrink-0">{label}</span>
-      <span className="text-sm text-slate-700 text-right">{value}</span>
+      <span className="text-sm text-slate-700 text-right break-words min-w-0">{value}</span>
     </div>
   );
 }

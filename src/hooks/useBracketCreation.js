@@ -67,7 +67,35 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
         onError: setErrorMsg,
       });
 
-      if (!aiData || !aiData.initialMatches) throw new Error('No se recibió información válida de la IA.');
+      if (!aiData || !Array.isArray(aiData.initialMatches) || aiData.initialMatches.length === 0) {
+        throw new Error(
+          'La IA no devolvió un cuadro válido. Inténtalo de nuevo o ajusta las instrucciones adicionales.',
+        );
+      }
+
+      // Validate and normalize match count to power of 2
+      let matches = aiData.initialMatches;
+      const len = matches.length;
+      const isPowerOf2 = len > 0 && (len & (len - 1)) === 0;
+      if (!isPowerOf2) {
+        const nearestPow2 = Math.pow(2, Math.floor(Math.log2(len)));
+        setProcessStatus(
+          `⚠️ La IA devolvió ${len} partidos. Ajustando a ${nearestPow2} para generar un cuadro válido.`,
+        );
+        matches = matches.slice(0, nearestPow2);
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+
+      // Normalize each match to ensure required fields
+      aiData.initialMatches = matches.map((m, i) => ({
+        title: m.title || `Partido ${i + 1}`,
+        team1: m.team1 || null,
+        team2: m.team2 || null,
+        team1Origin: m.team1Origin || '',
+        team2Origin: m.team2Origin || '',
+        team1Options: Array.isArray(m.team1Options) ? m.team1Options : [],
+        team2Options: Array.isArray(m.team2Options) ? m.team2Options : [],
+      }));
 
       setProcessStatus('Generando Bracket Dinámico...');
       const bracketDynamicTree = buildDynamicBracket(aiData.initialMatches, aiData.rounds);

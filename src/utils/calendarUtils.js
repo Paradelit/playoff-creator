@@ -30,7 +30,8 @@ export function buildPlayoffSessions(brackets, teams) {
       if (!myTeam || (match.team1 !== myTeam && match.team2 !== myTeam)) continue;
       const dates = match.dates || [];
       if (dates.length === 0) continue;
-      const rival = match.team1 === myTeam ? match.team2 : match.team1;
+      const isMyTeamTeam1 = match.team1 === myTeam;
+      const rival = isMyTeamTeam1 ? match.team2 : match.team1;
       for (let gi = 0; gi < dates.length; gi++) {
         const dateStr = parseDateToISO(dates[gi]);
         if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) continue;
@@ -44,13 +45,15 @@ export function buildPlayoffSessions(brackets, teams) {
           horaFin: '',
           lugar: '',
           rival: rival || 'Por definir',
-          esLocal: true,
+          esLocal: isMyTeamTeam1,
           bracketId: b.id,
+          bracketMatchId: match.id,
           bracketName: b.name || b.tournamentNameDetected || 'Playoff',
           matchTitle: match.title || '',
           gameIndex: gi,
           gamesCount: match.gamesCount || 1,
           scores: match.scores,
+          isMyTeamTeam1,
           isPlayoff: true,
         });
       }

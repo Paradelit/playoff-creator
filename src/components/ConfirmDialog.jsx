@@ -27,7 +27,7 @@ export default function ConfirmDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm">
       <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 animate-slide-up">
         <div className="flex items-start gap-3 mb-4">
           {destructive && (

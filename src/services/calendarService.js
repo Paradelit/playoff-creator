@@ -83,3 +83,32 @@ export async function linkTrainingToSession(sessionId, trainingId, { uid, db, ap
   const ref = doc(calendarSessionsCol(uid, db, appId), sessionId);
   await setDoc(ref, { trainingId, updatedAt: serverTimestamp() }, { merge: true });
 }
+
+export async function getSessionsByRecurrenceId(uid, db, appId, recurrenceId, fromDate) {
+  const q = query(
+    calendarSessionsCol(uid, db, appId),
+    where('recurrenceId', '==', recurrenceId),
+    where('fecha', '>=', fromDate),
+    orderBy('fecha', 'asc'),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+}
+
+export async function batchUpdateCalendarSessions(sessions, fields, { uid, db, appId }) {
+  await Promise.all(
+    sessions.map((s) =>
+      setDoc(
+        doc(calendarSessionsCol(uid, db, appId), s.id),
+        { ...fields, updatedAt: serverTimestamp() },
+        { merge: true },
+      ),
+    ),
+  );
+}
+
+export async function deleteSessionsByRecurrenceId(uid, db, appId, recurrenceId, fromDate) {
+  const sessions = await getSessionsByRecurrenceId(uid, db, appId, recurrenceId, fromDate);
+  await Promise.all(sessions.map((s) => deleteCalendarSession(s.id, { uid, db, appId })));
+  return sessions;
+}

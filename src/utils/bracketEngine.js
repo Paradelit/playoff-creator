@@ -1,4 +1,12 @@
 export const buildDynamicBracket = (initialMatches, roundsData = []) => {
+  if (!initialMatches || initialMatches.length === 0) {
+    throw new Error('No se proporcionaron partidos iniciales.');
+  }
+  const len = initialMatches.length;
+  if (len & (len - 1)) {
+    throw new Error(`El número de partidos (${len}) no es potencia de 2. Debe ser 4, 8, 16 o 32.`);
+  }
+
   let state = {};
 
   let currentRound = initialMatches.map((m, i) => {

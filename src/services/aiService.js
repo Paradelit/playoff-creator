@@ -101,18 +101,21 @@ export const callGeminiForBracket = async (basesText, clasifText, userInstructio
 
       INSTRUCCIONES CRÍTICAS PARA GENERAR EL CUADRO:
       1. Identifica qué competición es y localiza las reglas para la Primera Ronda de Eliminatorias/Playoffs.
-      2. Identifica el número de partidos (cruces) que hay en esta primera ronda (SIEMPRE potencia de 2: 8, 16...).
+      2. Identifica el número de partidos (cruces) que hay en esta primera ronda. initialMatches.length DEBE SER EXACTAMENTE una potencia de 2: 4, 8, 16 o 32. NO se acepta ningún otro número. Si la competición tiene un número distinto de cruces (ej. 6, 10, 12...), redondea a la potencia de 2 superior y rellena los cruces sobrantes con BYEs (team1 = equipo clasificado, team2 = null, team2Origin = "BYE").
       3. Analiza las bases de competición paso a paso. Busca qué posición de qué grupo juega cada partido (Ej. "1º Gr.1 Oro contra 2º Gr. 4 Plata").
       4. Busca en la Clasificación el nombre real de los equipos que ocupan esas posiciones. ¡Atención! Cruza bien el número de grupo y la posición (Ej. Busca exactamente al 2º del Grupo 1 y pon su nombre real).
-      5. Construye el array "initialMatches" con la cantidad de partidos detectada.
-      6. IMPORTANTE EL ORDEN: El array "initialMatches" DEBE ESTAR ORDENADO EXACTAMENTE EN ESTA SECUENCIA MATEMÁTICA PARA QUE EL CUADRO SE DIBUJE BIEN:
-         - Si son 16 partidos, el orden del array DEBE SER los Partidos: 1, 16, 8, 9, 4, 13, 5, 12, 2, 15, 7, 10, 3, 14, 6, 11.
+      4b. IMPORTANTE: Si el equipo está determinado por la clasificación, SIEMPRE pon su nombre real en "team1" o "team2". Solo usa null cuando genuinamente no se puede determinar el equipo (sorteo pendiente). NUNCA dejes null si la posición y grupo están definidos en las bases.
+      5. Construye el array "initialMatches" con la cantidad EXACTA de partidos (potencia de 2). Verifica antes de generar el JSON que initialMatches.length es 4, 8, 16 o 32.
+      6. ORDEN DEL ARRAY: El array initialMatches debe seguir un orden específico de emparejamiento para que el cuadro se dibuje correctamente. Cada "Partido N" indica la posición lógica del cruce según las bases. El ORDEN en el que aparecen en el array debe seguir estas secuencias:
+         - Si son 4 partidos, el orden del array DEBE SER los Partidos: 1, 4, 2, 3.
          - Si son 8 partidos, el orden del array DEBE SER los Partidos: 1, 8, 4, 5, 2, 7, 3, 6.
+         - Si son 16 partidos, el orden del array DEBE SER los Partidos: 1, 16, 8, 9, 4, 13, 5, 12, 2, 15, 7, 10, 3, 14, 6, 11.
+         - Si son 32 partidos, el orden del array DEBE SER los Partidos: 1, 32, 16, 17, 8, 25, 9, 24, 4, 29, 13, 20, 5, 28, 12, 21, 2, 31, 15, 18, 7, 26, 10, 23, 3, 30, 14, 19, 6, 27, 11, 22.
       7. Si la plaza es directa (Fija), pon el nombre en "team1" o "team2" y deja sus arrays de Opciones VACÍOS [].
       8. Si la plaza es POR SORTEO, deja "team1" o "team2" como null, y pon los posibles rivales en el array "team1Options" o "team2Options".
       9. En "team1Origin" y "team2Origin" detalla de dónde viene esa plaza (Ej. "1º Grupo 1").
       10. Busca el calendario/fechas de la competición y crea el array 'rounds' indicando: 'name', 'dates' (formato "DD/MM/AAAA"), 'format' y 'gamesCount'.
-      11. Usa el campo "analysis" para razonar tu lógica de emparejamientos y cruce de datos antes de generar el array.
+      11. Usa el campo "analysis" para razonar tu lógica de emparejamientos y cruce de datos antes de generar el array. En el analysis, CONFIRMA cuántos cruces has generado y que es potencia de 2.
 
       DEVUELVE ÚNICAMENTE UN JSON ESTRICTAMENTE VÁLIDO.
       {
