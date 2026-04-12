@@ -4,7 +4,7 @@ import { ArrowLeft, Plus, Trash2, ArrowRight, ClipboardList, BookOpen, FolderOpe
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { subscribeToTrainings, saveTraining, deleteTraining } from '../services/trainingsService';
-import { teamDisplayName } from './TeamsScreen';
+import { teamDisplayName } from '../utils/teamUtils';
 import { useTeams } from '../hooks/useTeams';
 import { formatDateDisplay } from '../utils/dateUtils';
 

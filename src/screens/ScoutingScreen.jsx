@@ -9,8 +9,8 @@ import { subscribeToScouting, saveScouting } from '../services/scoutingService';
 import { userDocRef } from '../services/firestoreHelpers';
 import { useProfile } from '../hooks/useProfile';
 import { useTeams } from '../hooks/useTeams';
-import { teamDisplayName } from './TeamsScreen';
-import { getTemporada } from '../utils/dateUtils';
+import { teamDisplayName } from '../utils/teamUtils';
+import { getTemporada, formatDateDisplay } from '../utils/dateUtils';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 function emptyScoutingData(session) {
@@ -188,7 +188,7 @@ export default function ScoutingScreen() {
             </div>
             <div>
               <span className="text-gray-500 text-xs font-semibold uppercase">Fecha</span>
-              <p className="font-bold text-gray-800">{data.fecha ? data.fecha.split('-').reverse().join('/') : '—'}</p>
+              <p className="font-bold text-gray-800">{formatDateDisplay(data.fecha)}</p>
             </div>
             {session?.lugar && (
               <div>

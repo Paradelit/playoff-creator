@@ -6,9 +6,9 @@ export default defineConfig({
   plugins: [react()],
   base: '/',
   test: {
-    environment: 'jsdom',
+    environment: 'happy-dom',
     globals: true,
-    setupFiles: [],
+    setupFiles: ['./src/test/setup.js'],
   },
   server: {
     headers: {

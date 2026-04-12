@@ -5,7 +5,7 @@ import ClubLogo from '../../components/ClubLogo';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
 import { subscribeToTeamJugadores, saveTeamJugadores } from '../../services/teamsService';
-import { teamDisplayName } from '../TeamsScreen';
+import { teamDisplayName } from '../../utils/teamUtils';
 import { useTeams } from '../../hooks/useTeams';
 import { useProfile } from '../../hooks/useProfile';
 import { getTemporada } from '../../utils/dateUtils';

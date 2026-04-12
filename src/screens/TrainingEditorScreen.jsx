@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { subscribeToMembers } from '../services/teamsService';
 import { subscribeToTrainings, saveTraining, subscribeToExercises, saveExercise } from '../services/trainingsService';
-import { teamDisplayName } from './TeamsScreen';
+import { teamDisplayName } from '../utils/teamUtils';
 import MentionTextarea from '../components/MentionTextarea';
 import CourtCanvas, { COURT_TOOLS } from '../components/CourtCanvas';
 import ClubLogo from '../components/ClubLogo';
@@ -64,8 +64,9 @@ export default function TrainingEditorScreen() {
   const [modalEjercicioId, setModalEjercicioId] = useState(null);
   const [libraryPrompt, setLibraryPrompt] = useState(null); // ejercicio to save
   const [activeTool, setActiveTool] = useState('O');
-  const [showLibrary, setShowLibrary] = useState(null);
+  const [libraryPanel, setLibraryPanel] = useState({ open: false, targetId: null });
   const [librarySearch, setLibrarySearch] = useState('');
+  const [libraryFilterTags, setLibraryFilterTags] = useState([]);
 
   const saveTimerRef = useRef(null);
   const isFirstLoad = useRef(true);
@@ -160,24 +161,33 @@ export default function TrainingEditorScreen() {
   }
 
   function loadFromLibrary(ejercicioId, libExercise) {
-    updateTraining((t) => ({
-      ...t,
-      ejercicios: t.ejercicios.map((e) =>
-        e.id === ejercicioId
-          ? {
-              ...e,
-              contenido: libExercise.contenido || e.contenido,
-              descripcion: libExercise.descripcion || e.descripcion,
-              tipoPista: libExercise.tipoPista || e.tipoPista,
-              elementos: libExercise.elementos || [],
-              libExerciseId: libExercise.id,
-              libExerciseName: libExercise.nombre,
-            }
-          : e,
-      ),
-    }));
-    setShowLibrary(null);
-    setLibrarySearch('');
+    updateTraining((t) => {
+      const updated = {
+        ...t,
+        ejercicios: t.ejercicios.map((e) =>
+          e.id === ejercicioId
+            ? {
+                ...e,
+                contenido: libExercise.contenido || e.contenido,
+                descripcion: libExercise.descripcion || e.descripcion,
+                tipoPista: libExercise.tipoPista || e.tipoPista,
+                elementos: libExercise.elementos || [],
+                libExerciseId: libExercise.id,
+                libExerciseName: libExercise.nombre,
+              }
+            : e,
+        ),
+      };
+      // Auto-advance to next empty row
+      const idx = updated.ejercicios.findIndex((e) => e.id === ejercicioId);
+      const nextEmpty = updated.ejercicios.find(
+        (e, i) => i > idx && !e.contenido && !e.descripcion && !(e.elementos?.length > 0),
+      );
+      if (nextEmpty) {
+        setLibraryPanel((prev) => ({ ...prev, targetId: nextEmpty.id }));
+      }
+      return updated;
+    });
   }
 
   function saveToLibrary(ejercicio) {
@@ -214,11 +224,17 @@ export default function TrainingEditorScreen() {
   const ejModal = ejercicios.find((e) => e.id === modalEjercicioId);
   const clubName = profile?.nombreClub?.trim() || 'Uros de Rivas';
   const temporada = getTemporada();
-  const libraryFiltered = exercises.filter(
-    (ex) =>
+  const libraryAllTags = [...new Set(exercises.flatMap((ex) => ex.tags || []))].sort();
+  const libraryFiltered = exercises.filter((ex) => {
+    const matchesSearch =
+      !librarySearch ||
       ex.nombre?.toLowerCase().includes(librarySearch.toLowerCase()) ||
-      ex.contenido?.toLowerCase().includes(librarySearch.toLowerCase()),
-  );
+      ex.contenido?.toLowerCase().includes(librarySearch.toLowerCase());
+    const matchesTags =
+      libraryFilterTags.length === 0 ||
+      libraryFilterTags.every((tag) => (ex.tags || []).map((t) => t.toLowerCase()).includes(tag.toLowerCase()));
+    return matchesSearch && matchesTags;
+  });
 
   const TOOLS = COURT_TOOLS;
 
@@ -254,6 +270,17 @@ export default function TrainingEditorScreen() {
           >
             {saveStatus === 'saving' ? 'Guardando...' : '✓ Guardado'}
           </span>
+          <button
+            onClick={() => {
+              const firstEmpty = ejercicios.find((e) => !e.contenido && !e.descripcion && !(e.elementos?.length > 0));
+              setLibraryPanel({ open: true, targetId: firstEmpty?.id || ejercicios[0]?.id || null });
+              setLibrarySearch('');
+              setLibraryFilterTags([]);
+            }}
+            className="flex items-center gap-1.5 text-sm font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition border border-indigo-200"
+          >
+            <BookOpen size={15} /> Cargar de Biblioteca
+          </button>
           <button
             onClick={() => navigate('/exercises')}
             className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 transition"
@@ -380,7 +407,10 @@ export default function TrainingEditorScreen() {
             </div>
 
             {ejercicios.map((ej) => (
-              <div key={ej.id} className="group relative flex border-b border-black last:border-b-0 min-h-[100px]">
+              <div
+                key={ej.id}
+                className={`group relative flex border-b border-black last:border-b-0 min-h-[100px] transition-colors ${libraryPanel.open && libraryPanel.targetId === ej.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}`}
+              >
                 {/* Tiempo */}
                 <div className="w-14 border-r border-black p-1">
                   <input
@@ -433,8 +463,9 @@ export default function TrainingEditorScreen() {
                     </button>
                     <button
                       onClick={() => {
-                        setShowLibrary(ej.id);
+                        setLibraryPanel({ open: true, targetId: ej.id });
                         setLibrarySearch('');
+                        setLibraryFilterTags([]);
                       }}
                       className="text-indigo-500 hover:text-indigo-700"
                       title="Cargar de biblioteca"
@@ -621,29 +652,31 @@ export default function TrainingEditorScreen() {
         </div>
       )}
 
-      {/* ─── MODAL BIBLIOTECA ─── */}
-      {showLibrary && (
+      {/* ─── PANEL LATERAL BIBLIOTECA ─── */}
+      {libraryPanel.open && (
         <div
-          className="fixed inset-0 bg-slate-900/70 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm print:hidden"
-          onClick={() => setShowLibrary(null)}
+          className="fixed inset-0 sm:inset-auto sm:top-0 sm:right-0 sm:h-full sm:w-[350px] z-[105] print:hidden flex flex-col"
+          onClick={(e) => e.stopPropagation()}
         >
+          {/* Backdrop mobile only */}
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
+            className="fixed inset-0 bg-slate-900/50 sm:hidden"
+            onClick={() => setLibraryPanel({ open: false, targetId: null })}
+          />
+          <div className="relative z-10 bg-white h-full w-full sm:shadow-2xl sm:border-l border-slate-200 flex flex-col animate-in slide-in-from-right duration-200">
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <BookOpen size={16} className="text-blue-600" /> Biblioteca de ejercicios
+                <BookOpen size={16} className="text-blue-600" /> Biblioteca
               </h3>
               <button
-                onClick={() => setShowLibrary(null)}
+                onClick={() => setLibraryPanel({ open: false, targetId: null })}
                 aria-label="Cerrar"
                 className="text-slate-400 hover:text-slate-600"
               >
                 <X size={20} />
               </button>
             </div>
-            <div className="px-4 py-3 border-b border-slate-100">
+            <div className="px-4 py-3 border-b border-slate-100 space-y-2">
               <input
                 type="text"
                 placeholder="Buscar..."
@@ -651,7 +684,32 @@ export default function TrainingEditorScreen() {
                 onChange={(e) => setLibrarySearch(e.target.value)}
                 className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
+              {libraryAllTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {libraryAllTags.map((tag) => {
+                    const active = libraryFilterTags.map((t) => t.toLowerCase()).includes(tag.toLowerCase());
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() =>
+                          setLibraryFilterTags((prev) =>
+                            active ? prev.filter((t) => t.toLowerCase() !== tag.toLowerCase()) : [...prev, tag],
+                          )
+                        }
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+            {libraryPanel.targetId && (
+              <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 text-xs text-blue-700 font-medium">
+                Selecciona un ejercicio para cargarlo en la fila resaltada
+              </div>
+            )}
             <div className="overflow-y-auto flex-1">
               {libraryFiltered.length === 0 ? (
                 <p className="text-center text-slate-500 text-sm py-12">No hay ejercicios en la biblioteca.</p>
@@ -659,15 +717,49 @@ export default function TrainingEditorScreen() {
                 libraryFiltered.map((ex) => (
                   <button
                     key={ex.id}
-                    onClick={() => loadFromLibrary(showLibrary, ex)}
-                    className="w-full text-left px-5 py-3.5 border-b border-slate-100 last:border-0 hover:bg-blue-50 transition-colors"
+                    onClick={() => {
+                      if (libraryPanel.targetId) {
+                        loadFromLibrary(libraryPanel.targetId, ex);
+                      }
+                    }}
+                    disabled={!libraryPanel.targetId}
+                    className="w-full text-left px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-blue-50 transition-colors disabled:opacity-50 flex gap-3 items-start"
                   >
-                    <p className="font-semibold text-slate-800 text-sm">{ex.nombre}</p>
-                    {ex.contenido && <p className="text-xs text-indigo-500 font-semibold mt-0.5">{ex.contenido}</p>}
-                    {ex.descripcion && <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{ex.descripcion}</p>}
+                    {(ex.elementos?.length > 0 || ex.tipoPista) && (
+                      <div className="w-16 h-12 shrink-0 bg-gray-50 rounded border border-slate-200 flex items-center justify-center overflow-hidden">
+                        <CourtCanvas tipo={ex.tipoPista || 'media'} elementos={ex.elementos || []} readOnly={true} />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-slate-800 text-sm truncate">{ex.nombre}</p>
+                      {(ex.tags?.length > 0 || ex.contenido) && (
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {(ex.tags || []).map((tag, i) => (
+                            <span
+                              key={i}
+                              className="text-[9px] bg-indigo-100 text-indigo-600 font-semibold px-1.5 py-0.5 rounded-full"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {!ex.tags?.length && ex.contenido && (
+                            <span className="text-xs text-indigo-500 font-semibold">{ex.contenido}</span>
+                          )}
+                        </div>
+                      )}
+                      {ex.descripcion && <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{ex.descripcion}</p>}
+                    </div>
                   </button>
                 ))
               )}
+            </div>
+            <div className="px-4 py-3 border-t border-slate-100">
+              <button
+                onClick={() => setLibraryPanel({ open: false, targetId: null })}
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl transition text-sm"
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         </div>

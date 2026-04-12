@@ -134,8 +134,16 @@ export async function deleteAllUserData(uid, db, appId) {
     await Promise.all(mSnap.docs.map((d) => deleteDoc(d.ref)));
     const tSnap = await getDocs(collection(db, ...base, 'teams', teamDoc.id, 'trainings'));
     await Promise.all(tSnap.docs.map((d) => deleteDoc(d.ref)));
+    // Cuaderno subcollection docs
+    const cuadernoIds = ['jugadores', 'test-tiro', 'notas'];
+    await Promise.all(
+      cuadernoIds.map((cid) => deleteDoc(doc(db, ...base, 'teams', teamDoc.id, 'cuaderno', cid)).catch(() => {})),
+    );
     await deleteDoc(teamDoc.ref);
   }
+
+  const bracketsSnap = await getDocs(collection(db, ...base, 'brackets'));
+  await Promise.all(bracketsSnap.docs.map((d) => deleteDoc(d.ref)));
 
   const exSnap = await getDocs(collection(db, ...base, 'exercises'));
   await Promise.all(exSnap.docs.map((d) => deleteDoc(d.ref)));

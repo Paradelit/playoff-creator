@@ -10,7 +10,7 @@ import { useTeams } from '../hooks/useTeams';
 import { useProfile } from '../hooks/useProfile';
 import { subscribeToPlanilla, savePlanilla } from '../services/planillaService';
 import { userDocRef } from '../services/firestoreHelpers';
-import { teamDisplayName } from './TeamsScreen';
+import { teamDisplayName } from '../utils/teamUtils';
 import { validateSextos } from '../utils/minibasketUtils';
 import ConfirmDialog from '../components/ConfirmDialog';
 

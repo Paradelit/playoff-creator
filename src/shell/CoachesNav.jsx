@@ -8,7 +8,8 @@ import { saveTraining } from '../services/trainingsService';
 import { autoAddCoachToTeam } from '../services/settingsService';
 import { useTeams } from '../hooks/useTeams';
 import { useProfile } from '../hooks/useProfile';
-import { teamDisplayName, TeamFormFields, EMPTY_FORM } from '../screens/TeamsScreen';
+import { teamDisplayName } from '../utils/teamUtils';
+import { TeamFormFields, EMPTY_FORM } from '../screens/TeamsScreen';
 
 const LEFT_ITEMS = [
   { to: '/', label: 'Inicio', Icon: Home, end: true },

@@ -18,24 +18,13 @@ import { saveTeam, deleteTeam } from '../services/teamsService';
 import { autoAddCoachToTeam } from '../services/settingsService';
 import { useTeams } from '../hooks/useTeams';
 import { useProfile } from '../hooks/useProfile';
+import { teamDisplayName } from '../utils/teamUtils';
 
 /* eslint-disable react-refresh/only-export-components */
 export const CATEGORIAS = ['Prebenjamín', 'Benjamín', 'Alevín', 'Infantil', 'Cadete', 'Junior', 'Senior'];
 export const AÑOS = ['1º', '2º'];
 export const LETRAS_RAPIDAS = ['A', 'B', 'C', 'D', 'E'];
 export const GENEROS = ['Masculino', 'Femenino', 'Mixto'];
-
-export function teamDisplayName(team) {
-  const parts = [team.categoria];
-  if (team.categoria === 'Senior') {
-    if (team.division) parts.push(team.division);
-  } else {
-    if (team.año) parts.push(team.año);
-  }
-  if (team.letra) parts.push(team.letra);
-  const genero = team.genero ? ` · ${team.genero}` : '';
-  return parts.join(' ') + genero;
-}
 
 export const EMPTY_FORM = { categoria: 'Prebenjamín', año: '1º', letra: 'A', genero: 'Masculino', division: '' };
 

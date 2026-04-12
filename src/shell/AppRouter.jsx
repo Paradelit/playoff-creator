@@ -21,10 +21,13 @@ const NormasScreen = lazy(() => import('../screens/cuaderno/NormasScreen'));
 const TestTiroScreen = lazy(() => import('../screens/cuaderno/TestTiroScreen'));
 const JugadoresScreen = lazy(() => import('../screens/cuaderno/JugadoresScreen'));
 const NotasScreen = lazy(() => import('../screens/cuaderno/NotasScreen'));
+const InformeJugadoresScreen = lazy(() => import('../screens/cuaderno/InformeJugadoresScreen'));
+const AsistenciaScreen = lazy(() => import('../screens/cuaderno/AsistenciaScreen'));
 const PlanillaSextosScreen = lazy(() => import('../screens/PlanillaSextosScreen'));
 const ScoutingScreen = lazy(() => import('../screens/ScoutingScreen'));
 const AnalysisScreen = lazy(() => import('../screens/AnalysisScreen'));
 const EntrenamientosScreen = lazy(() => import('../screens/cuaderno/EntrenamientosScreen'));
+const SharedExerciseScreen = lazy(() => import('../screens/SharedExerciseScreen'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -42,26 +45,20 @@ function LazyFallback() {
   );
 }
 
-// Guard genérico para rutas autenticadas
 function AuthGuard({ children }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }
 
-// Ruta /s/:code — extrae el share code y redirige al módulo de playoffs
 function ShareRedirect() {
   const { code } = useParams();
   return <Navigate to={`/playoffs?share=${code}`} replace />;
 }
 
-// Ruta /playoffs — conecta React Router con el módulo de playoffs
 function PlayoffsRoute() {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
-  if (!user) return <Navigate to="/login" replace />;
 
   const params = new URLSearchParams(location.search);
   const shareCode = params.get('share') || undefined;
@@ -77,63 +74,6 @@ function PlayoffsRoute() {
   );
 }
 
-// Ruta /teams/:teamId
-function TeamDetailRoute() {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return <TeamDetailScreen />;
-}
-
-// Ruta /teams/:teamId/trainings
-function TeamTrainingsRoute() {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return <TeamTrainingsScreen />;
-}
-
-// Ruta /teams/:teamId/trainings/:trainingId
-function TrainingEditorRoute() {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return <TrainingEditorScreen />;
-}
-
-// Ruta /exercises
-function ExercisesRoute() {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return <ExerciseLibraryScreen />;
-}
-
-// Ruta /calendar
-function CalendarRoute() {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return <CalendarScreen />;
-}
-
-// Ruta /settings
-function SettingsRoute() {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return <SettingsScreen />;
-}
-
-// Ruta /teams
-function TeamsRoute() {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return <TeamsScreen />;
-}
-
-// Ruta /
-function HomeRoute() {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return <HomeScreen />;
-}
-
-// Ruta /login
 function LoginRoute() {
   const { user, isLoggingIn, authError, handleLogin, handleAnonymousLogin } = useAuth();
 
@@ -146,6 +86,14 @@ function LoginRoute() {
       handleLogin={handleLogin}
       handleAnonymousLogin={handleAnonymousLogin}
     />
+  );
+}
+
+function Guarded({ name, children }) {
+  return (
+    <AuthGuard>
+      <ModuleBoundary name={name}>{children}</ModuleBoundary>
+    </AuthGuard>
   );
 }
 
@@ -167,142 +115,153 @@ export default function AppRouter() {
     <Suspense fallback={<LazyFallback />}>
       <ScrollToTop />
       <Routes>
-        <Route path="/" element={<HomeRoute />} />
         <Route path="/login" element={<LoginRoute />} />
+        <Route
+          path="/"
+          element={
+            <AuthGuard>
+              <HomeScreen />
+            </AuthGuard>
+          }
+        />
+
         <Route
           path="/playoffs"
           element={
-            <ModuleBoundary name="Playoffs">
+            <Guarded name="Playoffs">
               <PlayoffsRoute />
-            </ModuleBoundary>
+            </Guarded>
           }
         />
         <Route
           path="/teams"
           element={
-            <ModuleBoundary name="Equipos">
-              <TeamsRoute />
-            </ModuleBoundary>
+            <Guarded name="Equipos">
+              <TeamsScreen />
+            </Guarded>
           }
         />
         <Route
           path="/teams/:teamId"
           element={
-            <ModuleBoundary name="Equipos">
-              <TeamDetailRoute />
-            </ModuleBoundary>
+            <Guarded name="Equipos">
+              <TeamDetailScreen />
+            </Guarded>
           }
         />
+
         <Route
           path="/teams/:teamId/cuaderno"
           element={
-            <AuthGuard>
-              <ModuleBoundary name="Cuaderno">
-                <CuadernoScreen />
-              </ModuleBoundary>
-            </AuthGuard>
+            <Guarded name="Cuaderno">
+              <CuadernoScreen />
+            </Guarded>
           }
         />
         <Route
           path="/teams/:teamId/cuaderno/info"
           element={
-            <AuthGuard>
-              <ModuleBoundary name="Cuaderno">
-                <InfoScreen />
-              </ModuleBoundary>
-            </AuthGuard>
+            <Guarded name="Cuaderno">
+              <InfoScreen />
+            </Guarded>
           }
         />
         <Route
           path="/teams/:teamId/cuaderno/pilares"
           element={
-            <AuthGuard>
-              <ModuleBoundary name="Cuaderno">
-                <PilaresScreen />
-              </ModuleBoundary>
-            </AuthGuard>
+            <Guarded name="Cuaderno">
+              <PilaresScreen />
+            </Guarded>
           }
         />
         <Route
           path="/teams/:teamId/cuaderno/normas"
           element={
-            <AuthGuard>
-              <ModuleBoundary name="Cuaderno">
-                <NormasScreen />
-              </ModuleBoundary>
-            </AuthGuard>
+            <Guarded name="Cuaderno">
+              <NormasScreen />
+            </Guarded>
           }
         />
         <Route
           path="/teams/:teamId/cuaderno/test-tiro"
           element={
-            <AuthGuard>
-              <ModuleBoundary name="Cuaderno">
-                <TestTiroScreen />
-              </ModuleBoundary>
-            </AuthGuard>
+            <Guarded name="Cuaderno">
+              <TestTiroScreen />
+            </Guarded>
           }
         />
         <Route
           path="/teams/:teamId/cuaderno/jugadores"
           element={
-            <AuthGuard>
-              <ModuleBoundary name="Cuaderno">
-                <JugadoresScreen />
-              </ModuleBoundary>
-            </AuthGuard>
+            <Guarded name="Cuaderno">
+              <JugadoresScreen />
+            </Guarded>
           }
         />
         <Route
           path="/teams/:teamId/cuaderno/notas"
           element={
-            <AuthGuard>
-              <ModuleBoundary name="Cuaderno">
-                <NotasScreen />
-              </ModuleBoundary>
-            </AuthGuard>
+            <Guarded name="Cuaderno">
+              <NotasScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/teams/:teamId/cuaderno/informe-jugadores"
+          element={
+            <Guarded name="Cuaderno">
+              <InformeJugadoresScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/teams/:teamId/cuaderno/asistencia"
+          element={
+            <Guarded name="Cuaderno">
+              <AsistenciaScreen />
+            </Guarded>
           }
         />
         <Route
           path="/teams/:teamId/cuaderno/entrenamientos"
           element={
-            <AuthGuard>
-              <ModuleBoundary name="Cuaderno">
-                <EntrenamientosScreen />
-              </ModuleBoundary>
-            </AuthGuard>
+            <Guarded name="Cuaderno">
+              <EntrenamientosScreen />
+            </Guarded>
           }
         />
+
         <Route
           path="/teams/:teamId/trainings"
           element={
-            <ModuleBoundary name="Entrenamientos">
-              <TeamTrainingsRoute />
-            </ModuleBoundary>
+            <Guarded name="Entrenamientos">
+              <TeamTrainingsScreen />
+            </Guarded>
           }
         />
         <Route
           path="/teams/:teamId/trainings/:trainingId"
           element={
-            <ModuleBoundary name="Entrenamientos">
-              <TrainingEditorRoute />
-            </ModuleBoundary>
+            <Guarded name="Entrenamientos">
+              <TrainingEditorScreen />
+            </Guarded>
           }
         />
+
         <Route
           path="/exercises"
           element={
-            <ModuleBoundary name="Ejercicios">
-              <ExercisesRoute />
-            </ModuleBoundary>
+            <Guarded name="Ejercicios">
+              <ExerciseLibraryScreen />
+            </Guarded>
           }
         />
         <Route
           path="/calendar"
           element={
-            <ModuleBoundary name="Calendario">
-              <CalendarRoute />
-            </ModuleBoundary>
+            <Guarded name="Calendario">
+              <CalendarScreen />
+            </Guarded>
           }
         />
         <Route
@@ -316,26 +275,40 @@ export default function AppRouter() {
         <Route
           path="/calendar/:sessionId/scouting"
           element={
-            <AuthGuard>
-              <ModuleBoundary name="Scouting">
-                <ScoutingScreen />
-              </ModuleBoundary>
-            </AuthGuard>
+            <Guarded name="Scouting">
+              <ScoutingScreen />
+            </Guarded>
           }
         />
         <Route
           path="/calendar/:sessionId/analysis"
           element={
-            <AuthGuard>
-              <ModuleBoundary name="Análisis">
-                <AnalysisScreen />
-              </ModuleBoundary>
-            </AuthGuard>
+            <Guarded name="Análisis">
+              <AnalysisScreen />
+            </Guarded>
           }
         />
-        <Route path="/settings" element={<SettingsRoute />} />
+        <Route
+          path="/settings"
+          element={
+            <Guarded name="Ajustes">
+              <SettingsScreen />
+            </Guarded>
+          }
+        />
+
         <Route path="/s/:code" element={<ShareRedirect />} />
-        {/* Fallback */}
+        <Route
+          path="/exercise/:shareCode"
+          element={
+            <Suspense fallback={<LazyFallback />}>
+              <ModuleBoundary>
+                <SharedExerciseScreen />
+              </ModuleBoundary>
+            </Suspense>
+          }
+        />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

@@ -1,4 +1,4 @@
-import { teamDisplayName } from '../screens/TeamsScreen';
+import { teamDisplayName } from './teamUtils';
 
 /**
  * Parse a date string in DD/MM/YYYY or YYYY-MM-DD format to ISO YYYY-MM-DD.

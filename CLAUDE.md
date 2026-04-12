@@ -69,7 +69,8 @@ Security: user docs private (`request.auth.uid == uid`), shared docs require aut
 
 ### Key conventions
 
-- `teamDisplayName(team)` (from `TeamsScreen.jsx`) is the canonical way to format team names for display.
+- `teamDisplayName(team)` (from `utils/teamUtils.js`) is the canonical way to format team names for display.
+- Calendar/date constants (`TEAM_COLORS`, `MONTH_NAMES`, `DAY_HEADERS`, etc.) live in `utils/constants.js`.
 - Firestore helpers: `userDocRef(db, appId, uid, collection, docId)` and `userColRef(db, appId, uid, collection)` abstract the nested path.
 - `isMinibasketSextos(team)` gates minibasket-specific features (Planilla de Sextos).
 - Multiple brackets can link to the same team via `bracket.teamId` — this is how multiple tournaments per team works.

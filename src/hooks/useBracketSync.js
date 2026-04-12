@@ -3,7 +3,7 @@ import { doc, setDoc, deleteDoc, onSnapshot, getDoc } from 'firebase/firestore';
 import { userDocRef, userColRef } from '../services/firestoreHelpers';
 import logger from '../utils/logger';
 import { toFirestore } from '../services/firestoreService';
-import { teamDisplayName } from '../screens/TeamsScreen';
+import { teamDisplayName } from '../utils/teamUtils';
 import { useToast } from '../contexts/ToastContext';
 
 export function useBracketSync({

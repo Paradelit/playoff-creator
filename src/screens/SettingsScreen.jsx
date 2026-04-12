@@ -69,9 +69,11 @@ export default function SettingsScreen() {
   const [linkError, setLinkError] = useState('');
   const [linkedOk, setLinkedOk] = useState(false);
 
+  const [deletingData, setDeletingData] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeleteDataModal, setShowDeleteDataModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
   const importInputRef = useRef(null);
 
@@ -166,18 +168,32 @@ export default function SettingsScreen() {
     }
   }
 
+  // ─── Delete data ────────────────────────────────────────────────────────
+
+  async function handleDeleteData() {
+    setDeletingData(true);
+    try {
+      await deleteAllUserData(user.uid, db, appId);
+      setShowDeleteDataModal(false);
+      setShowDeleteAccountModal(true);
+    } catch (e) {
+      logger.error('Error eliminando datos', e);
+    } finally {
+      setDeletingData(false);
+    }
+  }
+
   // ─── Delete account ───────────────────────────────────────────────────────
 
   async function handleDeleteAccount() {
     if (deleteConfirmText !== 'ELIMINAR') return;
     setDeletingAccount(true);
     try {
-      await deleteAllUserData(user.uid, db, appId);
       await handleDeleteAuthAccount();
     } catch (e) {
       logger.error('Error eliminando cuenta de usuario', e);
       setDeletingAccount(false);
-      setShowDeleteModal(false);
+      setShowDeleteAccountModal(false);
     }
   }
 
@@ -550,21 +566,19 @@ export default function SettingsScreen() {
               <p className="text-xs text-red-500">Acciones irreversibles</p>
             </div>
           </div>
-          <div className="px-5 py-4">
-            <p className="text-sm text-slate-600 mb-4">
-              Eliminar tu cuenta borrará permanentemente todos tus equipos, jugadores, entrenamientos, ejercicios y
-              sesiones del calendario.
-              <span className="font-semibold text-red-600"> Esta acción no se puede deshacer.</span>
-            </p>
-            <button
-              onClick={() => {
-                setDeleteConfirmText('');
-                setShowDeleteModal(true);
-              }}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition"
-            >
-              <Trash2 size={15} /> Eliminar mi cuenta y todos mis datos
-            </button>
+          <div className="px-5 py-4 flex flex-col gap-4">
+            <div>
+              <p className="text-sm text-slate-600 mb-3">
+                Borra todos tus equipos, jugadores, entrenamientos, ejercicios, playoffs y sesiones del calendario.
+                <span className="font-semibold text-red-600"> Esta acción no se puede deshacer.</span>
+              </p>
+              <button
+                onClick={() => setShowDeleteDataModal(true)}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition"
+              >
+                <Trash2 size={15} /> Borrar todos mis datos
+              </button>
+            </div>
           </div>
         </div>
 
@@ -615,11 +629,11 @@ export default function SettingsScreen() {
         </div>
       )}
 
-      {/* ─── Modal confirmación borrado cuenta ─── */}
-      {showDeleteModal && (
+      {/* ─── Modal confirmación borrado datos ─── */}
+      {showDeleteDataModal && (
         <div
           className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm"
-          onClick={() => setShowDeleteModal(false)}
+          onClick={() => setShowDeleteDataModal(false)}
         >
           <div
             className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-200"
@@ -629,14 +643,52 @@ export default function SettingsScreen() {
               <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center shrink-0">
                 <AlertTriangle size={20} className="text-red-600" />
               </div>
-              <h3 className="text-lg font-bold text-slate-800">¿Eliminar tu cuenta?</h3>
+              <h3 className="text-lg font-bold text-slate-800">¿Borrar todos tus datos?</h3>
             </div>
             <p className="text-slate-600 text-sm mb-4">
-              Esto borrará permanentemente <span className="font-semibold">todos tus datos</span>. Esta acción no puede
-              deshacerse.
+              Se eliminarán permanentemente todos tus equipos, jugadores, entrenamientos, ejercicios, playoffs y
+              sesiones del calendario.
+              <span className="font-semibold text-red-600"> Esta acción no se puede deshacer.</span>
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteDataModal(false)}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteData}
+                disabled={deletingData}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-40 text-sm"
+              >
+                {deletingData ? 'Eliminando...' : 'Borrar todo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Modal post-borrado: ¿eliminar cuenta? ─── */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm">
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
+                <Check size={20} className="text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800">Datos eliminados</h3>
+            </div>
+            <p className="text-slate-600 text-sm mb-5">
+              Todos tus datos han sido borrados. ¿Quieres eliminar también tu cuenta de usuario? Si la eliminas, tendrás
+              que registrarte de nuevo para volver a usar la app.
             </p>
             <p className="text-xs font-bold text-slate-500 mb-2">
-              Escribe <span className="text-red-600 font-black">ELIMINAR</span> para confirmar:
+              Escribe <span className="text-red-600 font-black">ELIMINAR</span> para confirmar la eliminación de la
+              cuenta:
             </p>
             <input
               type="text"
@@ -647,17 +699,21 @@ export default function SettingsScreen() {
             />
             <div className="flex gap-3">
               <button
-                onClick={() => setShowDeleteModal(false)}
+                onClick={() => {
+                  setShowDeleteAccountModal(false);
+                  setDeleteConfirmText('');
+                  navigate('/');
+                }}
                 className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition text-sm"
               >
-                Cancelar
+                No, mantener cuenta
               </button>
               <button
                 onClick={handleDeleteAccount}
                 disabled={deleteConfirmText !== 'ELIMINAR' || deletingAccount}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-40 text-sm"
               >
-                {deletingAccount ? 'Eliminando...' : 'Eliminar todo'}
+                {deletingAccount ? 'Eliminando...' : 'Eliminar cuenta'}
               </button>
             </div>
           </div>

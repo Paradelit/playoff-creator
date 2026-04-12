@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { useTeams } from '../../hooks/useTeams';
 import { useProfile } from '../../hooks/useProfile';
-import { teamDisplayName } from '../TeamsScreen';
+import { teamDisplayName } from '../../utils/teamUtils';
 import { getTemporada } from '../../utils/dateUtils';
 
 export default function PortadaScreen() {

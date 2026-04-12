@@ -19,7 +19,7 @@ import {
   ChevronDown,
   Loader2,
 } from 'lucide-react';
-import { teamDisplayName } from './TeamsScreen';
+import { teamDisplayName } from '../utils/teamUtils';
 import { doc, setDoc } from 'firebase/firestore';
 import logger from '../utils/logger';
 import BracketNode from '../components/BracketNode';

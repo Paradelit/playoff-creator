@@ -4,7 +4,7 @@ import { ArrowLeft, Printer } from 'lucide-react';
 import ClubLogo from '../components/ClubLogo';
 import { useTeams } from '../hooks/useTeams';
 import { useProfile } from '../hooks/useProfile';
-import { teamDisplayName } from './TeamsScreen';
+import { teamDisplayName } from '../utils/teamUtils';
 import { getTemporada } from '../utils/dateUtils';
 
 const SECTIONS = [
@@ -16,6 +16,8 @@ const SECTIONS = [
   { num: 6, title: 'Jugadores interesantes', path: 'jugadores' },
   { num: 7, title: 'Notas', path: 'notas' },
   { num: 8, title: 'Entrenamientos', path: 'entrenamientos' },
+  { num: 9, title: 'Informe jugadores/as', path: 'informe-jugadores' },
+  { num: 10, title: 'Asistencia', path: 'asistencia' },
 ];
 
 export default function CuadernoScreen() {

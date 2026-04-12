@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   LogOut,
   Settings,
@@ -10,61 +9,13 @@ import {
   Trophy,
   Users,
   ChevronRight,
-  Plus,
-  FolderOpen,
-  ArrowRight,
   Clock,
   History,
   FastForward,
-  Swords,
-  MapPin,
-  Search,
-  BarChart3,
 } from 'lucide-react';
-import { onSnapshot } from 'firebase/firestore';
-import { useAuth } from '../contexts/AuthContext';
-import { useFirebase } from '../contexts/FirebaseContext';
-import { saveTraining } from '../services/trainingsService';
-import { useTeams } from '../hooks/useTeams';
-import { subscribeToCalendarSessions, linkTrainingToSession } from '../services/calendarService';
-import { userColRef } from '../services/firestoreHelpers';
-import { teamDisplayName } from './TeamsScreen';
-import { buildPlayoffSessions } from '../utils/calendarUtils';
-import { isMinibasketSextos } from '../utils/minibasketUtils';
-import { toYMD } from '../utils/dateUtils';
-import { useReminders } from '../hooks/useReminders';
-
-function getExtendedRange() {
-  const now = new Date();
-  const start = new Date(now);
-  start.setDate(now.getDate() - 14);
-  const end = new Date(now);
-  end.setDate(now.getDate() + 14);
-  return { startStr: toYMD(start), endStr: toYMD(end) };
-}
-
-function findTeamCurrentMatch(bracketData, myTeam) {
-  if (!bracketData?.state || !myTeam) return null;
-  return Object.values(bracketData.state).find((m) => !m.winner && (m.team1 === myTeam || m.team2 === myTeam));
-}
-
-function getSeriesScore(match, myTeam) {
-  if (!match?.scores) return null;
-  let wins = 0;
-  let losses = 0;
-  for (const g of match.scores) {
-    const s1 = Number(g.s1);
-    const s2 = Number(g.s2);
-    if (!s1 && !s2) continue;
-    const isTeam1 = match.team1 === myTeam;
-    if ((isTeam1 && s1 > s2) || (!isTeam1 && s2 > s1)) wins++;
-    else if (s1 !== s2) losses++;
-  }
-  if (!wins && !losses) return null;
-  return { wins, losses, total: match.gamesCount || 1 };
-}
-
-const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+import { useHomeDashboard } from '../hooks/useHomeDashboard';
+import { teamDisplayName } from '../utils/teamUtils';
+import { EmptyTeamCard, MatchDayWidget, ActionEventRow, MONTHS } from '../components/home/HomeComponents';
 
 const CARD_GRADIENTS = [
   'from-blue-900 via-blue-800 to-blue-700',
@@ -87,37 +38,29 @@ function QuickAction({ icon: Icon, label, onClick }) {
 }
 
 export default function HomeScreen() {
-  const { user, handleLogout } = useAuth();
-  const { db, appId } = useFirebase();
-  const navigate = useNavigate();
+  const {
+    user,
+    handleLogout,
+    navigate,
+    teams,
+    loadingTeams,
+    trainingNumbers,
+    today,
+    todayYMD,
+    todayEvents,
+    lastEventByTeam,
+    nextEventByTeam,
+    activePlayoffs,
+    matchDayEvent,
+    weeklySummary,
+    nextMatchByTeam,
+    creatingTraining,
+    handleEventAction,
+  } = useHomeDashboard();
+
   const carouselRef = useRef(null);
   const cardRefs = useRef([]);
-
-  const { teams, loading: loadingTeams } = useTeams();
-  const [sessions, setSessions] = useState([]);
-  const [brackets, setBrackets] = useState([]);
   const [activeIdx, setActiveIdx] = useState(0);
-  const [creatingTraining, setCreatingTraining] = useState(null); // sessionId being created
-
-  const displayName = user?.isAnonymous ? 'Invitado' : user?.displayName || user?.email?.split('@')[0] || 'Entrenador';
-  const photoURL = user?.photoURL || null;
-  const initial = displayName.charAt(0).toUpperCase();
-
-  const today = useMemo(() => new Date(), []);
-  const todayYMD = useMemo(() => toYMD(today), [today]);
-  const { startStr, endStr } = useMemo(() => getExtendedRange(), []);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToCalendarSessions(user.uid, db, appId, startStr, endStr, setSessions);
-  }, [user, db, appId, startStr, endStr]);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return onSnapshot(userColRef(db, appId, user.uid, 'brackets'), (snap) => {
-      setBrackets(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
-    });
-  }, [user, db, appId]);
 
   useEffect(() => {
     if (!carouselRef.current || teams.length === 0) return;
@@ -134,188 +77,9 @@ export default function HomeScreen() {
     return () => observers.forEach((obs) => obs.disconnect());
   }, [teams]);
 
-  // Merge calendar sessions + playoff virtual sessions
-  const playoffSessions = useMemo(() => buildPlayoffSessions(brackets, teams), [brackets, teams]);
-  const allSessions = useMemo(() => [...sessions, ...playoffSessions], [sessions, playoffSessions]);
-
-  // Reminders
-  useReminders(allSessions);
-
-  // TODAY's events
-  const todayEvents = useMemo(
-    () =>
-      allSessions
-        .filter((s) => s.fecha === todayYMD)
-        .sort((a, b) => (a.horaInicio || '').localeCompare(b.horaInicio || '')),
-    [allSessions, todayYMD],
-  );
-
-  // LAST event per team (before today)
-  const lastEventByTeam = useMemo(() => {
-    const past = allSessions
-      .filter((s) => s.fecha < todayYMD && s.teamId)
-      .sort((a, b) => b.fecha.localeCompare(a.fecha) || (b.horaInicio || '').localeCompare(a.horaInicio || ''));
-    const seen = new Set();
-    const result = [];
-    for (const s of past) {
-      if (seen.has(s.teamId)) continue;
-      seen.add(s.teamId);
-      result.push(s);
-    }
-    return result;
-  }, [allSessions, todayYMD]);
-
-  // NEXT event per team (after today)
-  const nextEventByTeam = useMemo(() => {
-    const future = allSessions
-      .filter((s) => s.fecha > todayYMD && s.teamId)
-      .sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.horaInicio || '').localeCompare(b.horaInicio || ''));
-    const seen = new Set();
-    const result = [];
-    for (const s of future) {
-      if (seen.has(s.teamId)) continue;
-      seen.add(s.teamId);
-      result.push(s);
-    }
-    return result;
-  }, [allSessions, todayYMD]);
-
-  // Active playoffs (keep for extra info)
-  const activePlayoffs = useMemo(() => {
-    const teamIds = new Set(teams.map((t) => t.id));
-    return brackets
-      .filter((b) => b.teamId && teamIds.has(b.teamId) && b.bracketData)
-      .map((b) => {
-        const match = findTeamCurrentMatch(b.bracketData, b.myTeam);
-        const rival = match ? (match.team1 === b.myTeam ? match.team2 : match.team1) : null;
-        const series = match ? getSeriesScore(match, b.myTeam) : null;
-        const team = teams.find((t) => t.id === b.teamId);
-        return {
-          id: b.id,
-          name: b.name || b.tournamentNameDetected || 'Playoff',
-          teamName: team ? teamDisplayName(team) : '',
-          teamId: b.teamId,
-          match,
-          rival,
-          series,
-          title: match?.title,
-        };
-      });
-  }, [brackets, teams]);
-
-  // Match day widget: match today or tomorrow
-  const tomorrowYMD = useMemo(() => {
-    const d = new Date(today);
-    d.setDate(d.getDate() + 1);
-    return toYMD(d);
-  }, [today]);
-
-  const matchDayEvent = useMemo(() => {
-    const matches = allSessions.filter(
-      (s) => s.tipo === 'partido' && (s.fecha === todayYMD || s.fecha === tomorrowYMD),
-    );
-    if (matches.length === 0) return null;
-    // Prefer today's match, then earliest tomorrow
-    const todayMatch = matches.find((s) => s.fecha === todayYMD);
-    if (todayMatch) return todayMatch;
-    return matches.sort((a, b) => (a.horaInicio || '').localeCompare(b.horaInicio || ''))[0];
-  }, [allSessions, todayYMD, tomorrowYMD]);
-
-  // Weekly summary
-  const weeklySummary = useMemo(() => {
-    const now = new Date();
-    const dayOfWeek = now.getDay(); // 0=Sun
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + mondayOffset);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    const monYMD = toYMD(monday);
-    const sunYMD = toYMD(sunday);
-    const weekSessions = allSessions.filter((s) => s.fecha >= monYMD && s.fecha <= sunYMD);
-    const entrenamientos = weekSessions.filter((s) => s.tipo === 'entrenamiento').length;
-    const partidos = weekSessions.filter((s) => s.tipo === 'partido').length;
-    const playoffs = weekSessions.filter((s) => s.tipo === 'playoff').length;
-    return { entrenamientos, partidos, playoffs, total: weekSessions.length };
-  }, [allSessions]);
-
-  // Next match per team (for team card quick stats)
-  const nextMatchByTeam = useMemo(() => {
-    const map = {};
-    const futureMatches = allSessions
-      .filter((s) => s.tipo === 'partido' && s.fecha >= todayYMD)
-      .sort((a, b) => a.fecha.localeCompare(b.fecha));
-    for (const s of futureMatches) {
-      if (!map[s.teamId]) map[s.teamId] = s;
-    }
-    return map;
-  }, [allSessions, todayYMD]);
-
-  const handleCreateTraining = useCallback(
-    async (session) => {
-      setCreatingTraining(session.id);
-      try {
-        const trainingId = crypto.randomUUID();
-        await saveTraining(
-          {
-            id: trainingId,
-            teamId: session.teamId,
-            meta: {
-              numero: session.sessionNumber,
-              fecha: session.fecha,
-              horaInicio: session.horaInicio,
-              horaFin: session.horaFin,
-              lugar: session.lugar || '',
-              dia: '',
-              equipo: session.teamName || '',
-            },
-            objetivos: '',
-            ejercicios: [],
-            cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
-          },
-          session.teamId,
-          { uid: user.uid, db, appId },
-        );
-        await linkTrainingToSession(session.id, trainingId, { uid: user.uid, db, appId });
-        navigate(`/teams/${session.teamId}/trainings/${trainingId}`);
-      } finally {
-        setCreatingTraining(null);
-      }
-    },
-    [user, db, appId, navigate],
-  );
-
-  const handleEventAction = useCallback(
-    (session) => {
-      if (session.tipo === 'playoff') {
-        const team = teams.find((t) => t.id === session.teamId);
-        if (isMinibasketSextos(team)) {
-          navigate(`/calendar/${session.id}/planilla`, {
-            state: { playoffSession: session },
-          });
-        } else {
-          navigate(`/playoffs?teamId=${session.teamId}`);
-        }
-      } else if (session.tipo === 'entrenamiento') {
-        if (session.trainingId) {
-          navigate(`/teams/${session.teamId}/trainings/${session.trainingId}`);
-        } else {
-          handleCreateTraining(session);
-        }
-      } else if (session.tipo === 'partido') {
-        const team = teams.find((t) => t.id === session.teamId);
-        if (isMinibasketSextos(team)) {
-          navigate(`/calendar/${session.id}/planilla`);
-        } else if (session.fecha < todayYMD) {
-          navigate(`/calendar/${session.id}/analysis`);
-        } else {
-          navigate(`/calendar/${session.id}/scouting`);
-        }
-      }
-    },
-    [navigate, teams, handleCreateTraining, todayYMD],
-  );
-
+  const displayName = user?.isAnonymous ? 'Invitado' : user?.displayName || user?.email?.split('@')[0] || 'Entrenador';
+  const photoURL = user?.photoURL || null;
+  const initial = displayName.charAt(0).toUpperCase();
   const hora = today.getHours();
   const greeting = hora < 13 ? 'Buenos días' : hora < 20 ? 'Buenas tardes' : 'Buenas noches';
 
@@ -394,16 +158,12 @@ export default function HomeScreen() {
                       </div>
                       <ShieldHalf size={22} className="text-white/30 shrink-0 mt-0.5" />
                     </div>
-
-                    {/* Quick stats: next match */}
                     {nextMatchByTeam[team.id] && (
                       <p className="text-xs text-blue-200/80 mt-2 truncate">
                         Próx. partido: vs {nextMatchByTeam[team.id].rival || 'Rival'} —{' '}
                         {(() => {
                           const f = nextMatchByTeam[team.id].fecha;
-                          const d = parseInt(f.split('-')[2]);
-                          const m = MONTHS[parseInt(f.split('-')[1]) - 1];
-                          return `${d} ${m}`;
+                          return `${parseInt(f.split('-')[2])} ${MONTHS[parseInt(f.split('-')[1]) - 1]}`;
                         })()}
                       </p>
                     )}
@@ -416,9 +176,7 @@ export default function HomeScreen() {
                         })()}
                       </p>
                     )}
-
                     <div className="w-12 h-0.5 bg-white/20 rounded-full my-4" />
-
                     <div className="flex gap-5">
                       <QuickAction icon={Users} label="Plantilla" onClick={() => navigate(`/teams/${team.id}`)} />
                       <QuickAction
@@ -440,7 +198,6 @@ export default function HomeScreen() {
                   </div>
                 ))}
               </div>
-
               {teams.length > 1 && (
                 <div className="flex justify-center gap-1.5 mt-1">
                   {teams.map((_, i) => (
@@ -455,12 +212,10 @@ export default function HomeScreen() {
           )}
         </div>
 
-        {/* MATCH DAY WIDGET */}
         {matchDayEvent && (
           <MatchDayWidget session={matchDayEvent} teams={teams} todayYMD={todayYMD} navigate={navigate} />
         )}
 
-        {/* WEEKLY SUMMARY */}
         {weeklySummary.total > 0 && (
           <div className="mt-4 bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex items-center gap-2 text-xs text-slate-600 font-medium">
             <CalendarDays size={14} className="text-slate-400 shrink-0" />
@@ -483,7 +238,7 @@ export default function HomeScreen() {
           </div>
         )}
 
-        {/* HOY */}
+        {/* Today */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
@@ -496,7 +251,6 @@ export default function HomeScreen() {
               Calendario →
             </button>
           </div>
-
           {todayEvents.length === 0 ? (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center">
               <CalendarDays size={32} className="mx-auto text-slate-300 mb-2" />
@@ -511,6 +265,7 @@ export default function HomeScreen() {
                   onAction={() => handleEventAction(s)}
                   creating={creatingTraining === s.id}
                   teams={teams}
+                  trainingNumbers={trainingNumbers}
                   variant="today"
                 />
               ))}
@@ -518,7 +273,6 @@ export default function HomeScreen() {
           )}
         </div>
 
-        {/* LO ÚLTIMO */}
         {lastEventByTeam.length > 0 && (
           <div className="mt-6">
             <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
@@ -532,6 +286,7 @@ export default function HomeScreen() {
                   onAction={() => handleEventAction(s)}
                   creating={creatingTraining === s.id}
                   teams={teams}
+                  trainingNumbers={trainingNumbers}
                   variant="past"
                 />
               ))}
@@ -539,7 +294,6 @@ export default function HomeScreen() {
           </div>
         )}
 
-        {/* PRÓXIMAMENTE */}
         {nextEventByTeam.length > 0 && (
           <div className="mt-6">
             <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
@@ -553,6 +307,7 @@ export default function HomeScreen() {
                   onAction={() => handleEventAction(s)}
                   creating={creatingTraining === s.id}
                   teams={teams}
+                  trainingNumbers={trainingNumbers}
                   variant="future"
                 />
               ))}
@@ -560,7 +315,6 @@ export default function HomeScreen() {
           </div>
         )}
 
-        {/* Playoffs activos */}
         {activePlayoffs.length > 0 && (
           <div className="mt-6">
             <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Playoffs</h2>
@@ -598,156 +352,6 @@ export default function HomeScreen() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function EmptyTeamCard({ navigate }) {
-  return (
-    <div className="w-full bg-gradient-to-br from-blue-900 to-blue-700 rounded-2xl p-6 text-white shadow-2xl flex flex-col items-center justify-center text-center min-h-[180px] gap-3">
-      <FolderOpen size={36} className="text-blue-400" />
-      <p className="text-blue-100 font-semibold">Aún no tienes equipos</p>
-      <button
-        onClick={() => navigate('/teams')}
-        className="bg-white/15 hover:bg-white/25 text-white font-bold text-sm px-4 py-2 rounded-xl flex items-center gap-2 transition"
-      >
-        <Plus size={16} /> Crear equipo
-      </button>
-    </div>
-  );
-}
-
-function MatchDayWidget({ session, teams, todayYMD, navigate }) {
-  const team = teams.find((t) => t.id === session.teamId);
-  const isToday = session.fecha === todayYMD;
-  const isFuture = session.fecha >= todayYMD;
-
-  // Time until match
-  let timeLabel = isToday ? 'Hoy' : 'Mañana';
-  if (isToday && session.horaInicio) {
-    const [h, m] = session.horaInicio.split(':').map(Number);
-    const now = new Date();
-    const matchTime = new Date();
-    matchTime.setHours(h, m, 0, 0);
-    const diffMs = matchTime - now;
-    if (diffMs > 0) {
-      const diffH = Math.floor(diffMs / 3600000);
-      const diffM = Math.floor((diffMs % 3600000) / 60000);
-      timeLabel = diffH > 0 ? `En ${diffH}h ${diffM}m` : `En ${diffM} min`;
-    } else {
-      timeLabel = 'En curso';
-    }
-  }
-
-  const actionRoute = isFuture ? `/calendar/${session.id}/scouting` : `/calendar/${session.id}/analysis`;
-  const actionLabel = isFuture ? 'Scouting' : 'Análisis';
-  const ActionIcon = isFuture ? Search : BarChart3;
-
-  return (
-    <div className="mt-4 bg-gradient-to-r from-rose-500 to-rose-600 rounded-2xl p-4 text-white shadow-lg">
-      <div className="flex items-center gap-2 mb-2">
-        <Swords size={16} className="text-rose-200" />
-        <span className="text-xs font-bold uppercase tracking-wider text-rose-200">Día de partido</span>
-        <span className="ml-auto text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full">{timeLabel}</span>
-      </div>
-      <div className="flex items-center justify-between">
-        <div className="min-w-0">
-          <p className="font-bold text-lg truncate">
-            vs {session.rival || 'Rival'} {session.esLocal ? '(Local)' : '(Visitante)'}
-          </p>
-          <p className="text-rose-100 text-xs truncate">
-            {team ? teamDisplayName(team) : ''}
-            {session.horaInicio ? ` · ${session.horaInicio}` : ''}
-            {session.lugar ? ` · ${session.lugar}` : ''}
-          </p>
-        </div>
-        <button
-          onClick={() => navigate(actionRoute)}
-          className="shrink-0 bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-3 py-2 rounded-xl flex items-center gap-1.5 transition ml-3"
-        >
-          <ActionIcon size={14} />
-          {actionLabel}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function getActionLabel(session, teams) {
-  if (session.tipo === 'playoff') {
-    const team = teams.find((t) => t.id === session.teamId);
-    if (isMinibasketSextos(team)) return 'Planilla de sextos';
-    return 'Ver cuadro';
-  }
-  if (session.tipo === 'entrenamiento') return session.trainingId ? 'Abrir entrenamiento' : 'Crear entrenamiento';
-  if (session.tipo === 'partido') {
-    const team = teams.find((t) => t.id === session.teamId);
-    if (isMinibasketSextos(team)) return 'Planilla de sextos';
-    return session.fecha < toYMD(new Date()) ? 'Ver análisis' : 'Scouting';
-  }
-  return 'Ver';
-}
-
-function getEventIcon(session) {
-  if (session.tipo === 'playoff') return { bg: 'bg-amber-100', color: 'text-amber-600', Icon: Trophy };
-  if (session.tipo === 'partido') return { bg: 'bg-rose-100', color: 'text-rose-600', Icon: Trophy };
-  return { bg: 'bg-blue-100', color: 'text-blue-600', Icon: ClipboardList };
-}
-
-function ActionEventRow({ session, onAction, creating, teams, variant }) {
-  const { bg, color, Icon } = getEventIcon(session);
-  const actionLabel = getActionLabel(session, teams);
-  const isCreating = creating;
-
-  const actionColors = {
-    playoff: 'bg-amber-500 hover:bg-amber-600',
-    partido: 'bg-rose-500 hover:bg-rose-600',
-    entrenamiento: 'bg-blue-600 hover:bg-blue-700',
-  };
-
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-3 w-full">
-      {/* Date badge */}
-      <div className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center shrink-0 ${bg}`}>
-        <span className={`text-xs font-bold uppercase ${color}`}>
-          {session.fecha ? MONTHS[parseInt(session.fecha.split('-')[1]) - 1] : ''}
-        </span>
-        <span className={`text-lg font-black leading-none ${color}`}>
-          {session.fecha ? parseInt(session.fecha.split('-')[2]) : ''}
-        </span>
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-slate-800 text-sm truncate">
-          {session.tipo === 'playoff'
-            ? `${session.bracketName} · ${session.matchTitle}`
-            : session.tipo === 'partido'
-              ? `vs ${session.rival || 'Rival'} ${session.esLocal ? '(L)' : '(V)'}`
-              : `Entrenamiento #${session.sessionNumber}`}
-        </p>
-        <p className="text-xs text-slate-500 truncate">
-          {session.teamName}
-          {session.horaInicio ? ` · ${session.horaInicio}` : ''}
-          {session.lugar ? ` · ${session.lugar}` : ''}
-        </p>
-      </div>
-
-      {/* Action button */}
-      <button
-        onClick={onAction}
-        disabled={isCreating}
-        className={`shrink-0 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition ${actionColors[session.tipo] || 'bg-slate-600 hover:bg-slate-700'} disabled:opacity-60`}
-      >
-        {isCreating ? (
-          '...'
-        ) : (
-          <>
-            {variant === 'past' ? <History size={12} /> : <ArrowRight size={12} />}
-            <span className="hidden sm:inline">{actionLabel}</span>
-          </>
-        )}
-      </button>
     </div>
   );
 }

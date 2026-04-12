@@ -6,9 +6,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
 import { subscribeToTrainings, saveTraining } from '../../services/trainingsService';
 import { subscribeToTeamSessions, linkTrainingToSession } from '../../services/calendarService';
-import { teamDisplayName } from '../TeamsScreen';
+import { teamDisplayName } from '../../utils/teamUtils';
 import { useTeams } from '../../hooks/useTeams';
 import { useProfile } from '../../hooks/useProfile';
+import { useTrainingNumbers } from '../../hooks/useTrainingNumbers';
 import { getTemporada, formatDateDisplay } from '../../utils/dateUtils';
 
 export default function EntrenamientosScreen() {
@@ -19,6 +20,7 @@ export default function EntrenamientosScreen() {
 
   const { teams } = useTeams();
   const { profile } = useProfile();
+  const trainingNumbers = useTrainingNumbers();
   const team = teams.find((t) => t.id === teamId) || null;
   const [sessions, setSessions] = useState([]);
   const [trainings, setTrainings] = useState([]);
@@ -63,7 +65,7 @@ export default function EntrenamientosScreen() {
           id: trainingId,
           teamId,
           meta: {
-            numero: s.sessionNumber || 1,
+            numero: trainingNumbers.get(s.id) || s.sessionNumber || 1,
             fecha: s.fecha || '',
             horaInicio: s.horaInicio || '',
             horaFin: s.horaFin || '',
@@ -90,9 +92,10 @@ export default function EntrenamientosScreen() {
     const trainingMap = new Map(trainings.map((t) => [t.id, t]));
     return sessions.map((s) => {
       const training = s.trainingId ? trainingMap.get(s.trainingId) : null;
-      return { session: s, training };
+      const chronoNumber = trainingNumbers.get(s.id) ?? s.sessionNumber;
+      return { session: { ...s, sessionNumber: chronoNumber }, training };
     });
-  }, [sessions, trainings]);
+  }, [sessions, trainings, trainingNumbers]);
 
   // Compute initial index for the next upcoming training
   const initialIndex = useMemo(() => {

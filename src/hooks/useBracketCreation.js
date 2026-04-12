@@ -5,7 +5,7 @@ import logger from '../utils/logger';
 import { buildDynamicBracket } from '../utils/bracketEngine';
 import { extractTextFromFile, callGeminiForBracket } from '../services/aiService';
 import { toFirestore } from '../services/firestoreService';
-import { teamDisplayName } from '../screens/TeamsScreen';
+import { teamDisplayName } from '../utils/teamUtils';
 
 export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets, setActiveBracketId, setAppMode }) {
   const [newBracketName, setNewBracketName] = useState('');

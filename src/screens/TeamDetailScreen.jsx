@@ -4,7 +4,8 @@ import { ArrowLeft, Plus, Pencil, Trash2, X, User, Users, ShieldHalf, CalendarDa
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { saveTeam, subscribeToMembers, saveMember, deleteMember } from '../services/teamsService';
-import { teamDisplayName, TeamFormFields } from './TeamsScreen';
+import { teamDisplayName } from '../utils/teamUtils';
+import { TeamFormFields } from './TeamsScreen';
 import { useTeams } from '../hooks/useTeams';
 
 const ROLES_STAFF = ['Entrenador', 'Entrenador asistente', 'Fisioterapeuta', 'Delegado', 'Médico', 'Otro'];

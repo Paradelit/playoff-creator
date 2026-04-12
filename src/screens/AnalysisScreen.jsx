@@ -9,8 +9,8 @@ import { subscribeToAnalysis, saveAnalysis } from '../services/analysisService';
 import { userDocRef } from '../services/firestoreHelpers';
 import { useProfile } from '../hooks/useProfile';
 import { useTeams } from '../hooks/useTeams';
-import { teamDisplayName } from './TeamsScreen';
-import { getTemporada } from '../utils/dateUtils';
+import { teamDisplayName } from '../utils/teamUtils';
+import { getTemporada, formatDateDisplay } from '../utils/dateUtils';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 function emptyAnalysisData(session) {
@@ -235,7 +235,7 @@ export default function AnalysisScreen() {
               </div>
             </div>
             <p className="text-center text-xs text-gray-400 mt-2">
-              {data.fecha ? data.fecha.split('-').reverse().join('/') : ''}
+              {data.fecha ? formatDateDisplay(data.fecha) : ''}
               {session?.lugar ? ` · ${session.lugar}` : ''}
             </p>
           </div>

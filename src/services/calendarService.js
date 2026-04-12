@@ -85,14 +85,12 @@ export async function linkTrainingToSession(sessionId, trainingId, { uid, db, ap
 }
 
 export async function getSessionsByRecurrenceId(uid, db, appId, recurrenceId, fromDate) {
-  const q = query(
-    calendarSessionsCol(uid, db, appId),
-    where('recurrenceId', '==', recurrenceId),
-    where('fecha', '>=', fromDate),
-    orderBy('fecha', 'asc'),
-  );
+  const q = query(calendarSessionsCol(uid, db, appId), where('recurrenceId', '==', recurrenceId));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+  return snap.docs
+    .map((d) => ({ ...d.data(), id: d.id }))
+    .filter((s) => s.fecha >= fromDate)
+    .sort((a, b) => (a.fecha > b.fecha ? 1 : -1));
 }
 
 export async function batchUpdateCalendarSessions(sessions, fields, { uid, db, appId }) {
@@ -105,6 +103,19 @@ export async function batchUpdateCalendarSessions(sessions, fields, { uid, db, a
       ),
     ),
   );
+}
+
+export function subscribeToAllTrainingSessions(uid, db, appId, startDate, endDate, callback) {
+  const q = query(
+    calendarSessionsCol(uid, db, appId),
+    where('fecha', '>=', startDate),
+    where('fecha', '<=', endDate),
+    orderBy('fecha', 'asc'),
+  );
+  return onSnapshot(q, (snap) => {
+    const all = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+    callback(all.filter((s) => s.tipo === 'entrenamiento'));
+  });
 }
 
 export async function deleteSessionsByRecurrenceId(uid, db, appId, recurrenceId, fromDate) {

@@ -11,6 +11,18 @@ import {
 } from 'firebase/firestore';
 import { userColRef, saveUserDoc, deleteUserDoc } from './firestoreHelpers';
 
+function normalizeExerciseTags(ex) {
+  if (Array.isArray(ex.tags) && ex.tags.length > 0) return ex;
+  if (!ex.contenido) return { ...ex, tags: [] };
+  return {
+    ...ex,
+    tags: ex.contenido
+      .split(/[,;/\s]+/)
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0),
+  };
+}
+
 function trainingsCol(teamId, uid, db, appId) {
   return collection(db, 'artifacts', appId, 'users', uid, 'teams', teamId, 'trainings');
 }
@@ -42,12 +54,16 @@ export async function deleteTraining(trainingId, teamId, { uid, db, appId }) {
 export function subscribeToExercises(uid, db, appId, callback) {
   const q = query(userColRef(db, appId, uid, 'exercises'), orderBy('createdAt', 'desc'));
   return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
+    callback(snap.docs.map((d) => normalizeExerciseTags({ ...d.data(), id: d.id })));
   });
 }
 
 export async function saveExercise(exercise, { uid, db, appId }) {
-  await saveUserDoc(db, appId, uid, 'exercises', exercise.id, exercise);
+  const toSave = { ...exercise };
+  if (Array.isArray(toSave.tags)) {
+    toSave.contenido = toSave.tags.join(', ');
+  }
+  await saveUserDoc(db, appId, uid, 'exercises', toSave.id, toSave);
 }
 
 export async function deleteExercise(exerciseId, { uid, db, appId }) {
@@ -71,6 +87,7 @@ export async function propagateExerciseUpdate(exercise, { uid, db, appId }) {
               descripcion: exercise.descripcion,
               tipoPista: exercise.tipoPista,
               elementos: exercise.elementos || [],
+              pasos: exercise.pasos || [],
               libExerciseName: exercise.nombre,
             },
       );

@@ -19,7 +19,7 @@ import {
   ShieldHalf,
   ChevronDown,
 } from 'lucide-react';
-import { teamDisplayName } from './TeamsScreen';
+import { teamDisplayName } from '../utils/teamUtils';
 import { useBracket } from '../contexts/BracketContext';
 
 export default function DashboardScreen() {

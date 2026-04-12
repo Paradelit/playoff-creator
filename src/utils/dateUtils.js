@@ -20,6 +20,18 @@ export function toYMD(date) {
 /**
  * Format a YYYY-MM-DD string as DD/MM/YYYY for display.
  */
+/**
+ * Returns the current season start/end dates as YYYY-MM-DD strings.
+ * Season runs from September 1 to June 30.
+ */
+export function getSeasonDateRange() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const startYear = month >= 9 ? year : year - 1;
+  return { startDate: `${startYear}-09-01`, endDate: `${startYear + 1}-06-30` };
+}
+
 export function formatDateDisplay(ymd) {
   if (!ymd) return '—';
   const [y, m, d] = ymd.split('-');

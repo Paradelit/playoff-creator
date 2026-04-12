@@ -74,6 +74,36 @@ export async function saveTestTiro(teamId, tables, { uid, db, appId }) {
   await setDoc(testTiroDoc(teamId, uid, db, appId), { tables, updatedAt: serverTimestamp() });
 }
 
+// ── Asistencia (por equipo) ─────────────────────────────────────────────────
+function asistenciaDoc(teamId, uid, db, appId) {
+  return doc(db, 'artifacts', appId, 'users', uid, 'teams', teamId, 'cuaderno', 'asistencia');
+}
+
+export function subscribeToAsistencia(teamId, uid, db, appId, callback) {
+  return onSnapshot(asistenciaDoc(teamId, uid, db, appId), (snap) => {
+    callback(snap.exists() ? snap.data() : { attendance: {}, manualSessions: {} });
+  });
+}
+
+export async function saveAsistencia(teamId, data, { uid, db, appId }) {
+  await setDoc(asistenciaDoc(teamId, uid, db, appId), { ...data, updatedAt: serverTimestamp() });
+}
+
+// ── Informe jugadores (por equipo) ──────────────────────────────────────────
+function informeJugadoresDoc(teamId, uid, db, appId) {
+  return doc(db, 'artifacts', appId, 'users', uid, 'teams', teamId, 'cuaderno', 'informe-jugadores');
+}
+
+export function subscribeToInformeJugadores(teamId, uid, db, appId, callback) {
+  return onSnapshot(informeJugadoresDoc(teamId, uid, db, appId), (snap) => {
+    callback(snap.exists() ? (snap.data().rows ?? []) : []);
+  });
+}
+
+export async function saveInformeJugadores(teamId, rows, { uid, db, appId }) {
+  await setDoc(informeJugadoresDoc(teamId, uid, db, appId), { rows, updatedAt: serverTimestamp() });
+}
+
 // ── Notas del cuaderno (por equipo) ─────────────────────────────────────────
 function notasDoc(teamId, uid, db, appId) {
   return doc(db, 'artifacts', appId, 'users', uid, 'teams', teamId, 'cuaderno', 'notas');

@@ -1,94 +1,19 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import * as XLSX from 'xlsx';
-import {
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  Pencil,
-  Trash2,
-  X,
-  ClipboardList,
-  ArrowRight,
-  Upload,
-  Trophy,
-  MapPin,
-  Sparkles,
-  AlertTriangle,
-  Search,
-  BarChart3,
-  Repeat,
-} from 'lucide-react';
-import { onSnapshot, getDoc, setDoc } from 'firebase/firestore';
-import { useAuth } from '../contexts/AuthContext';
-import { useFirebase } from '../contexts/FirebaseContext';
-import { useTeams } from '../hooks/useTeams';
-import { saveTraining } from '../services/trainingsService';
-import {
-  subscribeToCalendarSessions,
-  saveCalendarSession,
-  deleteCalendarSession,
-  bulkImportCalendarSessions,
-  linkTrainingToSession,
-  getCalendarSessionsInRange,
-  deleteCalendarSessionsByTeamAndRange,
-  getSessionsByRecurrenceId,
-  batchUpdateCalendarSessions,
-  deleteSessionsByRecurrenceId,
-} from '../services/calendarService';
+import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Sparkles } from 'lucide-react';
+import { useCalendarSessions, getMonday } from '../hooks/useCalendarSessions';
+import { useSessionEditor } from '../hooks/useSessionEditor';
+import { useCalendarImport } from '../hooks/useCalendarImport';
 import RecurrenceChoiceDialog from '../components/RecurrenceChoiceDialog';
-import { userColRef, userDocRef } from '../services/firestoreHelpers';
-import { callGeminiForCalendar } from '../services/aiService';
-import { teamDisplayName } from './TeamsScreen';
-import { isMinibasketSextos } from '../utils/minibasketUtils';
-import { deletePlanilla } from '../services/planillaService';
-import { buildPlayoffSessions } from '../utils/calendarUtils';
-import { calculateMatchWinner } from '../utils/bracketEngine';
-import { toYMD, formatDateDisplay } from '../utils/dateUtils';
-
-const TEAM_COLORS = [
-  'bg-blue-600 text-white',
-  'bg-orange-500 text-white',
-  'bg-amber-500 text-white',
-  'bg-rose-500 text-white',
-  'bg-emerald-500 text-white',
-  'bg-blue-400 text-white',
-  'bg-pink-500 text-white',
-  'bg-blue-800 text-white',
-];
-
-function teamColorIndex(teamId) {
-  if (!teamId) return 0;
-  return teamId.charCodeAt(0) % TEAM_COLORS.length;
-}
-
-const MONTH_NAMES = [
-  'Enero',
-  'Febrero',
-  'Marzo',
-  'Abril',
-  'Mayo',
-  'Junio',
-  'Julio',
-  'Agosto',
-  'Septiembre',
-  'Octubre',
-  'Noviembre',
-  'Diciembre',
-];
-const MONTH_NAMES_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-const DAY_HEADERS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-const DAY_NAMES_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-const DAY_NAMES_FULL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-
-function getMonday(date) {
-  const d = new Date(date);
-  const dow = d.getDay() === 0 ? 6 : d.getDay() - 1;
-  d.setDate(d.getDate() - dow);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+import MonthGrid, { buildCalendarDays } from '../components/calendar/MonthGrid';
+import WeekView from '../components/calendar/WeekView';
+import DayView from '../components/calendar/DayView';
+import SessionDetailModal from '../components/calendar/SessionDetailModal';
+import SessionFormModal from '../components/calendar/SessionFormModal';
+import { ImportSetupModal, ImportPreviewModal, DuplicateConflictModal } from '../components/calendar/ImportModals';
+import { teamDisplayName } from '../utils/teamUtils';
+import { toYMD } from '../utils/dateUtils';
+import { MONTH_NAMES, MONTH_NAMES_SHORT, DAY_NAMES_FULL } from '../utils/constants';
 
 function buildWeekDays(currentDate, sessions) {
   const monday = getMonday(currentDate);
@@ -102,39 +27,6 @@ function buildWeekDays(currentDate, sessions) {
     date.setDate(monday.getDate() + i);
     return { date, sessions: sessionsByDate[toYMD(date)] || [] };
   });
-}
-
-function buildCalendarDays(currentMonth, sessions) {
-  const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-
-  let startDow = firstDay.getDay();
-  startDow = startDow === 0 ? 6 : startDow - 1;
-
-  const sessionsByDate = {};
-  sessions.forEach((s) => {
-    if (!sessionsByDate[s.fecha]) sessionsByDate[s.fecha] = [];
-    sessionsByDate[s.fecha].push(s);
-  });
-
-  const days = [];
-  for (let i = startDow - 1; i >= 0; i--) {
-    const d = new Date(year, month, -i);
-    days.push({ date: d, isCurrentMonth: false, sessions: sessionsByDate[toYMD(d)] || [] });
-  }
-  for (let d = 1; d <= lastDay.getDate(); d++) {
-    const date = new Date(year, month, d);
-    days.push({ date, isCurrentMonth: true, sessions: sessionsByDate[toYMD(date)] || [] });
-  }
-  const total = days.length <= 35 ? 35 : 42;
-  let nextDay = 1;
-  while (days.length < total) {
-    const date = new Date(year, month + 1, nextDay++);
-    days.push({ date, isCurrentMonth: false, sessions: sessionsByDate[toYMD(date)] || [] });
-  }
-  return days;
 }
 
 const EMPTY_SESSION = (teams) => ({
@@ -151,62 +43,13 @@ const EMPTY_SESSION = (teams) => ({
   importedFrom: 'manual',
 });
 
-function defaultSeasonDates() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const startYear = month >= 9 ? year : year - 1;
-  return { startDate: `${startYear}-09-01`, endDate: `${startYear + 1}-06-30` };
-}
-
-const DAY_NAMES_ES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-
-function expandRecurring(patterns, startDate, endDate) {
-  const sessions = [];
-  const start = new Date(startDate + 'T00:00:00');
-  const end = new Date(endDate + 'T00:00:00');
-  const countByTeam = {};
-  for (const p of patterns) {
-    if (!p._teamId) continue;
-    const recurrenceId = crypto.randomUUID();
-    const targetDow = p.diaSemana;
-    const d = new Date(start);
-    const curDow = d.getDay() === 0 ? 6 : d.getDay() - 1;
-    d.setDate(d.getDate() + ((targetDow - curDow + 7) % 7));
-    while (d <= end) {
-      countByTeam[p._teamId] = (countByTeam[p._teamId] || 0) + 1;
-      sessions.push({
-        teamId: p._teamId,
-        teamName: p.teamName,
-        sessionNumber: countByTeam[p._teamId],
-        fecha: toYMD(d),
-        horaInicio: p.horaInicio || '',
-        horaFin: p.horaFin || '',
-        lugar: p.lugar || '',
-        tipo: p.tipo || 'entrenamiento',
-        rival: '',
-        esLocal: true,
-        trainingId: null,
-        importedFrom: 'excel-ai',
-        recurrenceId,
-      });
-      d.setDate(d.getDate() + 7);
-    }
-  }
-  return sessions;
-}
-
 export default function CalendarScreen() {
-  const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
-  const { db, appId } = useFirebase();
-
   const searchParams = new URLSearchParams(location.search);
   const [filterTeamId, setFilterTeamId] = useState(() => searchParams.get('teamId') || null);
 
   const initialDate = (() => {
-    const dateParam = new URLSearchParams(location.search).get('date');
+    const dateParam = searchParams.get('date');
     if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
       const [y, m, d] = dateParam.split('-').map(Number);
       return new Date(y, m - 1, d);
@@ -214,71 +57,21 @@ export default function CalendarScreen() {
     const t = new Date();
     return new Date(t.getFullYear(), t.getMonth(), t.getDate());
   })();
-  const [viewMode, setViewMode] = useState(new URLSearchParams(location.search).get('date') ? 'day' : 'month');
+  const [viewMode, setViewMode] = useState(searchParams.get('date') ? 'day' : 'month');
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(initialDate);
-  const [sessions, setSessions] = useState([]);
-  const { teams } = useTeams();
-  const [loading, setLoading] = useState(true);
 
-  const [selectedSession, setSelectedSession] = useState(null);
-  const [editingSession, setEditingSession] = useState(null);
-  const [deletingId, setDeletingId] = useState(null);
-  const [recurrenceAction, setRecurrenceAction] = useState(null); // null | { mode: 'edit'|'delete', session }
-  const [pendingEditData, setPendingEditData] = useState(null); // stores editingSession while waiting for recurrence choice
-  const [savingSession, setSavingSession] = useState(false);
-  const [sessionErrors, setSessionErrors] = useState({});
-  const [creatingTraining, setCreatingTraining] = useState(false);
+  const { sessions: allSessions, loading, teams, getTrainingNum } = useCalendarSessions(currentDate, viewMode);
 
-  const fileInputRef = useRef(null);
-  const [importSetup, setImportSetup] = useState(null); // null | { startDate, endDate }
-  const [importPreview, setImportPreview] = useState(null); // { recurring, specific, startDate, endDate }
-  const [importStatus, setImportStatus] = useState('');
-  const [importError, setImportError] = useState('');
-  const [importing, setImporting] = useState(false);
-  const [bulkSaving, setBulkSaving] = useState(false);
-  const [duplicateConflict, setDuplicateConflict] = useState(null); // { count, teamIds, toImport }
+  const editor = useSessionEditor(teams, getTrainingNum);
+  const importer = useCalendarImport(teams, getTrainingNum);
 
-  function getDateRange(date, mode) {
-    if (mode === 'month') {
-      const start = new Date(date.getFullYear(), date.getMonth() - 1, 1);
-      const end = new Date(date.getFullYear(), date.getMonth() + 2, 0);
-      return [toYMD(start), toYMD(end)];
-    }
-    if (mode === 'week') {
-      const monday = getMonday(date);
-      const start = new Date(monday);
-      start.setDate(monday.getDate() - 7);
-      const end = new Date(monday);
-      end.setDate(monday.getDate() + 13);
-      return [toYMD(start), toYMD(end)];
-    }
-    // day
-    const start = new Date(date);
-    start.setDate(date.getDate() - 1);
-    const end = new Date(date);
-    end.setDate(date.getDate() + 1);
-    return [toYMD(start), toYMD(end)];
-  }
-
-  const [brackets, setBrackets] = useState([]);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return onSnapshot(userColRef(db, appId, user.uid, 'brackets'), (snap) => {
-      setBrackets(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
-    });
-  }, [user, db, appId]);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    const [start, end] = getDateRange(currentDate, viewMode);
-    setLoading(true);
-    return subscribeToCalendarSessions(user.uid, db, appId, start, end, (data) => {
-      setSessions(data);
-      setLoading(false);
-    });
-  }, [user, db, appId, currentDate, viewMode]);
+  const filterTeam = filterTeamId ? teams.find((t) => t.id === filterTeamId) || null : null;
+  const visibleSessions = filterTeamId ? allSessions.filter((s) => s.teamId === filterTeamId) : allSessions;
+  const calendarDays = viewMode === 'month' ? buildCalendarDays(currentDate, visibleSessions) : [];
+  const weekDays = viewMode === 'week' ? buildWeekDays(currentDate, visibleSessions) : [];
+  const daySessionList = viewMode === 'day' ? visibleSessions.filter((s) => s.fecha === toYMD(currentDate)) : [];
+  const todayYMD = toYMD(today);
 
   function goBack() {
     setCurrentDate((d) => {
@@ -298,297 +91,6 @@ export default function CalendarScreen() {
       return n;
     });
   }
-
-  async function handleSaveSession(e) {
-    e.preventDefault();
-    const errors = {};
-    if (!editingSession.teamId) errors.teamId = 'Selecciona un equipo';
-    if (!editingSession.fecha) errors.fecha = 'La fecha es obligatoria';
-    if (editingSession.horaInicio && editingSession.horaFin && editingSession.horaInicio >= editingSession.horaFin)
-      errors.horaFin = 'La hora fin debe ser posterior a la hora inicio';
-    setSessionErrors(errors);
-    if (Object.keys(errors).length > 0) return;
-
-    // If editing an existing recurring session, ask the user what to do
-    if (editingSession.id && editingSession.recurrenceId && !editingSession.recurrenceDetached) {
-      setPendingEditData(editingSession);
-      setRecurrenceAction({ mode: 'edit', session: editingSession });
-      return;
-    }
-
-    await doSaveSession(editingSession, 'single');
-  }
-
-  async function doSaveSession(sessionData, choice) {
-    setSavingSession(true);
-    try {
-      const isNew = !sessionData.id;
-      const teamObj = teams.find((t) => t.id === sessionData.teamId);
-      const sessionId = sessionData.id || crypto.randomUUID();
-      const teamName = teamObj ? teamDisplayName(teamObj) : '';
-      const sessionNumber = Number(sessionData.sessionNumber) || 1;
-
-      const sessionToSave = {
-        ...sessionData,
-        id: sessionId,
-        teamName,
-        sessionNumber,
-        ...(choice === 'single' && sessionData.recurrenceId ? { recurrenceDetached: true } : {}),
-      };
-
-      await saveCalendarSession(sessionToSave, { uid: user.uid, db, appId });
-
-      // Propagate changes to future sessions if requested
-      if (choice === 'thisAndFuture' && sessionData.recurrenceId) {
-        const futureSessions = await getSessionsByRecurrenceId(
-          user.uid,
-          db,
-          appId,
-          sessionData.recurrenceId,
-          sessionData.fecha,
-        );
-        const toUpdate = futureSessions.filter((s) => s.id !== sessionId && !s.recurrenceDetached);
-        if (toUpdate.length > 0) {
-          const bulkFields = {};
-          if (sessionData.horaInicio !== undefined) bulkFields.horaInicio = sessionData.horaInicio;
-          if (sessionData.horaFin !== undefined) bulkFields.horaFin = sessionData.horaFin;
-          if (sessionData.lugar !== undefined) bulkFields.lugar = sessionData.lugar;
-          if (sessionData.tipo !== undefined) bulkFields.tipo = sessionData.tipo;
-          await batchUpdateCalendarSessions(toUpdate, bulkFields, { uid: user.uid, db, appId });
-        }
-      }
-
-      // Auto-crear entrenamiento si es nueva sesión de tipo entrenamiento
-      if (isNew && sessionData.tipo === 'entrenamiento' && !sessionData.trainingId) {
-        const trainingId = crypto.randomUUID();
-        await saveTraining(
-          {
-            id: trainingId,
-            teamId: sessionData.teamId,
-            meta: {
-              numero: sessionNumber,
-              fecha: sessionData.fecha,
-              horaInicio: sessionData.horaInicio,
-              horaFin: sessionData.horaFin,
-              lugar: sessionData.lugar || '',
-              dia: '',
-              equipo: teamName,
-            },
-            objetivos: '',
-            ejercicios: [],
-            cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
-          },
-          sessionData.teamId,
-          { uid: user.uid, db, appId },
-        );
-        await linkTrainingToSession(sessionId, trainingId, { uid: user.uid, db, appId });
-      }
-      setEditingSession(null);
-      setSelectedSession(null);
-      setPendingEditData(null);
-    } finally {
-      setSavingSession(false);
-    }
-  }
-
-  async function handleDelete(id) {
-    await deleteCalendarSession(id, { uid: user.uid, db, appId });
-    deletePlanilla(id, { uid: user.uid, db, appId }).catch(() => {});
-    setDeletingId(null);
-    setSelectedSession(null);
-  }
-
-  function handleDeleteRequest(session) {
-    if (session.recurrenceId && !session.recurrenceDetached) {
-      setRecurrenceAction({ mode: 'delete', session });
-    } else {
-      setDeletingId(session.id);
-    }
-  }
-
-  async function handleRecurrenceChoice(choice) {
-    const { mode, session } = recurrenceAction || {};
-    setRecurrenceAction(null);
-
-    if (!choice || !session) {
-      setPendingEditData(null);
-      return;
-    }
-
-    if (mode === 'edit' && pendingEditData) {
-      await doSaveSession(pendingEditData, choice);
-    } else if (mode === 'delete') {
-      if (choice === 'single') {
-        await handleDelete(session.id);
-      } else if (choice === 'thisAndFuture') {
-        const deleted = await deleteSessionsByRecurrenceId(user.uid, db, appId, session.recurrenceId, session.fecha);
-        deleted.forEach((s) => deletePlanilla(s.id, { uid: user.uid, db, appId }).catch(() => {}));
-        setSelectedSession(null);
-      }
-    }
-  }
-
-  async function handleCreateTraining(session) {
-    setCreatingTraining(true);
-    try {
-      const trainingId = crypto.randomUUID();
-      await saveTraining(
-        {
-          id: trainingId,
-          teamId: session.teamId,
-          meta: {
-            numero: session.sessionNumber,
-            fecha: session.fecha,
-            horaInicio: session.horaInicio,
-            horaFin: session.horaFin,
-            lugar: session.lugar || '',
-            dia: '',
-            equipo: session.teamName || '',
-          },
-          objetivos: '',
-          ejercicios: [],
-          cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
-        },
-        session.teamId,
-        { uid: user.uid, db, appId },
-      );
-      await linkTrainingToSession(session.id, trainingId, { uid: user.uid, db, appId });
-      navigate(`/teams/${session.teamId}/trainings/${trainingId}`);
-    } finally {
-      setCreatingTraining(false);
-    }
-  }
-
-  async function handleFileChange(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = '';
-    const { startDate, endDate } = importSetup || defaultSeasonDates();
-    setImportSetup(null);
-    setImporting(true);
-    setImportError('');
-    setImportPreview(null);
-    setImportStatus('Leyendo el archivo Excel...');
-    try {
-      const buffer = await file.arrayBuffer();
-      const wb = XLSX.read(buffer, { type: 'array' });
-      const csvParts = wb.SheetNames.map(
-        (name) => `--- HOJA: ${name} ---\n${XLSX.utils.sheet_to_csv(wb.Sheets[name])}`,
-      );
-      const teamList = teams.map((t) => ({ id: t.id, teamName: teamDisplayName(t) }));
-      setImportStatus('La IA está analizando el cuadrante...');
-      const result = await callGeminiForCalendar(csvParts.join('\n\n'), teamList, {
-        onStatus: setImportStatus,
-        onError: (msg) => setImportError(msg),
-      });
-      const recurring = (result?.recurring || []).map((p) => ({ ...p, _teamId: p.teamId || '' }));
-      const specific = (result?.specific || []).map((s) => ({ ...s, _teamId: s.teamId || '' }));
-      if (!recurring.length && !specific.length) {
-        setImportError('La IA no encontró sesiones en el archivo.');
-        return;
-      }
-      setImportPreview({ recurring, specific, startDate, endDate });
-    } catch {
-      if (!importError) setImportError('Error al procesar el archivo. Inténtalo de nuevo.');
-    } finally {
-      setImporting(false);
-      setImportStatus('');
-    }
-  }
-
-  function buildImportSessions() {
-    if (!importPreview) return [];
-    const { recurring, specific, startDate, endDate } = importPreview;
-    const expanded = expandRecurring(recurring, startDate, endDate);
-    const specs = specific
-      .filter((s) => s._teamId)
-      .map((s) => {
-        const teamObj = teams.find((t) => t.id === s._teamId);
-        return {
-          teamId: s._teamId,
-          teamName: teamObj ? teamDisplayName(teamObj) : s.teamName,
-          sessionNumber: 1,
-          fecha: s.fecha,
-          horaInicio: s.horaInicio || '',
-          horaFin: s.horaFin || '',
-          lugar: s.lugar || '',
-          tipo: s.tipo || 'entrenamiento',
-          rival: s.rival || '',
-          esLocal: true,
-          trainingId: null,
-          importedFrom: 'excel-ai',
-        };
-      });
-    return [...expanded, ...specs];
-  }
-
-  async function handleRequestImport() {
-    const toImport = buildImportSessions();
-    if (!toImport.length) return;
-    const { startDate, endDate } = importPreview;
-    const teamIds = [...new Set(toImport.map((s) => s.teamId).filter(Boolean))];
-    const existing = await getCalendarSessionsInRange(user.uid, db, appId, startDate, endDate);
-    const conflicts = existing.filter((s) => teamIds.includes(s.teamId));
-    if (conflicts.length > 0) {
-      setDuplicateConflict({ count: conflicts.length, teamIds, toImport });
-    } else {
-      await doImport(toImport, false, teamIds, startDate, endDate);
-    }
-  }
-
-  async function doImport(toImport, replace, teamIds, startDate, endDate) {
-    setBulkSaving(true);
-    try {
-      if (replace) {
-        await deleteCalendarSessionsByTeamAndRange(teamIds, startDate, endDate, { uid: user.uid, db, appId });
-      }
-      // Asignar IDs y crear entrenamientos para sesiones de tipo entrenamiento
-      const sessionsWithIds = toImport.map((s) => ({ ...s, id: s.id || crypto.randomUUID() }));
-      await bulkImportCalendarSessions(sessionsWithIds, { uid: user.uid, db, appId });
-      const entrenamientos = sessionsWithIds.filter((s) => s.tipo === 'entrenamiento' && s.teamId);
-      await Promise.all(
-        entrenamientos.map(async (s) => {
-          const trainingId = crypto.randomUUID();
-          await saveTraining(
-            {
-              id: trainingId,
-              teamId: s.teamId,
-              meta: {
-                numero: s.sessionNumber || 1,
-                fecha: s.fecha || '',
-                horaInicio: s.horaInicio || '',
-                horaFin: s.horaFin || '',
-                lugar: s.lugar || '',
-                dia: '',
-                equipo: s.teamName || '',
-              },
-              objetivos: '',
-              ejercicios: [],
-              cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
-            },
-            s.teamId,
-            { uid: user.uid, db, appId },
-          );
-          await linkTrainingToSession(s.id, trainingId, { uid: user.uid, db, appId });
-        }),
-      );
-      setImportPreview(null);
-      setImportError('');
-      setDuplicateConflict(null);
-    } finally {
-      setBulkSaving(false);
-    }
-  }
-
-  const playoffSessions = React.useMemo(() => buildPlayoffSessions(brackets, teams), [brackets, teams]);
-
-  const allSessions = React.useMemo(() => [...sessions, ...playoffSessions], [sessions, playoffSessions]);
-  const filterTeam = filterTeamId ? teams.find((t) => t.id === filterTeamId) || null : null;
-  const visibleSessions = filterTeamId ? allSessions.filter((s) => s.teamId === filterTeamId) : allSessions;
-  const calendarDays = viewMode === 'month' ? buildCalendarDays(currentDate, visibleSessions) : [];
-  const weekDays = viewMode === 'week' ? buildWeekDays(currentDate, visibleSessions) : [];
-  const daySessionList = viewMode === 'day' ? visibleSessions.filter((s) => s.fecha === toYMD(currentDate)) : [];
-  const todayYMD = toYMD(today);
 
   function getNavLabel() {
     if (viewMode === 'month') {
@@ -613,6 +115,7 @@ export default function CalendarScreen() {
   return (
     <div className="min-h-screen bg-slate-100 p-4 sm:p-8 font-sans pb-24">
       <div className="max-w-4xl mx-auto">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
@@ -622,20 +125,25 @@ export default function CalendarScreen() {
           </div>
           <div className="flex gap-3 flex-wrap">
             <button
-              onClick={() => {
-                setImportError('');
-                setImportPreview(null);
-                setImportSetup(defaultSeasonDates());
-              }}
+              onClick={importer.openImportSetup}
               className="bg-gradient-to-r from-orange-500 to-blue-700 hover:from-orange-600 hover:to-blue-800 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition text-sm"
             >
               <Sparkles size={16} /> Importar con IA
             </button>
-            <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
+            <input
+              ref={importer.fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={importer.handleFileChange}
+            />
             <button
               onClick={() => {
-                setSessionErrors({});
-                setEditingSession({ ...EMPTY_SESSION(teams), ...(filterTeamId ? { teamId: filterTeamId } : {}) });
+                editor.setSessionErrors({});
+                editor.setEditingSession({
+                  ...EMPTY_SESSION(teams),
+                  ...(filterTeamId ? { teamId: filterTeamId } : {}),
+                });
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-transform hover:scale-105 text-sm"
             >
@@ -644,9 +152,8 @@ export default function CalendarScreen() {
           </div>
         </div>
 
-        {/* Barra de navegación y controles */}
+        {/* Navigation bar */}
         <div className="flex items-center justify-between gap-3 mb-4 bg-white rounded-xl shadow-sm border border-slate-200 px-4 py-3 flex-wrap gap-y-2">
-          {/* Izquierda: prev / label / next */}
           <div className="flex items-center gap-2">
             <button
               onClick={goBack}
@@ -664,7 +171,6 @@ export default function CalendarScreen() {
               <ChevronRight size={20} />
             </button>
           </div>
-          {/* Derecha: filtro equipo + toggle vista */}
           <div className="flex items-center gap-3 flex-wrap">
             <select
               value={filterTeamId ?? ''}
@@ -696,505 +202,74 @@ export default function CalendarScreen() {
           </div>
         </div>
 
-        {/* Vista mes */}
+        {/* Calendar views */}
         {viewMode === 'month' && (
-          <div className="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
-            <div className="grid grid-cols-7 border-b border-slate-200">
-              {DAY_HEADERS.map((d) => (
-                <div key={d} className="text-center py-2 text-xs font-bold text-slate-500">
-                  {d}
-                </div>
-              ))}
-            </div>
-            {loading ? (
-              <div className="flex justify-center py-16">
-                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : (
-              <div className="grid grid-cols-7">
-                {calendarDays.map(({ date, isCurrentMonth, sessions: daySessions }, idx) => {
-                  const ymd = toYMD(date);
-                  const isToday = ymd === todayYMD;
-                  return (
-                    <div
-                      key={idx}
-                      className={`min-h-[72px] sm:min-h-[88px] border-b border-r border-slate-100 p-1.5 ${!isCurrentMonth ? 'opacity-40 bg-slate-50' : ''}`}
-                    >
-                      <div className="mb-1">
-                        <span
-                          className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-amber-400 text-white' : 'text-slate-600'}`}
-                        >
-                          {date.getDate()}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        {daySessions.map((s) => {
-                          const isPartido = s.tipo === 'partido';
-                          const isPlayoff = s.tipo === 'playoff';
-                          return (
-                            <button
-                              key={s.id}
-                              onClick={() => setSelectedSession(s)}
-                              className={`w-full text-left rounded px-1.5 py-0.5 text-xs font-semibold truncate transition-opacity hover:opacity-80 ${isPlayoff ? 'bg-amber-500 text-white' : isPartido ? 'bg-rose-500 text-white' : TEAM_COLORS[teamColorIndex(s.teamId)]}`}
-                              title={
-                                isPlayoff
-                                  ? `${s.teamName} Playoff vs ${s.rival}`
-                                  : isPartido
-                                    ? `${s.teamName} vs ${s.rival || 'Rival'}`
-                                    : `${s.teamName} #${s.sessionNumber}`
-                              }
-                            >
-                              {isPlayoff ? `PO vs ${s.rival}` : isPartido ? `vs ${s.rival || 'Rival'}` : s.teamName}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <MonthGrid
+            calendarDays={calendarDays}
+            todayYMD={todayYMD}
+            loading={loading}
+            onSelectSession={editor.setSelectedSession}
+            getTrainingNum={getTrainingNum}
+          />
         )}
-
-        {/* Vista semana */}
         {viewMode === 'week' && (
-          <WeekView weekDays={weekDays} todayYMD={todayYMD} loading={loading} onSelectSession={setSelectedSession} />
+          <WeekView
+            weekDays={weekDays}
+            todayYMD={todayYMD}
+            loading={loading}
+            onSelectSession={editor.setSelectedSession}
+            getTrainingNum={getTrainingNum}
+          />
         )}
-
-        {/* Vista día */}
         {viewMode === 'day' && (
-          <DayView sessions={daySessionList} loading={loading} onSelectSession={setSelectedSession} />
+          <DayView
+            sessions={daySessionList}
+            loading={loading}
+            onSelectSession={editor.setSelectedSession}
+            getTrainingNum={getTrainingNum}
+          />
         )}
       </div>
 
-      {/* Modal Detalle */}
-      {selectedSession && !editingSession && (
-        <div
-          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-2 pb-20 sm:pb-4 backdrop-blur-sm overflow-y-auto"
-          onClick={() => setSelectedSession(null)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[calc(100vh-5.5rem)] sm:max-h-[92vh] overflow-y-auto overflow-x-hidden animate-in zoom-in-95 duration-200 my-auto shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between px-5 pt-5 pb-3 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${selectedSession.tipo === 'playoff' ? 'bg-amber-100' : selectedSession.tipo === 'partido' ? 'bg-rose-100' : 'bg-blue-100'}`}
-                >
-                  {selectedSession.tipo === 'playoff' ? (
-                    <Trophy size={18} className="text-amber-600" />
-                  ) : selectedSession.tipo === 'partido' ? (
-                    <Trophy size={18} className="text-rose-600" />
-                  ) : (
-                    <ClipboardList size={18} className="text-blue-600" />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-slate-800 truncate">
-                    {selectedSession.tipo === 'playoff'
-                      ? `Playoff vs ${selectedSession.rival}`
-                      : selectedSession.tipo === 'partido'
-                        ? `vs ${selectedSession.rival || 'Rival'}`
-                        : `Entrenamiento #${selectedSession.sessionNumber}`}
-                  </p>
-                  <p className="text-xs text-slate-500 truncate">{selectedSession.teamName}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedSession(null)}
-                aria-label="Cerrar"
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="px-5 py-4 flex flex-col gap-2">
-              <DetailRow label="Fecha" value={formatDateDisplay(selectedSession.fecha)} />
-              {selectedSession.recurrenceId && !selectedSession.recurrenceDetached && (
-                <div className="flex items-center gap-1.5 -mt-1 mb-0.5">
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                    <Repeat size={10} /> Semanal
-                  </span>
-                </div>
-              )}
-              <DetailRow
-                label="Horario"
-                value={
-                  selectedSession.horaInicio && selectedSession.horaFin
-                    ? `${selectedSession.horaInicio} – ${selectedSession.horaFin}`
-                    : selectedSession.horaInicio || '—'
-                }
-              />
-              {selectedSession.lugar && <DetailRow label="Lugar" value={selectedSession.lugar} />}
-              {selectedSession.tipo === 'playoff' && (
-                <>
-                  <DetailRow label="Torneo" value={selectedSession.bracketName} />
-                  <DetailRow label="Ronda" value={selectedSession.matchTitle} />
-                  {selectedSession.gamesCount > 1 && (
-                    <DetailRow
-                      label="Partido"
-                      value={`${selectedSession.gameIndex + 1} de ${selectedSession.gamesCount}`}
-                    />
-                  )}
-                </>
-              )}
-              {(selectedSession.tipo === 'partido' || selectedSession.tipo === 'playoff') && (
-                <>
-                  {selectedSession.rival && <DetailRow label="Rival" value={selectedSession.rival} />}
-                  <DetailRow label="Campo" value={selectedSession.esLocal ? 'Local' : 'Visitante'} />
-                  {selectedSession.convocatoria && (
-                    <div className="mt-1">
-                      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Convocatoria</span>
-                      <p className="text-sm text-slate-700 whitespace-pre-line mt-0.5">
-                        {selectedSession.convocatoria}
-                      </p>
-                    </div>
-                  )}
-                  {selectedSession.tipo === 'partido' && (
-                    <QuickResultado
-                      session={selectedSession}
-                      onSave={async (resultado) => {
-                        const updated = { ...selectedSession, resultado };
-                        await saveCalendarSession(updated, { uid: user.uid, db, appId });
-                        setSelectedSession(updated);
-                      }}
-                    />
-                  )}
-                  {selectedSession.tipo === 'playoff' && (
-                    <QuickResultado
-                      session={{
-                        ...selectedSession,
-                        resultado: (() => {
-                          const sc = selectedSession.scores?.[selectedSession.gameIndex];
-                          if (!sc) return { local: '', visitante: '' };
-                          const myS = selectedSession.isMyTeamTeam1 ? sc.s1 : sc.s2;
-                          const rivS = selectedSession.isMyTeamTeam1 ? sc.s2 : sc.s1;
-                          return { local: myS || '', visitante: rivS || '' };
-                        })(),
-                      }}
-                      onSave={async (resultado) => {
-                        const { bracketId, bracketMatchId, gameIndex, isMyTeamTeam1 } = selectedSession;
-                        if (!bracketId || !bracketMatchId) return;
-                        const bracketRef = userDocRef(db, appId, user.uid, 'brackets', bracketId);
-                        const snap = await getDoc(bracketRef);
-                        if (!snap.exists()) return;
-                        const bracketDoc = snap.data();
-                        const match = bracketDoc.bracketData?.state?.[bracketMatchId];
-                        if (!match) return;
-                        const newScores = [...(match.scores || [])];
-                        newScores[gameIndex] = {
-                          s1: isMyTeamTeam1 ? resultado.local : resultado.visitante,
-                          s2: isMyTeamTeam1 ? resultado.visitante : resultado.local,
-                        };
-                        const updatedMatch = { ...match, scores: newScores };
-                        const winner = calculateMatchWinner(updatedMatch);
-                        const updatedState = {
-                          ...bracketDoc.bracketData.state,
-                          [bracketMatchId]: { ...updatedMatch, winner },
-                        };
-                        if (winner && match.nextId && match.slot) {
-                          updatedState[match.nextId] = {
-                            ...updatedState[match.nextId],
-                            [match.slot]: winner,
-                          };
-                        }
-                        await setDoc(bracketRef, {
-                          ...bracketDoc,
-                          bracketData: { ...bracketDoc.bracketData, state: updatedState },
-                        });
-                        setSelectedSession({ ...selectedSession, scores: newScores });
-                      }}
-                    />
-                  )}
-                </>
-              )}
-            </div>
-            <div className="px-5 pb-5 flex flex-col gap-2">
-              {selectedSession.tipo === 'playoff' && (
-                <button
-                  onClick={() => {
-                    setSelectedSession(null);
-                    navigate(`/playoffs?teamId=${selectedSession.teamId}`);
-                  }}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
-                >
-                  <Trophy size={16} /> Ver cuadro de playoff <ArrowRight size={15} />
-                </button>
-              )}
-              {selectedSession.tipo === 'entrenamiento' && (
-                <button
-                  onClick={() => {
-                    if (selectedSession.trainingId) {
-                      navigate(`/teams/${selectedSession.teamId}/trainings/${selectedSession.trainingId}`);
-                    } else {
-                      handleCreateTraining(selectedSession);
-                    }
-                  }}
-                  disabled={creatingTraining || !selectedSession.teamId}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-60"
-                >
-                  <ClipboardList size={16} />
-                  {creatingTraining ? 'Abriendo...' : 'Abrir entrenamiento'}
-                  <ArrowRight size={15} />
-                </button>
-              )}
-              {(selectedSession.tipo === 'partido' || selectedSession.tipo === 'playoff') && (
-                <>
-                  {isMinibasketSextos(teams.find((t) => t.id === selectedSession.teamId)) && (
-                    <button
-                      onClick={() => {
-                        const navState =
-                          selectedSession.tipo === 'playoff'
-                            ? { state: { playoffSession: selectedSession } }
-                            : undefined;
-                        setSelectedSession(null);
-                        navigate(`/calendar/${selectedSession.id}/planilla`, navState);
-                      }}
-                      className="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
-                    >
-                      <ClipboardList size={16} /> Planilla de Sextos <ArrowRight size={15} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      const navState =
-                        selectedSession.tipo === 'playoff' ? { state: { playoffSession: selectedSession } } : undefined;
-                      setSelectedSession(null);
-                      navigate(`/calendar/${selectedSession.id}/scouting`, navState);
-                    }}
-                    className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
-                  >
-                    <Search size={16} /> Scouting rival <ArrowRight size={15} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      const navState =
-                        selectedSession.tipo === 'playoff' ? { state: { playoffSession: selectedSession } } : undefined;
-                      setSelectedSession(null);
-                      navigate(`/calendar/${selectedSession.id}/analysis`, navState);
-                    }}
-                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
-                  >
-                    <BarChart3 size={16} /> Análisis post-partido <ArrowRight size={15} />
-                  </button>
-                </>
-              )}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setSessionErrors({});
-                    setEditingSession({ ...selectedSession });
-                  }}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition"
-                >
-                  <Pencil size={14} /> Editar
-                </button>
-                <button
-                  onClick={() => handleDeleteRequest(selectedSession)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-sm transition"
-                >
-                  <Trash2 size={14} /> Eliminar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Session detail modal */}
+      {editor.selectedSession && !editor.editingSession && (
+        <SessionDetailModal
+          session={editor.selectedSession}
+          teams={teams}
+          getTrainingNum={getTrainingNum}
+          creatingTraining={editor.creatingTraining}
+          onClose={() => editor.setSelectedSession(null)}
+          onEdit={() => {
+            editor.setSessionErrors({});
+            editor.setEditingSession({ ...editor.selectedSession });
+          }}
+          onDelete={editor.handleDeleteRequest}
+          onCreateTraining={editor.handleCreateTraining}
+        />
       )}
 
-      {/* Modal Crear/Editar */}
-      {editingSession && (
-        <div
-          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-2 pb-20 sm:pb-4 backdrop-blur-sm overflow-y-auto"
-          onClick={() => setEditingSession(null)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[calc(100vh-5.5rem)] sm:max-h-[92vh] overflow-y-auto overflow-x-hidden animate-in zoom-in-95 duration-200 my-auto shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
-              <h3 className="text-lg font-bold text-slate-800">
-                {editingSession.id ? 'Editar sesión' : 'Nueva sesión'}
-              </h3>
-              <button
-                onClick={() => setEditingSession(null)}
-                aria-label="Cerrar"
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <form onSubmit={handleSaveSession} className="px-5 py-4 flex flex-col gap-4">
-              {/* Tipo */}
-              <FormField label="Tipo de sesión">
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditingSession((s) => ({ ...s, tipo: 'entrenamiento' }))}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 ${editingSession.tipo === 'entrenamiento' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                  >
-                    <ClipboardList size={15} /> Entrenamiento
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingSession((s) => ({ ...s, tipo: 'partido' }))}
-                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 ${editingSession.tipo === 'partido' ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                  >
-                    <Trophy size={15} /> Partido
-                  </button>
-                </div>
-              </FormField>
-
-              <FormField label="Equipo" error={sessionErrors.teamId}>
-                {filterTeamId && filterTeam ? (
-                  <div className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 text-slate-700 font-medium">
-                    {teamDisplayName(filterTeam)}
-                  </div>
-                ) : (
-                  <select
-                    value={editingSession.teamId}
-                    onChange={(e) => {
-                      setEditingSession((s) => ({ ...s, teamId: e.target.value }));
-                      if (sessionErrors.teamId) setSessionErrors((prev) => ({ ...prev, teamId: undefined }));
-                    }}
-                    required
-                    className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 bg-white ${sessionErrors.teamId ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-blue-400'}`}
-                  >
-                    <option value="">Selecciona un equipo</option>
-                    {teams.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {teamDisplayName(t)}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </FormField>
-
-              {/* Partido: rival + campo */}
-              {editingSession.tipo === 'partido' && (
-                <>
-                  <FormField label="Rival">
-                    <input
-                      type="text"
-                      placeholder="Nombre del equipo rival..."
-                      value={editingSession.rival || ''}
-                      onChange={(e) => setEditingSession((s) => ({ ...s, rival: e.target.value }))}
-                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    />
-                  </FormField>
-                  <FormField label="Campo">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setEditingSession((s) => ({ ...s, esLocal: true }))}
-                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1.5 ${editingSession.esLocal ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                      >
-                        <MapPin size={14} /> Local
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingSession((s) => ({ ...s, esLocal: false }))}
-                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1.5 ${!editingSession.esLocal ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                      >
-                        <ArrowRight size={14} /> Visitante
-                      </button>
-                    </div>
-                  </FormField>
-                  <FormField label="Convocatoria (opcional)">
-                    <textarea
-                      placeholder="Nombres de los jugadores convocados..."
-                      value={editingSession.convocatoria || ''}
-                      onChange={(e) => setEditingSession((s) => ({ ...s, convocatoria: e.target.value }))}
-                      rows={2}
-                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-                    />
-                  </FormField>
-                </>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FormField label="Fecha" error={sessionErrors.fecha}>
-                  <input
-                    type="date"
-                    required
-                    value={editingSession.fecha}
-                    onChange={(e) => {
-                      setEditingSession((s) => ({ ...s, fecha: e.target.value }));
-                      if (sessionErrors.fecha) setSessionErrors((prev) => ({ ...prev, fecha: undefined }));
-                    }}
-                    className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${sessionErrors.fecha ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-blue-400'}`}
-                  />
-                </FormField>
-                {editingSession.tipo === 'entrenamiento' && (
-                  <FormField label="Nº sesión">
-                    <input
-                      type="number"
-                      min="1"
-                      value={editingSession.sessionNumber}
-                      onChange={(e) => setEditingSession((s) => ({ ...s, sessionNumber: e.target.value }))}
-                      className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    />
-                  </FormField>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="Hora inicio">
-                  <input
-                    type="time"
-                    value={editingSession.horaInicio}
-                    onChange={(e) => setEditingSession((s) => ({ ...s, horaInicio: e.target.value }))}
-                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                </FormField>
-                <FormField label="Hora fin" error={sessionErrors.horaFin}>
-                  <input
-                    type="time"
-                    value={editingSession.horaFin}
-                    onChange={(e) => {
-                      setEditingSession((s) => ({ ...s, horaFin: e.target.value }));
-                      if (sessionErrors.horaFin) setSessionErrors((prev) => ({ ...prev, horaFin: undefined }));
-                    }}
-                    className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${sessionErrors.horaFin ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-blue-400'}`}
-                  />
-                </FormField>
-              </div>
-              <FormField label="Lugar">
-                <input
-                  type="text"
-                  placeholder="Pabellón, pista..."
-                  value={editingSession.lugar}
-                  onChange={(e) => setEditingSession((s) => ({ ...s, lugar: e.target.value }))}
-                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              </FormField>
-
-              <div className="flex gap-3 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setEditingSession(null)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingSession}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-60"
-                >
-                  {savingSession ? 'Guardando...' : 'Guardar'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* Session form modal */}
+      {editor.editingSession && (
+        <SessionFormModal
+          editingSession={editor.editingSession}
+          setEditingSession={editor.setEditingSession}
+          teams={teams}
+          filterTeam={filterTeam}
+          filterTeamId={filterTeamId}
+          sessionErrors={editor.sessionErrors}
+          setSessionErrors={editor.setSessionErrors}
+          savingSession={editor.savingSession}
+          getTrainingNum={getTrainingNum}
+          onSubmit={editor.handleSaveSession}
+          onClose={() => editor.setEditingSession(null)}
+        />
       )}
 
-      {/* Modal Confirmar Borrado */}
-      {deletingId && (
+      {/* Delete confirmation */}
+      {editor.deletingId && (
         <div
           className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm"
-          onClick={() => setDeletingId(null)}
+          onClick={() => editor.setDeletingId(null)}
         >
           <div
             className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
@@ -1204,13 +279,13 @@ export default function CalendarScreen() {
             <p className="text-slate-600 mb-6 text-sm">El entrenamiento vinculado no se borrará.</p>
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setDeletingId(null)}
+                onClick={() => editor.setDeletingId(null)}
                 className="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition"
               >
                 Cancelar
               </button>
               <button
-                onClick={() => handleDelete(deletingId)}
+                onClick={() => editor.handleDelete(editor.deletingId)}
                 className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition"
               >
                 Sí, eliminar
@@ -1220,521 +295,47 @@ export default function CalendarScreen() {
         </div>
       )}
 
-      {/* Modal — Recurrence choice (edit/delete recurring sessions) */}
+      {/* Recurrence choice dialog */}
       <RecurrenceChoiceDialog
-        open={recurrenceAction !== null}
-        mode={recurrenceAction?.mode || 'edit'}
-        onChoice={handleRecurrenceChoice}
+        open={editor.recurrenceAction !== null}
+        mode={editor.recurrenceAction?.mode || 'edit'}
+        onChoice={editor.handleRecurrenceChoice}
       />
 
-      {/* Modal Setup — rango de fechas */}
-      {importSetup && !importing && (
-        <div
-          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm"
-          onClick={() => setImportSetup(null)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="px-6 pt-6 pb-4 border-b border-slate-100">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                  <Sparkles size={18} className="text-orange-300" /> Importar cuadrante con IA
-                </h3>
-                <button
-                  onClick={() => setImportSetup(null)}
-                  aria-label="Cerrar"
-                  className="text-slate-400 hover:text-slate-600"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <p className="text-sm text-slate-500">
-                La IA detectará los horarios de tus equipos en el Excel y generará todos los eventos del calendario
-                automáticamente.
-              </p>
-            </div>
-            <div className="px-6 py-5 flex flex-col gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Generar eventos desde</label>
-                <input
-                  type="date"
-                  value={importSetup.startDate}
-                  onChange={(e) => setImportSetup((s) => ({ ...s, startDate: e.target.value }))}
-                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">Hasta</label>
-                <input
-                  type="date"
-                  value={importSetup.endDate}
-                  onChange={(e) => setImportSetup((s) => ({ ...s, endDate: e.target.value }))}
-                  className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-              </div>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={!importSetup.startDate || !importSetup.endDate}
-                className="w-full bg-gradient-to-r from-orange-500 to-blue-700 hover:from-orange-600 hover:to-blue-800 disabled:opacity-50 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition text-sm mt-1"
-              >
-                <Upload size={16} /> Seleccionar archivo Excel
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Import setup modal */}
+      {importer.importSetup && !importer.importing && (
+        <ImportSetupModal
+          importSetup={importer.importSetup}
+          setImportSetup={importer.setImportSetup}
+          fileInputRef={importer.fileInputRef}
+        />
       )}
 
-      {/* Modal Procesando / Preview */}
-      {(importing || importPreview || importError) && !duplicateConflict && (
-        <div
-          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-2 pb-20 sm:pb-4 backdrop-blur-sm overflow-y-auto"
-          onClick={() => {
-            if (!importing && !bulkSaving) {
-              setImportPreview(null);
-              setImportError('');
-            }
-          }}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[calc(100vh-5.5rem)] sm:max-h-[88vh] flex flex-col animate-in zoom-in-95 duration-200 my-auto shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <Sparkles size={18} className="text-orange-300" /> Importar con IA
-              </h3>
-              {!importing && !bulkSaving && (
-                <button
-                  onClick={() => {
-                    setImportPreview(null);
-                    setImportError('');
-                  }}
-                  className="text-slate-400 hover:text-slate-600"
-                >
-                  <X size={20} />
-                </button>
-              )}
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              {importing && (
-                <div className="flex flex-col items-center gap-4 py-10">
-                  <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                  <p className="text-slate-600 text-sm text-center">{importStatus || 'Procesando...'}</p>
-                </div>
-              )}
-              {importError && !importing && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">{importError}</div>
-              )}
-              {importPreview &&
-                !importing &&
-                (() => {
-                  const { recurring, specific, startDate, endDate } = importPreview;
-                  const expandedCount = expandRecurring(recurring, startDate, endDate).length;
-                  const totalCount = expandedCount + specific.filter((s) => s._teamId).length;
-                  return (
-                    <>
-                      {/* Resumen */}
-                      <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 mb-4 text-sm text-orange-800">
-                        <span className="font-bold">{totalCount} eventos</span> a crear entre{' '}
-                        <span className="font-bold">{startDate.split('-').reverse().join('/')}</span> y{' '}
-                        <span className="font-bold">{endDate.split('-').reverse().join('/')}</span>
-                      </div>
-
-                      {/* Horarios recurrentes */}
-                      {recurring.length > 0 && (
-                        <div className="mb-5">
-                          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                            Horarios recurrentes ({recurring.length} patrones)
-                          </h4>
-                          <div className="flex flex-col gap-2">
-                            {recurring.map((p, i) => {
-                              const weekCount = expandRecurring([p], startDate, endDate).length;
-                              return (
-                                <div key={i} className="bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-200">
-                                  <div className="mb-1.5">
-                                    <select
-                                      value={p._teamId}
-                                      onChange={(e) =>
-                                        setImportPreview((prev) => ({
-                                          ...prev,
-                                          recurring: prev.recurring.map((r, ri) =>
-                                            ri === i ? { ...r, _teamId: e.target.value } : r,
-                                          ),
-                                        }))
-                                      }
-                                      className="border border-slate-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white w-full"
-                                    >
-                                      <option value="">Sin asignar</option>
-                                      {teams.map((t) => (
-                                        <option key={t.id} value={t.id}>
-                                          {teamDisplayName(t)}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-xs font-semibold text-slate-700">
-                                      {DAY_NAMES_ES[p.diaSemana]}
-                                    </span>
-                                    <span className="text-xs text-slate-500">
-                                      {p.horaInicio}
-                                      {p.horaFin ? `–${p.horaFin}` : ''}
-                                    </span>
-                                    {p.lugar && <span className="text-xs text-slate-400 truncate">{p.lugar}</span>}
-                                    <span className="text-xs font-bold text-blue-600 ml-auto">×{weekCount}</span>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Fechas especiales */}
-                      {specific.length > 0 && (
-                        <div>
-                          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                            Fechas especiales ({specific.length})
-                          </h4>
-                          <div className="flex flex-col gap-2">
-                            {specific.map((s, i) => (
-                              <div key={i} className="bg-slate-50 rounded-xl px-3 py-2.5 border border-slate-200">
-                                <div className="mb-1.5">
-                                  <select
-                                    value={s._teamId}
-                                    onChange={(e) =>
-                                      setImportPreview((prev) => ({
-                                        ...prev,
-                                        specific: prev.specific.map((r, ri) =>
-                                          ri === i ? { ...r, _teamId: e.target.value } : r,
-                                        ),
-                                      }))
-                                    }
-                                    className="border border-slate-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 bg-white w-full"
-                                  >
-                                    <option value="">Sin asignar</option>
-                                    {teams.map((t) => (
-                                      <option key={t.id} value={t.id}>
-                                        {teamDisplayName(t)}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span
-                                    className={`px-1.5 py-0.5 rounded text-xs font-semibold ${s.tipo === 'partido' ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'}`}
-                                  >
-                                    {s.tipo === 'partido' ? 'Partido' : 'Entreno'}
-                                  </span>
-                                  <span className="text-xs text-slate-700">
-                                    {s.fecha ? s.fecha.split('-').reverse().join('/') : '—'}
-                                  </span>
-                                  <span className="text-xs text-slate-500">
-                                    {s.horaInicio && s.horaFin ? `${s.horaInicio}–${s.horaFin}` : s.horaInicio || '—'}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
-            </div>
-            {importPreview && !importing && (
-              <div className="px-5 pb-5 pt-3 border-t border-slate-100 flex gap-3">
-                <button
-                  onClick={() => {
-                    setImportPreview(null);
-                    setImportError('');
-                  }}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition text-sm"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleRequestImport}
-                  disabled={bulkSaving}
-                  className="flex-1 bg-gradient-to-r from-orange-500 to-blue-700 hover:from-orange-600 hover:to-blue-800 text-white font-bold py-3 rounded-xl transition disabled:opacity-60 text-sm flex items-center justify-center gap-2"
-                >
-                  {bulkSaving ? (
-                    'Creando eventos...'
-                  ) : (
-                    <>
-                      <Sparkles size={15} /> Generar eventos
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Import preview / processing modal */}
+      {(importer.importing || importer.importPreview || importer.importError) && !importer.duplicateConflict && (
+        <ImportPreviewModal
+          importing={importer.importing}
+          importPreview={importer.importPreview}
+          importError={importer.importError}
+          bulkSaving={importer.bulkSaving}
+          teams={teams}
+          setImportPreview={importer.setImportPreview}
+          setImportError={importer.setImportError}
+          onRequestImport={importer.handleRequestImport}
+          expandRecurring={importer.expandRecurring}
+        />
       )}
 
-      {/* Modal Duplicados */}
-      {duplicateConflict && (
-        <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
-                <AlertTriangle size={20} className="text-amber-600" />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-800">Eventos existentes</h3>
-                <p className="text-xs text-slate-500">
-                  Se encontraron {duplicateConflict.count} eventos para estos equipos en el mismo rango de fechas.
-                </p>
-              </div>
-            </div>
-            <p className="text-sm text-slate-600 mb-5">¿Qué quieres hacer con los eventos existentes?</p>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() =>
-                  doImport(
-                    duplicateConflict.toImport,
-                    true,
-                    duplicateConflict.teamIds,
-                    importPreview.startDate,
-                    importPreview.endDate,
-                  )
-                }
-                disabled={bulkSaving}
-                className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl transition disabled:opacity-60 text-sm"
-              >
-                {bulkSaving ? 'Procesando...' : `Reemplazar (eliminar ${duplicateConflict.count} eventos anteriores)`}
-              </button>
-              <button
-                onClick={() =>
-                  doImport(
-                    duplicateConflict.toImport,
-                    false,
-                    duplicateConflict.teamIds,
-                    importPreview.startDate,
-                    importPreview.endDate,
-                  )
-                }
-                disabled={bulkSaving}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition disabled:opacity-60 text-sm"
-              >
-                Añadir de todas formas
-              </button>
-              <button
-                onClick={() => setDuplicateConflict(null)}
-                disabled={bulkSaving}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl transition text-sm"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Duplicate conflict modal */}
+      {importer.duplicateConflict && (
+        <DuplicateConflictModal
+          duplicateConflict={importer.duplicateConflict}
+          importPreview={importer.importPreview}
+          bulkSaving={importer.bulkSaving}
+          onImport={importer.doImport}
+          onCancel={() => importer.setDuplicateConflict(null)}
+        />
       )}
-    </div>
-  );
-}
-
-function WeekView({ weekDays, todayYMD, loading, onSelectSession }) {
-  if (loading) {
-    return (
-      <div className="bg-white rounded-2xl shadow-md border border-slate-200 flex justify-center py-16">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-  return (
-    <div className="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
-      <div className="grid grid-cols-7">
-        {weekDays.map(({ date, sessions: daySessions }) => {
-          const ymd = toYMD(date);
-          const isToday = ymd === todayYMD;
-          const dow = date.getDay() === 0 ? 6 : date.getDay() - 1;
-          return (
-            <div key={ymd} className="border-r border-slate-100 last:border-r-0 flex flex-col">
-              <div className={`text-center py-2 border-b border-slate-200 ${isToday ? 'bg-amber-50' : ''}`}>
-                <p className="text-xs font-semibold text-slate-500">{DAY_NAMES_SHORT[dow]}</p>
-                <span
-                  className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mx-auto mt-0.5 ${isToday ? 'bg-amber-400 text-white' : 'text-slate-700'}`}
-                >
-                  {date.getDate()}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1 p-1 min-h-[120px]">
-                {daySessions.map((s) => {
-                  const isPartido = s.tipo === 'partido';
-                  const isPlayoff = s.tipo === 'playoff';
-                  return (
-                    <button
-                      key={s.id}
-                      onClick={() => onSelectSession(s)}
-                      className={`w-full text-left rounded px-1.5 py-1 text-xs font-semibold truncate transition-opacity hover:opacity-80 ${isPlayoff ? 'bg-amber-500 text-white' : isPartido ? 'bg-rose-500 text-white' : TEAM_COLORS[teamColorIndex(s.teamId)]}`}
-                      title={
-                        isPlayoff
-                          ? `Playoff vs ${s.rival}`
-                          : isPartido
-                            ? `${s.teamName} vs ${s.rival || 'Rival'}`
-                            : `${s.teamName} #${s.sessionNumber}`
-                      }
-                    >
-                      {isPlayoff ? `PO vs ${s.rival}` : isPartido ? `vs ${s.rival || 'Rival'}` : s.teamName}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function DayView({ sessions, loading, onSelectSession }) {
-  if (loading) {
-    return (
-      <div className="bg-white rounded-2xl shadow-md border border-slate-200 flex justify-center py-16">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-  if (sessions.length === 0) {
-    return (
-      <div className="bg-white rounded-2xl shadow-md border border-slate-200 flex flex-col items-center justify-center py-16 text-slate-400">
-        <CalendarDays size={40} className="mb-3 text-slate-300" />
-        <p className="text-sm font-medium">No hay sesiones este día</p>
-      </div>
-    );
-  }
-  return (
-    <div className="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden divide-y divide-slate-100">
-      {sessions.map((s) => {
-        const isPartido = s.tipo === 'partido';
-        const isPlayoff = s.tipo === 'playoff';
-        const colorClass = TEAM_COLORS[teamColorIndex(s.teamId)].split(' ')[0];
-        return (
-          <button
-            key={s.id}
-            onClick={() => onSelectSession(s)}
-            className="w-full text-left flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors"
-          >
-            <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isPlayoff ? 'bg-amber-100' : isPartido ? 'bg-rose-100' : 'bg-blue-100'}`}
-            >
-              {isPlayoff ? (
-                <Trophy size={18} className="text-amber-600" />
-              ) : isPartido ? (
-                <Trophy size={18} className="text-rose-600" />
-              ) : (
-                <ClipboardList size={18} className="text-blue-600" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-slate-800 text-sm truncate">
-                {isPlayoff
-                  ? `Playoff vs ${s.rival}`
-                  : isPartido
-                    ? `vs ${s.rival || 'Rival'}`
-                    : `Entrenamiento #${s.sessionNumber}`}
-              </p>
-              <p className="text-xs text-slate-500">{s.teamName}</p>
-              {s.horaInicio && (
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {s.horaInicio}
-                  {s.horaFin ? ` – ${s.horaFin}` : ''}
-                  {s.lugar ? ` · ${s.lugar}` : ''}
-                </p>
-              )}
-            </div>
-            <div className={`w-2 h-10 rounded-full shrink-0 ${colorClass}`} />
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function DetailRow({ label, value }) {
-  return (
-    <div className="flex justify-between items-baseline gap-4">
-      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide shrink-0">{label}</span>
-      <span className="text-sm text-slate-700 text-right break-words min-w-0">{value}</span>
-    </div>
-  );
-}
-
-function QuickResultado({ session, onSave }) {
-  const [local, setLocal] = useState(session.resultado?.local ?? '');
-  const [visitante, setVisitante] = useState(session.resultado?.visitante ?? '');
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  const hasChanged = local !== (session.resultado?.local ?? '') || visitante !== (session.resultado?.visitante ?? '');
-
-  async function handleSave() {
-    setSaving(true);
-    await onSave({ local, visitante });
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
-
-  const teamLabel = session.esLocal ? session.teamName : session.rival || 'Rival';
-  const rivalLabel = session.esLocal ? session.rival || 'Rival' : session.teamName;
-
-  return (
-    <div className="mt-2 pt-3 border-t border-slate-100">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Resultado</p>
-      <div className="flex items-center gap-2">
-        <div className="flex-1 text-center">
-          <p className="text-[10px] text-slate-400 font-bold uppercase truncate mb-1">{teamLabel}</p>
-          <input
-            type="number"
-            value={local}
-            onChange={(e) => {
-              setLocal(e.target.value);
-              setSaved(false);
-            }}
-            placeholder="—"
-            className="w-full h-10 text-center text-lg font-black border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-slate-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          />
-        </div>
-        <span className="text-slate-300 font-bold text-lg mt-5">–</span>
-        <div className="flex-1 text-center">
-          <p className="text-[10px] text-slate-400 font-bold uppercase truncate mb-1">{rivalLabel}</p>
-          <input
-            type="number"
-            value={visitante}
-            onChange={(e) => {
-              setVisitante(e.target.value);
-              setSaved(false);
-            }}
-            placeholder="—"
-            className="w-full h-10 text-center text-lg font-black border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-400 bg-slate-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          />
-        </div>
-        {hasChanged && (
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-lg mt-5 transition disabled:opacity-60"
-          >
-            {saving ? '...' : 'Guardar'}
-          </button>
-        )}
-        {saved && !hasChanged && <span className="text-xs text-emerald-600 font-bold mt-5 shrink-0">✓</span>}
-      </div>
-    </div>
-  );
-}
-
-function FormField({ label, error, children }) {
-  return (
-    <div>
-      <label className="block text-xs font-semibold text-slate-600 mb-1.5">{label}</label>
-      {children}
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
   );
 }
