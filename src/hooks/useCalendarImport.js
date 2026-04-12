@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react';
-import * as XLSX from 'xlsx';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import {
@@ -72,6 +71,7 @@ export function useCalendarImport(teams, getTrainingNum) {
     setImportPreview(null);
     setImportStatus('Leyendo el archivo Excel...');
     try {
+      const XLSX = await import('xlsx');
       const buffer = await file.arrayBuffer();
       const wb = XLSX.read(buffer, { type: 'array' });
       const csvParts = wb.SheetNames.map(

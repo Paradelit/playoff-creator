@@ -95,18 +95,32 @@ export function useBracketSync({
     return () => unsubscribe();
   }, [user]);
 
+  // Memoize share codes to avoid recreating the dependency on every render
+  const shareCodes = useMemo(() => brackets.filter((b) => b.shareCode).map((b) => b.shareCode), [brackets]);
+  const shareCodesKey = shareCodes.join(',');
+
   // Suscripcion a cuadros compartidos
   useEffect(() => {
     if (!db) return;
-    const sharedRefs = brackets.filter((b) => b.shareCode);
-    sharedRefs.forEach((b) => {
-      if (sharedUnsubscribers.current[b.shareCode]) return;
-      const unsub = onSnapshot(doc(db, 'artifacts', appId, 'shared', b.shareCode), (snap) => {
+
+    // Unsubscribe from codes that are no longer active
+    const activeSet = new Set(shareCodes);
+    Object.keys(sharedUnsubscribers.current).forEach((code) => {
+      if (!activeSet.has(code)) {
+        sharedUnsubscribers.current[code]();
+        delete sharedUnsubscribers.current[code];
+      }
+    });
+
+    // Subscribe to new codes
+    shareCodes.forEach((code) => {
+      if (sharedUnsubscribers.current[code]) return;
+      const unsub = onSnapshot(doc(db, 'artifacts', appId, 'shared', code), (snap) => {
         if (!snap.exists()) return;
         const data = snap.data();
         setBrackets((prev) =>
           prev.map((pb) =>
-            pb.shareCode === b.shareCode
+            pb.shareCode === code
               ? {
                   ...data,
                   isShared: true,
@@ -120,10 +134,14 @@ export function useBracketSync({
           ),
         );
       });
-      sharedUnsubscribers.current[b.shareCode] = unsub;
+      sharedUnsubscribers.current[code] = unsub;
     });
-    return () => {};
-  }, [brackets.map((b) => b.shareCode).join(',')]);
+
+    return () => {
+      Object.values(sharedUnsubscribers.current).forEach((unsub) => unsub?.());
+      sharedUnsubscribers.current = {};
+    };
+  }, [shareCodesKey]);
 
   // Auto-abrir cuadro compartido
   useEffect(() => {

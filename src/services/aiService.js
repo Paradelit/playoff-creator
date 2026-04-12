@@ -1,7 +1,14 @@
 import logger from '../utils/logger';
-import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.js?url';
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
+
+let pdfjsLib = null;
+async function getPdfjs() {
+  if (!pdfjsLib) {
+    pdfjsLib = await import('pdfjs-dist');
+    const { default: workerUrl } = await import('pdfjs-dist/build/pdf.worker.min.js?url');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+  }
+  return pdfjsLib;
+}
 
 export const extractTextFromFile = async (file) => {
   if (file.size > 10 * 1024 * 1024) {
@@ -12,8 +19,9 @@ export const extractTextFromFile = async (file) => {
       setTimeout(() => reject(new Error('El PDF tardó demasiado en procesarse. Prueba con otro archivo.')), 30000),
     );
     const extract = async () => {
+      const pdfjs = await getPdfjs();
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+      const pdf = await pdfjs.getDocument(arrayBuffer).promise;
       let text = '';
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);

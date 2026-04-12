@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { setDoc } from 'firebase/firestore';
 import { userDocRef } from '../services/firestoreHelpers';
 import logger from '../utils/logger';
-import { toPng } from 'html-to-image';
 import { buildDynamicBracket, calculateMatchWinner } from '../utils/bracketEngine';
 import { extractTextFromFile, callGeminiForResults } from '../services/aiService';
 import { saveBracketToFirestore } from '../services/firestoreService';
@@ -261,6 +260,7 @@ export function useBracketEditor({
     if (!bracketExportRef.current || isExportingImage) return;
     setIsExportingImage(true);
     try {
+      const { toPng } = await import('html-to-image');
       const dataUrl = await toPng(bracketExportRef.current, {
         pixelRatio: 2,
         backgroundColor: '#f8fafc',

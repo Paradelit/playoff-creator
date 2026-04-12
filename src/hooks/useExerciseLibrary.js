@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { useToast } from '../contexts/ToastContext';
@@ -9,6 +9,7 @@ import {
   propagateExerciseUpdate,
 } from '../services/trainingsService';
 import { shareExercise } from '../services/exerciseSharingService';
+import { useFirestoreSubscription } from './useFirestoreSubscription';
 
 export function useExerciseLibrary() {
   const { user } = useAuth();
@@ -16,8 +17,9 @@ export function useExerciseLibrary() {
   const toast = useToast();
   const importRef = useRef(null);
 
-  const [exercises, setExercises] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const subscribeFn = useCallback((cb) => subscribeToExercises(user.uid, db, appId, cb), [user, db, appId]);
+  const { data: exercises, loading } = useFirestoreSubscription(user && db ? subscribeFn : null);
+
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
@@ -33,14 +35,6 @@ export function useExerciseLibrary() {
   const [shareModal, setShareModal] = useState(null);
   const [sharing, setSharing] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToExercises(user.uid, db, appId, (data) => {
-      setExercises(data);
-      setLoading(false);
-    });
-  }, [user, db, appId]);
 
   async function handleSave(exercise) {
     setSaving(true);

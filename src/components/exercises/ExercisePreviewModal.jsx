@@ -1,6 +1,5 @@
 import React, { useRef } from 'react';
 import { X, Pencil, GitBranch, Image, Share2 } from 'lucide-react';
-import { toPng } from 'html-to-image';
 import { useToast } from '../../contexts/ToastContext';
 import CourtCanvas from '../CourtCanvas';
 import { getExerciseSteps } from './ExerciseCard';
@@ -12,6 +11,7 @@ export default function ExercisePreviewModal({ exercise, sharing, onClose, onEdi
   async function handleExportPng() {
     if (!contentRef.current) return;
     try {
+      const { toPng } = await import('html-to-image');
       const dataUrl = await toPng(contentRef.current, { pixelRatio: 2, backgroundColor: '#ffffff' });
       const a = document.createElement('a');
       a.href = dataUrl;

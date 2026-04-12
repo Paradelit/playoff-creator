@@ -20,6 +20,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          if (id.includes('pdfjs-dist')) return 'pdf';
+          if (id.includes('xlsx')) return 'xlsx';
+          if (id.includes('html-to-image')) return 'html-to-image';
           if (id.includes('firebase')) return 'firebase';
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('lucide-react'))
             return 'vendor';
