@@ -39,6 +39,7 @@ export class LLMProvider {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(20000)
         });
 
         if (response.status === 429) throw new Error("RATE_LIMIT");
