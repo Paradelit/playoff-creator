@@ -131,7 +131,7 @@ export const aiChat = onCall(
 // 3. submitFeedback — user feedback → Langfuse scores
 export const submitFeedback = onCall(
   {
-    secrets: [langfusePublicKey, langfuseSecretKey, langfuseBaseUrl],
+    secrets: [geminiKey, langfusePublicKey, langfuseSecretKey, langfuseBaseUrl],
     region: "europe-west1",
   },
   async (request) => {
