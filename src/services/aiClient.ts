@@ -33,3 +33,32 @@ export async function submitFeedback(traceId: string, score: number, comment?: s
   const callable = httpsCallable(getRegionalFunctions(), 'submitFeedback');
   await callable({ traceId, score, comment });
 }
+
+export interface ScreenContextPayload {
+  screen: string;
+  route: string;
+  params: Record<string, string>;
+  entityType?: string;
+  entityId?: string;
+  data?: Record<string, unknown>;
+}
+
+export interface EnrichedResponsePayload {
+  type: 'agent_result' | 'conversational' | 'no_match';
+  agent?: string;
+  result?: unknown;
+  naturalResponse: string;
+  suggestedMode: 'compact' | 'panel' | 'column';
+  actions?: Array<{ type: 'navigate' | 'create'; label: string; path?: string; data?: unknown }>;
+  traceId: string;
+}
+
+export async function aiChatV2(request: {
+  message: string;
+  screenContext?: ScreenContextPayload;
+  conversationHistory?: Array<{ role: string; content: string }>;
+}): Promise<EnrichedResponsePayload> {
+  const callable = httpsCallable(getRegionalFunctions(), 'aiChat');
+  const response = await callable(request);
+  return response.data as EnrichedResponsePayload;
+}
