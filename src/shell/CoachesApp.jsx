@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { FirebaseProvider } from '../contexts/FirebaseContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { AIProvider } from '../contexts/AIContext';
+import { ScreenContextProvider } from '../contexts/ScreenContextProvider';
 import { ToastProvider } from '../contexts/ToastContext';
 import ErrorBoundary from '../components/ErrorBoundary';
 import CoachesNav from './CoachesNav';
@@ -14,17 +15,19 @@ export default function CoachesApp() {
     <BrowserRouter>
       <FirebaseProvider>
         <AuthProvider>
-          <AIProvider>
-            <ToastProvider>
-              <ErrorBoundary>
-                <div className="pb-16">
-                  <AppRouter />
-                </div>
-                <CoachesNav />
-                <AIChatPanel />
-              </ErrorBoundary>
-            </ToastProvider>
-          </AIProvider>
+          <ScreenContextProvider>
+            <AIProvider>
+              <ToastProvider>
+                <ErrorBoundary>
+                  <div className="pb-16">
+                    <AppRouter />
+                  </div>
+                  <CoachesNav />
+                  <AIChatPanel />
+                </ErrorBoundary>
+              </ToastProvider>
+            </AIProvider>
+          </ScreenContextProvider>
         </AuthProvider>
       </FirebaseProvider>
     </BrowserRouter>

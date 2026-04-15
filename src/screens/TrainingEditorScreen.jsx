@@ -8,6 +8,7 @@ import PromptDialog from '../components/PromptDialog';
 import PlaybookEditorModal from '../components/training/PlaybookEditorModal';
 import LibraryPanel from '../components/training/LibraryPanel';
 import { useTrainingEditor } from '../hooks/useTrainingEditor';
+import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
 import { getTemporada } from '../utils/dateUtils';
 
 const DIAS = [
@@ -57,6 +58,8 @@ export default function TrainingEditorScreen() {
     saveToLibrary,
     handleLibrarySave,
   } = editor;
+
+  useRegisterScreenContext({ teamName: training?.meta?.equipo, fecha: training?.meta?.fecha });
 
   if (loading) {
     return (

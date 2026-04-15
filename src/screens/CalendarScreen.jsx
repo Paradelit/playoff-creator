@@ -4,6 +4,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Plus, Sparkles } from 'lucide-
 import { useCalendarSessions, getMonday } from '../hooks/useCalendarSessions';
 import { useSessionEditor } from '../hooks/useSessionEditor';
 import { useCalendarImport } from '../hooks/useCalendarImport';
+import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
 import RecurrenceChoiceDialog from '../components/RecurrenceChoiceDialog';
 import MonthGrid, { buildCalendarDays } from '../components/calendar/MonthGrid';
 import WeekView from '../components/calendar/WeekView';
@@ -62,6 +63,8 @@ export default function CalendarScreen() {
   const [currentDate, setCurrentDate] = useState(initialDate);
 
   const { sessions: allSessions, loading, teams, getTrainingNum } = useCalendarSessions(currentDate, viewMode);
+
+  useRegisterScreenContext({ viewMode, teamsCount: teams.length });
 
   const editor = useSessionEditor(teams, getTrainingNum);
   const importer = useCalendarImport(teams, getTrainingNum);

@@ -14,6 +14,7 @@ import {
   FastForward,
 } from 'lucide-react';
 import { useHomeDashboard } from '../hooks/useHomeDashboard';
+import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
 import { teamDisplayName } from '../utils/teamUtils';
 import { EmptyTeamCard, MatchDayWidget, ActionEventRow, MONTHS } from '../components/home/HomeComponents';
 
@@ -57,6 +58,12 @@ export default function HomeScreen() {
     creatingTraining,
     handleEventAction,
   } = useHomeDashboard();
+
+  useRegisterScreenContext({
+    todayEventsCount: todayEvents.length,
+    teamsCount: teams.length,
+    activePlayoffsCount: activePlayoffs.length,
+  });
 
   const carouselRef = useRef(null);
   const cardRefs = useRef([]);

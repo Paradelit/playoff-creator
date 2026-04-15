@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Pencil, Trash2, X, User, Users, ShieldHalf, CalendarDays } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
 import { saveTeam, subscribeToMembers, saveMember, deleteMember } from '../services/teamsService';
 import { teamDisplayName } from '../utils/teamUtils';
 import { TeamFormFields } from './TeamsScreen';
@@ -31,6 +32,8 @@ export default function TeamDetailScreen() {
   const { teams, loading: loadingTeam } = useTeams();
   const team = teams.find((t) => t.id === teamId) || null;
   const [members, setMembers] = useState([]);
+
+  useRegisterScreenContext({ teamName: team?.teamName, categoria: team?.categoria });
 
   const [editingMember, setEditingMember] = useState(null);
   const [savingMember, setSavingMember] = useState(false);

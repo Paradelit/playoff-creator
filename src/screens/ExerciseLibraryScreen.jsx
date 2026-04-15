@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, BookOpen, FolderOpen, Download, Upload } from 'lucide-react';
 import { useExerciseLibrary } from '../hooks/useExerciseLibrary';
+import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
 import ExerciseCard, { prepareForEdit } from '../components/exercises/ExerciseCard';
 import ExerciseFormModal from '../components/exercises/ExerciseFormModal';
 import ExercisePreviewModal from '../components/exercises/ExercisePreviewModal';
@@ -20,6 +21,8 @@ const EMPTY_EXERCISE = {
 export default function ExerciseLibraryScreen() {
   const navigate = useNavigate();
   const lib = useExerciseLibrary();
+
+  useRegisterScreenContext({ exerciseCount: lib.exercises.length });
 
   const [editingExercise, setEditingExercise] = useState(null);
   const [exerciseErrors, setExerciseErrors] = useState({});

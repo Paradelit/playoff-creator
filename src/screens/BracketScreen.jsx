@@ -21,6 +21,7 @@ import logger from '../utils/logger';
 import BracketNode from '../components/BracketNode';
 import TeamSearchableSelect from '../components/TeamSearchableSelect';
 import { useBracket } from '../contexts/BracketContext';
+import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
 import BracketShareModal from '../components/bracket/BracketShareModal';
 import BracketMobileTools from '../components/bracket/BracketMobileTools';
 
@@ -78,6 +79,8 @@ export default function BracketScreen() {
     handleLinkTeam,
     handleUnlinkTeam,
   } = useBracket();
+
+  useRegisterScreenContext({ bracketName: activeBracket?.name, myTeam: activeBracket?.myTeam });
 
   const navigate = useNavigate();
   const [showLinkDropdown, setShowLinkDropdown] = useState(false);
