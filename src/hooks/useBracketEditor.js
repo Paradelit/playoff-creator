@@ -3,8 +3,9 @@ import { setDoc } from 'firebase/firestore';
 import { userDocRef } from '../services/firestoreHelpers';
 import logger from '../utils/logger';
 import { buildDynamicBracket, calculateMatchWinner } from '../utils/bracketEngine';
-import { extractTextFromFile, callGeminiForResults } from '../services/aiService';
+import { extractTextFromFile } from '../services/aiService';
 import { saveBracketToFirestore } from '../services/firestoreService';
+import { useAI } from '../contexts/AIContext';
 import { useToast } from '../contexts/ToastContext';
 
 export function useBracketEditor({
@@ -17,9 +18,9 @@ export function useBracketEditor({
   activeBracket,
   canEdit,
   appMode,
-  setErrorMsg,
 }) {
   const toast = useToast();
+  const { runAgent } = useAI();
   const [zoom, setZoom] = useState(1);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showMobileTools, setShowMobileTools] = useState(false);
@@ -291,7 +292,10 @@ export function useBracketEditor({
         gamesCount: m.gamesCount,
         format: m.format,
       }));
-      const aiResults = await callGeminiForResults(simplifiedBracket, resultsText, { onError: setErrorMsg });
+      const { result: aiResults } = await runAgent('results', {
+        bracketState: simplifiedBracket,
+        resultsText,
+      });
       if (aiResults && aiResults.updatedMatches) {
         updateActiveBracketData((prevData) => {
           let nextState = JSON.parse(JSON.stringify(prevData.state));

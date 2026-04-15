@@ -8,7 +8,7 @@ import {
   deleteCalendarSessionsByTeamAndRange,
 } from '../services/calendarService';
 import { saveTraining } from '../services/trainingsService';
-import { callGeminiForCalendar } from '../services/aiService';
+import { useAI } from '../contexts/AIContext';
 import { teamDisplayName } from '../utils/teamUtils';
 import { toYMD, getSeasonDateRange } from '../utils/dateUtils';
 
@@ -50,6 +50,7 @@ function expandRecurring(patterns, startDate, endDate) {
 export function useCalendarImport(teams, getTrainingNum) {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { runAgent } = useAI();
   const fileInputRef = useRef(null);
 
   const [importSetup, setImportSetup] = useState(null);
@@ -79,9 +80,9 @@ export function useCalendarImport(teams, getTrainingNum) {
       );
       const teamList = teams.map((t) => ({ id: t.id, teamName: teamDisplayName(t) }));
       setImportStatus('La IA está analizando el cuadrante...');
-      const result = await callGeminiForCalendar(csvParts.join('\n\n'), teamList, {
-        onStatus: setImportStatus,
-        onError: (msg) => setImportError(msg),
+      const { result } = await runAgent('calendar', {
+        excelText: csvParts.join('\n\n'),
+        teams: teamList,
       });
       const recurring = (result?.recurring || []).map((p) => ({ ...p, _teamId: p.teamId || '' }));
       const specific = (result?.specific || []).map((s) => ({ ...s, _teamId: s.teamId || '' }));

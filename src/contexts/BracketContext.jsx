@@ -61,7 +61,6 @@ export function BracketProvider({ initialShareCode, initialTeamId, onShareCodeCo
     activeBracket,
     canEdit,
     appMode,
-    setErrorMsg: creation.setErrorMsg,
   });
 
   const sharing = useSharing({
@@ -147,6 +146,7 @@ export function BracketProvider({ initialShareCode, initialTeamId, onShareCodeCo
     handleConfirmBracket: creation.handleConfirmBracket,
     fileInputBases: creation.fileInputBases,
     fileInputClasif: creation.fileInputClasif,
+    lastTraceId: creation.lastTraceId,
     // Editor
     zoom: editor.zoom,
     setZoom: editor.setZoom,

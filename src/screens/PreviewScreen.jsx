@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronLeft, ZoomOut, ZoomIn, CheckCircle, ShieldHalf, ChevronDown } from 'lucide-react';
 import BracketNode from '../components/BracketNode';
+import AIFeedback from '../components/AIFeedback';
 import { useBracket } from '../contexts/BracketContext';
 import { useProfile } from '../hooks/useProfile';
 
@@ -39,6 +40,7 @@ export default function PreviewScreen() {
     handleConfirmBracket,
     setAppMode,
     pendingTeamObj,
+    lastTraceId,
   } = useBracket();
   const { profile } = useProfile();
   const [showTeamPicker, setShowTeamPicker] = useState(false);
@@ -186,6 +188,11 @@ export default function PreviewScreen() {
             readOnly={true}
           />
         </div>
+      </div>
+
+      {/* AI Feedback */}
+      <div className="bg-white border-t border-slate-200 px-4 py-2 flex justify-end">
+        <AIFeedback traceId={lastTraceId} />
       </div>
     </div>
   );

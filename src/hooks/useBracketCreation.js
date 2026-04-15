@@ -3,11 +3,13 @@ import { getDoc, setDoc } from 'firebase/firestore';
 import { userDocRef } from '../services/firestoreHelpers';
 import logger from '../utils/logger';
 import { buildDynamicBracket } from '../utils/bracketEngine';
-import { extractTextFromFile, callGeminiForBracket } from '../services/aiService';
+import { extractTextFromFile } from '../services/aiService';
 import { toFirestore } from '../services/firestoreService';
+import { useAI } from '../contexts/AIContext';
 import { teamDisplayName } from '../utils/teamUtils';
 
 export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets, setActiveBracketId, setAppMode }) {
+  const { runAgent } = useAI();
   const [newBracketName, setNewBracketName] = useState('');
   const [basesFile, setBasesFile] = useState(null);
   const [clasifFile, setClasifFile] = useState(null);
@@ -19,6 +21,7 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
   const [previewZoom, setPreviewZoom] = useState(0.7);
   const [pendingTeamId, setPendingTeamId] = useState(null);
   const [pendingTeamObj, setPendingTeamObj] = useState(null);
+  const [lastTraceId, setLastTraceId] = useState(null);
 
   const fileInputBases = useRef(null);
   const fileInputClasif = useRef(null);
@@ -62,40 +65,18 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
       }
 
       setProcessStatus('La IA está analizando minuciosamente los cruces y grupos...');
-      const aiData = await callGeminiForBracket(basesText, clasifText, customPrompt, {
-        onStatus: setProcessStatus,
-        onError: setErrorMsg,
+      const { result: aiData, traceId } = await runAgent('bracket', {
+        basesText,
+        clasifText,
+        userInstructions: customPrompt,
       });
+      setLastTraceId(traceId);
 
       if (!aiData || !Array.isArray(aiData.initialMatches) || aiData.initialMatches.length === 0) {
         throw new Error(
           'La IA no devolvió un cuadro válido. Inténtalo de nuevo o ajusta las instrucciones adicionales.',
         );
       }
-
-      // Validate and normalize match count to power of 2
-      let matches = aiData.initialMatches;
-      const len = matches.length;
-      const isPowerOf2 = len > 0 && (len & (len - 1)) === 0;
-      if (!isPowerOf2) {
-        const nearestPow2 = Math.pow(2, Math.floor(Math.log2(len)));
-        setProcessStatus(
-          `⚠️ La IA devolvió ${len} partidos. Ajustando a ${nearestPow2} para generar un cuadro válido.`,
-        );
-        matches = matches.slice(0, nearestPow2);
-        await new Promise((r) => setTimeout(r, 2000));
-      }
-
-      // Normalize each match to ensure required fields
-      aiData.initialMatches = matches.map((m, i) => ({
-        title: m.title || `Partido ${i + 1}`,
-        team1: m.team1 || null,
-        team2: m.team2 || null,
-        team1Origin: m.team1Origin || '',
-        team2Origin: m.team2Origin || '',
-        team1Options: Array.isArray(m.team1Options) ? m.team1Options : [],
-        team2Options: Array.isArray(m.team2Options) ? m.team2Options : [],
-      }));
 
       setProcessStatus('Generando Bracket Dinámico...');
       const bracketDynamicTree = buildDynamicBracket(aiData.initialMatches, aiData.rounds);
@@ -125,9 +106,7 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
       setAppMode('preview');
     } catch (err) {
       logger.error('Error procesando documentos', err);
-      if (err.message !== 'RATE_LIMIT' && err.message !== 'FORBIDDEN') {
-        setErrorMsg(err.message || 'Ocurrió un error inesperado al procesar los documentos.');
-      }
+      setErrorMsg(err.message || 'Ocurrió un error inesperado al procesar los documentos.');
       setIsProcessing(false);
     }
   };
@@ -187,5 +166,6 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
     handleConfirmBracket,
     fileInputBases,
     fileInputClasif,
+    lastTraceId,
   };
 }
