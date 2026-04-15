@@ -29,7 +29,7 @@ const TIPS_BY_SCREEN: Record<string, (data?: Record<string, unknown>) => string[
 export function useCopilotTips(screenContext: ScreenContext) {
   const [currentTip, setCurrentTip] = useState<string | null>(null);
   const [dismissedForKey, setDismissedForKey] = useState<string | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const tipIndexRef = useRef(0);
   const screenDataKey = JSON.stringify({ s: screenContext.screen, d: screenContext.data });
 

@@ -24,9 +24,10 @@ export interface ConversationSummary {
 const MAX_MESSAGES = 30;
 const MAX_CONVERSATIONS = 15;
 
+ 
 export function useConversationPersistence() {
-  const { user } = useAuth();
-  const { db, appId } = useFirebase();
+  const { user } = useAuth() as any;
+  const { db, appId } = useFirebase() as any;
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loadedMessages, setLoadedMessages] = useState<ChatMessage[]>([]);

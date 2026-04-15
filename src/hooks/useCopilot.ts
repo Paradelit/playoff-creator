@@ -62,12 +62,12 @@ export function useCopilotInternal(): CopilotAPI {
   const persistence = useConversationPersistence();
   const tips = useCopilotTips(screenContext);
 
-  // Load messages from persistence
+  // Sync messages from persistence (initial load + conversation switch)
   useEffect(() => {
-    if (persistence.loaded && persistence.loadedMessages.length > 0 && messages.length === 0) {
+    if (persistence.loaded && persistence.loadedMessages.length > 0) {
       setMessages(persistence.loadedMessages);
     }
-  }, [persistence.loaded, persistence.loadedMessages]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [persistence.loaded, persistence.loadedMessages]);  
 
   // Desktop media query listener
   useEffect(() => {
@@ -195,10 +195,9 @@ export function useCopilotInternal(): CopilotAPI {
 
   const loadConversation = useCallback(
     (id: string) => {
+      setMessages([]);
       persistence.setConversationId(id);
-      persistence.loadMessages(id).then(() => {
-        setMessages(persistence.loadedMessages);
-      });
+      persistence.loadMessages(id);
     },
     [persistence],
   );
