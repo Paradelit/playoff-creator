@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAI } from '../contexts/AIContext';
+import { useCopilot } from '../contexts/CopilotProvider';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 
 interface AIFeedbackProps {
@@ -7,7 +7,7 @@ interface AIFeedbackProps {
 }
 
 export default function AIFeedback({ traceId }: AIFeedbackProps) {
-  const { submitFeedback } = useAI();
+  const { submitFeedback } = useCopilot();
   const [submitted, setSubmitted] = useState<'positive' | 'negative' | null>(null);
 
   if (!traceId) return null;

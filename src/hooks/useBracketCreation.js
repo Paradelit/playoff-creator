@@ -5,11 +5,11 @@ import logger from '../utils/logger';
 import { buildDynamicBracket } from '../utils/bracketEngine';
 import { extractTextFromFile } from '../services/aiService';
 import { toFirestore } from '../services/firestoreService';
-import { useAI } from '../contexts/AIContext';
+import { useCopilot } from '../contexts/CopilotProvider';
 import { teamDisplayName } from '../utils/teamUtils';
 
 export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets, setActiveBracketId, setAppMode }) {
-  const { runAgent } = useAI();
+  const { runAgent } = useCopilot();
   const [newBracketName, setNewBracketName] = useState('');
   const [basesFile, setBasesFile] = useState(null);
   const [clasifFile, setClasifFile] = useState(null);

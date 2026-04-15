@@ -5,7 +5,7 @@ import logger from '../utils/logger';
 import { buildDynamicBracket, calculateMatchWinner } from '../utils/bracketEngine';
 import { extractTextFromFile } from '../services/aiService';
 import { saveBracketToFirestore } from '../services/firestoreService';
-import { useAI } from '../contexts/AIContext';
+import { useCopilot } from '../contexts/CopilotProvider';
 import { useToast } from '../contexts/ToastContext';
 
 export function useBracketEditor({
@@ -20,7 +20,7 @@ export function useBracketEditor({
   appMode,
 }) {
   const toast = useToast();
-  const { runAgent } = useAI();
+  const { runAgent } = useCopilot();
   const [zoom, setZoom] = useState(1);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showMobileTools, setShowMobileTools] = useState(false);
