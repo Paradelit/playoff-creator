@@ -2,7 +2,7 @@ import { LLMResult, LLMGenerateRequest } from "./types";
 import { ObservabilityService } from "./observability";
 
 const DEFAULT_MODELS = [
-  "gemini-2.5-flash-preview-04-17",
+  "gemini-2.5-flash",
   "gemini-2.0-flash",
   "gemini-1.5-flash",
 ];
@@ -84,11 +84,8 @@ export class LLMProvider {
         if (error.message === "RATE_LIMIT" || error.message === "FORBIDDEN") {
           throw error;
         }
-        if (error.message !== "API Error") {
-          modelIndex++;
-          continue;
-        }
-        throw new Error("Fallo en la comunicación con la IA.");
+        // For API errors (like 404 Model Not Found) or network errors, we try the next model
+        modelIndex++;
       }
     }
 

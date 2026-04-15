@@ -96,6 +96,10 @@ export class ObservabilityService {
 
   async flush(): Promise<void> {
     if (!this.client) return;
-    await this.client.shutdownAsync();
+    try {
+      await this.client.shutdownAsync();
+    } catch (err) {
+      console.error("Langfuse flush error:", err);
+    }
   }
 }
