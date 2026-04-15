@@ -1,7 +1,14 @@
 import { BaseAgent } from "./agents/baseAgent";
 import { LLMProvider } from "./llmProvider";
 import { ObservabilityService } from "./observability";
-import { AgentExecutionOptions, AgentDescriptor, IntentResult, TraceContext } from "./types";
+import {
+  AgentExecutionOptions,
+  AgentDescriptor,
+  IntentResult,
+  TraceContext,
+  ScreenContextData,
+  EnrichedResponse,
+} from "./types";
 import { PROMPTS } from "./promptManager";
 
 export class AgentRouter {
@@ -46,15 +53,14 @@ export class AgentRouter {
     return { result: result as T, traceId };
   }
 
-  /** Intent-based routing: LLM classifies user message */
+  /** Intent-based routing: LLM classifies user message, returns EnrichedResponse */
   async routeByIntent(
     userMessage: string,
     context: Record<string, unknown>,
-    options: AgentExecutionOptions
-  ): Promise<
-    | { type: "agent_result"; agent: string; result: unknown; traceId: string }
-    | { type: "no_match"; message: string; traceId: string }
-  > {
+    options: AgentExecutionOptions,
+    screenContext?: ScreenContextData,
+    conversationHistory?: Array<{ role: string; content: string }>
+  ): Promise<EnrichedResponse> {
     const trace = this.observability.createTrace({
       name: "intent-routing",
       userId: options.userId,
@@ -66,27 +72,67 @@ export class AgentRouter {
     const traceContext: TraceContext = { trace };
 
     const agentDescriptions = Array.from(this.agents.values()).map((a) => a.describe());
-    const intent = await this.classifyIntent(userMessage, agentDescriptions, context, traceContext);
+    const intent = await this.classifyIntent(
+      userMessage,
+      agentDescriptions,
+      { ...context, screenContext },
+      traceContext,
+      screenContext,
+      conversationHistory
+    );
 
-    if (!intent.agent || intent.confidence < 0.5) {
+    // Route to conversational agent for low-confidence or explicit conversational match
+    if (!intent.agent || intent.agent === "conversational" || intent.confidence < 0.5) {
+      const conversational = this.agents.get("conversational");
+      if (conversational) {
+        const result = (await conversational.execute(
+          { userMessage, screenContext, conversationHistory },
+          traceContext,
+          options
+        )) as { naturalResponse: string; suggestedMode: "compact" | "panel" | "column"; actions?: unknown[] };
+        return {
+          type: "conversational",
+          naturalResponse: result.naturalResponse,
+          suggestedMode: result.suggestedMode,
+          actions: result.actions as EnrichedResponse["actions"],
+          traceId,
+        };
+      }
       return {
         type: "no_match",
-        message: intent.fallbackMessage || "No entendí tu solicitud. Puedo ayudarte a crear brackets, importar calendarios o procesar resultados.",
+        naturalResponse:
+          intent.fallbackMessage ||
+          "No entendí tu solicitud. Puedo ayudarte a crear brackets, importar calendarios, generar entrenamientos o procesar resultados.",
+        suggestedMode: "panel",
         traceId,
       };
     }
 
+    // Route to specialized agent
     const agent = this.agents.get(intent.agent);
     if (!agent) {
       return {
         type: "no_match",
-        message: `No encontré el agente "${intent.agent}".`,
+        naturalResponse: `No encontré el agente "${intent.agent}".`,
+        suggestedMode: "panel",
         traceId,
       };
     }
 
     const result = await agent.execute(intent.input, traceContext, options);
-    return { type: "agent_result", agent: intent.agent, result, traceId };
+
+    // Wrap result in natural language
+    const wrapped = await this.wrapInNaturalLanguage(intent.agent, result, screenContext, traceContext);
+
+    return {
+      type: "agent_result",
+      agent: intent.agent,
+      result,
+      naturalResponse: wrapped.naturalResponse,
+      suggestedMode: wrapped.suggestedMode,
+      actions: wrapped.actions,
+      traceId,
+    };
   }
 
   /** Register new agents dynamically */
@@ -98,14 +144,16 @@ export class AgentRouter {
     message: string,
     agentDescriptions: AgentDescriptor[],
     context: Record<string, unknown>,
-    traceContext: TraceContext
+    traceContext: TraceContext,
+    screenContext?: ScreenContextData,
+    conversationHistory?: Array<{ role: string; content: string }>
   ): Promise<IntentResult> {
     const span = this.observability.createSpan(traceContext.trace, {
       name: "classify-intent",
       input: message,
     });
 
-    const prompt = PROMPTS.INTENT_ROUTING.build(message, agentDescriptions, context);
+    const prompt = PROMPTS.INTENT_ROUTING.build(message, agentDescriptions, context, screenContext, conversationHistory);
     const result = await this.llmProvider.generate<IntentResult>({
       prompt,
       traceContext: { ...traceContext, span },
@@ -113,5 +161,45 @@ export class AgentRouter {
 
     this.observability.endSpan(span, result.data);
     return result.data;
+  }
+
+  private async wrapInNaturalLanguage(
+    agentName: string,
+    result: unknown,
+    screenContext: ScreenContextData | undefined,
+    traceContext: TraceContext
+  ): Promise<{ naturalResponse: string; suggestedMode: "compact" | "panel" | "column"; actions?: EnrichedResponse["actions"] }> {
+    const span = this.observability.createSpan(traceContext.trace, {
+      name: "wrap-natural-language",
+      input: { agentName },
+    });
+
+    try {
+      const prompt = PROMPTS.NATURAL_RESPONSE_WRAPPER.build(agentName, result, screenContext);
+      const llmResult = await this.llmProvider.generate<{
+        naturalResponse: string;
+        suggestedMode: string;
+        actions: Array<{ type: "navigate" | "create"; label: string; path?: string; data?: unknown }>;
+      }>({
+        prompt,
+        traceContext: { ...traceContext, span },
+      });
+
+      this.observability.endSpan(span, llmResult.data);
+      return {
+        naturalResponse: llmResult.data.naturalResponse || "Operación completada.",
+        suggestedMode: (["compact", "panel", "column"].includes(llmResult.data.suggestedMode)
+          ? llmResult.data.suggestedMode
+          : "panel") as "compact" | "panel" | "column",
+        actions: Array.isArray(llmResult.data.actions) ? llmResult.data.actions : [],
+      };
+    } catch {
+      this.observability.endSpan(span, undefined, "Failed to wrap in natural language");
+      return {
+        naturalResponse: "Operación completada correctamente.",
+        suggestedMode: "panel",
+        actions: [],
+      };
+    }
   }
 }

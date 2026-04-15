@@ -1,4 +1,4 @@
-import { AgentDescriptor } from "./types";
+import { AgentDescriptor, ScreenContextData } from "./types";
 
 interface PromptTemplate {
   version: string;
@@ -146,36 +146,205 @@ function resultsExtract(
     `;
 }
 
-function intentRouting(userMessage: string, agents: AgentDescriptor[], context: Record<string, unknown>): string {
+function intentRouting(
+  userMessage: string,
+  agents: AgentDescriptor[],
+  context: Record<string, unknown>,
+  screenContext?: ScreenContextData,
+  conversationHistory?: Array<{ role: string; content: string }>
+): string {
   const agentList = agents
+    .filter((a) => a.name !== "conversational")
     .map((a) => `- ${a.name}: ${a.description} (input: ${a.inputSchema})`)
     .join("\n");
 
+  const screenInfo = screenContext
+    ? `\nPANTALLA ACTUAL: ${screenContext.screen} (ruta: ${screenContext.route})${screenContext.data ? `\nDatos de pantalla: ${JSON.stringify(screenContext.data)}` : ""}`
+    : "";
+
+  const historyInfo =
+    conversationHistory && conversationHistory.length > 0
+      ? `\nÚLTIMOS MENSAJES:\n${conversationHistory.slice(-5).map((m) => `${m.role}: ${m.content}`).join("\n")}`
+      : "";
+
   return `
 Eres un clasificador de intenciones para una aplicación de gestión de baloncesto.
-El usuario ha enviado un mensaje de texto libre. Tu trabajo es determinar si alguno de los agentes disponibles puede responder.
+El usuario ha enviado un mensaje de texto libre. Tu trabajo es determinar si alguno de los agentes ESPECIALIZADOS puede responder, o si debe ir al agente conversacional.
 
-AGENTES DISPONIBLES:
+AGENTES ESPECIALIZADOS:
 ${agentList}
 
+AGENTE POR DEFECTO:
+- conversational: Responde preguntas generales, ayuda con navegación, da consejos. Se usa cuando ningún agente especializado encaja con confianza >= 0.5.
+
 CONTEXTO DEL USUARIO:
-${JSON.stringify(context)}
+${JSON.stringify(context)}${screenInfo}${historyInfo}
 
 MENSAJE DEL USUARIO:
 "${userMessage}"
 
 INSTRUCCIONES:
-1. Analiza el mensaje del usuario y el contexto.
-2. Determina si algún agente puede responder al mensaje.
-3. Si un agente coincide, extrae los datos de entrada necesarios del mensaje y contexto.
-4. Si ningún agente coincide, genera un mensaje amable explicando qué puedes hacer.
+1. Analiza el mensaje del usuario, el contexto y la pantalla actual.
+2. Determina si algún agente ESPECIALIZADO puede responder (confidence >= 0.5).
+3. Si un agente especializado coincide, extrae los datos de entrada necesarios.
+4. Si ningún agente especializado coincide con suficiente confianza, usa "conversational".
+5. El agente "conversational" es el fallback para saludos, preguntas generales, navegación, ayuda, etc.
 
 DEVUELVE ÚNICAMENTE un JSON válido:
 {
-  "agent": "nombre_del_agente o null si no hay match",
+  "agent": "nombre_del_agente",
   "confidence": 0.0-1.0,
   "input": { ... datos extraídos para el agente ... },
-  "fallbackMessage": "mensaje si no hay match"
+  "fallbackMessage": "mensaje si no hay match (solo si agent es null)"
+}
+  `;
+}
+
+function conversational(
+  userMessage: string,
+  screenContext?: ScreenContextData,
+  conversationHistory?: Array<{ role: string; content: string }>
+): string {
+  const screenInfo = screenContext
+    ? `\nPANTALLA ACTUAL: ${screenContext.screen} (ruta: ${screenContext.route})${screenContext.data ? `\nDatos visibles: ${JSON.stringify(screenContext.data)}` : ""}`
+    : "";
+
+  const historyInfo =
+    conversationHistory && conversationHistory.length > 0
+      ? `\nHISTORIAL DE CONVERSACIÓN:\n${conversationHistory.slice(-10).map((m) => `${m.role}: ${m.content}`).join("\n")}`
+      : "";
+
+  return `
+Eres el asistente IA de una app de gestión de baloncesto llamada CoachApp.
+Respondes SIEMPRE en español, con tono profesional pero cercano.
+
+RUTAS DE LA APP (para acciones de navegación):
+- / → Inicio (dashboard con resumen de equipos, eventos de hoy, playoffs activos)
+- /calendar → Calendario (sesiones de entrenamiento y partidos)
+- /teams → Lista de equipos
+- /teams/:id → Detalle de equipo (plantilla, jugadores)
+- /teams/:id/trainings/:id → Editor de entrenamiento
+- /teams/:id/cuaderno → Cuaderno del equipo (notas, pilares, normas)
+- /playoffs → Playoffs (brackets de eliminatorias)
+- /exercises → Biblioteca de ejercicios
+- /settings → Ajustes
+
+CAPACIDADES:
+- Puedo generar entrenamientos completos adaptados a categorías
+- Puedo importar calendarios desde archivos Excel
+- Puedo crear cuadros de playoffs desde documentos de competición
+- Puedo extraer resultados de actas de partidos
+- Puedo ayudar con navegación y uso de la app
+${screenInfo}${historyInfo}
+
+MENSAJE DEL USUARIO:
+"${userMessage}"
+
+INSTRUCCIONES:
+1. Responde de forma natural y útil al mensaje del usuario.
+2. Ten en cuenta la pantalla actual y el historial para dar contexto.
+3. Si el usuario pide ir a algún sitio, incluye la acción de navegación.
+4. Si la respuesta es corta (1-2 frases), sugiere modo "panel". Si es larga o compleja, sugiere "column".
+
+DEVUELVE ÚNICAMENTE un JSON válido:
+{
+  "naturalResponse": "Tu respuesta en español...",
+  "suggestedMode": "panel",
+  "actions": [
+    { "type": "navigate", "label": "Ir al calendario", "path": "/calendar" }
+  ]
+}
+
+El array "actions" puede estar vacío si no hay acciones sugeridas.
+Los tipos de acción son: "navigate" (con path) o "create" (con label descriptivo).
+  `;
+}
+
+function naturalResponseWrapper(
+  agentName: string,
+  rawResult: unknown,
+  screenContext?: ScreenContextData
+): string {
+  const screenInfo = screenContext ? `Pantalla actual: ${screenContext.screen}` : "";
+
+  return `
+Eres el asistente IA de CoachApp. Acaba de ejecutarse el agente "${agentName}" y ha devuelto este resultado:
+
+${JSON.stringify(rawResult, null, 2)}
+
+${screenInfo}
+
+INSTRUCCIONES:
+1. Genera un resumen amigable y natural en español del resultado.
+2. No incluyas JSON crudo ni detalles técnicos internos.
+3. Destaca los puntos más importantes del resultado.
+4. Si el resultado incluye datos que el usuario debería revisar, menciónalo.
+5. Sugiere el modo de visualización: "panel" si el resumen es corto, "column" si es largo/complejo.
+6. Incluye acciones de seguimiento relevantes si las hay.
+
+DEVUELVE ÚNICAMENTE un JSON válido:
+{
+  "naturalResponse": "Resumen amigable...",
+  "suggestedMode": "panel",
+  "actions": []
+}
+  `;
+}
+
+interface TrainingGenInput {
+  teamCategory: string;
+  duration: number;
+  objectives: string;
+  focusAreas?: string[];
+  playerCount?: number;
+  constraints?: string;
+}
+
+function trainingGeneration(input: TrainingGenInput): string {
+  const focusStr = input.focusAreas?.length ? `\nÁreas de enfoque: ${input.focusAreas.join(", ")}` : "";
+  const playersStr = input.playerCount ? `\nNúmero de jugadores: ${input.playerCount}` : "";
+  const constraintsStr = input.constraints ? `\nRestricciones: ${input.constraints}` : "";
+
+  return `
+Eres un entrenador experto de baloncesto español. Genera una sesión de entrenamiento completa.
+
+CATEGORÍAS Y ADAPTACIÓN:
+- minibasket (8-10 años): Ejercicios lúdicos, juegos reducidos, fundamentos básicos. Explicaciones sencillas.
+- alevín (10-12 años): Fundamentos individuales, juegos con reglas, introducción al juego en equipo.
+- infantil (12-14 años): Técnica individual avanzada, conceptos tácticos básicos, juego 5x5.
+- cadete (14-16 años): Táctica de equipo, sistemas ofensivos/defensivos básicos, preparación física.
+- junior (16-18 años): Sistemas complejos, lectura de juego, intensidad competitiva.
+- senior (18+): Táctica avanzada, preparación física específica, situaciones de partido.
+
+DATOS DE LA SESIÓN:
+- Categoría: ${input.teamCategory}
+- Duración total: ${input.duration} minutos
+- Objetivos: ${input.objectives}${focusStr}${playersStr}${constraintsStr}
+
+ESTRUCTURA OBLIGATORIA:
+1. Calentamiento (10-15 min): Activación, movilidad articular, ejercicios dinámicos con balón.
+2. Bloques principales (variable): 2-4 bloques temáticos con ejercicios progresivos.
+3. Vuelta a la calma (5-10 min): Estiramientos, tiros libres, reflexión grupal.
+
+Para CADA ejercicio incluye:
+- name: nombre descriptivo
+- duration: minutos
+- description: explicación detallada del ejercicio
+- setup: disposición en pista (cómo colocar conos, jugadores, etc.)
+- variations: array con 1-2 variantes (más fácil / más difícil)
+- players: agrupación ("parejas", "tríos", "todo el grupo", "2 equipos", etc.)
+- materials: array de material necesario (["balones", "conos", "petos"])
+
+DEVUELVE ÚNICAMENTE un JSON válido:
+{
+  "title": "Título descriptivo de la sesión",
+  "totalDuration": ${input.duration},
+  "warmup": { "name": "...", "duration": 10, "description": "...", "setup": "...", "variations": ["..."], "players": "...", "materials": ["..."] },
+  "mainBlocks": [
+    { "name": "...", "duration": 20, "description": "...", "setup": "...", "variations": ["..."], "players": "...", "materials": ["..."] }
+  ],
+  "cooldown": { "name": "...", "duration": 5, "description": "...", "setup": "...", "variations": ["..."], "players": "...", "materials": ["..."] },
+  "notes": "Notas adicionales para el entrenador..."
 }
   `;
 }
@@ -200,8 +369,32 @@ export const PROMPTS: Record<string, PromptTemplate> = {
       ),
   },
   INTENT_ROUTING: {
+    version: "2.0.0",
+    build: (userMessage: unknown, agents: unknown, context: unknown, screenContext: unknown, conversationHistory: unknown) =>
+      intentRouting(
+        userMessage as string,
+        agents as AgentDescriptor[],
+        context as Record<string, unknown>,
+        screenContext as ScreenContextData | undefined,
+        conversationHistory as Array<{ role: string; content: string }> | undefined
+      ),
+  },
+  CONVERSATIONAL: {
     version: "1.0.0",
-    build: (userMessage: unknown, agents: unknown, context: unknown) =>
-      intentRouting(userMessage as string, agents as AgentDescriptor[], context as Record<string, unknown>),
+    build: (userMessage: unknown, screenContext: unknown, conversationHistory: unknown) =>
+      conversational(
+        userMessage as string,
+        screenContext as ScreenContextData | undefined,
+        conversationHistory as Array<{ role: string; content: string }> | undefined
+      ),
+  },
+  NATURAL_RESPONSE_WRAPPER: {
+    version: "1.0.0",
+    build: (agentName: unknown, rawResult: unknown, screenContext: unknown) =>
+      naturalResponseWrapper(agentName as string, rawResult, screenContext as ScreenContextData | undefined),
+  },
+  TRAINING_GENERATION: {
+    version: "1.0.0",
+    build: (input: unknown) => trainingGeneration(input as TrainingGenInput),
   },
 };

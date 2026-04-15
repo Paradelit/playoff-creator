@@ -7,6 +7,8 @@ import {
   BracketAgent,
   CalendarAgent,
   ResultsAgent,
+  ConversationalAgent,
+  TrainingGeneratorAgent,
 } from "./ai";
 
 const geminiKey = defineSecret("GEMINI_API_KEY");
@@ -32,12 +34,16 @@ function getSystem(): { router: AgentRouter; observability: ObservabilityService
   const bracketAgent = new BracketAgent({ llmProvider, observability });
   const calendarAgent = new CalendarAgent({ llmProvider, observability });
   const resultsAgent = new ResultsAgent({ llmProvider, observability });
+  const conversationalAgent = new ConversationalAgent({ llmProvider, observability });
+  const trainingAgent = new TrainingGeneratorAgent({ llmProvider, observability });
 
   const router = new AgentRouter({
     agents: {
       bracket: bracketAgent,
       calendar: calendarAgent,
       results: resultsAgent,
+      conversational: conversationalAgent,
+      training: trainingAgent,
     },
     llmProvider,
     observability,
@@ -99,16 +105,20 @@ export const aiChat = onCall(
       throw new HttpsError("unauthenticated", "Login required");
     }
 
-    const { message, context } = request.data;
+    const { message, context, screenContext, conversationHistory } = request.data;
     if (!message) {
       throw new HttpsError("invalid-argument", "Missing message");
     }
 
     const system = getSystem();
     try {
-      return await system.router.routeByIntent(message, context || {}, {
-        userId: request.auth.uid,
-      });
+      return await system.router.routeByIntent(
+        message,
+        context || {},
+        { userId: request.auth.uid },
+        screenContext,
+        conversationHistory
+      );
     } catch (err) {
       const error = err as Error;
       throw new HttpsError("internal", error.message);

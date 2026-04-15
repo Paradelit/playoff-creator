@@ -41,3 +41,32 @@ export interface LLMGenerateRequest {
   traceContext: TraceContext;
   onStatus?: (status: string) => void;
 }
+
+/** Screen context from the frontend */
+export interface ScreenContextData {
+  screen: string;
+  route: string;
+  params: Record<string, string>;
+  entityType?: string;
+  entityId?: string;
+  data?: Record<string, unknown>;
+}
+
+/** Action the agent can suggest */
+export interface AgentAction {
+  type: "navigate" | "create";
+  label: string;
+  path?: string;
+  data?: unknown;
+}
+
+/** Enhanced response from the AI system */
+export interface EnrichedResponse {
+  type: "agent_result" | "conversational" | "no_match";
+  agent?: string;
+  result?: unknown;
+  naturalResponse: string;
+  suggestedMode: "compact" | "panel" | "column";
+  actions?: AgentAction[];
+  traceId: string;
+}
