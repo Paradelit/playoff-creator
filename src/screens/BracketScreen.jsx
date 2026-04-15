@@ -9,12 +9,8 @@ import {
   Share2,
   ImageDown,
   MoreVertical,
-  X,
   Users,
   Eye,
-  Copy,
-  Check,
-  Link,
   ShieldHalf,
   ChevronDown,
   Loader2,
@@ -25,6 +21,8 @@ import logger from '../utils/logger';
 import BracketNode from '../components/BracketNode';
 import TeamSearchableSelect from '../components/TeamSearchableSelect';
 import { useBracket } from '../contexts/BracketContext';
+import BracketShareModal from '../components/bracket/BracketShareModal';
+import BracketMobileTools from '../components/bracket/BracketMobileTools';
 
 export default function BracketScreen() {
   const {
@@ -134,295 +132,46 @@ export default function BracketScreen() {
         }}
       />
 
-      {/* Panel de herramientas mobile */}
       {showMobileTools && (
-        <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setShowMobileTools(false)}>
-          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" />
-          <div
-            className="absolute bottom-0 left-0 right-0 bg-blue-900 rounded-t-2xl p-5 flex flex-col gap-4 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-white font-bold text-base">Herramientas</span>
-              <button
-                onClick={() => setShowMobileTools(false)}
-                aria-label="Cerrar"
-                className="p-1 text-blue-300 hover:text-white"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            {canEdit && (
-              <button
-                onClick={() => {
-                  if (!isProcessingResults) fileInputResults.current?.click();
-                }}
-                className="flex items-center gap-3 bg-gradient-to-r from-blue-700 to-blue-500 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-md"
-              >
-                <FileDigit size={18} /> ✨ Autocompletar PDF
-              </button>
-            )}
-            {canEdit && (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    handleUndo();
-                    setShowMobileTools(false);
-                  }}
-                  disabled={!canUndo}
-                  className="flex-1 flex items-center justify-center gap-2 bg-blue-800 disabled:opacity-40 px-3 py-2.5 rounded-xl text-sm font-bold"
-                >
-                  ↩ Deshacer
-                </button>
-                <button
-                  onClick={() => {
-                    handleRedo();
-                    setShowMobileTools(false);
-                  }}
-                  disabled={!canRedo}
-                  className="flex-1 flex items-center justify-center gap-2 bg-blue-800 disabled:opacity-40 px-3 py-2.5 rounded-xl text-sm font-bold"
-                >
-                  ↪ Rehacer
-                </button>
-              </div>
-            )}
-            <TeamSearchableSelect
-              key={activeBracketId}
-              teams={activeBracket.allTeams}
-              selectedTeam={activeBracket.myTeam || ''}
-              onSelectTeam={handleSetMyTeam}
-            />
-            {activeBracket.teamName ? (
-              <div className="flex items-center justify-between bg-blue-800 px-4 py-3 rounded-xl">
-                <span className="flex items-center gap-2 text-sm font-bold text-blue-200">
-                  <ShieldHalf size={14} /> {activeBracket.teamName}
-                </span>
-                <button
-                  onClick={() => {
-                    handleUnlinkTeam(activeBracketId);
-                    setShowMobileTools(false);
-                  }}
-                  className="text-blue-400 hover:text-red-300 text-xs font-bold"
-                >
-                  Desvincular
-                </button>
-              </div>
-            ) : (
-              coachTeams?.length > 0 && (
-                <div>
-                  <button
-                    onClick={() => setShowLinkDropdown(!showLinkDropdown)}
-                    className="flex items-center gap-3 w-full bg-blue-800 text-blue-200 px-4 py-3 rounded-xl text-sm font-bold"
-                  >
-                    <ShieldHalf size={18} /> Vincular equipo <ChevronDown size={14} className="ml-auto" />
-                  </button>
-                  {showLinkDropdown && (
-                    <div className="mt-1 bg-blue-800 rounded-xl overflow-hidden max-h-40 overflow-y-auto">
-                      {coachTeams.map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() => {
-                            handleLinkTeam(activeBracketId, t);
-                            setShowLinkDropdown(false);
-                            setShowMobileTools(false);
-                          }}
-                          className="w-full text-left px-4 py-2.5 text-sm text-blue-100 hover:bg-blue-700 transition-colors border-t border-blue-700/50"
-                        >
-                          {teamDisplayName(t)}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )
-            )}
-            <div className="flex items-center gap-3">
-              <span className="text-blue-200 text-sm font-medium shrink-0">Zoom</span>
-              <div className="flex bg-blue-800 rounded-lg border border-blue-700 flex-1">
-                <button
-                  onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))}
-                  aria-label="Reducir zoom"
-                  className="p-3 flex-1 flex justify-center"
-                >
-                  <ZoomOut size={18} />
-                </button>
-                <div className="px-3 py-2 text-sm border-x border-blue-700 flex items-center justify-center w-16">
-                  {Math.round(zoom * 100)}%
-                </div>
-                <button
-                  onClick={() => setZoom((z) => Math.min(1.5, z + 0.1))}
-                  aria-label="Aumentar zoom"
-                  className="p-3 flex-1 flex justify-center"
-                >
-                  <ZoomIn size={18} />
-                </button>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                setShowMobileTools(false);
-                handleShare(activeBracket);
-              }}
-              className="flex items-center justify-center gap-2 bg-blue-600 px-4 py-3 rounded-xl text-sm font-bold"
-            >
-              <Share2 size={16} /> {activeBracket.shareCode ? 'Gestionar compartir' : 'Compartir cuadro'}
-            </button>
-            <button
-              onClick={() => {
-                setShowMobileTools(false);
-                handleDownloadImage();
-              }}
-              disabled={isExportingImage}
-              className="flex items-center justify-center gap-2 bg-slate-600 disabled:opacity-50 px-4 py-3 rounded-xl text-sm font-bold"
-            >
-              <ImageDown size={16} /> {isExportingImage ? 'Generando...' : 'Descargar imagen'}
-            </button>
-            {canEdit && (
-              <button
-                onClick={() => {
-                  setShowResetModal(true);
-                  setShowMobileTools(false);
-                }}
-                className="flex items-center justify-center gap-2 bg-red-600 px-4 py-3 rounded-xl text-sm font-bold"
-              >
-                <RefreshCw size={16} /> Limpiar puntuaciones
-              </button>
-            )}
-          </div>
-        </div>
+        <BracketMobileTools
+          activeBracket={activeBracket}
+          activeBracketId={activeBracketId}
+          canEdit={canEdit}
+          zoom={zoom}
+          setZoom={setZoom}
+          isProcessingResults={isProcessingResults}
+          isExportingImage={isExportingImage}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          handleUndo={handleUndo}
+          handleRedo={handleRedo}
+          handleSetMyTeam={handleSetMyTeam}
+          handleShare={handleShare}
+          handleDownloadImage={handleDownloadImage}
+          handleUnlinkTeam={handleUnlinkTeam}
+          handleLinkTeam={handleLinkTeam}
+          setShowResetModal={setShowResetModal}
+          setShowMobileTools={setShowMobileTools}
+          fileInputResults={fileInputResults}
+          coachTeams={coachTeams}
+        />
       )}
 
-      {/* Modal de compartir */}
-      {sharingBracket?.shareConfig && (
-        <div
-          className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-2 pb-20 sm:pb-4 backdrop-blur-sm overflow-y-auto"
-          onClick={() => setSharingBracket(null)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[calc(100vh-5.5rem)] sm:max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200 my-auto shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-5">
-              <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <Share2 size={20} className="text-blue-600" /> Compartir cuadro
-              </h3>
-              <button
-                onClick={() => setSharingBracket(null)}
-                aria-label="Cerrar"
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <p className="text-sm font-semibold text-slate-600 mb-2">Invitar personas</p>
-            <div className="flex flex-col sm:flex-row gap-2 mb-4">
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddInvite()}
-                placeholder="correo@ejemplo.com"
-                className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              <div className="flex gap-2">
-                <select
-                  value={invitePermission}
-                  onChange={(e) => setInvitePermission(e.target.value)}
-                  className="flex-1 sm:flex-none border border-slate-300 rounded-lg px-2 py-2 text-sm focus:outline-none"
-                >
-                  <option value="view">Solo ver</option>
-                  <option value="edit">Puede editar</option>
-                </select>
-                <button
-                  onClick={handleAddInvite}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-bold transition-colors"
-                >
-                  Añadir
-                </button>
-              </div>
-            </div>
-            <p className="text-sm font-semibold text-slate-600 mb-2">Personas con acceso</p>
-            <div className="space-y-2 mb-4 max-h-40 overflow-y-auto pr-1">
-              <div className="flex items-center justify-between text-sm py-1">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0 text-blue-600 font-bold text-xs">
-                    {(sharingBracket.shareConfig.ownerName || 'U').charAt(0).toUpperCase()}
-                  </div>
-                  <span className="truncate text-slate-700">
-                    {sharingBracket.shareConfig.ownerName}{' '}
-                    {sharingBracket.shareConfig.ownerId === user?.uid ? '(tú)' : ''}
-                  </span>
-                </div>
-                <span className="text-slate-400 text-xs shrink-0 ml-2">Propietario</span>
-              </div>
-              {Object.entries(sharingBracket.shareConfig.invites || {}).map(([email, perm]) => (
-                <div key={email} className="flex items-center justify-between text-sm py-1">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-500 font-bold text-xs">
-                      {email.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="truncate text-slate-700">{email}</span>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0 ml-2">
-                    <select
-                      value={perm}
-                      onChange={(e) =>
-                        handleUpdateShareConfig({
-                          invites: { ...sharingBracket.shareConfig.invites, [email]: e.target.value },
-                        })
-                      }
-                      className="border border-slate-200 rounded px-1 py-0.5 text-xs focus:outline-none"
-                    >
-                      <option value="view">Solo ver</option>
-                      <option value="edit">Puede editar</option>
-                    </select>
-                    <button
-                      onClick={() => handleRemoveInvite(email)}
-                      className="text-slate-300 hover:text-red-500 p-1 transition-colors"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="border-t border-slate-100 pt-4">
-              <p className="text-sm font-semibold text-slate-600 mb-2 flex items-center gap-1.5">
-                <Link size={14} /> Acceso con enlace
-              </p>
-              <select
-                value={sharingBracket.shareConfig.linkAccess}
-                onChange={(e) => handleUpdateShareConfig({ linkAccess: e.target.value })}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
-                <option value="none">Sin acceso — solo las personas invitadas</option>
-                <option value="view">Cualquiera con el enlace puede ver</option>
-                <option value="edit">Cualquiera con el enlace puede editar</option>
-              </select>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(
-                    `${shareUrlBase || window.location.origin + '/s'}/${sharingBracket.shareCode}`,
-                  );
-                  setCopiedCode(true);
-                  setTimeout(() => setCopiedCode(false), 2000);
-                }}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-bold text-sm transition-colors"
-              >
-                {copiedCode ? (
-                  <>
-                    <Check size={16} /> ¡Enlace copiado!
-                  </>
-                ) : (
-                  <>
-                    <Copy size={16} /> Copiar enlace
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BracketShareModal
+        sharingBracket={sharingBracket}
+        setSharingBracket={setSharingBracket}
+        user={user}
+        inviteEmail={inviteEmail}
+        setInviteEmail={setInviteEmail}
+        invitePermission={invitePermission}
+        setInvitePermission={setInvitePermission}
+        copiedCode={copiedCode}
+        setCopiedCode={setCopiedCode}
+        handleAddInvite={handleAddInvite}
+        handleUpdateShareConfig={handleUpdateShareConfig}
+        handleRemoveInvite={handleRemoveInvite}
+        shareUrlBase={shareUrlBase}
+      />
 
       <header className="bg-blue-900 text-white shadow-md z-10 relative">
         {/* Row 1: Navigation + Info + Mobile menu */}
@@ -495,7 +244,10 @@ export default function BracketScreen() {
                       onClick={() => handleUnlinkTeam(activeBracketId)}
                       className="opacity-0 group-hover/tbadge:opacity-100 hover:text-red-300 transition-opacity ml-0.5"
                     >
-                      <X size={9} />
+                      {/* X icon inline to avoid extra import */}
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                      </svg>
                     </button>
                   </span>
                 ) : (

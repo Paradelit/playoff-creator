@@ -1,17 +1,13 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Minus, Trash2, BookOpen, Save, X, Printer, Undo, Maximize2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useFirebase } from '../contexts/FirebaseContext';
-import { subscribeToMembers } from '../services/teamsService';
-import { subscribeToTrainings, saveTraining, subscribeToExercises, saveExercise } from '../services/trainingsService';
+import React from 'react';
+import { ArrowLeft, Plus, Minus, BookOpen, Save, Trash2, Maximize2, Printer } from 'lucide-react';
 import { teamDisplayName } from '../utils/teamUtils';
 import MentionTextarea from '../components/MentionTextarea';
-import CourtCanvas, { COURT_TOOLS } from '../components/CourtCanvas';
+import CourtCanvas from '../components/CourtCanvas';
 import ClubLogo from '../components/ClubLogo';
 import PromptDialog from '../components/PromptDialog';
-import { useTeams } from '../hooks/useTeams';
-import { useProfile } from '../hooks/useProfile';
+import PlaybookEditorModal from '../components/training/PlaybookEditorModal';
+import LibraryPanel from '../components/training/LibraryPanel';
+import { useTrainingEditor } from '../hooks/useTrainingEditor';
 import { getTemporada } from '../utils/dateUtils';
 
 const DIAS = [
@@ -24,192 +20,43 @@ const DIAS = [
   { val: 'D', label: 'D' },
 ];
 
-function makeEjercicio() {
-  return { id: crypto.randomUUID(), tiempo: '', contenido: '', descripcion: '', tipoPista: 'media', elementos: [] };
-}
-
-function EMPTY_TRAINING(numero = 1) {
-  return {
-    meta: { numero, dia: '', fecha: '', horaInicio: '', horaFin: '', lugar: '' },
-    objetivos: '',
-    ejercicios: [
-      { ...makeEjercicio(), tipoPista: 'entera' },
-      { ...makeEjercicio(), tipoPista: 'entera' },
-      { ...makeEjercicio(), tipoPista: 'entera' },
-      makeEjercicio(),
-      makeEjercicio(),
-      makeEjercicio(),
-      makeEjercicio(),
-    ],
-    cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
-  };
-}
-
-// ─── Main screen ─────────────────────────────────────────────────────────────
-
 export default function TrainingEditorScreen() {
-  const { teamId, trainingId } = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { db, appId } = useFirebase();
-
-  const { teams } = useTeams();
-  const { profile } = useProfile();
-  const team = teams.find((t) => t.id === teamId) || null;
-  const [members, setMembers] = useState([]);
-  const [exercises, setExercises] = useState([]);
-  const [training, setTraining] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saveStatus, setSaveStatus] = useState('saved');
-  const [modalEjercicioId, setModalEjercicioId] = useState(null);
-  const [libraryPrompt, setLibraryPrompt] = useState(null); // ejercicio to save
-  const [activeTool, setActiveTool] = useState('O');
-  const [libraryPanel, setLibraryPanel] = useState({ open: false, targetId: null });
-  const [librarySearch, setLibrarySearch] = useState('');
-  const [libraryFilterTags, setLibraryFilterTags] = useState([]);
-
-  const saveTimerRef = useRef(null);
-  const isFirstLoad = useRef(true);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToMembers(teamId, user.uid, db, appId, setMembers);
-  }, [user, db, appId, teamId]);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToExercises(user.uid, db, appId, setExercises);
-  }, [user, db, appId]);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToTrainings(teamId, user.uid, db, appId, (data) => {
-      const found = data.find((t) => t.id === trainingId);
-      if (isFirstLoad.current) {
-        setTraining(
-          found
-            ? { ...found, ejercicios: (found.ejercicios || []).map((e) => ({ ...e, elementos: e.elementos || [] })) }
-            : { id: trainingId, teamId, ...EMPTY_TRAINING() },
-        );
-        isFirstLoad.current = false;
-      }
-      setLoading(false);
-    });
-  }, [user, db, appId, teamId, trainingId]);
-
-  const triggerSave = useCallback(
-    (t) => {
-      setSaveStatus('saving');
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = setTimeout(async () => {
-        try {
-          await saveTraining(t, teamId, { uid: user.uid, db, appId });
-          setSaveStatus('saved');
-        } catch {
-          setSaveStatus('saved');
-        }
-      }, 1500);
-    },
-    [teamId, user, db, appId],
-  );
-
-  useEffect(() => {
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, []);
-
-  function updateTraining(updater) {
-    setTraining((prev) => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      triggerSave(next);
-      return next;
-    });
-  }
-
-  function updateMeta(field, value) {
-    updateTraining((t) => ({ ...t, meta: { ...t.meta, [field]: value } }));
-  }
-
-  function updateCierre(field, value) {
-    updateTraining((t) => ({ ...t, cierre: { ...t.cierre, [field]: value } }));
-  }
-
-  function addEjercicio() {
-    updateTraining((t) => ({ ...t, ejercicios: [...(t.ejercicios || []), makeEjercicio()] }));
-  }
-
-  function removeLastEjercicio() {
-    updateTraining((t) => {
-      if ((t.ejercicios || []).length <= 1) return t;
-      return { ...t, ejercicios: t.ejercicios.slice(0, -1) };
-    });
-  }
-
-  function removeEjercicio(id) {
-    updateTraining((t) => {
-      if ((t.ejercicios || []).length <= 1) return t;
-      return { ...t, ejercicios: t.ejercicios.filter((e) => e.id !== id) };
-    });
-  }
-
-  function updateEjercicio(id, field, value) {
-    updateTraining((t) => ({
-      ...t,
-      ejercicios: t.ejercicios.map((e) => (e.id === id ? { ...e, [field]: value } : e)),
-    }));
-  }
-
-  function loadFromLibrary(ejercicioId, libExercise) {
-    updateTraining((t) => {
-      const updated = {
-        ...t,
-        ejercicios: t.ejercicios.map((e) =>
-          e.id === ejercicioId
-            ? {
-                ...e,
-                contenido: libExercise.contenido || e.contenido,
-                descripcion: libExercise.descripcion || e.descripcion,
-                tipoPista: libExercise.tipoPista || e.tipoPista,
-                elementos: libExercise.elementos || [],
-                libExerciseId: libExercise.id,
-                libExerciseName: libExercise.nombre,
-              }
-            : e,
-        ),
-      };
-      // Auto-advance to next empty row
-      const idx = updated.ejercicios.findIndex((e) => e.id === ejercicioId);
-      const nextEmpty = updated.ejercicios.find(
-        (e, i) => i > idx && !e.contenido && !e.descripcion && !(e.elementos?.length > 0),
-      );
-      if (nextEmpty) {
-        setLibraryPanel((prev) => ({ ...prev, targetId: nextEmpty.id }));
-      }
-      return updated;
-    });
-  }
-
-  function saveToLibrary(ejercicio) {
-    setLibraryPrompt(ejercicio);
-  }
-
-  async function handleLibrarySave(nombre) {
-    const ejercicio = libraryPrompt;
-    setLibraryPrompt(null);
-    if (!ejercicio) return;
-    await saveExercise(
-      {
-        id: crypto.randomUUID(),
-        nombre,
-        contenido: ejercicio.contenido,
-        descripcion: ejercicio.descripcion,
-        tipoPista: ejercicio.tipoPista,
-        elementos: ejercicio.elementos || [],
-      },
-      { uid: user.uid, db, appId },
-    );
-  }
+  const editor = useTrainingEditor();
+  const {
+    teamId,
+    navigate,
+    team,
+    profile,
+    members,
+    training,
+    loading,
+    saveStatus,
+    ejercicios,
+    ejModal,
+    setModalEjercicioId,
+    libraryPrompt,
+    setLibraryPrompt,
+    activeTool,
+    setActiveTool,
+    libraryPanel,
+    setLibraryPanel,
+    librarySearch,
+    setLibrarySearch,
+    libraryFilterTags,
+    setLibraryFilterTags,
+    libraryAllTags,
+    libraryFiltered,
+    updateTraining,
+    updateMeta,
+    updateCierre,
+    addEjercicio,
+    removeLastEjercicio,
+    removeEjercicio,
+    updateEjercicio,
+    loadFromLibrary,
+    saveToLibrary,
+    handleLibrarySave,
+  } = editor;
 
   if (loading) {
     return (
@@ -220,23 +67,8 @@ export default function TrainingEditorScreen() {
   }
   if (!training) return null;
 
-  const ejercicios = training.ejercicios || [];
-  const ejModal = ejercicios.find((e) => e.id === modalEjercicioId);
   const clubName = profile?.nombreClub?.trim() || 'Uros de Rivas';
   const temporada = getTemporada();
-  const libraryAllTags = [...new Set(exercises.flatMap((ex) => ex.tags || []))].sort();
-  const libraryFiltered = exercises.filter((ex) => {
-    const matchesSearch =
-      !librarySearch ||
-      ex.nombre?.toLowerCase().includes(librarySearch.toLowerCase()) ||
-      ex.contenido?.toLowerCase().includes(librarySearch.toLowerCase());
-    const matchesTags =
-      libraryFilterTags.length === 0 ||
-      libraryFilterTags.every((tag) => (ex.tags || []).map((t) => t.toLowerCase()).includes(tag.toLowerCase()));
-    return matchesSearch && matchesTags;
-  });
-
-  const TOOLS = COURT_TOOLS;
 
   return (
     <div className="min-h-screen bg-gray-200 py-6 px-4 font-sans text-black print:bg-white print:p-0 print:py-0">
@@ -325,7 +157,6 @@ export default function TrainingEditorScreen() {
           {/* Metadatos */}
           <div className="border border-black flex flex-col mb-4 text-sm">
             <div className="flex border-b border-black">
-              {/* Equipo */}
               <div className="flex-1 border-r border-black p-1.5 flex items-center">
                 <span className="font-bold whitespace-nowrap">Equipo.-</span>
                 <input
@@ -335,7 +166,6 @@ export default function TrainingEditorScreen() {
                   className="w-full ml-2 focus:outline-none bg-transparent"
                 />
               </div>
-              {/* Fecha */}
               <div className="w-52 border-r border-black p-1.5 flex items-center gap-1">
                 <span className="font-bold whitespace-nowrap">Fecha.-</span>
                 <select
@@ -357,7 +187,6 @@ export default function TrainingEditorScreen() {
                   className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
                 />
               </div>
-              {/* Hora */}
               <div className="w-48 border-r border-black p-1.5 flex items-center gap-1">
                 <span className="font-bold whitespace-nowrap">Hora.-</span>
                 <input
@@ -374,7 +203,6 @@ export default function TrainingEditorScreen() {
                   className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
                 />
               </div>
-              {/* Lugar */}
               <div className="flex-1 p-1.5 flex items-center">
                 <span className="font-bold whitespace-nowrap">Lugar.-</span>
                 <input
@@ -385,7 +213,6 @@ export default function TrainingEditorScreen() {
                 />
               </div>
             </div>
-            {/* Objetivos */}
             <div className="p-1.5 flex flex-col min-h-[52px]">
               <span className="font-bold">Objetivos de la semana.-</span>
               <textarea
@@ -398,7 +225,6 @@ export default function TrainingEditorScreen() {
 
           {/* Tabla ejercicios */}
           <div className="border border-black flex flex-col mb-4 text-sm">
-            {/* Cabecera columnas */}
             <div className="flex border-b border-black font-bold text-center bg-gray-50 print:bg-transparent">
               <div className="w-14 border-r border-black p-1 text-xs">Tiempo</div>
               <div className="w-32 border-r border-black p-1 text-xs">Contenido</div>
@@ -411,7 +237,6 @@ export default function TrainingEditorScreen() {
                 key={ej.id}
                 className={`group relative flex border-b border-black last:border-b-0 min-h-[100px] transition-colors ${libraryPanel.open && libraryPanel.targetId === ej.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}`}
               >
-                {/* Tiempo */}
                 <div className="w-14 border-r border-black p-1">
                   <input
                     type="text"
@@ -420,7 +245,6 @@ export default function TrainingEditorScreen() {
                     className="w-full h-full text-center focus:outline-none bg-transparent text-xs"
                   />
                 </div>
-                {/* Contenido */}
                 <div className="w-32 border-r border-black p-1 relative">
                   {ej.libExerciseId && (
                     <span
@@ -436,7 +260,6 @@ export default function TrainingEditorScreen() {
                     className="w-full h-full resize-none focus:outline-none bg-transparent leading-tight text-xs"
                   />
                 </div>
-                {/* Descripción */}
                 <div className="flex-1 border-r border-black p-1">
                   <textarea
                     value={ej.descripcion || ''}
@@ -444,7 +267,6 @@ export default function TrainingEditorScreen() {
                     className="w-full h-full resize-none focus:outline-none bg-transparent leading-tight text-xs text-justify pb-2 pr-1"
                   />
                 </div>
-                {/* Pizarra miniatura */}
                 <div className="w-40 flex flex-col items-center justify-center relative bg-white overflow-hidden">
                   <div
                     className="w-full h-full max-h-[110px] p-1 cursor-pointer hover:bg-gray-50 transition print:cursor-default"
@@ -452,7 +274,6 @@ export default function TrainingEditorScreen() {
                   >
                     <CourtCanvas tipo={ej.tipoPista} elementos={ej.elementos || []} readOnly={true} />
                   </div>
-                  {/* Controles flotantes — ocultos al imprimir */}
                   <div className="absolute bottom-1 right-1 flex gap-1 print:hidden opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-white p-1 rounded border border-gray-200 shadow-sm">
                     <button
                       onClick={() => setModalEjercicioId(ej.id)}
@@ -553,216 +374,28 @@ export default function TrainingEditorScreen() {
 
       {/* ─── MODAL PLAYBOOK EDITOR ─── */}
       {ejModal && (
-        <div className="fixed inset-0 z-[110] bg-gray-900/90 flex flex-col items-center justify-center p-4 touch-none print:hidden">
-          <div className="bg-white w-full max-w-5xl h-[85vh] rounded-lg shadow-2xl flex flex-col overflow-hidden">
-            {/* Header modal */}
-            <div className="flex flex-wrap justify-between items-center gap-2 p-3 border-b border-gray-200 bg-gray-50">
-              <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-                <h3 className="font-bold text-gray-800">Playbook Editor</h3>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => updateEjercicio(ejModal.id, 'elementos', (ejModal.elementos || []).slice(0, -1))}
-                    className="p-1.5 text-gray-600 hover:bg-gray-200 rounded flex items-center text-sm"
-                    title="Deshacer último"
-                  >
-                    <Undo size={14} className="mr-1" /> <span className="hidden sm:inline">Deshacer</span>
-                  </button>
-                  <button
-                    onClick={() => updateEjercicio(ejModal.id, 'elementos', [])}
-                    className="p-1.5 text-red-600 hover:bg-red-50 rounded flex items-center text-sm"
-                    title="Limpiar pizarra"
-                  >
-                    <Trash2 size={14} className="mr-1" /> <span className="hidden sm:inline">Limpiar</span>
-                  </button>
-                  <div className="flex gap-1 border-l border-gray-300 pl-2 ml-1">
-                    {[
-                      ['media', 'Media'],
-                      ['entera', 'Entera'],
-                    ].map(([val, label]) => (
-                      <button
-                        key={val}
-                        onClick={() => updateEjercicio(ejModal.id, 'tipoPista', val)}
-                        className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-semibold transition-colors ${ejModal.tipoPista === val ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={() => setModalEjercicioId(null)}
-                className="p-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition"
-                title="Cerrar"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="flex flex-col sm:flex-row flex-1 overflow-hidden bg-gray-100">
-              {/* Toolbar móvil */}
-              <div className="flex sm:hidden flex-wrap gap-1 p-2 bg-white border-b border-gray-200 overflow-x-auto">
-                {TOOLS.filter((t) => !t.divider).map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setActiveTool(t.id)}
-                    className={`flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-colors ${activeTool === t.id ? 'bg-blue-100 text-blue-800 border border-blue-200 font-semibold' : 'text-gray-600 hover:bg-gray-50 border border-transparent'}`}
-                  >
-                    <div className="w-5 flex justify-center shrink-0">{t.icon}</div>
-                    <span className="leading-tight">{t.label}</span>
-                  </button>
-                ))}
-              </div>
-              {/* Sidebar herramientas (desktop) */}
-              <div className="hidden sm:flex w-48 bg-white border-r border-gray-200 flex-col p-2 gap-1 overflow-y-auto">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider px-2 mt-2 mb-1">Herramientas</p>
-                {TOOLS.map((t, idx) =>
-                  t.divider ? (
-                    <div key={idx} className="h-px bg-gray-200 my-1 mx-2" />
-                  ) : (
-                    <button
-                      key={t.id}
-                      onClick={() => setActiveTool(t.id)}
-                      className={`flex items-center gap-3 px-3 py-2 rounded text-sm transition-colors ${activeTool === t.id ? 'bg-blue-100 text-blue-800 border border-blue-200 font-semibold' : 'text-gray-600 hover:bg-gray-50 border border-transparent'}`}
-                    >
-                      <div className="w-6 flex justify-center shrink-0">{t.icon}</div>
-                      <span className="text-xs leading-tight">{t.label}</span>
-                    </button>
-                  ),
-                )}
-                <div className="mt-auto p-3 bg-blue-50 rounded text-xs text-blue-800 leading-relaxed border border-blue-100 mx-1">
-                  <b>Tip:</b> Objetos: clic para colocar. Líneas: clic y arrastra.
-                </div>
-              </div>
-
-              {/* Lienzo */}
-              <div className="flex-1 flex items-center justify-center p-2 sm:p-6 select-none">
-                <div className="bg-white shadow border border-gray-300 w-full flex items-center justify-center">
-                  <CourtCanvas
-                    tipo={ejModal.tipoPista}
-                    elementos={ejModal.elementos || []}
-                    setElementos={(nuevos) => updateEjercicio(ejModal.id, 'elementos', nuevos)}
-                    readOnly={false}
-                    activeTool={activeTool}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PlaybookEditorModal
+          ejercicio={ejModal}
+          activeTool={activeTool}
+          setActiveTool={setActiveTool}
+          updateEjercicio={updateEjercicio}
+          onClose={() => setModalEjercicioId(null)}
+        />
       )}
 
       {/* ─── PANEL LATERAL BIBLIOTECA ─── */}
       {libraryPanel.open && (
-        <div
-          className="fixed inset-0 sm:inset-auto sm:top-0 sm:right-0 sm:h-full sm:w-[350px] z-[105] print:hidden flex flex-col"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Backdrop mobile only */}
-          <div
-            className="fixed inset-0 bg-slate-900/50 sm:hidden"
-            onClick={() => setLibraryPanel({ open: false, targetId: null })}
-          />
-          <div className="relative z-10 bg-white h-full w-full sm:shadow-2xl sm:border-l border-slate-200 flex flex-col animate-in slide-in-from-right duration-200">
-            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <BookOpen size={16} className="text-blue-600" /> Biblioteca
-              </h3>
-              <button
-                onClick={() => setLibraryPanel({ open: false, targetId: null })}
-                aria-label="Cerrar"
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="px-4 py-3 border-b border-slate-100 space-y-2">
-              <input
-                type="text"
-                placeholder="Buscar..."
-                value={librarySearch}
-                onChange={(e) => setLibrarySearch(e.target.value)}
-                className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              {libraryAllTags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {libraryAllTags.map((tag) => {
-                    const active = libraryFilterTags.map((t) => t.toLowerCase()).includes(tag.toLowerCase());
-                    return (
-                      <button
-                        key={tag}
-                        onClick={() =>
-                          setLibraryFilterTags((prev) =>
-                            active ? prev.filter((t) => t.toLowerCase() !== tag.toLowerCase()) : [...prev, tag],
-                          )
-                        }
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                      >
-                        {tag}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            {libraryPanel.targetId && (
-              <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 text-xs text-blue-700 font-medium">
-                Selecciona un ejercicio para cargarlo en la fila resaltada
-              </div>
-            )}
-            <div className="overflow-y-auto flex-1">
-              {libraryFiltered.length === 0 ? (
-                <p className="text-center text-slate-500 text-sm py-12">No hay ejercicios en la biblioteca.</p>
-              ) : (
-                libraryFiltered.map((ex) => (
-                  <button
-                    key={ex.id}
-                    onClick={() => {
-                      if (libraryPanel.targetId) {
-                        loadFromLibrary(libraryPanel.targetId, ex);
-                      }
-                    }}
-                    disabled={!libraryPanel.targetId}
-                    className="w-full text-left px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-blue-50 transition-colors disabled:opacity-50 flex gap-3 items-start"
-                  >
-                    {(ex.elementos?.length > 0 || ex.tipoPista) && (
-                      <div className="w-16 h-12 shrink-0 bg-gray-50 rounded border border-slate-200 flex items-center justify-center overflow-hidden">
-                        <CourtCanvas tipo={ex.tipoPista || 'media'} elementos={ex.elementos || []} readOnly={true} />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-slate-800 text-sm truncate">{ex.nombre}</p>
-                      {(ex.tags?.length > 0 || ex.contenido) && (
-                        <div className="flex flex-wrap gap-1 mt-0.5">
-                          {(ex.tags || []).map((tag, i) => (
-                            <span
-                              key={i}
-                              className="text-[9px] bg-indigo-100 text-indigo-600 font-semibold px-1.5 py-0.5 rounded-full"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                          {!ex.tags?.length && ex.contenido && (
-                            <span className="text-xs text-indigo-500 font-semibold">{ex.contenido}</span>
-                          )}
-                        </div>
-                      )}
-                      {ex.descripcion && <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{ex.descripcion}</p>}
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-            <div className="px-4 py-3 border-t border-slate-100">
-              <button
-                onClick={() => setLibraryPanel({ open: false, targetId: null })}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl transition text-sm"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
+        <LibraryPanel
+          libraryPanel={libraryPanel}
+          setLibraryPanel={setLibraryPanel}
+          librarySearch={librarySearch}
+          setLibrarySearch={setLibrarySearch}
+          libraryFilterTags={libraryFilterTags}
+          setLibraryFilterTags={setLibraryFilterTags}
+          libraryAllTags={libraryAllTags}
+          libraryFiltered={libraryFiltered}
+          loadFromLibrary={loadFromLibrary}
+        />
       )}
 
       <PromptDialog
