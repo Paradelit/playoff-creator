@@ -97,7 +97,12 @@ export class ObservabilityService {
   async flush(): Promise<void> {
     if (!this.client) return;
     try {
-      await this.client.shutdownAsync();
+      // Use flushAsync instead of shutdownAsync (since client is cached)
+      // Add a 2s timeout so network/401 errors don't cause deadline-exceeded
+      await Promise.race([
+        this.client.flushAsync(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 2000))
+      ]);
     } catch (err) {
       console.error("Langfuse flush error:", err);
     }
