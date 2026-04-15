@@ -67,7 +67,7 @@ export function useCopilotInternal(): CopilotAPI {
     if (persistence.loaded && persistence.loadedMessages.length > 0) {
       setMessages(persistence.loadedMessages);
     }
-  }, [persistence.loaded, persistence.loadedMessages]);  
+  }, [persistence.loaded, persistence.loadedMessages]);
 
   // Desktop media query listener
   useEffect(() => {
@@ -148,7 +148,7 @@ export function useCopilotInternal(): CopilotAPI {
           role: 'assistant',
           content: response.naturalResponse,
           traceId: response.traceId,
-          agentUsed: response.agent,
+          agentUsed: response.agent || 'conversational',
           actions: response.actions,
           timestamp: Date.now(),
         };
