@@ -29,12 +29,13 @@ export async function buildUserDigest(deps: {
   db: Firestore;
   userId: string;
   appId: string;
+  clientDate?: string;
 }): Promise<UserDigest> {
-  const { db, userId, appId } = deps;
+  const { db, userId, appId, clientDate } = deps;
   const base = db.collection("artifacts").doc(appId).collection("users").doc(userId);
 
-  const todayISO = new Date().toISOString().slice(0, 10);
-  const sevenDaysFromNow = new Date();
+  const todayISO = clientDate || new Date().toISOString().slice(0, 10);
+  const sevenDaysFromNow = new Date(todayISO);
   sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
   const toISO = sevenDaysFromNow.toISOString().slice(0, 10);
 

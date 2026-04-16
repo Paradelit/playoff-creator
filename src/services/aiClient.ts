@@ -40,6 +40,7 @@ export async function aiChatV2(request: {
   appId: string;
   screenContext?: ScreenContextPayload;
   conversationHistory?: Array<{ role: string; content: string }>;
+  clientDate?: string;
 }): Promise<OrchestratorResponse> {
   const callable = httpsCallable(getRegionalFunctions(), 'aiChat');
   const response = await callable(request);

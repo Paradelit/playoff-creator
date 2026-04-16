@@ -156,6 +156,7 @@ export function useCopilotInternal(): CopilotAPI {
             entityId: screenContext.entityId,
             data: screenContext.data,
           },
+          clientDate: new Date().toLocaleDateString('en-CA'), // Format as YYYY-MM-DD local
           conversationHistory: history,
         });
 

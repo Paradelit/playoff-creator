@@ -143,7 +143,7 @@ export const aiChat = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
 
-    const { message, screenContext, conversationHistory, appId } = request.data || {};
+    const { message, screenContext, conversationHistory, appId, clientDate } = request.data || {};
     if (!message) throw new HttpsError("invalid-argument", "Missing message");
     if (!appId) throw new HttpsError("invalid-argument", "Missing appId");
 
@@ -161,7 +161,7 @@ export const aiChat = onCall(
     const agentOptions = { userId };
 
     try {
-      const userDigest = await buildUserDigest({ db, userId, appId });
+      const userDigest = await buildUserDigest({ db, userId, appId, clientDate });
 
       // Infer default IDs from the current screen so tools can fallback
       // when the LLM forgets to pass an explicit id arg.
