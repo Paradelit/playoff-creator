@@ -9,6 +9,7 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     setupFiles: ['./src/test/setup.js'],
+    exclude: ['node_modules', 'dist', 'functions/**'],
   },
   server: {
     headers: {
