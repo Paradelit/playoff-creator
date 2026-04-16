@@ -13,6 +13,7 @@ import {
   Check,
   Shield,
   Bell,
+  Sparkles,
 } from 'lucide-react';
 import { useSettings, EMPTY_PROFILE } from '../hooks/useSettings';
 import { ImportPreviewModal, DeleteDataModal, DeleteAccountModal } from '../components/settings/SettingsModals';
@@ -266,6 +267,63 @@ export default function SettingsScreen() {
               </div>
             </>
           )}
+        </Section>
+
+        {/* ─── Copilot IA ─── */}
+        <Section icon={Sparkles} title="Copilot IA" iconColor="text-purple-600" iconBg="bg-purple-50">
+          <p className="text-xs text-slate-500 mb-4">
+            Controla cuánto puede hablarte el copilot sin que tú se lo pidas. Siempre responderá cuando le preguntes
+            — esto solo afecta a sugerencias espontáneas.
+          </p>
+          <div className="flex flex-col gap-2">
+            {[
+              {
+                value: 'off',
+                title: 'Solo bajo petición',
+                desc: 'El copilot no propone nada. Responde solo cuando le escribes.',
+              },
+              {
+                value: 'suggestions',
+                title: 'Sugerencias suaves',
+                desc: 'Pequeñas sugerencias en la pantalla actual (burbuja cerrable, no interrumpe).',
+              },
+              {
+                value: 'nudges',
+                title: 'Proactivo contextual',
+                desc: 'Además, avisa cuando detecta algo útil (cambios sin guardar, partido sin alineación…).',
+              },
+            ].map((opt) => {
+              const active = (s.form.proactivityMode || 'suggestions') === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => s.changeProactivityMode(opt.value)}
+                  className={`text-left border rounded-xl px-4 py-3 transition ${
+                    active
+                      ? 'border-purple-400 bg-purple-50 ring-2 ring-purple-100'
+                      : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 mt-0.5 shrink-0 ${
+                        active ? 'border-purple-600 bg-purple-600' : 'border-slate-300 bg-white'
+                      }`}
+                    >
+                      {active && <div className="w-full h-full rounded-full bg-white scale-[0.4]" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold ${active ? 'text-purple-800' : 'text-slate-700'}`}>
+                        {opt.title}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </Section>
 
         {/* ─── Datos ─── */}

@@ -23,6 +23,7 @@ const EMPTY_PROFILE = {
   autoAddToTeams: false,
   nombreClub: '',
   logoClub: '',
+  proactivityMode: 'suggestions',
 };
 
 export { EMPTY_PROFILE };
@@ -206,6 +207,11 @@ export function useSettings() {
     }
   }
 
+  async function changeProactivityMode(mode) {
+    setForm((f) => ({ ...f, proactivityMode: mode }));
+    await saveProfile({ proactivityMode: mode }, { uid: user.uid, db, appId });
+  }
+
   const isAnonymous = user?.isAnonymous;
   const emailDisplay = user?.email || (isAnonymous ? 'Cuenta de invitado' : '—');
 
@@ -258,5 +264,7 @@ export function useSettings() {
     toggleNotif,
     changeNotifAntelacion,
     requestNotifPermission,
+    // Copilot preferences
+    changeProactivityMode,
   };
 }

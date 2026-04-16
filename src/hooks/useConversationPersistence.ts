@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { collection, doc, setDoc, getDocs, deleteDoc, query, orderBy, limit } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import type { ContentBlock } from '../services/contentBlocks';
 
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  blocks?: ContentBlock[];
   traceId?: string;
   agentUsed?: string;
   actions?: Array<{ type: string; label: string; path?: string; data?: unknown }>;

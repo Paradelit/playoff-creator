@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useScreenContext } from '../contexts/ScreenContextProvider';
+import { useAuth } from '../contexts/AuthContext';
+import { useFirebase } from '../contexts/FirebaseContext';
 import { runAgent, aiChatV2, submitFeedback } from '../services/aiClient';
-import { useCopilotTips } from './useCopilotTips';
+import { useCopilotTips, type ProactivityMode } from './useCopilotTips';
+import { useProfile } from './useProfile';
 import { useConversationPersistence } from './useConversationPersistence';
 import type { ChatMessage } from './useConversationPersistence';
-import type { EnrichedResponsePayload } from '../services/aiClient';
+import type { ContentBlock, OrchestratorResponse, WriteProposal } from '../services/contentBlocks';
+import { executeProposal } from '../services/proposalExecutor';
 
 export type CopilotMode = 'compact' | 'panel' | 'column';
 
@@ -20,6 +24,7 @@ export interface CopilotAPI {
   messages: ChatMessage[];
   isProcessing: boolean;
   sendMessage: (text: string) => Promise<void>;
+  confirmProposal: (proposal: WriteProposal) => Promise<void>;
 
   // Backward compat for existing hooks
   runAgent: typeof runAgent;
@@ -47,6 +52,8 @@ export function useCopilotInternal(): CopilotAPI {
   const navigate = useNavigate();
   const location = useLocation();
   const { screenContext } = useScreenContext();
+  const { user } = useAuth() as { user: { uid: string } | null };
+  const { db, appId } = useFirebase() as { db: import('firebase/firestore').Firestore; appId: string };
 
   const [mode, setModeRaw] = useState<CopilotMode>('compact');
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -61,7 +68,9 @@ export function useCopilotInternal(): CopilotAPI {
   const modeBeforeTransitionRef = useRef<CopilotMode>('compact');
 
   const persistence = useConversationPersistence();
-  const tips = useCopilotTips(screenContext);
+  const { profile } = useProfile();
+  const proactivityMode = (profile?.proactivityMode as ProactivityMode | undefined) ?? 'suggestions';
+  const tips = useCopilotTips(screenContext, { proactivityMode });
 
   // Sync messages from persistence (initial load + conversation switch)
   useEffect(() => {
@@ -136,8 +145,9 @@ export function useCopilotInternal(): CopilotAPI {
       try {
         const history = messages.slice(-10).map((m) => ({ role: m.role, content: m.content }));
 
-        const response: EnrichedResponsePayload = await aiChatV2({
+        const response: OrchestratorResponse = await aiChatV2({
           message: text,
+          appId,
           screenContext: {
             screen: screenContext.screen,
             route: screenContext.route,
@@ -149,22 +159,28 @@ export function useCopilotInternal(): CopilotAPI {
           conversationHistory: history,
         });
 
+        const blocks: ContentBlock[] = response.blocks || [];
+        const content = blocks
+          .filter((b): b is { type: 'text'; markdown: string } => b.type === 'text')
+          .map((b) => b.markdown)
+          .join('\n\n')
+          .trim();
+
         const assistantMsg: ChatMessage = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: response.naturalResponse,
+          content: content || 'He terminado.',
+          blocks,
           traceId: response.traceId,
-          agentUsed: response.agent || 'conversational',
-          actions: response.actions,
           timestamp: Date.now(),
         };
         setMessages((prev) => [...prev, assistantMsg]);
         setLastTraceId(response.traceId);
 
-        // Apply suggested mode (degrade column on mobile)
-        if (response.suggestedMode) {
-          const suggested = response.suggestedMode === 'column' && !isDesktop ? 'panel' : response.suggestedMode;
-          if (suggested !== 'compact') setModeRaw(suggested);
+        // Auto-expand to panel when we produce rich content
+        const hasRich = blocks.some((b) => b.type !== 'text' && b.type !== 'status');
+        if (hasRich && mode === 'compact') {
+          setModeRaw(isDesktop ? 'panel' : 'panel');
         }
 
         // Persist assistant message
@@ -182,7 +198,15 @@ export function useCopilotInternal(): CopilotAPI {
         setIsProcessing(false);
       }
     },
-    [isProcessing, messages, persistence, screenContext, isDesktop],
+    [isProcessing, messages, persistence, screenContext, isDesktop, mode, appId],
+  );
+
+  const confirmProposal = useCallback(
+    async (proposal: WriteProposal) => {
+      if (!user) throw new Error('Debes iniciar sesión');
+      await executeProposal({ db, appId, uid: user.uid }, proposal);
+    },
+    [db, appId, user],
   );
 
   const executeAction = useCallback(
@@ -216,6 +240,7 @@ export function useCopilotInternal(): CopilotAPI {
     messages,
     isProcessing,
     sendMessage,
+    confirmProposal,
     runAgent,
     submitFeedback,
     currentTip: tips.currentTip,

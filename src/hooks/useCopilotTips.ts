@@ -1,8 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
+export type ProactivityMode = 'off' | 'suggestions' | 'nudges';
+
 interface ScreenContext {
   screen: string;
   data?: Record<string, unknown>;
+}
+
+interface TipsOptions {
+  proactivityMode?: ProactivityMode;
 }
 
 const TIPS_BY_SCREEN: Record<string, (data?: Record<string, unknown>) => string[]> = {
@@ -26,7 +32,18 @@ const TIPS_BY_SCREEN: Record<string, (data?: Record<string, unknown>) => string[
   settings: () => ['¿Necesitas ayuda con los ajustes?'],
 };
 
-export function useCopilotTips(screenContext: ScreenContext) {
+const NUDGES_BY_SCREEN: Record<string, (data?: Record<string, unknown>) => string[]> = {
+  calendar: () => ['Veo que estás en el calendario. ¿Quieres que prepare el entrenamiento de la próxima sesión?'],
+  bracket: () => ['Estás viendo el cuadro. ¿Quieres que actualice los resultados del último partido?'],
+  'team-detail': (data) => {
+    const name = (data?.teamName as string) || 'tu equipo';
+    return [`Veo que estás organizando a ${name}. ¿Actualizamos el informe de jugadores o la asistencia?`];
+  },
+  'training-editor': () => ['Veo que estás editando un entrenamiento. ¿Necesitas ejercicios específicos?'],
+};
+
+export function useCopilotTips(screenContext: ScreenContext, options: TipsOptions = {}) {
+  const mode = options.proactivityMode ?? 'suggestions';
   const [currentTip, setCurrentTip] = useState<string | null>(null);
   const [dismissedForKey, setDismissedForKey] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
@@ -39,8 +56,29 @@ export function useCopilotTips(screenContext: ScreenContext) {
   useEffect(() => {
     tipIndexRef.current = 0;
 
+    if (mode === 'off') {
+      setCurrentTip(null);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      return undefined;
+    }
+
     const getTips = TIPS_BY_SCREEN[screenContext.screen] || (() => ['¿En qué puedo ayudarte?']);
-    const tips = getTips(screenContext.data);
+    let tips = getTips(screenContext.data);
+
+    if (mode === 'nudges') {
+      const getNudges = NUDGES_BY_SCREEN[screenContext.screen];
+      if (getNudges) {
+        const nudgeKey = `nudge_${screenContext.screen}`;
+        if (!sessionStorage.getItem(nudgeKey)) {
+          const nudges = getNudges(screenContext.data);
+          if (nudges.length > 0) {
+            tips = [...nudges, ...tips];
+            sessionStorage.setItem(nudgeKey, 'true');
+          }
+        }
+      }
+    }
+
     if (tips.length === 0) return undefined;
 
     // Start with a delay so the first tip appears after 2s (also resets tip on screen change)
@@ -59,7 +97,7 @@ export function useCopilotTips(screenContext: ScreenContext) {
       if (intervalRef.current) clearInterval(intervalRef.current);
       setCurrentTip(null);
     };
-  }, [screenDataKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [screenDataKey, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const dismissTip = useCallback(() => {
     setDismissedForKey(screenDataKey);
@@ -67,5 +105,5 @@ export function useCopilotTips(screenContext: ScreenContext) {
     if (intervalRef.current) clearInterval(intervalRef.current);
   }, [screenDataKey]);
 
-  return { currentTip: isDismissed ? null : currentTip, dismissTip };
+  return { currentTip: mode === 'off' || isDismissed ? null : currentTip, dismissTip };
 }

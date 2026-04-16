@@ -47,7 +47,14 @@
       "Bash(grep -n \"fixed inset-0\" src/screens/*.jsx src/components/*.jsx)",
       "Bash(npx eslint:*)",
       "Bash(grep -E \"\\(\\\\.jsx|\\\\.js\\)$|error\")",
-      "Bash(grep -E \"error|\\\\.jsx$|\\\\.js$\")"
+      "Bash(grep -E \"error|\\\\.jsx$|\\\\.js$\")",
+      "Bash(curl *)",
+      "Bash(xxd)",
+      "Bash(firebase projects:list)",
+      "Bash(firebase functions:secrets:access GEMINI_API_KEY --project playoff-creator)",
+      "Bash(firebase functions:secrets:access LANGFUSE_PUBLIC_KEY --project playoff-creator)",
+      "Bash(firebase functions:secrets:access LANGFUSE_SECRET_KEY --project playoff-creator)",
+      "Bash(firebase functions:secrets:access LANGFUSE_BASE_URL --project playoff-creator)"
     ]
   }
 }

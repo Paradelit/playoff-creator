@@ -5,6 +5,7 @@ import { useScreenContext } from '../../contexts/ScreenContextProvider';
 import ActionButton from './ActionButton';
 import CopilotFeedback from './CopilotFeedback';
 import ConversationList from './ConversationList';
+import BlockRenderer from './blocks/BlockRenderer';
 
 const SCREEN_LABELS: Record<string, string> = {
   home: 'Inicio',
@@ -28,6 +29,7 @@ export default function CopilotColumn() {
     sendMessage,
     setMode,
     executeAction,
+    confirmProposal,
     startNewConversation,
     conversations,
     conversationId,
@@ -67,7 +69,7 @@ export default function CopilotColumn() {
   const screenLabel = SCREEN_LABELS[screenContext.screen] || screenContext.screen;
 
   return (
-    <div className="fixed top-0 right-0 bottom-0 w-[400px] h-[100dvh] bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col overflow-hidden animate-copilot-panel-open">
+    <div className="fixed top-0 right-0 bottom-16 w-[400px] bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col overflow-hidden animate-copilot-panel-open">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
         <div className="flex items-center gap-2">
@@ -137,31 +139,44 @@ export default function CopilotColumn() {
                 <p className="mt-1 text-xs">Pregúntame lo que necesites sobre la app.</p>
               </div>
             )}
-            {messages.map((msg) => (
-              <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
-                    msg.role === 'user'
-                      ? 'bg-blue-600 text-white rounded-br-md'
-                      : 'bg-slate-100 text-slate-800 rounded-bl-md'
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                  {msg.actions && msg.actions.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {msg.actions.map((action, i) => (
-                        <ActionButton key={i} action={action} onExecute={() => executeAction(action)} />
-                      ))}
+            {messages.map((msg) => {
+              const isUser = msg.role === 'user';
+              const hasBlocks = !isUser && msg.blocks && msg.blocks.length > 0;
+              if (isUser) {
+                return (
+                  <div key={msg.id} className="flex justify-end">
+                    <div className="max-w-[85%] rounded-2xl rounded-br-md px-3.5 py-2.5 text-sm leading-relaxed bg-blue-600 text-white">
+                      <p className="whitespace-pre-wrap">{msg.content}</p>
                     </div>
-                  )}
-                  {msg.role === 'assistant' && msg.traceId && (
-                    <div className="mt-2">
-                      <CopilotFeedback traceId={msg.traceId} />
-                    </div>
-                  )}
+                  </div>
+                );
+              }
+              return (
+                <div key={msg.id} className="flex justify-start">
+                  <div className="max-w-[85%] space-y-2">
+                    {hasBlocks ? (
+                      <BlockRenderer blocks={msg.blocks!} onConfirmProposal={confirmProposal} />
+                    ) : (
+                      <div className="rounded-2xl rounded-bl-md px-3.5 py-2.5 text-sm leading-relaxed bg-slate-100 text-slate-800">
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      </div>
+                    )}
+                    {msg.actions && msg.actions.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {msg.actions.map((action, i) => (
+                          <ActionButton key={i} action={action} onExecute={() => executeAction(action)} />
+                        ))}
+                      </div>
+                    )}
+                    {msg.traceId && (
+                      <div>
+                        <CopilotFeedback traceId={msg.traceId} />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {isProcessing && (
               <div className="flex justify-start">
                 <div className="bg-slate-100 rounded-2xl rounded-bl-md px-3.5 py-2.5">
