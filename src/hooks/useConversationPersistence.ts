@@ -24,7 +24,6 @@ export interface ConversationSummary {
 const MAX_MESSAGES = 30;
 const MAX_CONVERSATIONS = 15;
 
- 
 export function useConversationPersistence() {
   const { user } = useAuth() as any;
   const { db, appId } = useFirebase() as any;
@@ -121,6 +120,16 @@ export function useConversationPersistence() {
     [conversationsRef, conversations],
   );
 
+  const renameConversation = useCallback(
+    async (id: string, newTitle: string) => {
+      const convRef = conversationsRef();
+      if (!convRef) return;
+      await setDoc(doc(convRef, id), { title: newTitle }, { merge: true });
+      setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title: newTitle } : c)));
+    },
+    [conversationsRef],
+  );
+
   return {
     conversationId,
     setConversationId,
@@ -130,5 +139,6 @@ export function useConversationPersistence() {
     saveMessage,
     startNewConversation,
     loadMessages,
+    renameConversation,
   };
 }

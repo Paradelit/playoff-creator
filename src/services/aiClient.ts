@@ -30,7 +30,7 @@ export async function aiChat(
 }
 
 export async function submitFeedback(traceId: string, score: number, comment?: string): Promise<void> {
-  const callable = httpsCallable(getRegionalFunctions(), 'submitFeedback');
+  const callable = httpsCallable(getRegionalFunctions(), 'logInteractionScore');
   await callable({ traceId, score, comment });
 }
 

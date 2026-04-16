@@ -34,6 +34,7 @@ export interface CopilotAPI {
   startNewConversation: () => void;
   conversations: Array<{ id: string; title: string; lastMessageAt: number }>;
   loadConversation: (id: string) => void;
+  renameConversation: (id: string, title: string) => void;
 
   // Actions
   executeAction: (action: { type: string; path?: string; data?: unknown }) => void;
@@ -127,6 +128,11 @@ export function useCopilotInternal(): CopilotAPI {
       // Persist user message
       persistence.saveMessage(convId, userMsg, screenContext.screen);
 
+      if (messages.length === 0) {
+        const newTitle = text.substring(0, 30) + (text.length > 30 ? '...' : '');
+        persistence.renameConversation(convId, newTitle);
+      }
+
       try {
         const history = messages.slice(-10).map((m) => ({ role: m.role, content: m.content }));
 
@@ -218,6 +224,7 @@ export function useCopilotInternal(): CopilotAPI {
     startNewConversation,
     conversations: persistence.conversations,
     loadConversation,
+    renameConversation: persistence.renameConversation,
     executeAction,
     lastTraceId,
   };

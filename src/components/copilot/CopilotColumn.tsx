@@ -67,7 +67,7 @@ export default function CopilotColumn() {
   const screenLabel = SCREEN_LABELS[screenContext.screen] || screenContext.screen;
 
   return (
-    <div className="fixed top-0 right-0 bottom-0 w-[400px] bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col animate-copilot-panel-open">
+    <div className="fixed top-0 right-0 bottom-0 w-[400px] h-[100dvh] bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col overflow-hidden animate-copilot-panel-open">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
         <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ export default function CopilotColumn() {
       ) : (
         <>
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+          <div className="flex-1 overflow-y-auto min-h-0 px-4 py-3 space-y-3">
             {messages.length === 0 && (
               <div className="text-center text-slate-400 text-sm py-12">
                 <p className="font-medium">¡Hola! Soy tu copilot.</p>
