@@ -1,9 +1,15 @@
-import React from 'react';
-import { Trophy, Calendar } from 'lucide-react';
+import React, { useState } from 'react';
+import { Trophy, Calendar, Edit2 } from 'lucide-react';
 import { parseDateToISO } from '../utils/calendarUtils';
+import { useBracket } from '../contexts/BracketContext';
+import PromptDialog from './PromptDialog';
+import EditMatchModal from './bracket/EditMatchModal';
 
 const MatchCard = React.memo(
   ({ match, bracketData, onScoreChange, onSelectSorteo, isFinal, myTeam, readOnly, onDateClick }) => {
+    const { handleEditTeamName, handleEditMatchSettings } = useBracket();
+    const [editingTeamIndex, setEditingTeamIndex] = useState(null);
+    const [isEditingMatch, setIsEditingMatch] = useState(false);
     const isReady = match.team1 && match.team2;
 
     const getUsedOptions = () => {
@@ -53,32 +59,53 @@ const MatchCard = React.memo(
 
       return (
         <div className={getRowStyle(team, isWinner, isLoser) + (teamIndex === 2 ? ' border-b-0' : '')}>
-          <div className="flex flex-col flex-1 overflow-hidden pr-3 justify-center">
-            {isDropdown ? (
-              <select
-                value={team || ''}
-                onChange={(e) => !readOnly && onSelectSorteo(match.id, teamIndex, e.target.value)}
-                disabled={readOnly}
-                className="w-full text-xs p-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-blue-500 font-normal bg-white disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <option key="default-opt" value="">
-                  -- Asignar Equipo --
-                </option>
-                {options.map((opt, idx) => (
-                  <option
-                    key={`opt-${match.id}-${teamIndex}-${idx}`}
-                    value={opt}
-                    disabled={getUsedOptions().includes(opt)}
+          <div className="flex flex-col flex-1 overflow-hidden pr-3 justify-center min-h-[32px]">
+            <div className="flex items-center gap-1.5 min-w-0 w-full group/edit">
+              {isDropdown && !readOnly ? (
+                <div className="flex w-full items-center gap-1">
+                  <select
+                    value={team || ''}
+                    onChange={(e) => onSelectSorteo(match.id, teamIndex, e.target.value)}
+                    className="w-full text-xs p-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-blue-500 font-normal bg-white"
                   >
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <span className="truncate text-sm font-medium" title={team}>
-                {team || 'Por determinar'}
-              </span>
-            )}
+                    <option key="default-opt" value="">
+                      -- Asignar Equipo --
+                    </option>
+                    {options.map((opt, idx) => (
+                      <option
+                        key={`opt-${match.id}-${teamIndex}-${idx}`}
+                        value={opt}
+                        disabled={getUsedOptions().includes(opt)}
+                      >
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => setEditingTeamIndex(teamIndex)}
+                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded shrink-0 opacity-0 group-hover/edit:opacity-100 transition-opacity"
+                    title="Editar nombre libremente"
+                  >
+                    <Edit2 size={12} />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className={`flex items-center min-w-0 gap-1.5 ${!readOnly ? 'cursor-pointer group/name' : ''} w-full`}
+                  onClick={() => !readOnly && setEditingTeamIndex(teamIndex)}
+                >
+                  <span className={`truncate text-sm font-medium ${!team ? 'italic text-slate-400' : ''}`} title={team}>
+                    {team || 'Por determinar'}
+                  </span>
+                  {!readOnly && (
+                    <Edit2
+                      size={12}
+                      className="text-slate-300 group-hover/name:text-blue-600 shrink-0 opacity-0 group-hover/edit:opacity-100 transition-opacity"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
             {origin && (
               <span className="text-[10px] text-slate-500 truncate mt-0.5 leading-tight font-normal" title={origin}>
                 {origin}
@@ -116,11 +143,18 @@ const MatchCard = React.memo(
         className={`relative flex flex-col w-full min-w-0 sm:min-w-[380px] sm:w-[460px] bg-white border ${isFinal ? 'border-amber-400 shadow-amber-200 shadow-lg' : 'border-slate-300 shadow-md'} rounded-lg overflow-hidden transition-all hover:shadow-lg`}
       >
         <div
-          className={`relative text-[11px] uppercase tracking-wider font-bold text-center py-1.5 ${isFinal ? 'bg-amber-400 text-white' : 'bg-slate-200 text-slate-700'} flex items-center justify-center gap-1`}
+          onClick={() => !readOnly && setIsEditingMatch(true)}
+          className={`relative text-[11px] uppercase tracking-wider font-bold text-center py-1.5 flex items-center justify-center gap-1.5 transition-colors ${
+            isFinal
+              ? `bg-amber-400 text-white ${!readOnly ? 'hover:bg-amber-500 cursor-pointer' : ''}`
+              : `bg-slate-200 text-slate-700 ${!readOnly ? 'hover:bg-blue-100 hover:text-blue-800 cursor-pointer' : ''}`
+          }`}
+          title={!readOnly ? 'Hacer clic para modificar título y formato' : undefined}
         >
           {isFinal && <Trophy size={14} />}
           {match.title}
           {isFinal && <Trophy size={14} />}
+          {!readOnly && <Edit2 size={10} className="opacity-50" />}
         </div>
         <div className="flex justify-between items-center bg-slate-50 border-b border-slate-200 px-2 py-1.5">
           <div className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider flex items-center gap-1">
@@ -158,6 +192,32 @@ const MatchCard = React.memo(
         </div>
         {renderTeamRow(match.team1, match.team1Origin, match.team1Options, match.scores, 1)}
         {renderTeamRow(match.team2, match.team2Origin, match.team2Options, match.scores, 2)}
+
+        {editingTeamIndex && (
+          <PromptDialog
+            open={true}
+            title={match.title}
+            message={`Modifica el nombre del Equipo ${editingTeamIndex}`}
+            defaultValue={editingTeamIndex === 1 ? match.team1 || '' : match.team2 || ''}
+            placeholder="Ej. Uros de Rivas"
+            onConfirm={(val) => {
+              handleEditTeamName(match.id, editingTeamIndex, val);
+              setEditingTeamIndex(null);
+            }}
+            onCancel={() => setEditingTeamIndex(null)}
+          />
+        )}
+
+        {isEditingMatch && (
+          <EditMatchModal
+            match={match}
+            onClose={() => setIsEditingMatch(false)}
+            onSave={(newTitle, newGamesCount) => {
+              handleEditMatchSettings(match.id, newTitle, newGamesCount);
+              setIsEditingMatch(false);
+            }}
+          />
+        )}
       </div>
     );
   },

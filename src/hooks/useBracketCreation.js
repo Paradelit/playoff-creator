@@ -23,6 +23,9 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
   const [pendingTeamObj, setPendingTeamObj] = useState(null);
   const [lastTraceId, setLastTraceId] = useState(null);
 
+  const [manualTeamCount, setManualTeamCount] = useState(8);
+  const [manualFormat, setManualFormat] = useState('Partido único');
+
   const fileInputBases = useRef(null);
   const fileInputClasif = useRef(null);
 
@@ -111,6 +114,62 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
     }
   };
 
+  const handleCreateManualBracket = () => {
+    if (!newBracketName.trim()) {
+      setErrorMsg("Por favor, dale un nombre a este cuadro (ej. 'Fase Final').");
+      return;
+    }
+
+    setErrorMsg('');
+    const count = parseInt(manualTeamCount) || 8;
+    const initialMatches = [];
+    for (let i = 0; i < count / 2; i++) {
+      initialMatches.push({
+        title: `Partido ${i + 1}`,
+        team1: `Equipo ${i * 2 + 1}`,
+        team2: `Equipo ${i * 2 + 2}`,
+        team1Options: [],
+        team2Options: [],
+      });
+    }
+
+    const gamesCount = manualFormat === 'Ida y Vuelta' ? 2 : manualFormat === 'Al mejor de 3' ? 3 : 1;
+
+    try {
+      const numRounds = Math.log2(count);
+      const rounds = Array.from({ length: numRounds }).map(() => ({
+        format: manualFormat,
+        gamesCount,
+      }));
+
+      const bracketDynamicTree = buildDynamicBracket(initialMatches, rounds);
+
+      const allTeamsSet = new Set();
+      initialMatches.forEach((m) => {
+        allTeamsSet.add(m.team1);
+        allTeamsSet.add(m.team2);
+      });
+
+      const newBracketObj = {
+        id: Date.now().toString(),
+        createdAt: Date.now(),
+        name: newBracketName.trim(),
+        tournamentNameDetected: 'Cuadro Manual',
+        initialMatchesArray: initialMatches,
+        roundsData: rounds,
+        allTeams: Array.from(allTeamsSet).sort(),
+        bracketData: bracketDynamicTree,
+      };
+
+      setPendingBracket(newBracketObj);
+      setPreviewZoom(0.7);
+      setAppMode('preview');
+    } catch (err) {
+      logger.error('Error procesando cuadro manual', err);
+      setErrorMsg('Error al generar cuadro: ' + err.message);
+    }
+  };
+
   const handleConfirmBracket = () => {
     if (!pendingBracket) return;
     if (!pendingBracket.bracketData?.rootId || Object.keys(pendingBracket.bracketData?.state || {}).length === 0) {
@@ -163,9 +222,14 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
     setPreviewZoom,
     pendingTeamObj,
     handleProcessDocuments,
+    handleCreateManualBracket,
     handleConfirmBracket,
     fileInputBases,
     fileInputClasif,
     lastTraceId,
+    manualTeamCount,
+    setManualTeamCount,
+    manualFormat,
+    setManualFormat,
   };
 }

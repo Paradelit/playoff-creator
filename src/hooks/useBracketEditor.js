@@ -211,6 +211,75 @@ export function useBracketEditor({
     [updateActiveBracketData],
   );
 
+  const handleEditTeamName = useCallback(
+    (matchId, teamIndex, newName) => {
+      updateActiveBracketData((prevData) => {
+        const nextState = { ...prevData.state };
+        const match = { ...nextState[matchId] };
+        const oldTeam = teamIndex === 1 ? match.team1 : match.team2;
+
+        if (teamIndex === 1) match.team1 = newName || null;
+        else match.team2 = newName || null;
+
+        if (oldTeam !== newName) {
+          if (match.winner === oldTeam || (match.winner && match.winner !== newName)) {
+            clearForwardLocal(nextState, matchId, match.winner);
+            match.winner = null;
+            // Also reset score to avoid weird auto-wins if name changes?
+            // In manual it's simpler to let score be, or reset if changed.
+            // But usually we just let the score recalculate properly on next score change, or reset it.
+            // The AI implementation resetted scores when picking from Sorteo. We can do that too:
+            // match.scores = match.scores.map((s) => ({ ...s, [teamIndex === 1 ? 's1' : 's2']: '' }));
+          }
+        }
+
+        nextState[matchId] = match;
+        return { ...prevData, state: nextState };
+      });
+    },
+    [updateActiveBracketData],
+  );
+
+  const handleEditMatchSettings = useCallback(
+    (matchId, newTitle, newGamesCount) => {
+      updateActiveBracketData((prevData) => {
+        const nextState = { ...prevData.state };
+        const match = { ...nextState[matchId] };
+
+        match.title = newTitle;
+
+        if (newGamesCount !== match.gamesCount) {
+          match.gamesCount = newGamesCount;
+          match.format = newGamesCount === 1 ? 'Partido único' : newGamesCount === 2 ? 'Ida y Vuelta' : 'Al mejor de 3';
+
+          const newScores = [...match.scores];
+          while (newScores.length < newGamesCount) {
+            newScores.push({ s1: '', s2: '' });
+          }
+          if (newScores.length > newGamesCount) {
+            newScores.length = newGamesCount; // Truncate
+          }
+          match.scores = newScores;
+
+          const newWinner = calculateMatchWinner(match);
+          const oldWinner = match.winner;
+          match.winner = newWinner;
+
+          if (oldWinner !== newWinner) {
+            if (oldWinner) clearForwardLocal(nextState, matchId, oldWinner);
+            if (newWinner && match.nextId) {
+              nextState[match.nextId] = { ...nextState[match.nextId], [match.slot]: newWinner };
+            }
+          }
+        }
+
+        nextState[matchId] = match;
+        return { ...prevData, state: nextState };
+      });
+    },
+    [updateActiveBracketData],
+  );
+
   const handleScoreChange = useCallback(
     (matchId, teamIndex, gameIndex, value) => {
       updateActiveBracketData((prevData) => {
@@ -348,6 +417,8 @@ export function useBracketEditor({
     handleRedo,
     handleScoreChange,
     handleSorteoSelect,
+    handleEditTeamName,
+    handleEditMatchSettings,
     confirmReset,
     handleSetMyTeam,
     handleDownloadImage,

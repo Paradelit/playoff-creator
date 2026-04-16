@@ -75,18 +75,11 @@ function PlayoffsRoute() {
 }
 
 function LoginRoute() {
-  const { user, isLoggingIn, authError, handleLogin, handleAnonymousLogin } = useAuth();
+  const { user } = useAuth();
 
   if (user) return <Navigate to="/" replace />;
 
-  return (
-    <LoginScreen
-      errorMsg={authError}
-      isLoggingIn={isLoggingIn}
-      handleLogin={handleLogin}
-      handleAnonymousLogin={handleAnonymousLogin}
-    />
-  );
+  return <LoginScreen />;
 }
 
 function Guarded({ name, children }) {

@@ -8,7 +8,7 @@ import PlayoffCreatorModule from './PlayoffCreatorModule';
 // Cuando PlayoffCreatorModule se integre en una app padre, este archivo
 // será reemplazado por el shell de esa app (CoachesApp + AppRouter).
 export default function StandaloneApp() {
-  const { user, authReady, isLoggingIn, authError, handleLogin, handleAnonymousLogin } = useAuth();
+  const { user, authReady } = useAuth();
 
   // Extrae el share code de la URL (ej: /s/ABC123)
   const [initialShareCode] = useState(() => {
@@ -24,15 +24,7 @@ export default function StandaloneApp() {
 
   if (!authReady) return <LoadingScreen />;
 
-  if (!user)
-    return (
-      <LoginScreen
-        errorMsg={authError}
-        isLoggingIn={isLoggingIn}
-        handleLogin={handleLogin}
-        handleAnonymousLogin={handleAnonymousLogin}
-      />
-    );
+  if (!user) return <LoginScreen />;
 
   return (
     <PlayoffCreatorModule

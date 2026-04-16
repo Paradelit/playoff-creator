@@ -57,6 +57,7 @@ export function useCopilotTips(screenContext: ScreenContext, options: TipsOption
     tipIndexRef.current = 0;
 
     if (mode === 'off') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentTip(null);
       if (intervalRef.current) clearInterval(intervalRef.current);
       return undefined;

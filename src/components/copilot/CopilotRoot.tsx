@@ -1,11 +1,15 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { useCopilot } from '../../contexts/CopilotProvider';
 import CopilotCompact from './CopilotCompact';
 import CopilotPanel from './CopilotPanel';
 import CopilotColumn from './CopilotColumn';
 
 export default function CopilotRoot() {
+  const location = useLocation();
   const { mode, isTransitioning, isDesktop } = useCopilot();
+
+  if (location.pathname === '/login') return null;
 
   if (isTransitioning) return <CopilotCompact animating />;
 

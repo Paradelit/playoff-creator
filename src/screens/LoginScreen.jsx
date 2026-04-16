@@ -1,7 +1,25 @@
-import React from 'react';
-import { Trophy, Loader2, LogIn, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { Trophy, Loader2, LogIn, User, Mail, Lock } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
-export default function LoginScreen({ errorMsg, isLoggingIn, handleLogin, handleAnonymousLogin }) {
+export default function LoginScreen() {
+  const { authError, isLoggingIn, handleEmailLogin, handleEmailRegister, handleGoogleLogin, handleAnonymousLogin } =
+    useAuth();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+
+  const onSubmitEmailForm = (e) => {
+    e.preventDefault();
+    if (!email || !password) return;
+    if (isRegisterMode) {
+      handleEmailRegister(email, password);
+    } else {
+      handleEmailLogin(email, password);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
@@ -11,18 +29,18 @@ export default function LoginScreen({ errorMsg, isLoggingIn, handleLogin, handle
           <p className="text-blue-200 mt-2">Gestiona tus playoffs en la nube</p>
         </div>
         <div className="p-8 text-center">
-          <p className="text-slate-600 mb-8">
-            Inicia sesión para crear tus cuadros, autocompletar resultados con IA y sincronizarlos automáticamente en
-            todos tus dispositivos.
+          <p className="text-slate-600 mb-6">
+            Inicia sesión para crear tus cuadros, autocompletar resultados con IA y sincronizarlos automáticamente.
           </p>
-          {errorMsg && (
+          {authError && (
             <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm text-left leading-tight">
-              {errorMsg}
+              {authError}
             </div>
           )}
-          <div className="flex flex-col gap-3">
+
+          <div className="flex flex-col gap-4">
             <button
-              onClick={handleLogin}
+              onClick={handleGoogleLogin}
               disabled={isLoggingIn}
               className="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-200 hover:border-blue-500 text-slate-700 hover:bg-blue-50 px-6 py-3 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50"
             >
@@ -33,11 +51,68 @@ export default function LoginScreen({ errorMsg, isLoggingIn, handleLogin, handle
               )}
               {isLoggingIn ? 'Conectando...' : 'Continuar con Google'}
             </button>
+
             <div className="relative flex py-2 items-center">
               <div className="flex-grow border-t border-slate-200"></div>
-              <span className="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase font-medium">o prueba rápido</span>
+              <span className="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase font-medium">o con correo</span>
               <div className="flex-grow border-t border-slate-200"></div>
             </div>
+
+            <form onSubmit={onSubmitEmailForm} className="flex flex-col gap-3 text-left">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail size={18} className="text-slate-400" />
+                </div>
+                <input
+                  type="email"
+                  placeholder="Correo electrónico"
+                  className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoggingIn}
+                  required
+                />
+              </div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock size={18} className="text-slate-400" />
+                </div>
+                <input
+                  type="password"
+                  placeholder="Contraseña"
+                  className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoggingIn}
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoggingIn}
+                className="w-full mt-2 bg-blue-600 text-white hover:bg-blue-700 px-6 py-2.5 rounded-xl font-medium transition-all shadow-sm disabled:opacity-50 flex justify-center items-center gap-2"
+              >
+                {isLoggingIn && <Loader2 size={16} className="animate-spin" />}
+                {isRegisterMode ? 'Crear cuenta' : 'Entrar con correo'}
+              </button>
+            </form>
+
+            <button
+              type="button"
+              onClick={() => setIsRegisterMode(!isRegisterMode)}
+              className="text-sm text-blue-600 hover:text-blue-800 transition-colors font-medium self-center mt-1"
+            >
+              {isRegisterMode ? '¿Ya tienes cuenta? Iniciar sesión' : '¿No tienes cuenta? Regístrate'}
+            </button>
+
+            <div className="relative flex py-2 items-center mt-2">
+              <div className="flex-grow border-t border-slate-200"></div>
+              <span className="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase font-medium">
+                o de forma anónima
+              </span>
+              <div className="flex-grow border-t border-slate-200"></div>
+            </div>
+
             <button
               onClick={handleAnonymousLogin}
               disabled={isLoggingIn}

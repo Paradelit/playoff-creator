@@ -143,7 +143,7 @@ export const aiChat = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
 
-    const { message, screenContext, conversationHistory, appId, clientDate } = request.data || {};
+    const { message, screenContext, conversationHistory, appId, clientDate, conversationId } = request.data || {};
     if (!message) throw new HttpsError("invalid-argument", "Missing message");
     if (!appId) throw new HttpsError("invalid-argument", "Missing appId");
 
@@ -154,11 +154,12 @@ export const aiChat = onCall(
     const trace = system.observability.createTrace({
       name: "orchestrator",
       userId,
+      sessionId: conversationId,
       metadata: { screen: screenContext?.screen, userMessage: String(message).slice(0, 200) },
     });
     const traceId = (trace as { id?: string })?.id || "";
     const traceContext = { trace };
-    const agentOptions = { userId };
+    const agentOptions = { userId, sessionId: conversationId };
 
     try {
       const userDigest = await buildUserDigest({ db, userId, appId, clientDate });

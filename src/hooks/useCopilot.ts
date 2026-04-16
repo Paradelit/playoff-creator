@@ -158,6 +158,7 @@ export function useCopilotInternal(): CopilotAPI {
           },
           clientDate: new Date().toLocaleDateString('en-CA'), // Format as YYYY-MM-DD local
           conversationHistory: history,
+          conversationId: convId,
         });
 
         const blocks: ContentBlock[] = response.blocks || [];

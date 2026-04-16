@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   GoogleAuthProvider,
@@ -9,6 +8,8 @@ import {
   signOut,
   onAuthStateChanged,
   signInAnonymously,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
 } from 'firebase/auth';
 import { useFirebase } from './FirebaseContext';
 import logger from '../utils/logger';
@@ -50,6 +51,38 @@ export function AuthProvider({ children }) {
         );
       } else {
         setAuthError('Error al conectar con Google. Revisa tu configuración de Firebase.');
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleEmailLogin = async (email, password) => {
+    setIsLoggingIn(true);
+    setAuthError('');
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      logger.error('Error al iniciar sesión con email', error);
+      setAuthError('Correo o contraseña incorrectos.');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleEmailRegister = async (email, password) => {
+    setIsLoggingIn(true);
+    setAuthError('');
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      logger.error('Error al registrar con email', error);
+      if (error.code === 'auth/email-already-in-use') {
+        setAuthError('El correo ya está en uso. Por favor, inicia sesión.');
+      } else if (error.code === 'auth/weak-password') {
+        setAuthError('La contraseña debe tener al menos 6 caracteres.');
+      } else {
+        setAuthError('Error al crear la cuenta.');
       }
     } finally {
       setIsLoggingIn(false);
@@ -119,6 +152,8 @@ export function AuthProvider({ children }) {
         setAuthError,
         authReady,
         handleLogin,
+        handleEmailLogin,
+        handleEmailRegister,
         handleAnonymousLogin,
         handleLogout,
         handleLinkGoogle,
