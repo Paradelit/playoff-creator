@@ -111,12 +111,12 @@ export const runAgent = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
 
-    const { agent, input } = request.data;
+    const { agent, input, sessionId } = request.data;
     if (!agent || !input) throw new HttpsError("invalid-argument", "Missing agent or input");
 
     const system = getSystem();
     try {
-      return await system.router.routeExplicit(agent, input, { userId: request.auth.uid });
+      return await system.router.routeExplicit(agent, input, { userId: request.auth.uid, sessionId });
     } catch (err) {
       const error = err as Error;
       if (error.message === "RATE_LIMIT") {

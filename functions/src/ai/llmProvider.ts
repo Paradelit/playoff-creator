@@ -2,9 +2,8 @@ import { LLMResult, LLMGenerateRequest, TraceContext } from "./types";
 import { ObservabilityService } from "./observability";
 
 const DEFAULT_MODELS = [
+  "gemini-flash-latest",
   "gemini-2.5-flash",
-  "gemini-2.0-flash",
-  "gemini-1.5-flash",
 ];
 
 /** Part of a Gemini message — either text or functionCall/Response */

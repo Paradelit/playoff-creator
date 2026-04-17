@@ -27,7 +27,10 @@ export interface CopilotAPI {
   confirmProposal: (proposal: WriteProposal) => Promise<void>;
 
   // Backward compat for existing hooks
-  runAgent: typeof runAgent;
+  runAgent: <TResult>(
+    agentName: string,
+    input: Record<string, unknown>,
+  ) => Promise<{ result: TResult; traceId: string }>;
   submitFeedback: typeof submitFeedback;
 
   // Tips (speech bubble)
@@ -234,6 +237,14 @@ export function useCopilotInternal(): CopilotAPI {
     [persistence],
   );
 
+  const runAgentBound = useCallback(
+    async <TResult>(agentName: string, input: Record<string, unknown>) => {
+      const sessionId = persistence.conversationId || crypto.randomUUID();
+      return await runAgent<TResult>(agentName, input, sessionId);
+    },
+    [persistence.conversationId],
+  );
+
   return {
     mode,
     setMode,
@@ -243,7 +254,7 @@ export function useCopilotInternal(): CopilotAPI {
     isProcessing,
     sendMessage,
     confirmProposal,
-    runAgent,
+    runAgent: runAgentBound,
     submitFeedback,
     currentTip: tips.currentTip,
     dismissTip: tips.dismissTip,

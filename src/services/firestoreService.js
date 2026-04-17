@@ -2,11 +2,27 @@ import { doc, setDoc } from 'firebase/firestore';
 import { userDocRef } from './firestoreHelpers';
 import logger from '../utils/logger';
 
+// Firestore rejects undefined values synchronously, including deep inside
+// nested objects/arrays — walk the tree and strip them.
+const stripUndefined = (value) => {
+  if (Array.isArray(value)) {
+    return value.map(stripUndefined);
+  }
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) {
+      if (v === undefined) continue;
+      out[k] = stripUndefined(v);
+    }
+    return out;
+  }
+  return value;
+};
+
 export const toFirestore = (bracket, forShared = false) => {
   // eslint-disable-next-line no-unused-vars
   const { myTeam, isShared, isSharedRef, exportVersion, ...rest } = bracket;
-  // Firestore rejects undefined values synchronously; strip them.
-  const clean = Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined));
+  const clean = stripUndefined(rest);
   if (forShared) return clean;
   return { ...clean, myTeam: myTeam || null };
 };

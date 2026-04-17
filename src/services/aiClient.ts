@@ -15,9 +15,10 @@ function getRegionalFunctions() {
 export async function runAgent<TResult>(
   agentName: string,
   input: Record<string, unknown>,
+  sessionId?: string,
 ): Promise<{ result: TResult; traceId: string }> {
   const callable = httpsCallable(getRegionalFunctions(), 'runAgent');
-  const response = await callable({ agent: agentName, input });
+  const response = await callable({ agent: agentName, input, sessionId });
   return response.data as { result: TResult; traceId: string };
 }
 
@@ -41,6 +42,7 @@ export async function aiChatV2(request: {
   screenContext?: ScreenContextPayload;
   conversationHistory?: Array<{ role: string; content: string }>;
   clientDate?: string;
+  conversationId?: string;
 }): Promise<OrchestratorResponse> {
   const callable = httpsCallable(getRegionalFunctions(), 'aiChat');
   const response = await callable(request);
