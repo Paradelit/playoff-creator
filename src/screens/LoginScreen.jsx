@@ -26,7 +26,7 @@ export default function LoginScreen() {
         <div className="bg-blue-900 p-8 text-center text-white">
           <Trophy size={48} className="mx-auto mb-4 text-amber-400" />
           <h1 className="text-3xl font-bold tracking-wide">FBM Brackets</h1>
-          <p className="text-blue-200 mt-2">Gestiona tus playoffs en la nube</p>
+          <p className="text-blue-200 mt-2">Gestiona tus torneos en la nube</p>
         </div>
         <div className="p-8 text-center">
           <p className="text-slate-600 mb-6">

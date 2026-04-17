@@ -77,7 +77,7 @@ export default function MonthGrid({ calendarDays, todayYMD, loading, onSelectSes
                         className={`w-full text-left rounded px-1.5 py-0.5 text-xs font-semibold truncate transition-opacity hover:opacity-80 ${isPlayoff ? 'bg-amber-500 text-white' : isPartido ? 'bg-rose-500 text-white' : TEAM_COLORS[teamColorIndex(s.teamId)]}`}
                         title={
                           isPlayoff
-                            ? `${s.teamName} Playoff vs ${s.rival}`
+                            ? `${s.teamName} Torneo vs ${s.rival}`
                             : isPartido
                               ? `${s.teamName} vs ${s.rival || 'Rival'}`
                               : `${s.teamName} #${getTrainingNum(s)}`

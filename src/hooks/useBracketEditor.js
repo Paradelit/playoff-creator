@@ -8,6 +8,8 @@ import { saveBracketToFirestore } from '../services/firestoreService';
 import { useCopilot } from '../contexts/CopilotProvider';
 import { useToast } from '../contexts/ToastContext';
 
+const PREVIEW_HISTORY_KEY = '__preview__';
+
 export function useBracketEditor({
   user,
   db,
@@ -18,6 +20,8 @@ export function useBracketEditor({
   activeBracket,
   canEdit,
   appMode,
+  pendingBracket,
+  setPendingBracket,
 }) {
   const toast = useToast();
   const { runAgent } = useCopilot();
@@ -43,19 +47,44 @@ export function useBracketEditor({
   bracketsRef.current = brackets;
   const activeBracketIdRef = useRef(activeBracketId);
   activeBracketIdRef.current = activeBracketId;
+  const pendingBracketRef = useRef(pendingBracket);
+  pendingBracketRef.current = pendingBracket;
+  const appModeRef = useRef(appMode);
+  appModeRef.current = appMode;
+  const prevPendingIdRef = useRef(null);
 
-  // Resetear undo/redo al cambiar de cuadro
+  // Resetear undo/redo según modo
   useEffect(() => {
-    if (activeBracketId) delete hasCenteredRef.current[activeBracketId];
-    const h = historyRef.current[activeBracketId];
-    setCanUndo(!!h?.undo?.length);
-    setCanRedo(!!h?.redo?.length);
-  }, [activeBracketId]);
+    if (appMode === 'preview') {
+      const h = historyRef.current[PREVIEW_HISTORY_KEY];
+      setCanUndo(!!h?.undo?.length);
+      setCanRedo(!!h?.redo?.length);
+    } else {
+      if (activeBracketId) delete hasCenteredRef.current[activeBracketId];
+      const h = historyRef.current[activeBracketId];
+      setCanUndo(!!h?.undo?.length);
+      setCanRedo(!!h?.redo?.length);
+    }
+  }, [activeBracketId, appMode]);
+
+  // Limpiar historial de preview al abrir/cerrar una sesión de preview
+  useEffect(() => {
+    const newId = pendingBracket?.id || null;
+    if (newId !== prevPendingIdRef.current) {
+      historyRef.current[PREVIEW_HISTORY_KEY] = { undo: [], redo: [] };
+      if (appModeRef.current === 'preview') {
+        setCanUndo(false);
+        setCanRedo(false);
+      }
+    }
+    prevPendingIdRef.current = newId;
+  }, [pendingBracket?.id]);
 
   // Atajos Ctrl+Z / Ctrl+Y
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (appMode !== 'bracket' || !canEdit) return;
+      if (appMode === 'bracket' && !canEdit) return;
+      if (appMode !== 'bracket' && appMode !== 'preview') return;
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         handleUndo();
@@ -117,6 +146,19 @@ export function useBracketEditor({
 
   const updateActiveBracketData = useCallback(
     async (updaterFn, skipHistory = false) => {
+      if (appModeRef.current === 'preview') {
+        const pb = pendingBracketRef.current;
+        if (!pb) return;
+        if (!skipHistory) {
+          const h = historyRef.current[PREVIEW_HISTORY_KEY] || { undo: [], redo: [] };
+          const newUndo = [...h.undo, pb.bracketData].slice(-10);
+          historyRef.current[PREVIEW_HISTORY_KEY] = { undo: newUndo, redo: [] };
+          setCanUndo(true);
+          setCanRedo(false);
+        }
+        setPendingBracket((prev) => (prev ? { ...prev, bracketData: updaterFn(prev.bracketData) } : prev));
+        return;
+      }
       const id = activeBracketIdRef.current;
       const bracket = bracketsRef.current.find((b) => b.id === id);
       if (!bracket) return;
@@ -132,7 +174,7 @@ export function useBracketEditor({
       setBrackets((prevBrackets) => prevBrackets.map((b) => (b.id === id ? updatedBracket : b)));
       await fireSave(bracket, updatedBracket);
     },
-    [setBrackets],
+    [setBrackets, setPendingBracket],
   );
 
   const clearForwardLocal = (stateDict, matchId, teamToClear) => {
@@ -158,6 +200,20 @@ export function useBracketEditor({
   // --- Handlers ---
 
   const handleUndo = async () => {
+    if (appMode === 'preview') {
+      const pb = pendingBracketRef.current;
+      if (!pb) return;
+      const h = historyRef.current[PREVIEW_HISTORY_KEY];
+      if (!h?.undo?.length) return;
+      const prevData = h.undo[h.undo.length - 1];
+      const newUndo = h.undo.slice(0, -1);
+      const newRedo = [...(h.redo || []), pb.bracketData].slice(-10);
+      historyRef.current[PREVIEW_HISTORY_KEY] = { undo: newUndo, redo: newRedo };
+      setCanUndo(newUndo.length > 0);
+      setCanRedo(true);
+      setPendingBracket((prev) => (prev ? { ...prev, bracketData: prevData } : prev));
+      return;
+    }
     const bracket = brackets.find((b) => b.id === activeBracketId);
     if (!bracket) return;
     const h = historyRef.current[activeBracketId];
@@ -174,6 +230,20 @@ export function useBracketEditor({
   };
 
   const handleRedo = async () => {
+    if (appMode === 'preview') {
+      const pb = pendingBracketRef.current;
+      if (!pb) return;
+      const h = historyRef.current[PREVIEW_HISTORY_KEY];
+      if (!h?.redo?.length) return;
+      const nextData = h.redo[h.redo.length - 1];
+      const newRedo = h.redo.slice(0, -1);
+      const newUndo = [...(h.undo || []), pb.bracketData].slice(-10);
+      historyRef.current[PREVIEW_HISTORY_KEY] = { undo: newUndo, redo: newRedo };
+      setCanUndo(true);
+      setCanRedo(newRedo.length > 0);
+      setPendingBracket((prev) => (prev ? { ...prev, bracketData: nextData } : prev));
+      return;
+    }
     const bracket = brackets.find((b) => b.id === activeBracketId);
     if (!bracket) return;
     const h = historyRef.current[activeBracketId];

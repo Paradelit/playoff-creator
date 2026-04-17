@@ -176,7 +176,7 @@ export default function HomeScreen() {
                     )}
                     {activePlayoffs.find((p) => p.teamId === team.id && p.rival) && (
                       <p className="text-xs text-amber-300/80 mt-0.5 truncate">
-                        Playoff: vs {activePlayoffs.find((p) => p.teamId === team.id && p.rival).rival}
+                        Torneo: vs {activePlayoffs.find((p) => p.teamId === team.id && p.rival).rival}
                         {(() => {
                           const p = activePlayoffs.find((ap) => ap.teamId === team.id && ap.rival);
                           return p?.series ? ` (${p.series.wins}-${p.series.losses})` : '';
@@ -198,7 +198,7 @@ export default function HomeScreen() {
                       />
                       <QuickAction
                         icon={Trophy}
-                        label="Playoffs"
+                        label="Torneos"
                         onClick={() => navigate(`/playoffs?teamId=${team.id}`)}
                       />
                     </div>
@@ -239,7 +239,7 @@ export default function HomeScreen() {
             )}
             {weeklySummary.playoffs > 0 && (
               <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">
-                {weeklySummary.playoffs} playoff
+                {weeklySummary.playoffs} torneo
               </span>
             )}
           </div>
@@ -324,7 +324,7 @@ export default function HomeScreen() {
 
         {activePlayoffs.length > 0 && (
           <div className="mt-6">
-            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Playoffs</h2>
+            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Torneos</h2>
             <div className="flex flex-col gap-2">
               {activePlayoffs.map((p) => (
                 <button

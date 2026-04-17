@@ -35,9 +35,7 @@ export default function ConfirmWriteBlock({ proposal, onConfirm, onCancel }: Con
     <div className={`rounded-xl border ${color.border} ${color.bg} overflow-hidden`}>
       <div className={`px-3 py-2 border-b ${color.border} flex items-center gap-2`}>
         <ShieldCheck size={14} className={color.icon} />
-        <p className={`text-sm font-semibold ${color.title}`}>
-          {STATE_LABELS[status]}
-        </p>
+        <p className={`text-sm font-semibold ${color.title}`}>{STATE_LABELS[status]}</p>
       </div>
       <div className="px-3 py-2 space-y-2">
         <p className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">
@@ -78,7 +76,7 @@ const KIND_LABELS: Record<string, string> = {
   create_calendar_session: 'Crear evento de calendario',
   update_bracket_scores: 'Actualizar resultados del cuadro',
   save_note: 'Guardar nota',
-  create_bracket: 'Crear cuadro de playoffs',
+  create_bracket: 'Crear cuadro de torneo',
 };
 
 const STATE_LABELS: Record<string, string> = {

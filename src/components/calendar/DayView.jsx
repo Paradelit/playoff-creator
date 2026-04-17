@@ -44,7 +44,7 @@ export default function DayView({ sessions, loading, onSelectSession, getTrainin
             <div className="flex-1 min-w-0">
               <p className="font-bold text-slate-800 text-sm truncate">
                 {isPlayoff
-                  ? `Playoff vs ${s.rival}`
+                  ? `Torneo vs ${s.rival}`
                   : isPartido
                     ? `vs ${s.rival || 'Rival'}`
                     : `Entrenamiento #${getTrainingNum(s)}`}

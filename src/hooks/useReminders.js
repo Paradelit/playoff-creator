@@ -34,7 +34,7 @@ export function useReminders(sessions) {
             s.tipo === 'partido'
               ? `Partido vs ${s.rival || 'Rival'}`
               : s.tipo === 'playoff'
-                ? `Playoff vs ${s.rival || 'Rival'}`
+                ? `Torneo vs ${s.rival || 'Rival'}`
                 : `Entrenamiento`;
 
           const diffMin = Math.round(diffMs / 60000);

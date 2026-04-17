@@ -10,7 +10,7 @@ import BlockRenderer from './blocks/BlockRenderer';
 const SCREEN_LABELS: Record<string, string> = {
   home: 'Inicio',
   calendar: 'Calendario',
-  bracket: 'Playoffs',
+  bracket: 'Torneos',
   'team-detail': 'Equipo',
   'team-trainings': 'Entrenamientos',
   'training-editor': 'Entrenamiento',

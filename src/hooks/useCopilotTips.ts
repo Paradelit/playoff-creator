@@ -21,7 +21,7 @@ const TIPS_BY_SCREEN: Record<string, (data?: Record<string, unknown>) => string[
     return tips;
   },
   calendar: () => ['¿Importar cuadrante desde Excel?', '¿Crear una sesión?'],
-  bracket: () => ['¿Subir acta de resultados?', '¿Crear cuadro de playoffs?'],
+  bracket: () => ['¿Subir acta de resultados?', '¿Crear cuadro de torneo?'],
   'training-editor': () => ['¿Necesitas ejercicios de tiro?', '¿Añadir calentamiento?'],
   'team-detail': (data) => {
     const name = (data?.teamName as string) || 'tu equipo';

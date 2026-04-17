@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, ZoomOut, ZoomIn, CheckCircle, ShieldHalf, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ZoomOut, ZoomIn, CheckCircle, ShieldHalf, ChevronDown, Undo2, Redo2 } from 'lucide-react';
 import BracketNode from '../components/BracketNode';
 import AIFeedback from '../components/AIFeedback';
 import { useBracket } from '../contexts/BracketContext';
@@ -41,6 +41,12 @@ export default function PreviewScreen() {
     setAppMode,
     pendingTeamObj,
     lastTraceId,
+    handleScoreChange,
+    handleSorteoSelect,
+    handleUndo,
+    handleRedo,
+    canUndo,
+    canRedo,
   } = useBracket();
   const { profile } = useProfile();
   const [showTeamPicker, setShowTeamPicker] = useState(false);
@@ -107,6 +113,26 @@ export default function PreviewScreen() {
               className="p-2"
             >
               <ZoomIn size={18} />
+            </button>
+          </div>
+          <div className="flex bg-blue-800 rounded-lg border border-blue-700">
+            <button
+              onClick={handleUndo}
+              disabled={!canUndo}
+              aria-label="Deshacer"
+              title="Deshacer (Ctrl+Z)"
+              className="p-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Undo2 size={18} />
+            </button>
+            <button
+              onClick={handleRedo}
+              disabled={!canRedo}
+              aria-label="Rehacer"
+              title="Rehacer (Ctrl+Y)"
+              className="p-2 border-l border-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Redo2 size={18} />
             </button>
           </div>
           <button
@@ -182,10 +208,10 @@ export default function PreviewScreen() {
           <BracketNode
             nodeId={pendingBracket.bracketData.rootId}
             bracketData={pendingBracket.bracketData}
-            onScoreChange={() => {}}
-            onSelectSorteo={() => {}}
+            onScoreChange={handleScoreChange}
+            onSelectSorteo={handleSorteoSelect}
             myTeam={myTeam}
-            readOnly={true}
+            readOnly={false}
           />
         </div>
       </div>

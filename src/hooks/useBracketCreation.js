@@ -8,7 +8,18 @@ import { toFirestore } from '../services/firestoreService';
 import { useCopilot } from '../contexts/CopilotProvider';
 import { teamDisplayName } from '../utils/teamUtils';
 
-export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets, setActiveBracketId, setAppMode }) {
+export function useBracketCreation({
+  user,
+  db,
+  appId,
+  initialTeamId,
+  setBrackets,
+  setActiveBracketId,
+  setAppMode,
+  pendingBracket,
+  setPendingBracket,
+  setPreviewZoom,
+}) {
   const { runAgent } = useCopilot();
   const [newBracketName, setNewBracketName] = useState('');
   const [basesFile, setBasesFile] = useState(null);
@@ -17,8 +28,6 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
   const [errorMsg, setErrorMsg] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [processStatus, setProcessStatus] = useState('');
-  const [pendingBracket, setPendingBracket] = useState(null);
-  const [previewZoom, setPreviewZoom] = useState(0.7);
   const [pendingTeamId, setPendingTeamId] = useState(null);
   const [pendingTeamObj, setPendingTeamObj] = useState(null);
   const [lastTraceId, setLastTraceId] = useState(null);
@@ -37,7 +46,7 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
         if (snap.exists()) {
           setPendingTeamId(initialTeamId);
           setPendingTeamObj(snap.data());
-          setNewBracketName(`Playoff ${teamDisplayName(snap.data())}`);
+          setNewBracketName(`Torneo ${teamDisplayName(snap.data())}`);
         }
       })
       .catch((e) => logger.warn('Error cargando equipo inicial', e));
@@ -126,8 +135,8 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
     for (let i = 0; i < count / 2; i++) {
       initialMatches.push({
         title: `Partido ${i + 1}`,
-        team1: `Equipo ${i * 2 + 1}`,
-        team2: `Equipo ${i * 2 + 2}`,
+        team1: null,
+        team2: null,
         team1Options: [],
         team2Options: [],
       });
@@ -144,12 +153,6 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
 
       const bracketDynamicTree = buildDynamicBracket(initialMatches, rounds);
 
-      const allTeamsSet = new Set();
-      initialMatches.forEach((m) => {
-        allTeamsSet.add(m.team1);
-        allTeamsSet.add(m.team2);
-      });
-
       const newBracketObj = {
         id: Date.now().toString(),
         createdAt: Date.now(),
@@ -157,7 +160,7 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
         tournamentNameDetected: 'Cuadro Manual',
         initialMatchesArray: initialMatches,
         roundsData: rounds,
-        allTeams: Array.from(allTeamsSet).sort(),
+        allTeams: [],
         bracketData: bracketDynamicTree,
       };
 
@@ -216,10 +219,6 @@ export function useBracketCreation({ user, db, appId, initialTeamId, setBrackets
     setErrorMsg,
     isProcessing,
     processStatus,
-    pendingBracket,
-    setPendingBracket,
-    previewZoom,
-    setPreviewZoom,
     pendingTeamObj,
     handleProcessDocuments,
     handleCreateManualBracket,

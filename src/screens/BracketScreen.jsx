@@ -14,6 +14,8 @@ import {
   ShieldHalf,
   ChevronDown,
   Loader2,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 import { teamDisplayName } from '../utils/teamUtils';
 import { doc, setDoc } from 'firebase/firestore';
@@ -24,6 +26,8 @@ import { useBracket } from '../contexts/BracketContext';
 import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
 import BracketShareModal from '../components/bracket/BracketShareModal';
 import BracketMobileTools from '../components/bracket/BracketMobileTools';
+import ToolbarButton from '../components/bracket/ToolbarButton';
+import ToolbarOverflowMenu from '../components/bracket/ToolbarOverflowMenu';
 
 export default function BracketScreen() {
   const {
@@ -294,72 +298,82 @@ export default function BracketScreen() {
         </div>
         {/* Row 2: Toolbar (desktop only) */}
         <div className="hidden lg:flex items-center gap-2 px-6 pb-3 flex-wrap">
-          <button
-            onClick={() => handleShare(activeBracket)}
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm"
-          >
-            <Share2 size={14} /> Compartir
-          </button>
-          {canEdit && (
-            <button
-              onClick={() => !isProcessingResults && fileInputResults.current?.click()}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-blue-700 to-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm"
-            >
-              <FileDigit size={14} /> ✨ Autocompletar PDF
-            </button>
+          {activeBracket.allTeams?.length > 0 && (
+            <TeamSearchableSelect
+              key={activeBracketId}
+              teams={activeBracket.allTeams}
+              selectedTeam={activeBracket.myTeam || ''}
+              onSelectTeam={handleSetMyTeam}
+            />
           )}
-          <TeamSearchableSelect
-            key={activeBracketId}
-            teams={activeBracket.allTeams}
-            selectedTeam={activeBracket.myTeam || ''}
-            onSelectTeam={handleSetMyTeam}
-          />
-          <div className="flex bg-blue-800 rounded-lg border border-blue-700">
-            <button onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))} aria-label="Reducir zoom" className="p-1.5">
+          <div className="flex bg-blue-800 rounded-lg border border-blue-700 h-9 overflow-hidden">
+            <button
+              onClick={() => setZoom((z) => Math.max(0.4, z - 0.1))}
+              aria-label="Reducir zoom"
+              className="px-2 hover:bg-blue-700"
+            >
               <ZoomOut size={15} />
             </button>
-            <div className="px-2 py-1.5 text-xs border-x border-blue-700 w-12 text-center">
+            <div className="px-2 text-xs border-x border-blue-700 w-12 flex items-center justify-center">
               {Math.round(zoom * 100)}%
             </div>
-            <button onClick={() => setZoom((z) => Math.min(1.5, z + 0.1))} aria-label="Aumentar zoom" className="p-1.5">
+            <button
+              onClick={() => setZoom((z) => Math.min(1.5, z + 0.1))}
+              aria-label="Aumentar zoom"
+              className="px-2 hover:bg-blue-700"
+            >
               <ZoomIn size={15} />
             </button>
           </div>
           {canEdit && (
-            <button
-              onClick={handleUndo}
-              disabled={!canUndo}
-              title="Deshacer"
-              className="bg-blue-800 hover:bg-blue-700 disabled:opacity-40 text-white p-1.5 rounded-lg text-sm"
-            >
-              ↩
-            </button>
+            <div className="flex bg-blue-800 rounded-lg border border-blue-700 h-9 overflow-hidden">
+              <button
+                onClick={handleUndo}
+                disabled={!canUndo}
+                title="Deshacer (Ctrl+Z)"
+                aria-label="Deshacer"
+                className="px-2 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Undo2 size={15} />
+              </button>
+              <button
+                onClick={handleRedo}
+                disabled={!canRedo}
+                title="Rehacer (Ctrl+Y)"
+                aria-label="Rehacer"
+                className="px-2 border-l border-blue-700 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Redo2 size={15} />
+              </button>
+            </div>
           )}
+          <div className="w-px h-6 bg-blue-700 mx-1" />
+          <ToolbarButton variant="primary" icon={Share2} label="Compartir" onClick={() => handleShare(activeBracket)} />
           {canEdit && (
-            <button
-              onClick={handleRedo}
-              disabled={!canRedo}
-              title="Rehacer"
-              className="bg-blue-800 hover:bg-blue-700 disabled:opacity-40 text-white p-1.5 rounded-lg text-sm"
-            >
-              ↪
-            </button>
+            <ToolbarButton
+              variant="accent"
+              icon={FileDigit}
+              label="✨ Autocompletar PDF"
+              onClick={() => !isProcessingResults && fileInputResults.current?.click()}
+              disabled={isProcessingResults}
+            />
           )}
-          <button
-            onClick={handleDownloadImage}
-            disabled={isExportingImage}
-            className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
-          >
-            <ImageDown size={14} /> Imagen
-          </button>
-          {canEdit && (
-            <button
-              onClick={() => setShowResetModal(true)}
-              className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg text-xs font-medium"
-            >
-              <RefreshCw size={14} /> Limpiar
-            </button>
-          )}
+          <ToolbarOverflowMenu
+            items={[
+              {
+                icon: ImageDown,
+                label: isExportingImage ? 'Generando...' : 'Descargar imagen',
+                onClick: handleDownloadImage,
+                disabled: isExportingImage,
+              },
+              canEdit && {
+                icon: RefreshCw,
+                label: 'Limpiar puntuaciones',
+                onClick: () => setShowResetModal(true),
+                danger: true,
+              },
+            ]}
+          />
         </div>
       </header>
 

@@ -20,6 +20,10 @@ export function BracketProvider({ initialShareCode, initialTeamId, onShareCodeCo
   // --- APP MODE ---
   const [appMode, setAppMode] = useState('loading');
 
+  // --- PREVIEW STATE (shared between creation, sync import, and editor) ---
+  const [pendingBracket, setPendingBracket] = useState(null);
+  const [previewZoom, setPreviewZoom] = useState(0.7);
+
   // --- COACH TEAMS ---
   const [coachTeams, setCoachTeams] = useState([]);
 
@@ -38,6 +42,8 @@ export function BracketProvider({ initialShareCode, initialTeamId, onShareCodeCo
     onShareCodeConsumed,
     appMode,
     setAppMode,
+    setPendingBracket,
+    setPreviewZoom,
   });
   const { brackets, setBrackets, activeBracketId, activeBracket, canEdit } = sync;
 
@@ -49,6 +55,9 @@ export function BracketProvider({ initialShareCode, initialTeamId, onShareCodeCo
     setBrackets,
     setActiveBracketId: sync.setActiveBracketId,
     setAppMode,
+    pendingBracket,
+    setPendingBracket,
+    setPreviewZoom,
   });
 
   const editor = useBracketEditor({
@@ -61,6 +70,8 @@ export function BracketProvider({ initialShareCode, initialTeamId, onShareCodeCo
     activeBracket,
     canEdit,
     appMode,
+    pendingBracket,
+    setPendingBracket,
   });
 
   const sharing = useSharing({
@@ -137,10 +148,10 @@ export function BracketProvider({ initialShareCode, initialTeamId, onShareCodeCo
     setErrorMsg: creation.setErrorMsg,
     isProcessing: creation.isProcessing,
     processStatus: creation.processStatus,
-    pendingBracket: creation.pendingBracket,
-    setPendingBracket: creation.setPendingBracket,
-    previewZoom: creation.previewZoom,
-    setPreviewZoom: creation.setPreviewZoom,
+    pendingBracket,
+    setPendingBracket,
+    previewZoom,
+    setPreviewZoom,
     pendingTeamObj: creation.pendingTeamObj,
     handleProcessDocuments: creation.handleProcessDocuments,
     handleCreateManualBracket: creation.handleCreateManualBracket,

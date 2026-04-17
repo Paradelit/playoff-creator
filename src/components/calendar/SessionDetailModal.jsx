@@ -50,7 +50,7 @@ export default function SessionDetailModal({
             <div className="min-w-0">
               <p className="font-bold text-slate-800 truncate">
                 {session.tipo === 'playoff'
-                  ? `Playoff vs ${session.rival}`
+                  ? `Torneo vs ${session.rival}`
                   : session.tipo === 'partido'
                     ? `vs ${session.rival || 'Rival'}`
                     : `Entrenamiento #${getTrainingNum(session)}`}
@@ -124,7 +124,7 @@ export default function SessionDetailModal({
               }}
               className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition"
             >
-              <Trophy size={16} /> Ver cuadro de playoff <ArrowRight size={15} />
+              <Trophy size={16} /> Ver cuadro del torneo <ArrowRight size={15} />
             </button>
           )}
           {session.tipo === 'entrenamiento' && (

@@ -272,8 +272,8 @@ export default function SettingsScreen() {
         {/* ─── Copilot IA ─── */}
         <Section icon={Sparkles} title="Copilot IA" iconColor="text-purple-600" iconBg="bg-purple-50">
           <p className="text-xs text-slate-500 mb-4">
-            Controla cuánto puede hablarte el copilot sin que tú se lo pidas. Siempre responderá cuando le preguntes
-            — esto solo afecta a sugerencias espontáneas.
+            Controla cuánto puede hablarte el copilot sin que tú se lo pidas. Siempre responderá cuando le preguntes —
+            esto solo afecta a sugerencias espontáneas.
           </p>
           <div className="flex flex-col gap-2">
             {[
@@ -416,7 +416,7 @@ export default function SettingsScreen() {
           <div className="px-5 py-4 flex flex-col gap-4">
             <div>
               <p className="text-sm text-slate-600 mb-3">
-                Borra todos tus equipos, jugadores, entrenamientos, ejercicios, playoffs y sesiones del calendario.
+                Borra todos tus equipos, jugadores, entrenamientos, ejercicios, torneos y sesiones del calendario.
                 <span className="font-semibold text-red-600"> Esta acción no se puede deshacer.</span>
               </p>
               <button

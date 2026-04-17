@@ -63,8 +63,8 @@ export function DeleteDataModal({ setShowDeleteDataModal, deletingData, handleDe
           <h3 className="text-lg font-bold text-slate-800">¿Borrar todos tus datos?</h3>
         </div>
         <p className="text-slate-600 text-sm mb-4">
-          Se eliminarán permanentemente todos tus equipos, jugadores, entrenamientos, ejercicios, playoffs y sesiones
-          del calendario.
+          Se eliminarán permanentemente todos tus equipos, jugadores, entrenamientos, ejercicios, torneos y sesiones del
+          calendario.
           <span className="font-semibold text-red-600"> Esta acción no se puede deshacer.</span>
         </p>
         <div className="flex gap-3">

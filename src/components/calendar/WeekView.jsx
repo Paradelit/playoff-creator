@@ -38,7 +38,7 @@ export default function WeekView({ weekDays, todayYMD, loading, onSelectSession,
                       className={`w-full text-left rounded px-1.5 py-1 text-xs font-semibold truncate transition-opacity hover:opacity-80 ${isPlayoff ? 'bg-amber-500 text-white' : isPartido ? 'bg-rose-500 text-white' : TEAM_COLORS[teamColorIndex(s.teamId)]}`}
                       title={
                         isPlayoff
-                          ? `Playoff vs ${s.rival}`
+                          ? `Torneo vs ${s.rival}`
                           : isPartido
                             ? `${s.teamName} vs ${s.rival || 'Rival'}`
                             : `${s.teamName} #${getTrainingNum(s)}`

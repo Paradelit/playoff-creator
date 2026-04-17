@@ -48,7 +48,7 @@ export function buildPlayoffSessions(brackets, teams) {
           esLocal: isMyTeamTeam1,
           bracketId: b.id,
           bracketMatchId: match.id,
-          bracketName: b.name || b.tournamentNameDetected || 'Playoff',
+          bracketName: b.name || b.tournamentNameDetected || 'Torneo',
           matchTitle: match.title || '',
           gameIndex: gi,
           gamesCount: match.gamesCount || 1,

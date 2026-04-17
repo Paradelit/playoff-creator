@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { doc, setDoc, deleteDoc, onSnapshot, getDoc } from 'firebase/firestore';
 import { userDocRef, userColRef } from '../services/firestoreHelpers';
 import logger from '../utils/logger';
-import { toFirestore } from '../services/firestoreService';
 import { teamDisplayName } from '../utils/teamUtils';
 import { useToast } from '../contexts/ToastContext';
 
@@ -15,6 +14,8 @@ export function useBracketSync({
   onShareCodeConsumed,
   appMode,
   setAppMode,
+  setPendingBracket,
+  setPreviewZoom,
 }) {
   const toast = useToast();
   const [brackets, setBrackets] = useState([]);
@@ -257,13 +258,14 @@ export function useBracketSync({
         name: data.name,
         myTeam: undefined,
         exportVersion: undefined,
+        shareCode: undefined,
+        shareConfig: undefined,
+        isShared: undefined,
+        isSharedRef: undefined,
       };
-      setBrackets((prev) => [imported, ...prev]);
-      if (user && db) {
-        setDoc(userDocRef(db, appId, user.uid, 'brackets', imported.id), toFirestore(imported)).catch((e) =>
-          logger.warn('No se pudo guardar importación en la nube', e),
-        );
-      }
+      setPendingBracket?.(imported);
+      setPreviewZoom?.(0.7);
+      setAppMode('preview');
     } catch {
       toast('Error al leer el archivo. Asegúrate de que es un cuadro exportado válido.', 'error');
     }

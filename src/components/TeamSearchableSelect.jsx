@@ -27,10 +27,10 @@ const TeamSearchableSelect = React.memo(({ teams, selectedTeam, onSelectTeam }) 
   return (
     <div ref={wrapperRef} className="relative w-full sm:w-64">
       <div
-        className="flex items-center gap-2 bg-blue-800/50 p-2 rounded-lg border border-blue-700 cursor-text"
+        className="flex items-center gap-2 bg-blue-800/50 px-2 h-9 rounded-lg border border-blue-700 cursor-text"
         onClick={() => setIsOpen(true)}
       >
-        <Star size={18} className="text-fuchsia-300 shrink-0" />
+        <Star size={16} className="text-fuchsia-300 shrink-0" />
         <input
           type="text"
           value={isOpen ? searchTerm : selectedTeam || ''}

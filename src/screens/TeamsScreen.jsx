@@ -118,7 +118,7 @@ export default function TeamsScreen() {
                   <button
                     onClick={() => navigate(`/playoffs?teamId=${team.id}`)}
                     className="text-slate-400 hover:text-amber-500 p-1.5 hover:bg-amber-50 rounded-lg transition-colors shrink-0"
-                    title="Ver playoff del equipo"
+                    title="Ver torneo del equipo"
                   >
                     <Trophy size={16} />
                   </button>

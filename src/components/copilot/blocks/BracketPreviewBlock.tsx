@@ -10,7 +10,7 @@ export default function BracketPreviewBlock({ bracket }: { bracket: BracketPrevi
       <div className="px-3 py-2 bg-amber-100/60 border-b border-amber-200 flex items-center gap-2">
         <Trophy size={14} className="text-amber-600" />
         <p className="text-sm font-semibold text-amber-900 truncate flex-1">
-          {bracket.tournamentName || 'Cuadro de playoffs'}
+          {bracket.tournamentName || 'Cuadro del torneo'}
         </p>
       </div>
       <div className="px-3 py-2 space-y-1">

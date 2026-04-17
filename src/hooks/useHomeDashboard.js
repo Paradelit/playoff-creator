@@ -119,7 +119,7 @@ export function useHomeDashboard() {
         const team = teams.find((t) => t.id === b.teamId);
         return {
           id: b.id,
-          name: b.name || b.tournamentNameDetected || 'Playoff',
+          name: b.name || b.tournamentNameDetected || 'Torneo',
           teamName: team ? teamDisplayName(team) : '',
           teamId: b.teamId,
           match,

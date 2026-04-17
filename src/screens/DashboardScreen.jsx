@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Trophy,
   Plus,
-  Upload,
   Download,
   Trash2,
   Share2,
@@ -11,7 +10,6 @@ import {
   FolderOpen,
   Cloud,
   CloudOff,
-  LogOut,
   Link,
   X,
   Check,
@@ -40,9 +38,6 @@ export default function DashboardScreen() {
     bracketToDelete,
     setBracketToDelete,
     confirmDelete,
-    handleLogout,
-    fileInputImport,
-    handleImport,
     sharingBracket,
     setSharingBracket,
     inviteEmail,
@@ -222,32 +217,6 @@ export default function DashboardScreen() {
       )}
 
       <div className="max-w-5xl mx-auto">
-        <div className="flex justify-end mb-4">
-          {user && (
-            <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200">
-              <div className="flex items-center gap-2">
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="Avatar" className="w-6 h-6 rounded-full" />
-                ) : (
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-xs">
-                    {user.email ? user.email.charAt(0).toUpperCase() : 'I'}
-                  </div>
-                )}
-                <span className="text-sm font-medium text-slate-700 hidden sm:inline">
-                  {user.isAnonymous ? 'Invitado' : user.displayName || user.email}
-                </span>
-              </div>
-              <div className="w-px h-4 bg-slate-300"></div>
-              <button
-                onClick={handleLogout}
-                className="text-slate-500 hover:text-red-500 flex items-center gap-1 text-sm font-medium transition"
-              >
-                <LogOut size={16} /> Salir
-              </button>
-            </div>
-          )}
-        </div>
-
         <div className="flex flex-col sm:flex-row justify-between items-center mb-10 gap-6">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
@@ -262,18 +231,11 @@ export default function DashboardScreen() {
               {firebaseError ? <CloudOff size={14} /> : <Cloud size={14} />}
               {firebaseError ? 'Solo Local' : 'Guardado en la Nube'}
             </div>
-            <input type="file" className="hidden" ref={fileInputImport} accept=".json" onChange={handleImport} />
-            <button
-              onClick={() => fileInputImport.current?.click()}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold flex items-center gap-2 border border-slate-300 transition-colors"
-            >
-              <Upload size={18} /> Importar
-            </button>
             <button
               onClick={() => setAppMode('upload')}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-transform hover:scale-105"
             >
-              <Plus size={20} /> Nuevo Cuadro IA
+              <Plus size={20} /> Nuevo Cuadro
             </button>
           </div>
         </div>

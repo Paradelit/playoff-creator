@@ -13,7 +13,7 @@ import { TeamFormFields, EMPTY_FORM } from '../screens/TeamsScreen';
 
 const LEFT_ITEMS = [
   { to: '/', label: 'Inicio', Icon: Home, end: true },
-  { to: '/playoffs', label: 'Playoffs', Icon: Trophy, end: false },
+  { to: '/playoffs', label: 'Torneos', Icon: Trophy, end: false },
 ];
 const RIGHT_ITEMS = [
   { to: '/teams', label: 'Equipos', Icon: Users, end: false },
@@ -126,8 +126,8 @@ function CreateSheet({ onClose }) {
     },
     {
       icon: Trophy,
-      label: 'Nuevo cuadro de playoff',
-      desc: 'Torneo de eliminación directa',
+      label: 'Nuevo torneo',
+      desc: 'Cuadro de eliminación directa',
       color: 'bg-amber-50 text-amber-600',
       action: () => {
         onClose();
