@@ -190,20 +190,27 @@ export function useBracketCreation({
             myTeam: pendingBracket.myTeam || null,
           }
         : pendingBracket;
+
+    // Commit local state + navigation first, so a Firestore error can't block the transition.
     setBrackets((prev) => [bracketToSave, ...prev]);
     setActiveBracketId(bracketToSave.id);
-    localStorage.setItem('playoffs:lastActiveBracketId', bracketToSave.id);
-    if (user && db) {
-      setDoc(userDocRef(db, appId, user.uid, 'brackets', bracketToSave.id), toFirestore(bracketToSave)).catch((e) =>
-        logger.warn('No se pudo guardar en la nube', e),
-      );
-    }
     setPendingBracket(null);
     setNewBracketName('');
     setBasesFile(null);
     setClasifFile(null);
     setCustomPrompt('');
     setAppMode('bracket');
+
+    localStorage.setItem('playoffs:lastActiveBracketId', bracketToSave.id);
+    if (user && db) {
+      try {
+        setDoc(userDocRef(db, appId, user.uid, 'brackets', bracketToSave.id), toFirestore(bracketToSave)).catch((e) =>
+          logger.warn('No se pudo guardar en la nube', e),
+        );
+      } catch (e) {
+        logger.warn('No se pudo guardar en la nube', e);
+      }
+    }
   };
 
   return {

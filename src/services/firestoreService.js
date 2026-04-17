@@ -4,7 +4,9 @@ import logger from '../utils/logger';
 
 export const toFirestore = (bracket, forShared = false) => {
   // eslint-disable-next-line no-unused-vars
-  const { myTeam, isShared, isSharedRef, exportVersion, ...clean } = bracket;
+  const { myTeam, isShared, isSharedRef, exportVersion, ...rest } = bracket;
+  // Firestore rejects undefined values synchronously; strip them.
+  const clean = Object.fromEntries(Object.entries(rest).filter(([, v]) => v !== undefined));
   if (forShared) return clean;
   return { ...clean, myTeam: myTeam || null };
 };

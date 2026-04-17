@@ -47,6 +47,21 @@ describe('toFirestore', () => {
     expect(result.myTeam).toBeNull();
   });
 
+  it('strips undefined values to keep Firestore happy', () => {
+    const bracket = {
+      ...baseBracket,
+      tournamentNameDetected: undefined,
+      shareCode: undefined,
+      shareConfig: undefined,
+    };
+    const result = toFirestore(bracket);
+
+    expect('tournamentNameDetected' in result).toBe(false);
+    expect('shareCode' in result).toBe(false);
+    expect('shareConfig' in result).toBe(false);
+    expect(result.myTeam).toBe('Alevín 1º A');
+  });
+
   describe('forShared=true', () => {
     it('strips myTeam in addition to other fields', () => {
       const result = toFirestore(baseBracket, true);

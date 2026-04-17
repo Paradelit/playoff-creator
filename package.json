@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",
+    "predeploy": "npm run build",
     "deploy": "firebase deploy --only hosting",
     "prepare": "husky"
   },
