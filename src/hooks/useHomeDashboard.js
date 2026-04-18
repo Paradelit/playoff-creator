@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
-import { saveTraining } from '../services/trainingsService';
+import { saveTraining, subscribeToExercises } from '../services/trainingsService';
 import { useTeams } from './useTeams';
 import { useTrainingNumbers } from './useTrainingNumbers';
 import { subscribeToCalendarSessions, linkTrainingToSession } from '../services/calendarService';
@@ -53,6 +53,7 @@ export function useHomeDashboard() {
 
   const [sessions, setSessions] = useState([]);
   const [brackets, setBrackets] = useState([]);
+  const [exercises, setExercises] = useState([]);
   const [creatingTraining, setCreatingTraining] = useState(null);
 
   const today = useMemo(() => new Date(), []);
@@ -70,6 +71,23 @@ export function useHomeDashboard() {
       setBrackets(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
     });
   }, [user, db, appId]);
+
+  useEffect(() => {
+    if (!user || !db) return;
+    return subscribeToExercises(user.uid, db, appId, setExercises);
+  }, [user, db, appId]);
+
+  const recentExercises = useMemo(() => {
+    const timeOf = (ex) => {
+      const raw = ex.updatedAt || ex.createdAt;
+      if (!raw) return 0;
+      if (typeof raw === 'object' && typeof raw.toMillis === 'function') return raw.toMillis();
+      if (typeof raw === 'number') return raw;
+      const d = new Date(raw);
+      return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+    };
+    return [...exercises].sort((a, b) => timeOf(b) - timeOf(a)).slice(0, 3);
+  }, [exercises]);
 
   const playoffSessions = useMemo(() => buildPlayoffSessions(brackets, teams), [brackets, teams]);
   const allSessions = useMemo(() => [...sessions, ...playoffSessions], [sessions, playoffSessions]);
@@ -255,6 +273,9 @@ export function useHomeDashboard() {
     matchDayEvent,
     weeklySummary,
     nextMatchByTeam,
+    recentExercises,
+    exercisesCount: exercises.length,
+    allSessions,
     creatingTraining,
     handleEventAction,
   };

@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   LogOut,
   Settings,
-  BookOpen,
   ShieldHalf,
   ClipboardList,
   CalendarDays,
@@ -17,6 +16,7 @@ import { useHomeDashboard } from '../hooks/useHomeDashboard';
 import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
 import { teamDisplayName } from '../utils/teamUtils';
 import { EmptyTeamCard, MatchDayWidget, ActionEventRow, MONTHS } from '../components/home/HomeComponents';
+import BibliotecaPreview from '../components/home/BibliotecaPreview';
 
 const CARD_GRADIENTS = [
   'from-blue-900 via-blue-800 to-blue-700',
@@ -55,6 +55,8 @@ export default function HomeScreen() {
     matchDayEvent,
     weeklySummary,
     nextMatchByTeam,
+    recentExercises,
+    exercisesCount,
     creatingTraining,
     handleEventAction,
   } = useHomeDashboard();
@@ -94,7 +96,7 @@ export default function HomeScreen() {
     <div className="min-h-screen bg-slate-100 font-sans pb-28 overflow-x-hidden">
       {/* Header */}
       <div className="bg-gradient-to-b from-blue-950 via-blue-950 to-blue-900 px-5 pt-10 pb-32">
-        <div className="flex justify-between items-center max-w-lg mx-auto">
+        <div className="flex justify-between items-center max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto">
           <div>
             <p className="text-blue-400 text-sm font-medium">{greeting}</p>
             <h1 className="text-white text-2xl font-bold leading-tight">{displayName}</h1>
@@ -107,14 +109,6 @@ export default function HomeScreen() {
                 {initial}
               </div>
             )}
-            <button
-              onClick={() => navigate('/exercises')}
-              className="text-blue-400 hover:text-white transition p-1.5"
-              aria-label="Biblioteca de ejercicios"
-              title="Biblioteca de ejercicios"
-            >
-              <BookOpen size={18} />
-            </button>
             <button
               onClick={() => navigate('/settings')}
               className="text-blue-400 hover:text-white transition p-1.5"
@@ -135,7 +129,7 @@ export default function HomeScreen() {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4">
+      <div className="max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto px-4">
         {/* Team carousel */}
         <div className="-mt-24 mb-4">
           {loadingTeams ? (
@@ -222,6 +216,10 @@ export default function HomeScreen() {
         {matchDayEvent && (
           <MatchDayWidget session={matchDayEvent} teams={teams} todayYMD={todayYMD} navigate={navigate} />
         )}
+
+        <div className="mt-4">
+          <BibliotecaPreview exercises={recentExercises} totalCount={exercisesCount} navigate={navigate} />
+        </div>
 
         {weeklySummary.total > 0 && (
           <div className="mt-4 bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex items-center gap-2 text-xs text-slate-600 font-medium">

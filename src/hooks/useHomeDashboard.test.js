@@ -72,6 +72,10 @@ vi.mock('./useReminders', () => ({
 
 vi.mock('../services/trainingsService', () => ({
   saveTraining: vi.fn(() => Promise.resolve()),
+  subscribeToExercises: vi.fn((_uid, _db, _appId, callback) => {
+    callback([]);
+    return vi.fn();
+  }),
 }));
 
 import { useHomeDashboard } from './useHomeDashboard';

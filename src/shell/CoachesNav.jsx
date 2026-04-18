@@ -13,12 +13,15 @@ import { TeamFormFields, EMPTY_FORM } from '../screens/TeamsScreen';
 
 const LEFT_ITEMS = [
   { to: '/', label: 'Inicio', Icon: Home, end: true },
-  { to: '/playoffs', label: 'Torneos', Icon: Trophy, end: false },
+  { to: '/teams', label: 'Equipos', Icon: Users, end: false },
 ];
 const RIGHT_ITEMS = [
-  { to: '/teams', label: 'Equipos', Icon: Users, end: false },
+  { to: '/exercises', label: 'Biblioteca', Icon: BookOpen, end: false },
   { to: '/calendar', label: 'Calendario', Icon: CalendarDays, end: false },
 ];
+
+/* eslint-disable react-refresh/only-export-components */
+export const NAV_ITEMS = [...LEFT_ITEMS, ...RIGHT_ITEMS];
 
 function NavItem({ to, label, Icon, end }) {
   return (
@@ -39,7 +42,7 @@ function NavItem({ to, label, Icon, end }) {
 
 // ─── Create Sheet ───────────────────────────────────────────────
 
-function CreateSheet({ onClose }) {
+export function CreateSheet({ onClose }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { db, appId } = useFirebase();
@@ -266,7 +269,7 @@ export default function CoachesNav() {
   return (
     <>
       <nav
-        className="fixed bottom-0 left-0 right-0 z-[100] bg-blue-950 border-t border-blue-900 flex items-stretch h-16"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-blue-950 border-t border-blue-900 flex items-stretch h-16"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         {LEFT_ITEMS.map((item) => (
