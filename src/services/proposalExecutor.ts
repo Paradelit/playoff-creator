@@ -72,7 +72,7 @@ export async function executeProposal(ctx: ExecuteContext, proposal: WritePropos
       let finalText = text;
       if (append) {
         const snap = await getDoc(ref);
-        const prev = snap.exists() ? ((snap.data().texto as string) || '') : '';
+        const prev = snap.exists() ? (snap.data().texto as string) || '' : '';
         finalText = prev ? `${prev}\n\n${text}` : text;
       }
       await setDoc(ref, { texto: finalText, updatedAt: serverTimestamp() }, { merge: true });
@@ -95,17 +95,22 @@ export async function executeProposal(ctx: ExecuteContext, proposal: WritePropos
       const teamId = payload.teamId as string | undefined;
       const sessionId = payload.sessionId as string | undefined;
       const attendance = payload.attendance as Record<string, unknown> | undefined;
-      if (!teamId || !sessionId || !attendance) throw new Error('Propuesta inválida: falta teamId, sessionId o attendance');
+      if (!teamId || !sessionId || !attendance)
+        throw new Error('Propuesta inválida: falta teamId, sessionId o attendance');
 
       const ref = doc(userColRef(db, appId, uid, 'teams'), teamId, 'cuaderno', 'asistencia');
       const snap = await getDoc(ref);
       const data = snap.exists() ? snap.data() : {};
-      
-      await setDoc(ref, {
-        ...data,
-        [sessionId]: attendance,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
+
+      await setDoc(
+        ref,
+        {
+          ...data,
+          [sessionId]: attendance,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
       return;
     }
 
@@ -115,10 +120,14 @@ export async function executeProposal(ctx: ExecuteContext, proposal: WritePropos
       if (!teamId || !report) throw new Error('Propuesta inválida: falta teamId o report');
 
       const ref = doc(userColRef(db, appId, uid, 'teams'), teamId, 'cuaderno', 'informe-jugadores');
-      await setDoc(ref, {
-        ...report,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
+      await setDoc(
+        ref,
+        {
+          ...report,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
       return;
     }
 
@@ -128,10 +137,14 @@ export async function executeProposal(ctx: ExecuteContext, proposal: WritePropos
       if (!teamId || !testResults) throw new Error('Propuesta inválida: falta teamId o testResults');
 
       const ref = doc(userColRef(db, appId, uid, 'teams'), teamId, 'cuaderno', 'test-tiro');
-      await setDoc(ref, {
-        ...testResults,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
+      await setDoc(
+        ref,
+        {
+          ...testResults,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
       return;
     }
 
@@ -141,11 +154,15 @@ export async function executeProposal(ctx: ExecuteContext, proposal: WritePropos
       if (!sessionId || !scoutingData) throw new Error('Propuesta inválida: falta sessionId o scoutingData');
 
       const ref = userDocRef(db, appId, uid, 'scoutings', sessionId);
-      await setDoc(ref, {
-        ...scoutingData,
-        sessionId,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
+      await setDoc(
+        ref,
+        {
+          ...scoutingData,
+          sessionId,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
       return;
     }
 
@@ -155,11 +172,15 @@ export async function executeProposal(ctx: ExecuteContext, proposal: WritePropos
       if (!sessionId || !analysisData) throw new Error('Propuesta inválida: falta sessionId o analysisData');
 
       const ref = userDocRef(db, appId, uid, 'analisis', sessionId);
-      await setDoc(ref, {
-        ...analysisData,
-        sessionId,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
+      await setDoc(
+        ref,
+        {
+          ...analysisData,
+          sessionId,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
       return;
     }
 

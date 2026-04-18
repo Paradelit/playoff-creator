@@ -20,12 +20,7 @@ export default function BlockRenderer({ blocks, onConfirmProposal, onCancelPropo
   return (
     <div className="space-y-2">
       {blocks.map((block, i) => (
-        <SingleBlock
-          key={i}
-          block={block}
-          onConfirmProposal={onConfirmProposal}
-          onCancelProposal={onCancelProposal}
-        />
+        <SingleBlock key={i} block={block} onConfirmProposal={onConfirmProposal} onCancelProposal={onCancelProposal} />
       ))}
     </div>
   );
@@ -56,13 +51,7 @@ function SingleBlock({
     case 'score_update':
       return <ScoreUpdateBlock updates={block.updates} />;
     case 'confirm_write':
-      return (
-        <ConfirmWriteBlock
-          proposal={block.proposal}
-          onConfirm={onConfirmProposal}
-          onCancel={onCancelProposal}
-        />
-      );
+      return <ConfirmWriteBlock proposal={block.proposal} onConfirm={onConfirmProposal} onCancel={onCancelProposal} />;
     default:
       return null;
   }
