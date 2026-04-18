@@ -3,6 +3,7 @@ import { Trophy, ClipboardList, Plus, FolderOpen, ArrowRight, History, Swords, S
 import { teamDisplayName } from '../../utils/teamUtils';
 import { isMinibasketSextos } from '../../utils/minibasketUtils';
 import { toYMD } from '../../utils/dateUtils';
+import { formatCountdown } from '../../utils/homeUtils';
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
@@ -28,21 +29,8 @@ export function MatchDayWidget({ session, teams, todayYMD, navigate }) {
   const isToday = session.fecha === todayYMD;
   const isFuture = session.fecha >= todayYMD;
 
-  let timeLabel = isToday ? 'Hoy' : 'Mañana';
-  if (isToday && session.horaInicio) {
-    const [h, m] = session.horaInicio.split(':').map(Number);
-    const now = new Date();
-    const matchTime = new Date();
-    matchTime.setHours(h, m, 0, 0);
-    const diffMs = matchTime - now;
-    if (diffMs > 0) {
-      const diffH = Math.floor(diffMs / 3600000);
-      const diffM = Math.floor((diffMs % 3600000) / 60000);
-      timeLabel = diffH > 0 ? `En ${diffH}h ${diffM}m` : `En ${diffM} min`;
-    } else {
-      timeLabel = 'En curso';
-    }
-  }
+  const { label: countdown } = formatCountdown(session);
+  const timeLabel = countdown || (isToday ? 'Hoy' : 'Mañana');
 
   const actionRoute = isFuture ? `/calendar/${session.id}/scouting` : `/calendar/${session.id}/analysis`;
   const actionLabel = isFuture ? 'Scouting' : 'Análisis';

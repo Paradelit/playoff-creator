@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
-import { saveTraining, subscribeToExercises } from '../services/trainingsService';
+import { saveTraining, subscribeToExercises, subscribeToTrainings } from '../services/trainingsService';
 import { useTeams } from './useTeams';
 import { useTrainingNumbers } from './useTrainingNumbers';
 import { subscribeToCalendarSessions, linkTrainingToSession } from '../services/calendarService';
@@ -12,6 +12,7 @@ import { teamDisplayName } from '../utils/teamUtils';
 import { buildPlayoffSessions } from '../utils/calendarUtils';
 import { isMinibasketSextos } from '../utils/minibasketUtils';
 import { toYMD } from '../utils/dateUtils';
+import { buildPendingActions, buildNewsItems, buildWeekStrip, pickNextAction } from '../utils/homeUtils';
 import { useReminders } from './useReminders';
 
 function getExtendedRange() {
@@ -54,6 +55,7 @@ export function useHomeDashboard() {
   const [sessions, setSessions] = useState([]);
   const [brackets, setBrackets] = useState([]);
   const [exercises, setExercises] = useState([]);
+  const [trainingsByTeam, setTrainingsByTeam] = useState({});
   const [creatingTraining, setCreatingTraining] = useState(null);
 
   const today = useMemo(() => new Date(), []);
@@ -76,6 +78,32 @@ export function useHomeDashboard() {
     if (!user || !db) return;
     return subscribeToExercises(user.uid, db, appId, setExercises);
   }, [user, db, appId]);
+
+  // Subscribe to trainings for every team so we can surface "training_created" news
+  // items and keep a global pool of recent trainings without loading the editor.
+  const teamIdsKey = useMemo(
+    () =>
+      teams
+        .map((t) => t.id)
+        .sort()
+        .join('|'),
+    [teams],
+  );
+  useEffect(() => {
+    if (!user || !db || teams.length === 0) {
+      setTrainingsByTeam({});
+      return undefined;
+    }
+    const unsubs = teams.map((team) =>
+      subscribeToTrainings(team.id, user.uid, db, appId, (list) => {
+        setTrainingsByTeam((prev) => ({ ...prev, [team.id]: list }));
+      }),
+    );
+    return () => {
+      unsubs.forEach((u) => u && u());
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, db, appId, teamIdsKey]);
 
   const recentExercises = useMemo(() => {
     const timeOf = (ex) => {
@@ -194,6 +222,31 @@ export function useHomeDashboard() {
     return map;
   }, [allSessions, todayYMD]);
 
+  const nextActionEvent = useMemo(
+    () => pickNextAction(allSessions, todayYMD, matchDayEvent),
+    [allSessions, todayYMD, matchDayEvent],
+  );
+
+  const pendingActions = useMemo(
+    () => buildPendingActions(allSessions, todayYMD, { limit: 6 }),
+    [allSessions, todayYMD],
+  );
+
+  const allTrainings = useMemo(() => {
+    const all = [];
+    for (const list of Object.values(trainingsByTeam)) {
+      if (Array.isArray(list)) all.push(...list);
+    }
+    return all;
+  }, [trainingsByTeam]);
+
+  const newsItems = useMemo(
+    () => buildNewsItems({ trainings: allTrainings, exercises, sessions, brackets, now: today, limit: 8 }),
+    [allTrainings, exercises, sessions, brackets, today],
+  );
+
+  const weekStrip = useMemo(() => buildWeekStrip(allSessions, today), [allSessions, today]);
+
   const handleCreateTraining = useCallback(
     async (session) => {
       setCreatingTraining(session.id);
@@ -278,5 +331,9 @@ export function useHomeDashboard() {
     allSessions,
     creatingTraining,
     handleEventAction,
+    nextActionEvent,
+    pendingActions,
+    newsItems,
+    weekStrip,
   };
 }

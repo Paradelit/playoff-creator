@@ -5,6 +5,7 @@ import { AuthProvider } from '../contexts/AuthContext';
 import { ScreenContextProvider } from '../contexts/ScreenContextProvider';
 import { CopilotProvider } from '../contexts/CopilotProvider';
 import { ToastProvider } from '../contexts/ToastContext';
+import { SidebarProvider } from '../contexts/SidebarContext';
 import ErrorBoundary from '../components/ErrorBoundary';
 import AppShell from './AppShell';
 import AppRouter from './AppRouter';
@@ -19,10 +20,12 @@ export default function CoachesApp() {
             <CopilotProvider>
               <ToastProvider>
                 <ErrorBoundary>
-                  <AppShell>
-                    <AppRouter />
-                  </AppShell>
-                  <CopilotRoot />
+                  <SidebarProvider>
+                    <AppShell>
+                      <AppRouter />
+                    </AppShell>
+                    <CopilotRoot />
+                  </SidebarProvider>
                 </ErrorBoundary>
               </ToastProvider>
             </CopilotProvider>

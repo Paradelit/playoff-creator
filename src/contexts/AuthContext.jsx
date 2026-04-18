@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   GoogleAuthProvider,
+  OAuthProvider,
   signInWithPopup,
   signInWithCredential,
   linkWithPopup,
@@ -36,7 +37,7 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, [auth]);
 
-  const handleLogin = async () => {
+  const handleGoogleLogin = async () => {
     setIsLoggingIn(true);
     setAuthError('');
     const provider = new GoogleAuthProvider();
@@ -49,8 +50,39 @@ export function AuthProvider({ children }) {
         setAuthError(
           `Bloqueo de seguridad: Ve a Firebase Console -> Authentication -> Settings -> Authorized domains y añade: ${domain}`,
         );
+      } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        // Silent: usuario cerró el popup intencionalmente.
       } else {
         setAuthError('Error al conectar con Google. Revisa tu configuración de Firebase.');
+      }
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setIsLoggingIn(true);
+    setAuthError('');
+    const provider = new OAuthProvider('apple.com');
+    provider.addScope('email');
+    provider.addScope('name');
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      logger.error('Error al iniciar sesión con Apple', error);
+      if (error.code === 'auth/unauthorized-domain') {
+        const domain = window.location.hostname || 'scf.usercontent.goog';
+        setAuthError(
+          `Bloqueo de seguridad: Ve a Firebase Console -> Authentication -> Settings -> Authorized domains y añade: ${domain}`,
+        );
+      } else if (error.code === 'auth/operation-not-allowed') {
+        setAuthError(
+          'Apple Sign-In no está habilitado. Actívalo en Firebase Console → Authentication → Sign-in method.',
+        );
+      } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        // Silent: usuario cerró el popup intencionalmente.
+      } else {
+        setAuthError('Error al conectar con Apple.');
       }
     } finally {
       setIsLoggingIn(false);
@@ -151,7 +183,8 @@ export function AuthProvider({ children }) {
         authError,
         setAuthError,
         authReady,
-        handleLogin,
+        handleGoogleLogin,
+        handleAppleLogin,
         handleEmailLogin,
         handleEmailRegister,
         handleAnonymousLogin,

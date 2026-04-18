@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   LogOut,
   Settings,
@@ -9,14 +9,16 @@ import {
   Users,
   ChevronRight,
   Clock,
-  History,
-  FastForward,
 } from 'lucide-react';
 import { useHomeDashboard } from '../hooks/useHomeDashboard';
 import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
 import { teamDisplayName } from '../utils/teamUtils';
-import { EmptyTeamCard, MatchDayWidget, ActionEventRow, MONTHS } from '../components/home/HomeComponents';
+import { EmptyTeamCard, ActionEventRow, MONTHS } from '../components/home/HomeComponents';
 import BibliotecaPreview from '../components/home/BibliotecaPreview';
+import NextActionHero from '../components/home/NextActionHero';
+import PendingActionsList from '../components/home/PendingActionsList';
+import NewsFeed from '../components/home/NewsFeed';
+import WeekStrip from '../components/home/WeekStrip';
 
 const CARD_GRADIENTS = [
   'from-blue-900 via-blue-800 to-blue-700',
@@ -38,6 +40,202 @@ function QuickAction({ icon: Icon, label, onClick }) {
   );
 }
 
+function TeamCard({ team, idx, nextMatch, activePlayoff, navigate }) {
+  return (
+    <div
+      className={`flex-shrink-0 bg-gradient-to-br ${CARD_GRADIENTS[idx % CARD_GRADIENTS.length]} rounded-2xl p-5 text-white shadow-2xl`}
+    >
+      <div className="flex items-start justify-between mb-1">
+        <div className="min-w-0">
+          <p className="text-blue-300 text-xs font-semibold uppercase tracking-widest truncate">
+            {team.categoria}
+            {team.genero ? ` · ${team.genero}` : ''}
+          </p>
+          <h2 className="text-xl font-bold mt-0.5 leading-tight truncate">{teamDisplayName(team)}</h2>
+        </div>
+        <ShieldHalf size={22} className="text-white/30 shrink-0 mt-0.5" />
+      </div>
+      {nextMatch && (
+        <p className="text-xs text-blue-200/80 mt-2 truncate">
+          Próx. partido: vs {nextMatch.rival || 'Rival'} —{' '}
+          {(() => {
+            const f = nextMatch.fecha;
+            return `${parseInt(f.split('-')[2])} ${MONTHS[parseInt(f.split('-')[1]) - 1]}`;
+          })()}
+        </p>
+      )}
+      {activePlayoff && activePlayoff.rival && (
+        <p className="text-xs text-amber-300/80 mt-0.5 truncate">
+          Torneo: vs {activePlayoff.rival}
+          {activePlayoff.series ? ` (${activePlayoff.series.wins}-${activePlayoff.series.losses})` : ''}
+        </p>
+      )}
+      <div className="w-12 h-0.5 bg-white/20 rounded-full my-4" />
+      <div className="flex gap-5">
+        <QuickAction icon={Users} label="Plantilla" onClick={() => navigate(`/teams/${team.id}`)} />
+        <QuickAction icon={ClipboardList} label="Cuaderno" onClick={() => navigate(`/teams/${team.id}/cuaderno`)} />
+        <QuickAction icon={CalendarDays} label="Calendario" onClick={() => navigate(`/calendar?teamId=${team.id}`)} />
+        <QuickAction icon={Trophy} label="Torneos" onClick={() => navigate(`/playoffs?teamId=${team.id}`)} />
+      </div>
+    </div>
+  );
+}
+
+function TeamsSection({
+  teams,
+  loadingTeams,
+  nextMatchByTeam,
+  activePlayoffs,
+  navigate,
+  carouselRef,
+  cardRefs,
+  activeIdx,
+}) {
+  if (loadingTeams) return <div className="h-48 bg-white/10 rounded-2xl animate-pulse" />;
+  if (teams.length === 0) return <EmptyTeamCard navigate={navigate} />;
+  return (
+    <>
+      <div
+        ref={carouselRef}
+        className="flex md:hidden gap-4 overflow-x-auto snap-x snap-mandatory pb-3"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {teams.map((team, idx) => (
+          <div
+            key={team.id}
+            ref={(el) => (cardRefs.current[idx] = el)}
+            className="snap-center flex-shrink-0 w-[calc(100vw-48px)] max-w-sm"
+          >
+            <TeamCard
+              team={team}
+              idx={idx}
+              nextMatch={nextMatchByTeam[team.id]}
+              activePlayoff={activePlayoffs.find((p) => p.teamId === team.id && p.rival)}
+              navigate={navigate}
+            />
+          </div>
+        ))}
+      </div>
+      {teams.length > 1 && (
+        <div className="md:hidden flex justify-center gap-1.5 mt-1">
+          {teams.map((_, i) => (
+            <div
+              key={i}
+              className={`rounded-full transition-all duration-300 ${i === activeIdx ? 'w-5 h-1.5 bg-blue-600' : 'w-1.5 h-1.5 bg-slate-300'}`}
+            />
+          ))}
+        </div>
+      )}
+      <div className="hidden md:grid grid-cols-1 xl:grid-cols-2 gap-4">
+        {teams.map((team, idx) => (
+          <TeamCard
+            key={team.id}
+            team={team}
+            idx={idx}
+            nextMatch={nextMatchByTeam[team.id]}
+            activePlayoff={activePlayoffs.find((p) => p.teamId === team.id && p.rival)}
+            navigate={navigate}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function TodaySection({ todayEvents, teams, trainingNumbers, handleEventAction, creatingTraining, navigate }) {
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+          <Clock size={13} /> Hoy
+        </h2>
+        <button
+          onClick={() => navigate('/calendar')}
+          className="text-xs font-bold text-blue-600 hover:text-blue-800 transition"
+        >
+          Calendario →
+        </button>
+      </div>
+      {todayEvents.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center">
+          <CalendarDays size={28} className="mx-auto text-slate-300 mb-2" />
+          <p className="text-slate-500 text-sm font-medium">Sin eventos hoy</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {todayEvents.map((s) => (
+            <ActionEventRow
+              key={s.id}
+              session={s}
+              onAction={() => handleEventAction(s)}
+              creating={creatingTraining === s.id}
+              teams={teams}
+              trainingNumbers={trainingNumbers}
+              variant="today"
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function WeeklySummaryChip({ weeklySummary }) {
+  if (!weeklySummary || weeklySummary.total === 0) return null;
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex items-center flex-wrap gap-2 text-xs text-slate-600 font-medium">
+      <CalendarDays size={14} className="text-slate-400 shrink-0" />
+      <span>Resumen:</span>
+      {weeklySummary.entrenamientos > 0 && (
+        <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">
+          {weeklySummary.entrenamientos} entren.
+        </span>
+      )}
+      {weeklySummary.partidos > 0 && (
+        <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold">
+          {weeklySummary.partidos} {weeklySummary.partidos === 1 ? 'partido' : 'partidos'}
+        </span>
+      )}
+      {weeklySummary.playoffs > 0 && (
+        <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">
+          {weeklySummary.playoffs} torneo
+        </span>
+      )}
+    </div>
+  );
+}
+
+function TournamentRow({ p, navigate }) {
+  return (
+    <button
+      onClick={() => navigate(`/playoffs?teamId=${p.teamId}`)}
+      className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-3 hover:shadow-md transition-shadow text-left w-full"
+    >
+      <div className="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+        <Trophy size={20} className="text-amber-600" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-slate-800 text-sm truncate">{p.name}</p>
+        <p className="text-xs text-slate-500 truncate">
+          {p.teamName}
+          {p.title ? ` · ${p.title}` : ''}
+        </p>
+        {p.match && p.rival ? (
+          <p className="text-xs font-bold text-indigo-600 mt-0.5">
+            vs {p.rival}
+            {p.series ? ` (${p.series.wins}-${p.series.losses})` : ''}
+          </p>
+        ) : !p.match ? (
+          <p className="text-xs text-emerald-600 font-bold mt-0.5">Eliminatoria finalizada</p>
+        ) : (
+          <p className="text-xs text-slate-400 mt-0.5">Esperando rival...</p>
+        )}
+      </div>
+      <ChevronRight size={16} className="text-slate-400 shrink-0" />
+    </button>
+  );
+}
+
 export default function HomeScreen() {
   const {
     user,
@@ -47,18 +245,18 @@ export default function HomeScreen() {
     loadingTeams,
     trainingNumbers,
     today,
-    todayYMD,
     todayEvents,
-    lastEventByTeam,
-    nextEventByTeam,
     activePlayoffs,
-    matchDayEvent,
     weeklySummary,
     nextMatchByTeam,
     recentExercises,
     exercisesCount,
     creatingTraining,
     handleEventAction,
+    nextActionEvent,
+    pendingActions,
+    newsItems,
+    weekStrip,
   } = useHomeDashboard();
 
   useRegisterScreenContext({
@@ -86,22 +284,44 @@ export default function HomeScreen() {
     return () => observers.forEach((obs) => obs.disconnect());
   }, [teams]);
 
+  const handlePendingAction = useCallback(
+    (item) => {
+      if (item?.session) handleEventAction(item.session);
+    },
+    [handleEventAction],
+  );
+
+  const handleCreateFromHero = useCallback((session) => handleEventAction(session), [handleEventAction]);
+
   const displayName = user?.isAnonymous ? 'Invitado' : user?.displayName || user?.email?.split('@')[0] || 'Entrenador';
   const photoURL = user?.photoURL || null;
   const initial = displayName.charAt(0).toUpperCase();
   const hora = today.getHours();
   const greeting = hora < 13 ? 'Buenos días' : hora < 20 ? 'Buenas tardes' : 'Buenas noches';
 
+  const pendingCount = pendingActions.length;
+  const todayCount = todayEvents.length;
+
+  const subline = (() => {
+    const parts = [];
+    if (pendingCount > 0)
+      parts.push(`${pendingCount} ${pendingCount === 1 ? 'acción pendiente' : 'acciones pendientes'}`);
+    if (todayCount > 0) parts.push(`${todayCount} ${todayCount === 1 ? 'evento' : 'eventos'} hoy`);
+    if (parts.length === 0) return 'Todo al día';
+    return parts.join(' · ');
+  })();
+
   return (
     <div className="min-h-screen bg-slate-100 font-sans pb-28 overflow-x-hidden">
       {/* Header */}
       <div className="bg-gradient-to-b from-blue-950 via-blue-950 to-blue-900 px-5 pt-10 pb-32">
-        <div className="flex justify-between items-center max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto">
-          <div>
+        <div className="flex justify-between items-center max-w-7xl mx-auto">
+          <div className="min-w-0">
             <p className="text-blue-400 text-sm font-medium">{greeting}</p>
-            <h1 className="text-white text-2xl font-bold leading-tight">{displayName}</h1>
+            <h1 className="text-white text-2xl font-bold leading-tight truncate">{displayName}</h1>
+            <p className="text-blue-200/80 text-xs mt-0.5 truncate">{subline}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {photoURL ? (
               <img src={photoURL} alt="Avatar" className="w-9 h-9 rounded-full border-2 border-blue-700" />
             ) : (
@@ -111,7 +331,7 @@ export default function HomeScreen() {
             )}
             <button
               onClick={() => navigate('/settings')}
-              className="text-blue-400 hover:text-white transition p-1.5"
+              className="text-blue-400 hover:text-white transition p-1.5 md:hidden"
               aria-label="Ajustes"
               title="Ajustes"
             >
@@ -119,7 +339,7 @@ export default function HomeScreen() {
             </button>
             <button
               onClick={handleLogout}
-              className="text-blue-400 hover:text-white transition p-1.5"
+              className="text-blue-400 hover:text-white transition p-1.5 md:hidden"
               aria-label="Cerrar sesión"
               title="Cerrar sesión"
             >
@@ -129,233 +349,65 @@ export default function HomeScreen() {
         </div>
       </div>
 
-      <div className="max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto px-4">
-        {/* Team carousel */}
-        <div className="-mt-24 mb-4">
-          {loadingTeams ? (
-            <div className="h-48 bg-white/10 rounded-2xl animate-pulse" />
-          ) : teams.length === 0 ? (
-            <EmptyTeamCard navigate={navigate} />
+      <div className="max-w-7xl mx-auto px-4 -mt-24">
+        {/* Hero row (full width) */}
+        <div className="mb-4">
+          {loadingTeams && !nextActionEvent ? (
+            <div className="h-36 bg-white/10 rounded-2xl animate-pulse" />
           ) : (
-            <>
-              <div
-                ref={carouselRef}
-                className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {teams.map((team, idx) => (
-                  <div
-                    key={team.id}
-                    ref={(el) => (cardRefs.current[idx] = el)}
-                    className={`snap-center flex-shrink-0 w-[calc(100vw-48px)] max-w-sm bg-gradient-to-br ${CARD_GRADIENTS[idx % CARD_GRADIENTS.length]} rounded-2xl p-5 text-white shadow-2xl`}
-                  >
-                    <div className="flex items-start justify-between mb-1">
-                      <div>
-                        <p className="text-blue-300 text-xs font-semibold uppercase tracking-widest">
-                          {team.categoria}
-                          {team.genero ? ` · ${team.genero}` : ''}
-                        </p>
-                        <h2 className="text-xl font-bold mt-0.5 leading-tight">{teamDisplayName(team)}</h2>
-                      </div>
-                      <ShieldHalf size={22} className="text-white/30 shrink-0 mt-0.5" />
-                    </div>
-                    {nextMatchByTeam[team.id] && (
-                      <p className="text-xs text-blue-200/80 mt-2 truncate">
-                        Próx. partido: vs {nextMatchByTeam[team.id].rival || 'Rival'} —{' '}
-                        {(() => {
-                          const f = nextMatchByTeam[team.id].fecha;
-                          return `${parseInt(f.split('-')[2])} ${MONTHS[parseInt(f.split('-')[1]) - 1]}`;
-                        })()}
-                      </p>
-                    )}
-                    {activePlayoffs.find((p) => p.teamId === team.id && p.rival) && (
-                      <p className="text-xs text-amber-300/80 mt-0.5 truncate">
-                        Torneo: vs {activePlayoffs.find((p) => p.teamId === team.id && p.rival).rival}
-                        {(() => {
-                          const p = activePlayoffs.find((ap) => ap.teamId === team.id && ap.rival);
-                          return p?.series ? ` (${p.series.wins}-${p.series.losses})` : '';
-                        })()}
-                      </p>
-                    )}
-                    <div className="w-12 h-0.5 bg-white/20 rounded-full my-4" />
-                    <div className="flex gap-5">
-                      <QuickAction icon={Users} label="Plantilla" onClick={() => navigate(`/teams/${team.id}`)} />
-                      <QuickAction
-                        icon={ClipboardList}
-                        label="Cuaderno"
-                        onClick={() => navigate(`/teams/${team.id}/cuaderno`)}
-                      />
-                      <QuickAction
-                        icon={CalendarDays}
-                        label="Calendario"
-                        onClick={() => navigate(`/calendar?teamId=${team.id}`)}
-                      />
-                      <QuickAction
-                        icon={Trophy}
-                        label="Torneos"
-                        onClick={() => navigate(`/playoffs?teamId=${team.id}`)}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {teams.length > 1 && (
-                <div className="flex justify-center gap-1.5 mt-1">
-                  {teams.map((_, i) => (
-                    <div
-                      key={i}
-                      className={`rounded-full transition-all duration-300 ${i === activeIdx ? 'w-5 h-1.5 bg-blue-600' : 'w-1.5 h-1.5 bg-slate-300'}`}
-                    />
+            <NextActionHero
+              session={nextActionEvent}
+              teams={teams}
+              navigate={navigate}
+              onCreateTraining={handleCreateFromHero}
+              creating={Boolean(creatingTraining) && creatingTraining === nextActionEvent?.id}
+            />
+          )}
+        </div>
+
+        {/* Two-column grid on desktop, single column on mobile */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Main column (left on desktop) */}
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            <TeamsSection
+              teams={teams}
+              loadingTeams={loadingTeams}
+              nextMatchByTeam={nextMatchByTeam}
+              activePlayoffs={activePlayoffs}
+              navigate={navigate}
+              carouselRef={carouselRef}
+              cardRefs={cardRefs}
+              activeIdx={activeIdx}
+            />
+            <TodaySection
+              todayEvents={todayEvents}
+              teams={teams}
+              trainingNumbers={trainingNumbers}
+              handleEventAction={handleEventAction}
+              creatingTraining={creatingTraining}
+              navigate={navigate}
+            />
+            <BibliotecaPreview exercises={recentExercises} totalCount={exercisesCount} navigate={navigate} />
+          </div>
+
+          {/* Side column (right on desktop) */}
+          <aside className="lg:col-span-1 flex flex-col gap-4">
+            <PendingActionsList items={pendingActions} onAction={handlePendingAction} creatingId={creatingTraining} />
+            <WeekStrip days={weekStrip} navigate={navigate} />
+            <WeeklySummaryChip weeklySummary={weeklySummary} />
+            {activePlayoffs.length > 0 && (
+              <section>
+                <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Torneos</h2>
+                <div className="flex flex-col gap-2">
+                  {activePlayoffs.map((p) => (
+                    <TournamentRow key={p.id} p={p} navigate={navigate} />
                   ))}
                 </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {matchDayEvent && (
-          <MatchDayWidget session={matchDayEvent} teams={teams} todayYMD={todayYMD} navigate={navigate} />
-        )}
-
-        <div className="mt-4">
-          <BibliotecaPreview exercises={recentExercises} totalCount={exercisesCount} navigate={navigate} />
-        </div>
-
-        {weeklySummary.total > 0 && (
-          <div className="mt-4 bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex items-center gap-2 text-xs text-slate-600 font-medium">
-            <CalendarDays size={14} className="text-slate-400 shrink-0" />
-            <span>Esta semana:</span>
-            {weeklySummary.entrenamientos > 0 && (
-              <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">
-                {weeklySummary.entrenamientos} entren.
-              </span>
+              </section>
             )}
-            {weeklySummary.partidos > 0 && (
-              <span className="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold">
-                {weeklySummary.partidos} {weeklySummary.partidos === 1 ? 'partido' : 'partidos'}
-              </span>
-            )}
-            {weeklySummary.playoffs > 0 && (
-              <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">
-                {weeklySummary.playoffs} torneo
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Today */}
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-              <Clock size={13} /> Hoy
-            </h2>
-            <button
-              onClick={() => navigate('/calendar')}
-              className="text-xs font-bold text-blue-600 hover:text-blue-800 transition"
-            >
-              Calendario →
-            </button>
-          </div>
-          {todayEvents.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center">
-              <CalendarDays size={32} className="mx-auto text-slate-300 mb-2" />
-              <p className="text-slate-500 text-sm font-medium">Sin eventos hoy</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {todayEvents.map((s) => (
-                <ActionEventRow
-                  key={s.id}
-                  session={s}
-                  onAction={() => handleEventAction(s)}
-                  creating={creatingTraining === s.id}
-                  teams={teams}
-                  trainingNumbers={trainingNumbers}
-                  variant="today"
-                />
-              ))}
-            </div>
-          )}
+            <NewsFeed items={newsItems} navigate={navigate} now={today} />
+          </aside>
         </div>
-
-        {lastEventByTeam.length > 0 && (
-          <div className="mt-6">
-            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-              <History size={13} /> Lo último
-            </h2>
-            <div className="flex flex-col gap-2">
-              {lastEventByTeam.map((s) => (
-                <ActionEventRow
-                  key={s.id}
-                  session={s}
-                  onAction={() => handleEventAction(s)}
-                  creating={creatingTraining === s.id}
-                  teams={teams}
-                  trainingNumbers={trainingNumbers}
-                  variant="past"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {nextEventByTeam.length > 0 && (
-          <div className="mt-6">
-            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-              <FastForward size={13} /> Próximamente
-            </h2>
-            <div className="flex flex-col gap-2">
-              {nextEventByTeam.map((s) => (
-                <ActionEventRow
-                  key={s.id}
-                  session={s}
-                  onAction={() => handleEventAction(s)}
-                  creating={creatingTraining === s.id}
-                  teams={teams}
-                  trainingNumbers={trainingNumbers}
-                  variant="future"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activePlayoffs.length > 0 && (
-          <div className="mt-6">
-            <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Torneos</h2>
-            <div className="flex flex-col gap-2">
-              {activePlayoffs.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => navigate(`/playoffs?teamId=${p.teamId}`)}
-                  className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-3 hover:shadow-md transition-shadow text-left w-full"
-                >
-                  <div className="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                    <Trophy size={20} className="text-amber-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-800 text-sm truncate">{p.name}</p>
-                    <p className="text-xs text-slate-500 truncate">
-                      {p.teamName}
-                      {p.title ? ` · ${p.title}` : ''}
-                    </p>
-                    {p.match && p.rival ? (
-                      <p className="text-xs font-bold text-indigo-600 mt-0.5">
-                        vs {p.rival}
-                        {p.series ? ` (${p.series.wins}-${p.series.losses})` : ''}
-                      </p>
-                    ) : !p.match ? (
-                      <p className="text-xs text-emerald-600 font-bold mt-0.5">Eliminatoria finalizada</p>
-                    ) : (
-                      <p className="text-xs text-slate-400 mt-0.5">Esperando rival...</p>
-                    )}
-                  </div>
-                  <ChevronRight size={16} className="text-slate-400 shrink-0" />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -76,6 +76,10 @@ vi.mock('../services/trainingsService', () => ({
     callback([]);
     return vi.fn();
   }),
+  subscribeToTrainings: vi.fn((_teamId, _uid, _db, _appId, callback) => {
+    callback([]);
+    return vi.fn();
+  }),
 }));
 
 import { useHomeDashboard } from './useHomeDashboard';
@@ -107,5 +111,24 @@ describe('useHomeDashboard', () => {
     // The mock session has today's date, so should be in current week
     expect(result.current.weeklySummary.total).toBeGreaterThanOrEqual(1);
     expect(result.current.weeklySummary.entrenamientos).toBeGreaterThanOrEqual(1);
+  });
+
+  it('returns the upcoming session as nextActionEvent', () => {
+    const { result } = renderHook(() => useHomeDashboard());
+    expect(result.current.nextActionEvent).toBeTruthy();
+    expect(result.current.nextActionEvent.id).toBe('s1');
+  });
+
+  it('flags today training without trainingId as pending', () => {
+    const { result } = renderHook(() => useHomeDashboard());
+    const pend = result.current.pendingActions;
+    expect(pend.length).toBeGreaterThanOrEqual(1);
+    expect(pend.some((p) => p.type === 'training')).toBe(true);
+  });
+
+  it('exposes a 7-day weekStrip', () => {
+    const { result } = renderHook(() => useHomeDashboard());
+    expect(result.current.weekStrip).toHaveLength(7);
+    expect(result.current.weekStrip[0].label).toBe('L');
   });
 });
