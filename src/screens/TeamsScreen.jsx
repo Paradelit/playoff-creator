@@ -1,24 +1,14 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Plus,
-  ShieldHalf,
-  Trash2,
-  ArrowRight,
-  X,
-  Users,
-  FolderOpen,
-  ClipboardList,
-  CalendarDays,
-  Trophy,
-} from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Plus, ShieldHalf, X, FolderOpen } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { saveTeam, deleteTeam } from '../services/teamsService';
 import { autoAddCoachToTeam } from '../services/settingsService';
-import { useTeams } from '../hooks/useTeams';
 import { useProfile } from '../hooks/useProfile';
+import { useHomeDashboard } from '../hooks/useHomeDashboard';
 import { teamDisplayName } from '../utils/teamUtils';
+import TeamDashboard from '../components/teams/TeamDashboard';
 
 /* eslint-disable react-refresh/only-export-components */
 export const CATEGORIAS = ['Prebenjamín', 'Benjamín', 'Alevín', 'Infantil', 'Cadete', 'Junior', 'Senior'];
@@ -33,12 +23,59 @@ export default function TeamsScreen() {
   const { db, appId } = useFirebase();
   const navigate = useNavigate();
 
-  const { teams, loading } = useTeams();
+  const { teams, loadingTeams: loading, allSessions, activePlayoffs } = useHomeDashboard();
   const { profile } = useProfile();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deletingTeamId, setDeletingTeamId] = useState(null);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const carouselRef = useRef(null);
+  const cardRefs = useRef([]);
+  const [activeIdx, setActiveIdx] = useState(() => {
+    const idx = teams.findIndex((t) => t.id === tabParam);
+    return idx >= 0 ? idx : 0;
+  });
+
+  useEffect(() => {
+    if (!carouselRef.current || teams.length === 0) return undefined;
+    const observers = teams.map((_, i) => {
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setActiveIdx(i);
+            const teamId = teams[i]?.id;
+            if (teamId && teamId !== tabParam) {
+              setSearchParams(
+                (prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.set('tab', teamId);
+                  return next;
+                },
+                { replace: true },
+              );
+            }
+          }
+        },
+        { threshold: 0.6, root: carouselRef.current },
+      );
+      if (cardRefs.current[i]) obs.observe(cardRefs.current[i]);
+      return obs;
+    });
+    return () => observers.forEach((obs) => obs.disconnect());
+  }, [teams, tabParam, setSearchParams]);
+
+  useEffect(() => {
+    if (!tabParam || teams.length === 0) return;
+    const idx = teams.findIndex((t) => t.id === tabParam);
+    if (idx < 0) return;
+    const el = cardRefs.current[idx];
+    if (el && carouselRef.current) {
+      carouselRef.current.scrollTo({ left: el.offsetLeft, behavior: 'auto' });
+    }
+  }, [tabParam, teams]);
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -59,6 +96,10 @@ export default function TeamsScreen() {
   async function handleDelete(teamId) {
     await deleteTeam(teamId, { uid: user.uid, db, appId });
     setDeletingTeamId(null);
+  }
+
+  function playoffForTeam(teamId) {
+    return activePlayoffs.find((p) => p.teamId === teamId) || null;
   }
 
   return (
@@ -104,64 +145,63 @@ export default function TeamsScreen() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {teams.map((team) => (
+          <>
+            {/* Mobile: carrusel swipe */}
+            <div className="md:hidden -mx-6">
               <div
-                key={team.id}
-                className="bg-white rounded-xl shadow-md border border-slate-200 p-5 flex flex-col hover:shadow-xl transition-shadow"
+                ref={carouselRef}
+                className="flex gap-4 overflow-x-auto snap-x snap-mandatory px-6 pb-3"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <ShieldHalf size={20} className="text-blue-600 shrink-0" />
-                    <h3 className="text-lg font-bold text-slate-800 truncate">{teamDisplayName(team)}</h3>
-                  </div>
-                  <button
-                    onClick={() => navigate(`/playoffs?teamId=${team.id}`)}
-                    className="text-slate-400 hover:text-amber-500 p-1.5 hover:bg-amber-50 rounded-lg transition-colors shrink-0"
-                    title="Ver torneo del equipo"
+                {teams.map((team, idx) => (
+                  <div
+                    key={team.id}
+                    ref={(el) => (cardRefs.current[idx] = el)}
+                    className="snap-center flex-shrink-0 w-[calc(100vw-3rem)] max-w-md bg-slate-50 rounded-2xl p-4 border border-slate-200"
                   >
-                    <Trophy size={16} />
-                  </button>
-                  <button
-                    onClick={() => setDeletingTeamId(team.id)}
-                    className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                    title="Eliminar equipo"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-                <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-4 ml-8">
-                  {team.categoria}
-                  {team.genero ? ` · ${team.genero}` : ''}
-                </p>
-                <div className="mt-auto border-t border-slate-100 pt-4">
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      onClick={() => navigate(`/teams/${team.id}`)}
-                      className="flex flex-col items-center justify-center gap-1 py-2.5 px-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl transition-colors"
-                    >
-                      <Users size={15} />
-                      <span className="text-xs font-bold">Plantilla</span>
-                    </button>
-                    <button
-                      onClick={() => navigate(`/teams/${team.id}/cuaderno`)}
-                      className="flex flex-col items-center justify-center gap-1 py-2.5 px-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl transition-colors"
-                    >
-                      <ClipboardList size={15} />
-                      <span className="text-xs font-bold">Cuaderno</span>
-                    </button>
-                    <button
-                      onClick={() => navigate(`/calendar?teamId=${team.id}`)}
-                      className="flex flex-col items-center justify-center gap-1 py-2.5 px-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl transition-colors"
-                    >
-                      <CalendarDays size={15} />
-                      <span className="text-xs font-bold">Calendario</span>
-                    </button>
+                    <TeamDashboard
+                      team={team}
+                      sessions={allSessions}
+                      activePlayoff={playoffForTeam(team.id)}
+                      navigate={navigate}
+                      onDeleteTeam={() => setDeletingTeamId(team.id)}
+                    />
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+              {teams.length > 1 && (
+                <div className="flex justify-center gap-1.5 mt-2">
+                  {teams.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-full transition-all duration-300 ${
+                        i === activeIdx ? 'w-5 h-1.5 bg-blue-600' : 'w-1.5 h-1.5 bg-slate-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Desktop: grid compacto */}
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {teams.map((team) => (
+                <div
+                  key={team.id}
+                  className="bg-white rounded-xl shadow-md border border-slate-200 p-5 hover:shadow-xl transition-shadow"
+                >
+                  <TeamDashboard
+                    team={team}
+                    sessions={allSessions}
+                    activePlayoff={playoffForTeam(team.id)}
+                    navigate={navigate}
+                    onDeleteTeam={() => setDeletingTeamId(team.id)}
+                    compact
+                  />
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 

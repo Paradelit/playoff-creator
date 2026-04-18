@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Pencil, Trash2, X, User, Users, ShieldHalf, CalendarDays } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Trash2, X, User, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
 import { saveTeam, subscribeToMembers, saveMember, deleteMember } from '../services/teamsService';
-import { teamDisplayName } from '../utils/teamUtils';
 import { TeamFormFields } from './TeamsScreen';
-import { useTeams } from '../hooks/useTeams';
+import { useHomeDashboard } from '../hooks/useHomeDashboard';
+import TeamDashboard from '../components/teams/TeamDashboard';
 
 const ROLES_STAFF = ['Entrenador', 'Entrenador asistente', 'Fisioterapeuta', 'Delegado', 'Médico', 'Otro'];
 const POSICIONES = ['Base', 'Escolta', 'Alero', 'Ala-Pívot', 'Pívot'];
@@ -29,8 +29,12 @@ export default function TeamDetailScreen() {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
 
-  const { teams, loading: loadingTeam } = useTeams();
+  const { teams, loadingTeams: loadingTeam, allSessions, activePlayoffs } = useHomeDashboard();
   const team = teams.find((t) => t.id === teamId) || null;
+  const activePlayoff = useMemo(
+    () => activePlayoffs.find((p) => p.teamId === teamId) || null,
+    [activePlayoffs, teamId],
+  );
   const [members, setMembers] = useState([]);
 
   useRegisterScreenContext({ teamName: team?.teamName, categoria: team?.categoria });
@@ -125,48 +129,35 @@ export default function TeamDetailScreen() {
 
   return (
     <div className="min-h-screen bg-slate-100 p-6 sm:p-8 font-sans pb-24">
-      <div className="max-w-2xl mx-auto">
-        {/* Navegación y título */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <button
-              onClick={() => navigate('/teams')}
-              className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
-            >
-              <ArrowLeft size={16} /> Equipos
-            </button>
-            <button
-              onClick={() => navigate(`/calendar?teamId=${teamId}`)}
-              className="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-800 text-sm font-bold transition"
-            >
-              <CalendarDays size={15} /> Calendario
-            </button>
-          </div>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <ShieldHalf size={28} className="text-amber-500 shrink-0" />
-              <h1 className="text-2xl font-bold text-slate-900 truncate">{teamDisplayName(team)}</h1>
-            </div>
-            <button
-              onClick={() => {
-                setTeamForm({
-                  categoria: team.categoria,
-                  año: team.año || '1º',
-                  letra: team.letra || '',
-                  genero: team.genero,
-                  division: team.division || '',
-                });
-                setEditingTeam(true);
-              }}
-              className="shrink-0 flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-sm font-bold transition-colors border border-slate-300"
-            >
-              <Pencil size={14} /> Editar
-            </button>
-          </div>
-          <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mt-2 ml-10">
-            {team.categoria}
-            {team.genero ? ` · ${team.genero}` : ''}
-          </p>
+      <div className="max-w-2xl lg:max-w-4xl mx-auto">
+        <button
+          onClick={() => navigate('/teams')}
+          className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition mb-4"
+        >
+          <ArrowLeft size={16} /> Equipos
+        </button>
+
+        <div className="mb-6">
+          <TeamDashboard
+            team={team}
+            sessions={allSessions}
+            activePlayoff={activePlayoff}
+            memberCounts={{
+              jugadores: members.filter((m) => m.tipo === 'jugador').length,
+              staff: members.filter((m) => m.tipo === 'staff').length,
+            }}
+            navigate={navigate}
+            onEditTeam={() => {
+              setTeamForm({
+                categoria: team.categoria,
+                año: team.año || '1º',
+                letra: team.letra || '',
+                genero: team.genero,
+                division: team.division || '',
+              });
+              setEditingTeam(true);
+            }}
+          />
         </div>
 
         {/* Sección Staff */}
