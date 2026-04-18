@@ -6,7 +6,7 @@ import { ScreenContextProvider } from '../contexts/ScreenContextProvider';
 import { CopilotProvider } from '../contexts/CopilotProvider';
 import { ToastProvider } from '../contexts/ToastContext';
 import ErrorBoundary from '../components/ErrorBoundary';
-import CoachesNav from './CoachesNav';
+import AppShell from './AppShell';
 import AppRouter from './AppRouter';
 import CopilotRoot from '../components/copilot/CopilotRoot';
 
@@ -19,10 +19,9 @@ export default function CoachesApp() {
             <CopilotProvider>
               <ToastProvider>
                 <ErrorBoundary>
-                  <div className="pb-16">
+                  <AppShell>
                     <AppRouter />
-                  </div>
-                  <CoachesNav />
+                  </AppShell>
                   <CopilotRoot />
                 </ErrorBoundary>
               </ToastProvider>

@@ -101,7 +101,7 @@ export default function ExerciseLibraryScreen() {
 
   return (
     <div className="min-h-screen bg-slate-100 p-6 sm:p-12 font-sans pb-24">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl lg:max-w-6xl mx-auto">
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition mb-6"
