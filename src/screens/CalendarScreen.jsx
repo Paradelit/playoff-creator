@@ -117,7 +117,7 @@ export default function CalendarScreen() {
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 sm:p-8 font-sans pb-24">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl lg:max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
@@ -228,6 +228,7 @@ export default function CalendarScreen() {
           <DayView
             sessions={daySessionList}
             loading={loading}
+            currentDate={currentDate}
             onSelectSession={editor.setSelectedSession}
             getTrainingNum={getTrainingNum}
           />

@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getTemporada, toYMD, getSeasonDateRange, formatDateDisplay } from './dateUtils';
+import {
+  getTemporada,
+  toYMD,
+  getSeasonDateRange,
+  formatDateDisplay,
+  hhmmToMinutes,
+  minutesToHHMM,
+  minutesBetween,
+} from './dateUtils';
 
 describe('toYMD', () => {
   it('formats a Date as YYYY-MM-DD', () => {
@@ -78,5 +86,55 @@ describe('getSeasonDateRange', () => {
       startDate: '2025-09-01',
       endDate: '2026-06-30',
     });
+  });
+});
+
+describe('hhmmToMinutes', () => {
+  it('parses HH:MM into minutes since midnight', () => {
+    expect(hhmmToMinutes('00:00')).toBe(0);
+    expect(hhmmToMinutes('09:30')).toBe(570);
+    expect(hhmmToMinutes('23:59')).toBe(23 * 60 + 59);
+  });
+
+  it('accepts single-digit hours', () => {
+    expect(hhmmToMinutes('9:05')).toBe(9 * 60 + 5);
+  });
+
+  it('returns null for invalid input', () => {
+    expect(hhmmToMinutes('')).toBeNull();
+    expect(hhmmToMinutes(null)).toBeNull();
+    expect(hhmmToMinutes('24:00')).toBeNull();
+    expect(hhmmToMinutes('9:60')).toBeNull();
+    expect(hhmmToMinutes('nope')).toBeNull();
+  });
+});
+
+describe('minutesToHHMM', () => {
+  it('formats minutes as HH:MM with padding', () => {
+    expect(minutesToHHMM(0)).toBe('00:00');
+    expect(minutesToHHMM(570)).toBe('09:30');
+    expect(minutesToHHMM(23 * 60 + 59)).toBe('23:59');
+  });
+
+  it('clamps out-of-range values', () => {
+    expect(minutesToHHMM(-30)).toBe('00:00');
+    expect(minutesToHHMM(25 * 60)).toBe('24:00');
+  });
+
+  it('returns empty string for invalid input', () => {
+    expect(minutesToHHMM(null)).toBe('');
+    expect(minutesToHHMM(Number.NaN)).toBe('');
+  });
+});
+
+describe('minutesBetween', () => {
+  it('returns difference in minutes (b - a)', () => {
+    expect(minutesBetween('09:00', '10:30')).toBe(90);
+    expect(minutesBetween('10:30', '09:00')).toBe(-90);
+  });
+
+  it('returns null if either value is invalid', () => {
+    expect(minutesBetween('09:00', '')).toBeNull();
+    expect(minutesBetween('bad', '10:00')).toBeNull();
   });
 });
