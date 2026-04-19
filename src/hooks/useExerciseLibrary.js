@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { useToast } from '../contexts/ToastContext';
@@ -7,6 +7,7 @@ import {
   saveExercise,
   deleteExercise,
   propagateExerciseUpdate,
+  setFavorite,
 } from '../services/trainingsService';
 import { shareExercise } from '../services/exerciseSharingService';
 import { useFirestoreSubscription } from './useFirestoreSubscription';
@@ -18,7 +19,20 @@ export function useExerciseLibrary() {
   const importRef = useRef(null);
 
   const subscribeFn = useCallback((cb) => subscribeToExercises(user.uid, db, appId, cb), [user, db, appId]);
-  const { data: exercises, loading } = useFirestoreSubscription(user && db ? subscribeFn : null);
+  const { data: rawExercises, loading } = useFirestoreSubscription(user && db ? subscribeFn : null);
+
+  // Optimistic overrides for the favorite flag. Merged over subscription data
+  // so a click feels instant; discarded when the server echo arrives.
+  const [favoriteOverrides, setFavoriteOverrides] = useState({});
+  const exercises = useMemo(
+    () =>
+      rawExercises.map((ex) =>
+        Object.prototype.hasOwnProperty.call(favoriteOverrides, ex.id)
+          ? { ...ex, favorite: favoriteOverrides[ex.id] }
+          : ex,
+      ),
+    [rawExercises, favoriteOverrides],
+  );
 
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
@@ -55,6 +69,37 @@ export function useExerciseLibrary() {
       setSaving(false);
     }
   }
+
+  async function toggleFavorite(id) {
+    const ex = exercises.find((e) => e.id === id);
+    if (!ex) return;
+    const next = !ex.favorite;
+    setFavoriteOverrides((prev) => ({ ...prev, [id]: next }));
+    try {
+      await setFavorite(id, next, { uid: user.uid, db, appId });
+    } catch (err) {
+      setFavoriteOverrides((prev) => {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
+      });
+      toast('No se pudo actualizar favorito', 'error');
+      throw err;
+    }
+  }
+
+  // Clear overrides once subscription echoes the server value.
+  useEffect(() => {
+    if (Object.keys(favoriteOverrides).length === 0) return;
+    const stillStale = {};
+    for (const [id, value] of Object.entries(favoriteOverrides)) {
+      const ex = rawExercises.find((e) => e.id === id);
+      if (ex && !!ex.favorite !== !!value) stillStale[id] = value;
+    }
+    if (Object.keys(stillStale).length !== Object.keys(favoriteOverrides).length) {
+      setFavoriteOverrides(stillStale);
+    }
+  }, [rawExercises, favoriteOverrides]);
 
   async function handleDelete(id) {
     const ex = exercises.find((e) => e.id === id);
@@ -185,6 +230,7 @@ export function useExerciseLibrary() {
     importRef,
     handleSave,
     handleDelete,
+    toggleFavorite,
     // Export
     showExport,
     setShowExport,

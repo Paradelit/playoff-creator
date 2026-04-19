@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
-import { saveTraining, subscribeToExercises, subscribeToTrainings } from '../services/trainingsService';
+import { saveTraining, subscribeToExercises } from '../services/trainingsService';
 import { useTeams } from './useTeams';
+import { useAllTrainings } from './useAllTrainings';
+import { useExerciseInsights } from './useExerciseInsights';
 import { useTrainingNumbers } from './useTrainingNumbers';
 import { subscribeToCalendarSessions, linkTrainingToSession } from '../services/calendarService';
 import { userColRef } from '../services/firestoreHelpers';
@@ -51,11 +53,11 @@ export function useHomeDashboard() {
   const navigate = useNavigate();
   const { teams, loading: loadingTeams } = useTeams();
   const trainingNumbers = useTrainingNumbers();
+  const { allTrainings } = useAllTrainings();
 
   const [sessions, setSessions] = useState([]);
   const [brackets, setBrackets] = useState([]);
   const [exercises, setExercises] = useState([]);
-  const [trainingsByTeam, setTrainingsByTeam] = useState({});
   const [creatingTraining, setCreatingTraining] = useState(null);
 
   const today = useMemo(() => new Date(), []);
@@ -79,32 +81,6 @@ export function useHomeDashboard() {
     return subscribeToExercises(user.uid, db, appId, setExercises);
   }, [user, db, appId]);
 
-  // Subscribe to trainings for every team so we can surface "training_created" news
-  // items and keep a global pool of recent trainings without loading the editor.
-  const teamIdsKey = useMemo(
-    () =>
-      teams
-        .map((t) => t.id)
-        .sort()
-        .join('|'),
-    [teams],
-  );
-  useEffect(() => {
-    if (!user || !db || teams.length === 0) {
-      setTrainingsByTeam({});
-      return undefined;
-    }
-    const unsubs = teams.map((team) =>
-      subscribeToTrainings(team.id, user.uid, db, appId, (list) => {
-        setTrainingsByTeam((prev) => ({ ...prev, [team.id]: list }));
-      }),
-    );
-    return () => {
-      unsubs.forEach((u) => u && u());
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, db, appId, teamIdsKey]);
-
   const recentExercises = useMemo(() => {
     const timeOf = (ex) => {
       const raw = ex.updatedAt || ex.createdAt;
@@ -116,6 +92,8 @@ export function useHomeDashboard() {
     };
     return [...exercises].sort((a, b) => timeOf(b) - timeOf(a)).slice(0, 3);
   }, [exercises]);
+
+  const bibliotecaInsights = useExerciseInsights(exercises, allTrainings, today, { limit: 3 });
 
   const playoffSessions = useMemo(() => buildPlayoffSessions(brackets, teams), [brackets, teams]);
   const allSessions = useMemo(() => [...sessions, ...playoffSessions], [sessions, playoffSessions]);
@@ -232,14 +210,6 @@ export function useHomeDashboard() {
     [allSessions, todayYMD],
   );
 
-  const allTrainings = useMemo(() => {
-    const all = [];
-    for (const list of Object.values(trainingsByTeam)) {
-      if (Array.isArray(list)) all.push(...list);
-    }
-    return all;
-  }, [trainingsByTeam]);
-
   const newsItems = useMemo(
     () => buildNewsItems({ trainings: allTrainings, exercises, sessions, brackets, now: today, limit: 8 }),
     [allTrainings, exercises, sessions, brackets, today],
@@ -328,6 +298,7 @@ export function useHomeDashboard() {
     nextMatchByTeam,
     recentExercises,
     exercisesCount: exercises.length,
+    bibliotecaInsights,
     allSessions,
     creatingTraining,
     handleEventAction,

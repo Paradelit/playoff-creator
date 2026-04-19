@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, BookOpen, FolderOpen, Download, Upload } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft, FolderOpen, Star, Clock, TrendingUp, BookOpen } from 'lucide-react';
 import { useExerciseLibrary } from '../hooks/useExerciseLibrary';
+import { useAllTrainings } from '../hooks/useAllTrainings';
+import { useExerciseInsights } from '../hooks/useExerciseInsights';
+import { useExerciseFilters } from '../hooks/useExerciseFilters';
 import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
 import ExerciseCard, { prepareForEdit } from '../components/exercises/ExerciseCard';
 import ExerciseFormModal from '../components/exercises/ExerciseFormModal';
 import ExercisePreviewModal from '../components/exercises/ExercisePreviewModal';
 import { ExportModal, ImportModal, ShareModal } from '../components/exercises/ExerciseListModals';
+import LibraryHeader from '../components/exercises/library/LibraryHeader';
+import StickyFilterBar from '../components/exercises/library/StickyFilterBar';
+import FilterSidebar from '../components/exercises/library/FilterSidebar';
+import FilterSheet from '../components/exercises/library/FilterSheet';
+import ExerciseSection from '../components/exercises/library/ExerciseSection';
+import { activeCategoryIds, EXERCISE_CATEGORIES } from '../utils/exerciseCategories';
 
 const EMPTY_EXERCISE = {
   nombre: '',
@@ -18,18 +27,44 @@ const EMPTY_EXERCISE = {
   pasos: [],
 };
 
+function countByCategory(exercises) {
+  const counts = Object.fromEntries(EXERCISE_CATEGORIES.map((c) => [c.id, 0]));
+  for (const ex of exercises) {
+    for (const id of activeCategoryIds(ex.tags || [])) counts[id] = (counts[id] || 0) + 1;
+  }
+  return counts;
+}
+
 export default function ExerciseLibraryScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
   const lib = useExerciseLibrary();
+  const { allTrainings } = useAllTrainings();
+  const insights = useExerciseInsights(lib.exercises, allTrainings);
+  const { filters, setFilter, toggleCategory, reset, hasActiveFilters, filtered, roots, variantMap } =
+    useExerciseFilters(lib.exercises);
 
   useRegisterScreenContext({ exerciseCount: lib.exercises.length });
 
   const [editingExercise, setEditingExercise] = useState(null);
   const [exerciseErrors, setExerciseErrors] = useState({});
   const [previewExercise, setPreviewExercise] = useState(null);
-  const [search, setSearch] = useState('');
-  const [filterTags, setFilterTags] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
+  useEffect(() => {
+    if (!location.hash || lib.loading) return;
+    const id = location.hash.slice(1);
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [location.hash, lib.loading]);
+
+  const categoryCounts = useMemo(() => countByCategory(lib.exercises), [lib.exercises]);
+  const activeFilterCount =
+    (filters.categories?.length || 0) +
+    (filters.phase ? 1 : 0) +
+    (filters.difficulty != null ? 1 : 0) +
+    (filters.favoritesOnly ? 1 : 0);
 
   function openNewExercise() {
     setEditingExercise(prepareForEdit({ ...EMPTY_EXERCISE }));
@@ -68,128 +103,59 @@ export default function ExerciseLibraryScreen() {
     setExerciseErrors({});
   }
 
-  const allTags = [...new Set(lib.exercises.flatMap((ex) => ex.tags || []))].sort();
+  const allTags = useMemo(() => [...new Set(lib.exercises.flatMap((ex) => ex.tags || []))].sort(), [lib.exercises]);
 
-  const filtered = lib.exercises.filter((ex) => {
-    const matchesSearch =
-      !search ||
-      ex.nombre?.toLowerCase().includes(search.toLowerCase()) ||
-      ex.descripcion?.toLowerCase().includes(search.toLowerCase());
-    const matchesTags =
-      filterTags.length === 0 ||
-      filterTags.every((tag) => (ex.tags || []).map((t) => t.toLowerCase()).includes(tag.toLowerCase()));
-    return matchesSearch && matchesTags;
-  });
+  const cardHandlers = {
+    onPreview: setPreviewExercise,
+    onEdit: openEditExercise,
+    onDelete: lib.setDeletingId,
+    onCreateVariant: handleCreateVariant,
+    onToggleFavorite: lib.toggleFavorite,
+  };
 
-  // Group exercises: parents with their variants
-  const roots = [];
-  const variantMap = new Map();
-  filtered.forEach((ex) => {
-    if (ex.parentId) {
-      if (!variantMap.has(ex.parentId)) variantMap.set(ex.parentId, []);
-      variantMap.get(ex.parentId).push(ex);
-    } else {
-      roots.push(ex);
-    }
-  });
-  variantMap.forEach((variants, parentId) => {
-    if (!roots.some((r) => r.id === parentId)) {
-      variants.forEach((v) => roots.push(v));
-      variantMap.delete(parentId);
-    }
-  });
+  function renderCarouselCard(ex) {
+    const usage = insights.usageById[ex.id];
+    return (
+      <div key={ex.id} className="snap-start shrink-0 w-[78vw] xs:w-72 sm:w-72">
+        <ExerciseCard
+          ex={ex}
+          {...cardHandlers}
+          compact
+          showUsageBadge
+          usageCount={usage?.countAll}
+          lastUsedAt={usage?.lastUsedMs}
+        />
+      </div>
+    );
+  }
+
+  const isFirstRun = !lib.loading && lib.exercises.length === 0;
+  const favoritesEmpty = insights.favorites.length === 0;
+  const recentlyUsedEmpty = insights.recentlyUsed.length === 0;
+  const trendingEmpty = insights.trending.length === 0;
+  const todosEmpty = roots.length === 0;
 
   return (
-    <div className="min-h-screen bg-slate-100 p-6 sm:p-12 font-sans pb-24">
-      <div className="max-w-4xl lg:max-w-6xl mx-auto">
+    <div className="min-h-screen bg-slate-100 font-sans pb-24">
+      <div className="p-6 sm:p-12 max-w-7xl mx-auto">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition mb-6"
+          className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition mb-5"
         >
           <ArrowLeft size={16} /> Volver
         </button>
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <BookOpen className="text-amber-500" size={36} /> Biblioteca de Ejercicios
-            </h1>
-            <p className="text-slate-500 mt-1 text-sm">Ejercicios reutilizables para tus entrenamientos.</p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <input ref={lib.importRef} type="file" accept=".json" className="hidden" onChange={lib.handleImportFile} />
-            <button
-              onClick={() => lib.importRef.current?.click()}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition"
-            >
-              <Upload size={16} /> Importar
-            </button>
-            {lib.exercises.length > 0 && (
-              <button
-                onClick={lib.openExport}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 shadow-sm transition"
-              >
-                <Download size={16} /> Exportar
-              </button>
-            )}
-            <button
-              onClick={openNewExercise}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg transition"
-            >
-              <Plus size={18} /> Nuevo ejercicio
-            </button>
-          </div>
-        </div>
+        <LibraryHeader
+          exerciseCount={lib.exercises.length}
+          importRef={lib.importRef}
+          onImport={lib.handleImportFile}
+          onExport={lib.openExport}
+          onCreate={openNewExercise}
+          showExport={lib.exercises.length > 0}
+        />
 
-        {/* Search + tag filter */}
-        {lib.exercises.length > 0 && (
-          <div className="mb-6 space-y-3">
-            <input
-              type="text"
-              placeholder="Buscar ejercicio..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-            />
-            {allTags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {allTags.map((tag) => {
-                  const active = filterTags.map((t) => t.toLowerCase()).includes(tag.toLowerCase());
-                  return (
-                    <button
-                      key={tag}
-                      onClick={() =>
-                        setFilterTags((prev) =>
-                          active ? prev.filter((t) => t.toLowerCase() !== tag.toLowerCase()) : [...prev, tag],
-                        )
-                      }
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                    >
-                      {tag}
-                    </button>
-                  );
-                })}
-                {filterTags.length > 0 && (
-                  <button
-                    onClick={() => setFilterTags([])}
-                    className="px-3 py-1 rounded-full text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors"
-                  >
-                    Limpiar filtros
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Exercise list */}
-        {lib.loading ? (
-          <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : lib.exercises.length === 0 ? (
-          <div className="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-16 text-center shadow-sm">
+        {isFirstRun ? (
+          <div className="mt-10 bg-white border-2 border-dashed border-slate-300 rounded-2xl p-12 sm:p-16 text-center shadow-sm">
             <FolderOpen size={56} className="mx-auto text-slate-300 mb-4" />
             <h3 className="text-lg font-bold text-slate-700 mb-2">Sin ejercicios</h3>
             <p className="text-slate-500 mb-6 text-sm">Crea ejercicios reutilizables para tus entrenamientos.</p>
@@ -197,49 +163,176 @@ export default function ExerciseLibraryScreen() {
               Crear ejercicio
             </button>
           </div>
-        ) : filtered.length === 0 ? (
-          <p className="text-center text-slate-500 py-12 text-sm">No hay ejercicios que coincidan.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {roots.map((ex) => {
-              const variants = variantMap.get(ex.id) || [];
-              const hasVariants = variants.length > 0;
-              const expanded = expandedGroups.has(ex.id);
-              return (
-                <div key={ex.id} className={hasVariants ? 'md:col-span-2' : ''}>
-                  <ExerciseCard
-                    ex={ex}
-                    onPreview={setPreviewExercise}
-                    onEdit={openEditExercise}
-                    onDelete={lib.setDeletingId}
-                    onCreateVariant={handleCreateVariant}
-                    variantCount={variants.length}
-                    expanded={expanded}
-                    onToggleExpand={hasVariants ? () => toggleGroup(ex.id) : undefined}
-                  />
-                  {hasVariants && expanded && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 ml-4 pl-4 border-l-2 border-indigo-200">
-                      {variants.map((v) => (
-                        <ExerciseCard
-                          key={v.id}
-                          ex={v}
-                          isVariant
-                          onPreview={setPreviewExercise}
-                          onEdit={openEditExercise}
-                          onDelete={lib.setDeletingId}
-                          onCreateVariant={handleCreateVariant}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <>
+            <div className="mt-5">
+              <StickyFilterBar
+                search={filters.search}
+                onSearchChange={(v) => setFilter('search', v)}
+                categories={filters.categories}
+                onToggleCategory={toggleCategory}
+                onOpenSheet={() => setFilterSheetOpen(true)}
+                activeFilterCount={activeFilterCount}
+                categoryCounts={categoryCounts}
+              />
+            </div>
+
+            <div className="flex gap-6 mt-6">
+              <FilterSidebar
+                filters={filters}
+                onToggleCategory={toggleCategory}
+                onSetFilter={setFilter}
+                onReset={reset}
+                hasActiveFilters={hasActiveFilters}
+                categoryCounts={categoryCounts}
+              />
+
+              <div className="flex-1 min-w-0 space-y-8">
+                {lib.loading ? (
+                  <div className="flex justify-center py-16">
+                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : hasActiveFilters ? (
+                  <ExerciseSection
+                    id="resultados"
+                    icon={BookOpen}
+                    iconColor="text-slate-600"
+                    title="Resultados"
+                    count={filtered.length}
+                    variant="grid"
+                    gridCols="grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
+                    isEmpty={todosEmpty}
+                    emptyHidden={false}
+                  >
+                    {todosEmpty ? (
+                      <p className="text-center text-slate-500 py-10 text-sm col-span-full">
+                        No hay ejercicios que coincidan.
+                      </p>
+                    ) : (
+                      roots.map((ex) => {
+                        const variants = variantMap.get(ex.id) || [];
+                        const hasVariants = variants.length > 0;
+                        const expanded = expandedGroups.has(ex.id);
+                        const usage = insights.usageById[ex.id];
+                        return (
+                          <div key={ex.id} className={hasVariants ? 'xl:col-span-3 sm:col-span-2' : ''}>
+                            <ExerciseCard
+                              ex={ex}
+                              {...cardHandlers}
+                              variantCount={variants.length}
+                              expanded={expanded}
+                              onToggleExpand={hasVariants ? () => toggleGroup(ex.id) : undefined}
+                              showUsageBadge={!!usage}
+                              usageCount={usage?.countAll}
+                              lastUsedAt={usage?.lastUsedMs}
+                            />
+                            {hasVariants && expanded && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 ml-4 pl-4 border-l-2 border-indigo-200">
+                                {variants.map((v) => (
+                                  <ExerciseCard key={v.id} ex={v} isVariant {...cardHandlers} />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </ExerciseSection>
+                ) : (
+                  <>
+                    <ExerciseSection
+                      id="favoritos"
+                      icon={Star}
+                      iconColor="text-amber-500"
+                      title="Favoritos"
+                      subtitle="Los ejercicios que has marcado como favoritos"
+                      count={insights.favorites.length}
+                      variant="carousel"
+                      isEmpty={favoritesEmpty}
+                    >
+                      {insights.favorites.map(renderCarouselCard)}
+                    </ExerciseSection>
+
+                    <ExerciseSection
+                      id="recien"
+                      icon={Clock}
+                      iconColor="text-blue-500"
+                      title="Recién usados"
+                      subtitle="Lo último que has llevado al entrenamiento"
+                      count={insights.recentlyUsed.length}
+                      variant="carousel"
+                      isEmpty={recentlyUsedEmpty}
+                    >
+                      {insights.recentlyUsed.map(renderCarouselCard)}
+                    </ExerciseSection>
+
+                    <ExerciseSection
+                      id="tendencias"
+                      icon={TrendingUp}
+                      iconColor="text-emerald-500"
+                      title="Tendencias"
+                      subtitle="Los que más has repetido en los últimos 30 días"
+                      count={insights.trending.length}
+                      variant="carousel"
+                      isEmpty={trendingEmpty}
+                    >
+                      {insights.trending.map(renderCarouselCard)}
+                    </ExerciseSection>
+
+                    <ExerciseSection
+                      id="todos"
+                      icon={BookOpen}
+                      iconColor="text-slate-600"
+                      title="Todos"
+                      count={lib.exercises.length}
+                      variant="grid"
+                      gridCols="grid-cols-1 sm:grid-cols-2 xl:grid-cols-3"
+                      isEmpty={todosEmpty}
+                      emptyHidden={false}
+                    >
+                      {roots.map((ex) => {
+                        const variants = variantMap.get(ex.id) || [];
+                        const hasVariants = variants.length > 0;
+                        const expanded = expandedGroups.has(ex.id);
+                        return (
+                          <div key={ex.id} className={hasVariants ? 'xl:col-span-3 sm:col-span-2' : ''}>
+                            <ExerciseCard
+                              ex={ex}
+                              {...cardHandlers}
+                              variantCount={variants.length}
+                              expanded={expanded}
+                              onToggleExpand={hasVariants ? () => toggleGroup(ex.id) : undefined}
+                            />
+                            {hasVariants && expanded && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 ml-4 pl-4 border-l-2 border-indigo-200">
+                                {variants.map((v) => (
+                                  <ExerciseCard key={v.id} ex={v} isVariant {...cardHandlers} />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </ExerciseSection>
+                  </>
+                )}
+              </div>
+            </div>
+          </>
         )}
       </div>
 
-      {/* Preview modal */}
+      <FilterSheet
+        open={filterSheetOpen}
+        onClose={() => setFilterSheetOpen(false)}
+        filters={filters}
+        onToggleCategory={toggleCategory}
+        onSetFilter={setFilter}
+        onReset={reset}
+        hasActiveFilters={hasActiveFilters}
+        categoryCounts={categoryCounts}
+      />
+
       {previewExercise && (
         <ExercisePreviewModal
           exercise={previewExercise}
@@ -251,7 +344,6 @@ export default function ExerciseLibraryScreen() {
         />
       )}
 
-      {/* Form modal */}
       {editingExercise && (
         <ExerciseFormModal
           editingExercise={editingExercise}
@@ -265,7 +357,6 @@ export default function ExerciseLibraryScreen() {
         />
       )}
 
-      {/* Export modal */}
       {lib.showExport && (
         <ExportModal
           exercises={lib.exercises}
@@ -278,7 +369,6 @@ export default function ExerciseLibraryScreen() {
         />
       )}
 
-      {/* Import modal */}
       {lib.importPreview && (
         <ImportModal
           importPreview={lib.importPreview}
@@ -288,7 +378,6 @@ export default function ExerciseLibraryScreen() {
         />
       )}
 
-      {/* Delete confirmation */}
       {lib.deletingId && (
         <div
           className="fixed inset-0 bg-slate-900/60 z-[110] flex items-end sm:items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm"
@@ -318,7 +407,6 @@ export default function ExerciseLibraryScreen() {
         </div>
       )}
 
-      {/* Share modal */}
       {lib.shareModal && (
         <ShareModal
           shareModal={lib.shareModal}

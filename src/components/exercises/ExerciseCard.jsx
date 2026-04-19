@@ -1,6 +1,8 @@
 import React from 'react';
 import { Pencil, Trash2, Eye, GitBranch, ChevronDown, ChevronRight } from 'lucide-react';
 import CourtCanvas from '../CourtCanvas';
+import FavoriteToggle from './library/FavoriteToggle';
+import UsageBadge from './library/UsageBadge';
 
 export function getExerciseSteps(ex) {
   if (ex.pasos?.length > 0) return ex.pasos;
@@ -28,10 +30,22 @@ export default function ExerciseCard({
   variantCount,
   expanded,
   onToggleExpand,
+  onToggleFavorite,
+  showUsageBadge,
+  usageCount,
+  lastUsedAt,
+  compact,
 }) {
   const steps = getExerciseSteps(ex);
   const firstStepElements = steps[0]?.elementos || [];
   const hasVisual = firstStepElements.length > 0 || ex.tipoPista;
+  const canvasMaxWidth = compact
+    ? ex.tipoPista === 'entera'
+      ? '240px'
+      : '160px'
+    : ex.tipoPista === 'entera'
+      ? '320px'
+      : '200px';
   return (
     <div
       className={`bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden ${isVariant ? 'border-indigo-100' : ''}`}
@@ -41,13 +55,18 @@ export default function ExerciseCard({
           className="px-4 pt-4 pb-2 flex items-center justify-center bg-gray-50 border-b border-slate-100 cursor-pointer hover:bg-gray-100 transition-colors relative"
           onClick={() => onPreview(ex)}
         >
-          <div className="w-full" style={{ maxWidth: ex.tipoPista === 'entera' ? '320px' : '200px' }}>
+          <div className="w-full" style={{ maxWidth: canvasMaxWidth }}>
             <CourtCanvas tipo={ex.tipoPista || 'media'} elementos={firstStepElements} readOnly={true} />
           </div>
           {steps.length > 1 && (
-            <span className="absolute top-2 right-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
               {steps.length} pasos
             </span>
+          )}
+          {onToggleFavorite && (
+            <div className="absolute top-1.5 right-1.5">
+              <FavoriteToggle active={!!ex.favorite} onToggle={() => onToggleFavorite(ex.id)} size={15} />
+            </div>
           )}
         </div>
       )}
@@ -61,6 +80,9 @@ export default function ExerciseCard({
             )}
             <p className="font-bold text-slate-800 truncate">{ex.nombre}</p>
           </div>
+          {!hasVisual && onToggleFavorite && (
+            <FavoriteToggle active={!!ex.favorite} onToggle={() => onToggleFavorite(ex.id)} size={14} />
+          )}
           {onToggleExpand && (
             <button
               onClick={onToggleExpand}
@@ -73,6 +95,11 @@ export default function ExerciseCard({
             </button>
           )}
         </div>
+        {showUsageBadge && (usageCount || lastUsedAt) && (
+          <div className="mt-1.5">
+            <UsageBadge count={usageCount} lastUsedMs={lastUsedAt} />
+          </div>
+        )}
         {(ex.tags?.length > 0 || ex.contenido) && (
           <div className="flex flex-wrap gap-1 mt-1">
             {(ex.tags || []).map((tag, i) => (

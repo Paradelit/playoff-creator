@@ -70,6 +70,12 @@ export async function deleteExercise(exerciseId, { uid, db, appId }) {
   await deleteUserDoc(db, appId, uid, 'exercises', exerciseId);
 }
 
+// Minimal-write helper for favoriting; avoids round-tripping the whole exercise doc.
+export async function setFavorite(exerciseId, favorite, { uid, db, appId }) {
+  const ref = doc(userColRef(db, appId, uid, 'exercises'), exerciseId);
+  await setDoc(ref, { favorite: !!favorite, updatedAt: serverTimestamp() }, { merge: true });
+}
+
 // Propagates edits of a library exercise to every training that references it.
 export async function propagateExerciseUpdate(exercise, { uid, db, appId }) {
   const teamsSnap = await getDocs(userColRef(db, appId, uid, 'teams'));

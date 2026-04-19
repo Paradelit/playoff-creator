@@ -21,18 +21,20 @@ vi.mock('../contexts/ToastContext', () => ({
 const mockSaveExercise = vi.fn(() => Promise.resolve());
 const mockDeleteExercise = vi.fn(() => Promise.resolve());
 const mockPropagateUpdate = vi.fn(() => Promise.resolve());
+const mockSetFavorite = vi.fn(() => Promise.resolve());
 
 vi.mock('../services/trainingsService', () => ({
   subscribeToExercises: vi.fn((_uid, _db, _appId, callback) => {
     callback([
-      { id: 'ex1', nombre: 'Tiro libre', tags: ['tiro'] },
-      { id: 'ex2', nombre: 'Pase y corte', tags: ['pase'] },
+      { id: 'ex1', nombre: 'Tiro libre', tags: ['tiro'], favorite: false },
+      { id: 'ex2', nombre: 'Pase y corte', tags: ['pase'], favorite: true },
     ]);
     return mockUnsubscribe;
   }),
   saveExercise: (...args) => mockSaveExercise(...args),
   deleteExercise: (...args) => mockDeleteExercise(...args),
   propagateExerciseUpdate: (...args) => mockPropagateUpdate(...args),
+  setFavorite: (...args) => mockSetFavorite(...args),
 }));
 
 vi.mock('../services/exerciseSharingService', () => ({
@@ -90,5 +92,25 @@ describe('useExerciseLibrary', () => {
       result.current.doExport();
     });
     expect(result.current.showExport).toBe(false);
+  });
+
+  it('toggleFavorite flips the flag optimistically and calls setFavorite', async () => {
+    const { result } = renderHook(() => useExerciseLibrary());
+    expect(result.current.exercises.find((e) => e.id === 'ex1').favorite).toBe(false);
+    await act(async () => {
+      await result.current.toggleFavorite('ex1');
+    });
+    expect(mockSetFavorite).toHaveBeenCalledWith('ex1', true, expect.any(Object));
+    expect(result.current.exercises.find((e) => e.id === 'ex1').favorite).toBe(true);
+  });
+
+  it('toggleFavorite rolls back when the service call fails', async () => {
+    mockSetFavorite.mockRejectedValueOnce(new Error('boom'));
+    const { result } = renderHook(() => useExerciseLibrary());
+    await act(async () => {
+      await expect(result.current.toggleFavorite('ex1')).rejects.toThrow('boom');
+    });
+    expect(result.current.exercises.find((e) => e.id === 'ex1').favorite).toBe(false);
+    expect(mockToast).toHaveBeenCalledWith('No se pudo actualizar favorito', 'error');
   });
 });
