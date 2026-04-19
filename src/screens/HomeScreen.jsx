@@ -251,6 +251,7 @@ export default function HomeScreen() {
     nextMatchByTeam,
     recentExercises,
     exercisesCount,
+    bibliotecaInsights,
     creatingTraining,
     handleEventAction,
     nextActionEvent,
@@ -387,7 +388,12 @@ export default function HomeScreen() {
               creatingTraining={creatingTraining}
               navigate={navigate}
             />
-            <BibliotecaPreview exercises={recentExercises} totalCount={exercisesCount} navigate={navigate} />
+            <BibliotecaPreview
+              exercises={recentExercises}
+              totalCount={exercisesCount}
+              navigate={navigate}
+              insights={bibliotecaInsights}
+            />
           </div>
 
           {/* Side column (right on desktop) */}

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { X, BookOpen, Plus, Maximize2, Trash2, Undo } from 'lucide-react';
 import CourtCanvas, { COURT_TOOLS } from '../CourtCanvas';
 import TagInput from '../TagInput';
+import CategoryChipPicker from './form/CategoryChipPicker';
+import ExerciseMetaFields from './form/ExerciseMetaFields';
 
 export default function ExerciseFormModal({
   editingExercise,
@@ -58,14 +60,14 @@ export default function ExerciseFormModal({
   return (
     <>
       <div
-        className="fixed inset-0 bg-slate-900/60 z-[115] flex items-end sm:items-center justify-center px-4 pt-2 pb-20 sm:pb-4 backdrop-blur-sm overflow-y-auto"
+        className="fixed inset-0 bg-slate-900/60 z-[115] flex items-stretch sm:items-center justify-center sm:px-4 sm:pt-2 sm:pb-4 backdrop-blur-sm sm:overflow-y-auto"
         onClick={onClose}
       >
         <div
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100vh-5.5rem)] sm:max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-200 my-auto shrink-0"
+          className="bg-white w-full h-[100dvh] sm:h-auto sm:rounded-2xl rounded-none sm:max-w-lg sm:max-h-[92vh] overflow-y-auto shadow-2xl animate-in sm:zoom-in-95 duration-200 sm:my-auto sm:shrink-0 flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
+          <div className="flex items-center justify-between px-6 pt-[max(1rem,env(safe-area-inset-top))] pb-4 border-b border-slate-100 sticky top-0 bg-white sm:rounded-t-2xl z-10">
             <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
               <BookOpen size={18} className="text-blue-600" />
               {editingExercise.id ? 'Editar ejercicio' : 'Nuevo ejercicio'}
@@ -75,7 +77,7 @@ export default function ExerciseFormModal({
             </button>
           </div>
 
-          <form onSubmit={handleFormSubmit} className="px-6 py-5 flex flex-col gap-4">
+          <form onSubmit={handleFormSubmit} className="px-6 py-5 flex flex-col gap-4 flex-1">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1.5">Nombre *</label>
               <input
@@ -105,12 +107,19 @@ export default function ExerciseFormModal({
               </div>
             )}
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Etiquetas</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Categorías</label>
+              <CategoryChipPicker
+                tags={editingExercise.tags || []}
+                onChange={(tags) => setEditingExercise((ex) => ({ ...ex, tags }))}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1.5">Otras etiquetas</label>
               <TagInput
                 tags={editingExercise.tags || []}
                 onChange={(tags) => setEditingExercise((ex) => ({ ...ex, tags }))}
                 suggestions={allTags}
-                placeholder="Tiro, Defensa, Calentamiento..."
+                placeholder="Añade etiquetas propias..."
               />
             </div>
             <div>
@@ -123,6 +132,7 @@ export default function ExerciseFormModal({
                 className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
               />
             </div>
+            <ExerciseMetaFields exercise={editingExercise} onChange={(next) => setEditingExercise(next)} />
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-2">Tipo de pista</label>
               <div className="flex gap-2">
@@ -231,7 +241,7 @@ export default function ExerciseFormModal({
                 ))}
               </div>
             </div>
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 pt-2 sticky bottom-0 bg-white pb-[max(0.5rem,env(safe-area-inset-bottom))] -mx-6 px-6 mt-auto border-t border-slate-100 pt-3">
               <button
                 type="button"
                 onClick={onClose}
