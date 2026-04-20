@@ -3,6 +3,8 @@ import { X, ClipboardList, Trophy, MapPin, ArrowRight } from 'lucide-react';
 import { teamDisplayName } from '../../utils/teamUtils';
 import { FormField } from './CalendarHelpers';
 
+const isPlayoffSession = (s) => s?.tipo === 'playoff';
+
 export default function SessionFormModal({
   editingSession,
   setEditingSession,
@@ -26,33 +28,56 @@ export default function SessionFormModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl z-10">
-          <h3 className="text-lg font-bold text-slate-800">{editingSession.id ? 'Editar sesión' : 'Nueva sesión'}</h3>
+          <h3 className="text-lg font-bold text-slate-800">
+            {isPlayoffSession(editingSession)
+              ? 'Editar horario del cruce'
+              : editingSession.id
+                ? 'Editar sesión'
+                : 'Nueva sesión'}
+          </h3>
           <button onClick={onClose} aria-label="Cerrar" className="text-slate-400 hover:text-slate-600">
             <X size={20} />
           </button>
         </div>
         <form onSubmit={onSubmit} className="px-5 py-4 flex flex-col gap-4">
-          <FormField label="Tipo de sesión">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setEditingSession((s) => ({ ...s, tipo: 'entrenamiento' }))}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 ${editingSession.tipo === 'entrenamiento' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-              >
-                <ClipboardList size={15} /> Entrenamiento
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditingSession((s) => ({ ...s, tipo: 'partido' }))}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 ${editingSession.tipo === 'partido' ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-              >
-                <Trophy size={15} /> Partido
-              </button>
+          {isPlayoffSession(editingSession) ? (
+            <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+              <Trophy size={18} className="text-amber-600 shrink-0" />
+              <div className="min-w-0 text-xs text-amber-800">
+                <p className="font-bold truncate">{editingSession.bracketName || 'Torneo'}</p>
+                <p className="truncate">
+                  {editingSession.matchTitle || ''}
+                  {editingSession.gamesCount > 1 ? ` · Partido ${Number(editingSession.gameIndex || 0) + 1}` : ''}
+                </p>
+              </div>
             </div>
-          </FormField>
+          ) : (
+            <FormField label="Tipo de sesión">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingSession((s) => ({ ...s, tipo: 'entrenamiento' }))}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 ${editingSession.tipo === 'entrenamiento' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                >
+                  <ClipboardList size={15} /> Entrenamiento
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingSession((s) => ({ ...s, tipo: 'partido' }))}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 ${editingSession.tipo === 'partido' ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                >
+                  <Trophy size={15} /> Partido
+                </button>
+              </div>
+            </FormField>
+          )}
 
           <FormField label="Equipo" error={sessionErrors.teamId}>
-            {filterTeamId && filterTeam ? (
+            {isPlayoffSession(editingSession) ? (
+              <div className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 text-slate-700 font-medium">
+                {editingSession.teamName || '—'}
+              </div>
+            ) : filterTeamId && filterTeam ? (
               <div className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 text-slate-700 font-medium">
                 {teamDisplayName(filterTeam)}
               </div>
@@ -75,6 +100,21 @@ export default function SessionFormModal({
               </select>
             )}
           </FormField>
+
+          {isPlayoffSession(editingSession) && (
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Rival">
+                <div className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 text-slate-700 font-medium truncate">
+                  {editingSession.rival || '—'}
+                </div>
+              </FormField>
+              <FormField label="Campo">
+                <div className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 text-slate-700 font-medium">
+                  {editingSession.esLocal ? 'Local' : 'Visitante'}
+                </div>
+              </FormField>
+            </div>
+          )}
 
           {editingSession.tipo === 'partido' && (
             <>

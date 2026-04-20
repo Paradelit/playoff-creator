@@ -287,9 +287,14 @@ export default function HomeScreen() {
 
   const handlePendingAction = useCallback(
     (item) => {
-      if (item?.session) handleEventAction(item.session);
+      if (!item?.session) return;
+      if (item.type === 'result' && item.session.tipo === 'playoff') {
+        navigate(`/playoffs?teamId=${item.session.teamId}`);
+        return;
+      }
+      handleEventAction(item.session);
     },
-    [handleEventAction],
+    [handleEventAction, navigate],
   );
 
   const handleCreateFromHero = useCallback((session) => handleEventAction(session), [handleEventAction]);

@@ -279,8 +279,16 @@ export default function CalendarScreen() {
             className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-xl font-bold mb-2 text-slate-800">¿Eliminar sesión?</h3>
-            <p className="text-slate-600 mb-6 text-sm">El entrenamiento vinculado no se borrará.</p>
+            <h3 className="text-xl font-bold mb-2 text-slate-800">
+              {typeof editor.deletingId === 'object' && editor.deletingId?.tipo === 'playoff'
+                ? '¿Quitar del calendario?'
+                : '¿Eliminar sesión?'}
+            </h3>
+            <p className="text-slate-600 mb-6 text-sm">
+              {typeof editor.deletingId === 'object' && editor.deletingId?.tipo === 'playoff'
+                ? 'Se borrarán la fecha, hora y lugar del partido en el cuadro. El cruce del torneo no se elimina.'
+                : 'El entrenamiento vinculado no se borrará.'}
+            </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => editor.setDeletingId(null)}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Trophy, Calendar, Edit2 } from 'lucide-react';
-import { parseDateToISO } from '../utils/calendarUtils';
+import { parseDateToISO, isGameSkippedBySeries } from '../utils/calendarUtils';
 import { useBracket } from '../contexts/BracketContext';
 import PromptDialog from './PromptDialog';
 import EditMatchModal from './bracket/EditMatchModal';
@@ -38,18 +38,7 @@ const MatchCard = React.memo(
 
     const isGameDisabled = (gIdx) => {
       if (!isReady) return true;
-      if (match.gamesCount === 3 && gIdx === 2) {
-        const s1_1 = parseInt(match.scores[0].s1),
-          s1_2 = parseInt(match.scores[0].s2);
-        const s2_1 = parseInt(match.scores[1].s1),
-          s2_2 = parseInt(match.scores[1].s2);
-        if (!isNaN(s1_1) && !isNaN(s1_2) && !isNaN(s2_1) && !isNaN(s2_2)) {
-          const t1Wins = (s1_1 > s1_2 ? 1 : 0) + (s2_1 > s2_2 ? 1 : 0);
-          const t2Wins = (s1_2 > s1_1 ? 1 : 0) + (s2_2 > s2_1 ? 1 : 0);
-          if (t1Wins === 2 || t2Wins === 2) return true;
-        }
-      }
-      return false;
+      return isGameSkippedBySeries(match, gIdx);
     };
 
     const renderTeamRow = (team, origin, options, scores, teamIndex) => {
@@ -212,8 +201,8 @@ const MatchCard = React.memo(
           <EditMatchModal
             match={match}
             onClose={() => setIsEditingMatch(false)}
-            onSave={(newTitle, newGamesCount) => {
-              handleEditMatchSettings(match.id, newTitle, newGamesCount);
+            onSave={(newTitle, newGamesCount, schedule) => {
+              handleEditMatchSettings(match.id, newTitle, newGamesCount, schedule);
               setIsEditingMatch(false);
             }}
           />

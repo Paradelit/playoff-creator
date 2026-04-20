@@ -6,6 +6,7 @@ import ClubLogo from '../components/ClubLogo';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { subscribeToAnalysis, saveAnalysis } from '../services/analysisService';
+import { updatePlayoffMatchScoreFromSession } from '../services/bracketCalendarSyncService';
 import { userDocRef } from '../services/firestoreHelpers';
 import { useProfile } from '../hooks/useProfile';
 import { useTeams } from '../hooks/useTeams';
@@ -13,13 +14,22 @@ import { teamDisplayName } from '../utils/teamUtils';
 import { getTemporada, formatDateDisplay } from '../utils/dateUtils';
 import ConfirmDialog from '../components/ConfirmDialog';
 
+function getPlayoffResultado(session) {
+  if (session?.tipo !== 'playoff' || !Array.isArray(session?.scores)) return { local: '', visitante: '' };
+  const sc = session.scores[session.gameIndex || 0];
+  if (!sc) return { local: '', visitante: '' };
+  const local = session.isMyTeamTeam1 ? sc.s1 : sc.s2;
+  const visitante = session.isMyTeamTeam1 ? sc.s2 : sc.s1;
+  return { local: local ?? '', visitante: visitante ?? '' };
+}
+
 function emptyAnalysisData(session) {
   return {
     teamId: session?.teamId || '',
     sessionId: session?.id || '',
     rival: session?.rival || '',
     fecha: session?.fecha || '',
-    resultado: { local: '', visitante: '' },
+    resultado: getPlayoffResultado(session),
     funcionoBien: '',
     mejorar: '',
     jugadoresDestacados: [],
@@ -73,10 +83,24 @@ export default function AnalysisScreen() {
   useEffect(() => {
     if (!user || !db || !sessionId || !session) return;
     return subscribeToAnalysis(sessionId, { uid: user.uid, db, appId }, (analysis) => {
-      if (initializedRef.current) return;
-      const loaded = analysis || emptyAnalysisData(session);
+      const empty = emptyAnalysisData(session);
+      if (initializedRef.current) {
+        if (session.tipo === 'playoff') {
+          const bracketRes = getPlayoffResultado(session);
+          setData((prev) =>
+            prev && (prev.resultado?.local !== bracketRes.local || prev.resultado?.visitante !== bracketRes.visitante)
+              ? { ...prev, resultado: bracketRes }
+              : prev,
+          );
+        }
+        return;
+      }
+      const loaded = analysis
+        ? session.tipo === 'playoff'
+          ? { ...analysis, resultado: empty.resultado }
+          : analysis
+        : empty;
       setData(loaded);
-      // Show stats section if any stat is filled
       if (loaded.estadisticas && Object.values(loaded.estadisticas).some((v) => v)) {
         setShowStats(true);
       }
@@ -91,6 +115,22 @@ export default function AnalysisScreen() {
     debounceRef.current = setTimeout(async () => {
       setSaveStatus('saving');
       await saveAnalysis(newData, sessionId, { uid: user.uid, db, appId });
+      if (session?.tipo === 'playoff' && session?.bracketId && session?.bracketMatchId) {
+        try {
+          await updatePlayoffMatchScoreFromSession(
+            {
+              bracketId: session.bracketId,
+              bracketMatchId: session.bracketMatchId,
+              gameIndex: session.gameIndex || 0,
+              isMyTeamTeam1: session.isMyTeamTeam1,
+            },
+            { local: newData.resultado?.local ?? '', visitante: newData.resultado?.visitante ?? '' },
+            { uid: user.uid, db, appId },
+          );
+        } catch (err) {
+          console.error('Error syncing playoff score to bracket:', err);
+        }
+      }
       setSaveStatus('saved');
     }, 1500);
   }

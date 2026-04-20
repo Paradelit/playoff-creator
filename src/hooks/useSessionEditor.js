@@ -13,6 +13,7 @@ import {
 } from '../services/calendarService';
 import { saveTraining } from '../services/trainingsService';
 import { deletePlanilla } from '../services/planillaService';
+import { updatePlayoffMatchSchedule, toBracketDate } from '../services/bracketCalendarSyncService';
 import { teamDisplayName } from '../utils/teamUtils';
 
 export function useSessionEditor(teams, getTrainingNum) {
@@ -33,6 +34,25 @@ export function useSessionEditor(teams, getTrainingNum) {
   async function doSaveSession(sessionData, choice) {
     setSavingSession(true);
     try {
+      if (sessionData.tipo === 'playoff' && sessionData.bracketId && sessionData.bracketMatchId) {
+        await updatePlayoffMatchSchedule(
+          sessionData.bracketId,
+          sessionData.bracketMatchId,
+          sessionData.gameIndex || 0,
+          {
+            fecha: toBracketDate(sessionData.fecha),
+            horaInicio: sessionData.horaInicio || '',
+            horaFin: sessionData.horaFin || '',
+            lugar: sessionData.lugar || '',
+          },
+          { uid: user.uid, db, appId },
+        );
+        setEditingSession(null);
+        setSelectedSession(null);
+        setPendingEditData(null);
+        return;
+      }
+
       const isNew = !sessionData.id;
       const teamObj = teams.find((t) => t.id === sessionData.teamId);
       const sessionId = sessionData.id || crypto.randomUUID();
@@ -125,7 +145,24 @@ export function useSessionEditor(teams, getTrainingNum) {
     await doSaveSession(editingSession, 'single');
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(idOrSession) {
+    if (typeof idOrSession === 'object' && idOrSession?.tipo === 'playoff') {
+      const session = idOrSession;
+      if (session.bracketId && session.bracketMatchId) {
+        await updatePlayoffMatchSchedule(
+          session.bracketId,
+          session.bracketMatchId,
+          session.gameIndex || 0,
+          { fecha: '', horaInicio: '', horaFin: '', lugar: '' },
+          { uid: user.uid, db, appId },
+        );
+      }
+      setDeletingId(null);
+      setSelectedSession(null);
+      return;
+    }
+    const id = typeof idOrSession === 'string' ? idOrSession : idOrSession?.id;
+    if (!id) return;
     await deleteCalendarSession(id, { uid: user.uid, db, appId });
     deletePlanilla(id, { uid: user.uid, db, appId }).catch(() => {});
     setDeletingId(null);
@@ -133,7 +170,9 @@ export function useSessionEditor(teams, getTrainingNum) {
   }
 
   function handleDeleteRequest(session) {
-    if (session.recurrenceId && !session.recurrenceDetached) {
+    if (session.tipo === 'playoff') {
+      setDeletingId(session);
+    } else if (session.recurrenceId && !session.recurrenceDetached) {
       setRecurrenceAction({ mode: 'delete', session });
     } else {
       setDeletingId(session.id);

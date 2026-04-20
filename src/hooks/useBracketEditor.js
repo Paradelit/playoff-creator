@@ -311,7 +311,7 @@ export function useBracketEditor({
   );
 
   const handleEditMatchSettings = useCallback(
-    (matchId, newTitle, newGamesCount) => {
+    (matchId, newTitle, newGamesCount, schedule) => {
       updateActiveBracketData((prevData) => {
         const nextState = { ...prevData.state };
         const match = { ...nextState[matchId] };
@@ -341,6 +341,24 @@ export function useBracketEditor({
               nextState[match.nextId] = { ...nextState[match.nextId], [match.slot]: newWinner };
             }
           }
+        }
+
+        if (schedule) {
+          const size = match.gamesCount || match.scores.length;
+          const fit = (src, fill = '') => {
+            const out = Array.isArray(src) ? [...src] : [];
+            while (out.length < size) out.push(fill);
+            if (out.length > size) out.length = size;
+            return out;
+          };
+          if (Array.isArray(schedule.dates)) match.dates = fit(schedule.dates);
+          else match.dates = fit(match.dates);
+          if (Array.isArray(schedule.times)) match.times = fit(schedule.times);
+          else match.times = fit(match.times);
+          if (Array.isArray(schedule.endTimes)) match.endTimes = fit(schedule.endTimes);
+          else match.endTimes = fit(match.endTimes);
+          if (Array.isArray(schedule.places)) match.places = fit(schedule.places);
+          else match.places = fit(match.places);
         }
 
         nextState[matchId] = match;
