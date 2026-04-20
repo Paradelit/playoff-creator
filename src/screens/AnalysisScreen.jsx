@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { getDoc } from 'firebase/firestore';
+import { getDoc, onSnapshot } from 'firebase/firestore';
 import { ArrowLeft, Printer, RotateCcw, Plus, Trash2 } from 'lucide-react';
 import ClubLogo from '../components/ClubLogo';
 import { useAuth } from '../contexts/AuthContext';
@@ -66,17 +66,34 @@ export default function AnalysisScreen() {
   const debounceRef = useRef(null);
   const initializedRef = useRef(false);
 
-  // Load session (from Firestore or from route state for virtual playoff sessions)
+  // Load session (from Firestore or from route state for virtual playoff sessions).
+  // For playoff sessions, subscribe to the bracket so scores/dates stay in sync live.
   useEffect(() => {
     if (!user || !db || !sessionId) return;
     const ref = userDocRef(db, appId, user.uid, 'calendarSessions', sessionId);
+    let unsubBracket = null;
     getDoc(ref).then((snap) => {
       if (snap.exists()) {
         setSession({ ...snap.data(), id: snap.id });
-      } else if (location.state?.playoffSession) {
-        setSession({ ...location.state.playoffSession, id: sessionId });
+        return;
+      }
+      const virtual = location.state?.playoffSession;
+      if (!virtual) return;
+      setSession({ ...virtual, id: sessionId });
+      if (virtual.bracketId && virtual.bracketMatchId) {
+        const bRef = userDocRef(db, appId, user.uid, 'brackets', virtual.bracketId);
+        unsubBracket = onSnapshot(bRef, (bSnap) => {
+          if (!bSnap.exists()) return;
+          const bracketDoc = bSnap.data();
+          const match = bracketDoc.bracketData?.state?.[virtual.bracketMatchId];
+          if (!match) return;
+          setSession((prev) => (prev ? { ...prev, scores: match.scores || prev.scores } : prev));
+        });
       }
     });
+    return () => {
+      if (unsubBracket) unsubBracket();
+    };
   }, [user, db, appId, sessionId, location.state]);
 
   // Load or create analysis

@@ -54,7 +54,9 @@
       "Bash(firebase functions:secrets:access GEMINI_API_KEY --project playoff-creator)",
       "Bash(firebase functions:secrets:access LANGFUSE_PUBLIC_KEY --project playoff-creator)",
       "Bash(firebase functions:secrets:access LANGFUSE_SECRET_KEY --project playoff-creator)",
-      "Bash(firebase functions:secrets:access LANGFUSE_BASE_URL --project playoff-creator)"
+      "Bash(firebase functions:secrets:access LANGFUSE_BASE_URL --project playoff-creator)",
+      "Bash(mkdir -p \"src/components/exercises/library\")",
+      "Bash(mkdir -p \"src/components/exercises/form\")"
     ]
   }
 }

@@ -1,14 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDoc, setDoc } from 'firebase/firestore';
 import { X, ClipboardList, ArrowRight, Trophy, Search, BarChart3, Pencil, Trash2, Repeat } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
 import { saveCalendarSession } from '../../services/calendarService';
-import { userDocRef } from '../../services/firestoreHelpers';
+import { updatePlayoffMatchScoreFromSession, readPlayoffGameResult } from '../../services/bracketCalendarSyncService';
 import { isMinibasketSextos } from '../../utils/minibasketUtils';
 import { formatDateDisplay } from '../../utils/dateUtils';
-import { calculateMatchWinner } from '../../utils/bracketEngine';
 import { DetailRow, QuickResultado } from './CalendarHelpers';
 
 export default function SessionDetailModal({
@@ -201,13 +199,7 @@ export default function SessionDetailModal({
 }
 
 function PlayoffResultado({ session, db, appId, user, onClose }) {
-  const resultado = (() => {
-    const sc = session.scores?.[session.gameIndex];
-    if (!sc) return { local: '', visitante: '' };
-    const myS = session.isMyTeamTeam1 ? sc.s1 : sc.s2;
-    const rivS = session.isMyTeamTeam1 ? sc.s2 : sc.s1;
-    return { local: myS || '', visitante: rivS || '' };
-  })();
+  const resultado = readPlayoffGameResult(session);
 
   return (
     <QuickResultado
@@ -215,33 +207,11 @@ function PlayoffResultado({ session, db, appId, user, onClose }) {
       onSave={async (res) => {
         const { bracketId, bracketMatchId, gameIndex, isMyTeamTeam1 } = session;
         if (!bracketId || !bracketMatchId) return;
-        const bracketRef = userDocRef(db, appId, user.uid, 'brackets', bracketId);
-        const snap = await getDoc(bracketRef);
-        if (!snap.exists()) return;
-        const bracketDoc = snap.data();
-        const match = bracketDoc.bracketData?.state?.[bracketMatchId];
-        if (!match) return;
-        const newScores = [...(match.scores || [])];
-        newScores[gameIndex] = {
-          s1: isMyTeamTeam1 ? res.local : res.visitante,
-          s2: isMyTeamTeam1 ? res.visitante : res.local,
-        };
-        const updatedMatch = { ...match, scores: newScores };
-        const winner = calculateMatchWinner(updatedMatch);
-        const updatedState = {
-          ...bracketDoc.bracketData.state,
-          [bracketMatchId]: { ...updatedMatch, winner },
-        };
-        if (winner && match.nextId && match.slot) {
-          updatedState[match.nextId] = {
-            ...updatedState[match.nextId],
-            [match.slot]: winner,
-          };
-        }
-        await setDoc(bracketRef, {
-          ...bracketDoc,
-          bracketData: { ...bracketDoc.bracketData, state: updatedState },
-        });
+        await updatePlayoffMatchScoreFromSession(
+          { bracketId, bracketMatchId, gameIndex: gameIndex || 0, isMyTeamTeam1 },
+          { local: res.local, visitante: res.visitante },
+          { uid: user.uid, db, appId },
+        );
         onClose();
       }}
     />
