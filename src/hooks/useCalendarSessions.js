@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
-import { onSnapshot } from 'firebase/firestore';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { useTeams } from './useTeams';
@@ -48,12 +48,53 @@ export function useCalendarSessions(currentDate, viewMode) {
   const [brackets, setBrackets] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Subscribe to user bracket docs
   useEffect(() => {
     if (!user || !db) return;
     return onSnapshot(userColRef(db, appId, user.uid, 'brackets'), (snap) => {
-      setBrackets(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
+      const fetched = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+      setBrackets((prev) =>
+        fetched.map((b) => {
+          const existing = prev.find((p) => p.id === b.id);
+          // For shared brackets, preserve the bracketData from the shared doc subscription
+          if (existing && b.shareCode) {
+            return { ...b, bracketData: existing.bracketData || b.bracketData };
+          }
+          return b;
+        }),
+      );
     });
   }, [user, db, appId]);
+
+  // Subscribe to shared bracket docs so bracketData is available for buildPlayoffSessions
+  const shareCodes = useMemo(() => brackets.filter((b) => b.shareCode).map((b) => b.shareCode), [brackets]);
+  const shareCodesKey = shareCodes.join(',');
+  const sharedUnsubs = useRef({});
+
+  useEffect(() => {
+    if (!db) return;
+    const active = new Set(shareCodes);
+    Object.keys(sharedUnsubs.current).forEach((code) => {
+      if (!active.has(code)) {
+        sharedUnsubs.current[code]();
+        delete sharedUnsubs.current[code];
+      }
+    });
+    shareCodes.forEach((code) => {
+      if (sharedUnsubs.current[code]) return;
+      sharedUnsubs.current[code] = onSnapshot(doc(db, 'artifacts', appId, 'shared', code), (snap) => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        setBrackets((prev) =>
+          prev.map((pb) => (pb.shareCode === code ? { ...pb, bracketData: data.bracketData } : pb)),
+        );
+      });
+    });
+    return () => {
+      Object.values(sharedUnsubs.current).forEach((u) => u?.());
+      sharedUnsubs.current = {};
+    };
+  }, [db, appId, shareCodesKey]);
 
   useEffect(() => {
     if (!user || !db) return;

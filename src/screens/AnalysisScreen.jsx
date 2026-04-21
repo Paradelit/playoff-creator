@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { ArrowLeft, Printer, RotateCcw, Plus, Trash2 } from 'lucide-react';
 import ClubLogo from '../components/ClubLogo';
 import { useAuth } from '../contexts/AuthContext';
@@ -81,7 +81,10 @@ export default function AnalysisScreen() {
       if (!virtual) return;
       setSession({ ...virtual, id: sessionId });
       if (virtual.bracketId && virtual.bracketMatchId) {
-        const bRef = userDocRef(db, appId, user.uid, 'brackets', virtual.bracketId);
+        // For shared brackets, subscribe to the shared doc; for local brackets, subscribe to user doc
+        const bRef = virtual.bracketShareCode
+          ? doc(db, 'artifacts', appId, 'shared', virtual.bracketShareCode)
+          : userDocRef(db, appId, user.uid, 'brackets', virtual.bracketId);
         unsubBracket = onSnapshot(bRef, (bSnap) => {
           if (!bSnap.exists()) return;
           const bracketDoc = bSnap.data();

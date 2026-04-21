@@ -1,4 +1,4 @@
-import { getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { userDocRef } from './firestoreHelpers';
 import { calculateMatchWinner } from '../utils/bracketEngine';
 import { parseDateToISO } from '../utils/calendarUtils';
@@ -8,6 +8,30 @@ function ensureArrayLength(arr, len, fill = '') {
   while (out.length < len) out.push(fill);
   if (out.length > len) out.length = len;
   return out;
+}
+
+/**
+ * Resolve the correct Firestore ref for a bracket.
+ * Shared brackets store bracketData in artifacts/{appId}/shared/{shareCode},
+ * while local brackets store everything in users/{uid}/brackets/{id}.
+ * Returns { ref, bracketDoc } or null if not found.
+ */
+async function resolveBracketRef(bracketId, { uid, db, appId }) {
+  const userRef = userDocRef(db, appId, uid, 'brackets', bracketId);
+  const userSnap = await getDoc(userRef);
+  if (!userSnap.exists()) return null;
+  const userData = userSnap.data();
+
+  // Shared bracket: bracketData lives in the shared doc
+  if (userData.shareCode) {
+    const sharedRef = doc(db, 'artifacts', appId, 'shared', userData.shareCode);
+    const sharedSnap = await getDoc(sharedRef);
+    if (!sharedSnap.exists()) return null;
+    return { ref: sharedRef, bracketDoc: sharedSnap.data() };
+  }
+
+  // Local bracket: everything is in the user doc
+  return { ref: userRef, bracketDoc: userData };
 }
 
 /**
@@ -23,10 +47,9 @@ export async function updatePlayoffMatchSchedule(
   { uid, db, appId },
 ) {
   if (!bracketId || !matchId) return false;
-  const bracketRef = userDocRef(db, appId, uid, 'brackets', bracketId);
-  const snap = await getDoc(bracketRef);
-  if (!snap.exists()) return false;
-  const bracketDoc = snap.data();
+  const resolved = await resolveBracketRef(bracketId, { uid, db, appId });
+  if (!resolved) return false;
+  const { ref: bracketRef, bracketDoc } = resolved;
   const match = bracketDoc.bracketData?.state?.[matchId];
   if (!match) return false;
 
@@ -65,10 +88,9 @@ export async function updatePlayoffMatchScoreFromSession(
   { uid, db, appId },
 ) {
   if (!bracketId || !bracketMatchId) return false;
-  const bracketRef = userDocRef(db, appId, uid, 'brackets', bracketId);
-  const snap = await getDoc(bracketRef);
-  if (!snap.exists()) return false;
-  const bracketDoc = snap.data();
+  const resolved = await resolveBracketRef(bracketId, { uid, db, appId });
+  if (!resolved) return false;
+  const { ref: bracketRef, bracketDoc } = resolved;
   const match = bracketDoc.bracketData?.state?.[bracketMatchId];
   if (!match) return false;
 
