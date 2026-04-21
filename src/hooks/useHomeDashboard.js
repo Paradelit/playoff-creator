@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { saveTraining, subscribeToExercises } from '../services/trainingsService';
@@ -72,9 +72,47 @@ export function useHomeDashboard() {
   useEffect(() => {
     if (!user || !db) return;
     return onSnapshot(userColRef(db, appId, user.uid, 'brackets'), (snap) => {
-      setBrackets(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
+      const fetched = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+      setBrackets((prev) =>
+        fetched.map((b) => {
+          const existing = prev.find((p) => p.id === b.id);
+          if (existing && b.shareCode) {
+            return { ...b, bracketData: existing.bracketData || b.bracketData };
+          }
+          return b;
+        }),
+      );
     });
   }, [user, db, appId]);
+
+  const shareCodes = useMemo(() => brackets.filter((b) => b.shareCode).map((b) => b.shareCode), [brackets]);
+  const shareCodesKey = shareCodes.join(',');
+  const sharedUnsubs = useRef({});
+
+  useEffect(() => {
+    if (!db) return;
+    const active = new Set(shareCodes);
+    Object.keys(sharedUnsubs.current).forEach((code) => {
+      if (!active.has(code)) {
+        sharedUnsubs.current[code]();
+        delete sharedUnsubs.current[code];
+      }
+    });
+    shareCodes.forEach((code) => {
+      if (sharedUnsubs.current[code]) return;
+      sharedUnsubs.current[code] = onSnapshot(doc(db, 'artifacts', appId, 'shared', code), (snap) => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        setBrackets((prev) =>
+          prev.map((pb) => (pb.shareCode === code ? { ...pb, bracketData: data.bracketData } : pb)),
+        );
+      });
+    });
+    return () => {
+      Object.values(sharedUnsubs.current).forEach((u) => u?.());
+      sharedUnsubs.current = {};
+    };
+  }, [db, appId, shareCodesKey]);
 
   useEffect(() => {
     if (!user || !db) return;
