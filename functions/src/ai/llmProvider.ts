@@ -16,25 +16,24 @@ interface ProviderModel {
 
 const DEFAULT_PROVIDERS: ProviderModel[] = [
   { provider: "gemini", model: "gemini-flash-latest" },
-  { provider: "gemini", model: "gemini-2.5-flash" },
-  { provider: "gemini", model: "gemini-2.5-pro" },
   { provider: "gemini", model: "gemini-2.0-flash" },
+  { provider: "gemini", model: "gemini-1.5-flash" },
   // OpenRouter free-tier fallbacks: tool-use capable, good JSON, Spanish OK.
   { provider: "openrouter", model: "deepseek/deepseek-chat-v3.1:free" },
   { provider: "openrouter", model: "z-ai/glm-4.5-air:free" },
   { provider: "openrouter", model: "meta-llama/llama-3.3-70b-instruct:free" },
 ];
 
-// With 7 models in the fallback chain, retrying a saturated model is wasteful —
-// we skip to the next model immediately on 429/503. The single retry here only
-// covers transient network errors (fetch throws before the server responds).
+// With 7 models in the fallback chain, we must stay under the 300s GCF limit.
+// We skip to the next model immediately on 429/503.
 const MAX_RETRIES_PER_MODEL = 1;
 const BASE_BACKOFF_MS = 800;
+const GLOBAL_TIMEOUT_MS = 280_000; // Stop trying new models after 280s
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 const isOverloadedStatus = (status: number) =>
-  status === 503 || status === 500 || status === 502 || status === 504;
+  status === 503 || status === 500 || status === 502 || status === 504 || status === 429;
 
 /** Part of a Gemini message — either text or functionCall/Response */
 export type GeminiPart =
@@ -93,9 +92,13 @@ export class LLMProvider {
   }
 
   async generate<T>(request: LLMGenerateRequest): Promise<LLMResult<T>> {
+    const startTime = Date.now();
     let lastParseError: Error | null = null;
 
     for (let idx = 0; idx < this.providers.length; idx++) {
+      // If we've spent more than 280s, don't even start a new model.
+      if (Date.now() - startTime > GLOBAL_TIMEOUT_MS) break;
+
       const { provider, model } = this.providers[idx];
 
       for (let attempt = 0; attempt <= MAX_RETRIES_PER_MODEL; attempt++) {
@@ -181,7 +184,11 @@ export class LLMProvider {
   }
 
   async generateWithTools(request: GenerateWithToolsRequest): Promise<GenerateWithToolsResult> {
+    const startTime = Date.now();
     for (let idx = 0; idx < this.providers.length; idx++) {
+      // If we've spent more than 280s, don't even start a new model.
+      if (Date.now() - startTime > GLOBAL_TIMEOUT_MS) break;
+
       const { provider, model } = this.providers[idx];
 
       for (let attempt = 0; attempt <= MAX_RETRIES_PER_MODEL; attempt++) {
@@ -292,7 +299,7 @@ export class LLMProvider {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(25000),
+      signal: AbortSignal.timeout(20000),
     });
 
     if (response.status === 429) return { kind: "throw", error: "RATE_LIMIT" };
@@ -374,7 +381,7 @@ export class LLMProvider {
         "X-Title": "Playoff Creator",
       },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(25000),
     });
 
     if (response.status === 429) return { kind: "throw", error: "RATE_LIMIT" };
@@ -406,12 +413,12 @@ type RawTextResult =
 
 type RawToolsResult =
   | {
-      kind: "ok";
-      parts: GeminiPart[];
-      finishReason?: string;
-      inputTokens?: number;
-      outputTokens?: number;
-    }
+    kind: "ok";
+    parts: GeminiPart[];
+    finishReason?: string;
+    inputTokens?: number;
+    outputTokens?: number;
+  }
   | { kind: "retryable" }
   | { kind: "fatal"; error: string }
   | { kind: "throw"; error: string };
