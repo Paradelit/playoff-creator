@@ -118,7 +118,15 @@ export function useBracketCreation({
       setAppMode('preview');
     } catch (err) {
       logger.error('Error procesando documentos', err);
-      setErrorMsg(err.message || 'Ocurrió un error inesperado al procesar los documentos.');
+      const code = err?.code || '';
+      const msg = err?.message || '';
+      if (code === 'deadline-exceeded' || msg.includes('deadline-exceeded')) {
+        setErrorMsg(
+          'La IA tardó demasiado en responder. Los servidores pueden estar saturados. Inténtalo de nuevo en unos segundos.',
+        );
+      } else {
+        setErrorMsg(msg || 'Ocurrió un error inesperado al procesar los documentos.');
+      }
       setIsProcessing(false);
     }
   };

@@ -3,6 +3,9 @@ import type { OrchestratorResponse } from './contentBlocks';
 
 let emulatorConnected = false;
 
+// Match the backend Cloud Function timeoutSeconds: 300
+const CALLABLE_TIMEOUT_MS = 300_000;
+
 function getRegionalFunctions() {
   const functions = getFunctions(undefined, 'europe-west1');
   if (import.meta.env.DEV && !emulatorConnected) {
@@ -17,7 +20,9 @@ export async function runAgent<TResult>(
   input: Record<string, unknown>,
   sessionId?: string,
 ): Promise<{ result: TResult; traceId: string }> {
-  const callable = httpsCallable(getRegionalFunctions(), 'runAgent');
+  const callable = httpsCallable(getRegionalFunctions(), 'runAgent', {
+    timeout: CALLABLE_TIMEOUT_MS,
+  });
   const response = await callable({ agent: agentName, input, sessionId });
   return response.data as { result: TResult; traceId: string };
 }
@@ -44,7 +49,9 @@ export async function aiChatV2(request: {
   clientDate?: string;
   conversationId?: string;
 }): Promise<OrchestratorResponse> {
-  const callable = httpsCallable(getRegionalFunctions(), 'aiChat');
+  const callable = httpsCallable(getRegionalFunctions(), 'aiChat', {
+    timeout: CALLABLE_TIMEOUT_MS,
+  });
   const response = await callable(request);
   return response.data as OrchestratorResponse;
 }
