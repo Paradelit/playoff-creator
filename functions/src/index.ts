@@ -23,6 +23,7 @@ import {
 if (getApps().length === 0) initializeApp();
 
 const geminiKey = defineSecret("GEMINI_API_KEY");
+const openRouterKey = defineSecret("OPENROUTER_API_KEY");
 const langfusePublicKey = defineSecret("LANGFUSE_PUBLIC_KEY");
 const langfuseSecretKey = defineSecret("LANGFUSE_SECRET_KEY");
 const langfuseBaseUrl = defineSecret("LANGFUSE_BASE_URL");
@@ -43,12 +44,21 @@ interface System {
 
 let cached: System | null = null;
 
+function safeSecret(param: { value: () => string }): string {
+  try {
+    return param.value() || "";
+  } catch {
+    return "";
+  }
+}
+
 function getSystem(): System {
   if (cached) return cached;
 
   const observability = new ObservabilityService();
   const llmProvider = new LLMProvider({
     apiKey: geminiKey.value(),
+    openRouterApiKey: safeSecret(openRouterKey),
     observability,
   });
 
@@ -103,9 +113,9 @@ function getSystem(): System {
 // 1. runAgent — execute a specific legacy agent by name (kept for backwards compat)
 export const runAgent = onCall(
   {
-    secrets: [geminiKey, langfusePublicKey, langfuseSecretKey, langfuseBaseUrl],
+    secrets: [geminiKey, openRouterKey, langfusePublicKey, langfuseSecretKey, langfuseBaseUrl],
     region: "europe-west1",
-    timeoutSeconds: 120,
+    timeoutSeconds: 300,
     memory: "512MiB",
   },
   async (request) => {
@@ -120,7 +130,7 @@ export const runAgent = onCall(
     } catch (err) {
       const error = err as Error;
       if (error.message === "RATE_LIMIT") {
-        throw new HttpsError("resource-exhausted", "Demasiadas peticiones a Gemini. Espera 60 segundos.");
+        throw new HttpsError("resource-exhausted", "Demasiadas peticiones a la IA. Espera 60 segundos.");
       }
       if (error.message === "FORBIDDEN") {
         throw new HttpsError("permission-denied", "Error 403: La API Key no tiene acceso a la IA.");
@@ -135,9 +145,9 @@ export const runAgent = onCall(
 // 2. aiChat — orchestrator with function calling, returns ContentBlocks
 export const aiChat = onCall(
   {
-    secrets: [geminiKey, langfusePublicKey, langfuseSecretKey, langfuseBaseUrl],
+    secrets: [geminiKey, openRouterKey, langfusePublicKey, langfuseSecretKey, langfuseBaseUrl],
     region: "europe-west1",
-    timeoutSeconds: 180,
+    timeoutSeconds: 300,
     memory: "512MiB",
   },
   async (request) => {
@@ -210,7 +220,7 @@ export const aiChat = onCall(
       const error = err as Error;
       console.error("aiChat error:", error);
       if (error.message === "RATE_LIMIT") {
-        throw new HttpsError("resource-exhausted", "Demasiadas peticiones a Gemini. Espera 60 segundos.");
+        throw new HttpsError("resource-exhausted", "Demasiadas peticiones a la IA. Espera 60 segundos.");
       }
       if (error.message === "FORBIDDEN") {
         throw new HttpsError("permission-denied", "La API Key no tiene acceso a la IA.");
@@ -225,7 +235,7 @@ export const aiChat = onCall(
 // 3. logInteractionScore — user feedback → Langfuse scores
 export const logInteractionScore = onCall(
   {
-    secrets: [geminiKey, langfusePublicKey, langfuseSecretKey, langfuseBaseUrl],
+    secrets: [geminiKey, openRouterKey, langfusePublicKey, langfuseSecretKey, langfuseBaseUrl],
     region: "europe-west1",
   },
   async (request) => {

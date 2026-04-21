@@ -56,7 +56,9 @@
       "Bash(firebase functions:secrets:access LANGFUSE_SECRET_KEY --project playoff-creator)",
       "Bash(firebase functions:secrets:access LANGFUSE_BASE_URL --project playoff-creator)",
       "Bash(mkdir -p \"src/components/exercises/library\")",
-      "Bash(mkdir -p \"src/components/exercises/form\")"
+      "Bash(mkdir -p \"src/components/exercises/form\")",
+      "Bash(npx tsc *)",
+      "Bash(firebase functions:secrets:set OPENROUTER_API_KEY --data-file -)"
     ]
   }
 }
