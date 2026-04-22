@@ -80,23 +80,6 @@ export function useBracketEditor({
     prevPendingIdRef.current = newId;
   }, [pendingBracket?.id]);
 
-  // Atajos Ctrl+Z / Ctrl+Y
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (appMode === 'bracket' && !canEdit) return;
-      if (appMode !== 'bracket' && appMode !== 'preview') return;
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        handleUndo();
-      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
-        e.preventDefault();
-        handleRedo();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [appMode, canEdit, handleUndo, handleRedo]);
-
   // Auto-scroll al abrir bracket
   useEffect(() => {
     if (appMode !== 'bracket' || !activeBracket?.bracketData) return;
@@ -487,6 +470,23 @@ export function useBracketEditor({
       if (fileInputResults.current) fileInputResults.current.value = '';
     }
   };
+
+  // Atajos Ctrl+Z / Ctrl+Y
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (appMode === 'bracket' && !canEdit) return;
+      if (appMode !== 'bracket' && appMode !== 'preview') return;
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [appMode, canEdit, handleUndo, handleRedo]);
 
   return {
     zoom,
