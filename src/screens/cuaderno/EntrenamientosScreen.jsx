@@ -85,7 +85,7 @@ export default function EntrenamientosScreen() {
         }
       });
     }
-  }, [user, db, appId, team, sessions, trainings, teamId]);
+  }, [user, db, appId, team, sessions, trainings, teamId, trainingNumbers]);
 
   // Build page list: one entry per session, merged with training data
   const pages = useMemo(() => {

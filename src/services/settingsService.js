@@ -1,8 +1,10 @@
-import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { saveMember } from './teamsService';
+import { deleteAllUserDataCascade } from './dataCleanupService';
 
-// ─── Profile ───────────────────────────────────────────────────────────────
+// Re-export backup functions so existing consumers don't break
+export { exportUserData, importUserData } from './backupService';
 
 function profileDoc(uid, db, appId) {
   return doc(db, 'artifacts', appId, 'users', uid, 'profile', 'main');
@@ -33,7 +35,6 @@ export async function uploadLogoClub(file, { uid, storage, db, appId }) {
   return url;
 }
 
-// Auto-añadir el entrenador como staff al crear un equipo
 export async function autoAddCoachToTeam(teamId, profile, { uid, db, appId }) {
   if (!profile?.nombre?.trim()) return;
   const member = {
@@ -49,107 +50,6 @@ export async function autoAddCoachToTeam(teamId, profile, { uid, db, appId }) {
   await saveMember(member, teamId, { uid, db, appId });
 }
 
-// ─── Export ────────────────────────────────────────────────────────────────
-
-export async function exportUserData(uid, db, appId) {
-  const base = ['artifacts', appId, 'users', uid];
-
-  const profileSnap = await getDoc(doc(db, ...base, 'profile', 'main'));
-  const profile = profileSnap.exists() ? profileSnap.data() : {};
-
-  const teamsSnap = await getDocs(collection(db, ...base, 'teams'));
-  const teams = teamsSnap.docs.map((d) => ({ ...d.data(), id: d.id }));
-
-  const members = {};
-  const trainings = {};
-  for (const team of teams) {
-    const mSnap = await getDocs(collection(db, ...base, 'teams', team.id, 'members'));
-    members[team.id] = mSnap.docs.map((d) => ({ ...d.data(), id: d.id }));
-    const tSnap = await getDocs(collection(db, ...base, 'teams', team.id, 'trainings'));
-    trainings[team.id] = tSnap.docs.map((d) => ({ ...d.data(), id: d.id }));
-  }
-
-  const exercisesSnap = await getDocs(collection(db, ...base, 'exercises'));
-  const exercises = exercisesSnap.docs.map((d) => ({ ...d.data(), id: d.id }));
-
-  const calendarSnap = await getDocs(collection(db, ...base, 'calendarSessions'));
-  const calendarSessions = calendarSnap.docs.map((d) => ({ ...d.data(), id: d.id }));
-
-  return {
-    version: 1,
-    exportDate: new Date().toISOString(),
-    profile,
-    teams,
-    members,
-    trainings,
-    exercises,
-    calendarSessions,
-  };
-}
-
-// ─── Import ────────────────────────────────────────────────────────────────
-
-export async function importUserData(data, { uid, db, appId }) {
-  const base = ['artifacts', appId, 'users', uid];
-
-  if (data.profile && Object.keys(data.profile).length > 0) {
-    const { updatedAt: _u1, createdAt: _c1, ...rest } = data.profile;
-    await setDoc(doc(db, ...base, 'profile', 'main'), rest, { merge: true });
-  }
-
-  for (const team of data.teams || []) {
-    const { updatedAt: _u2, createdAt: _c2, ...rest } = team;
-    await setDoc(doc(db, ...base, 'teams', team.id), rest, { merge: true });
-
-    for (const member of data.members?.[team.id] || []) {
-      const { updatedAt: _u3, createdAt: _c3, ...mRest } = member;
-      await setDoc(doc(db, ...base, 'teams', team.id, 'members', member.id), mRest, { merge: true });
-    }
-
-    for (const training of data.trainings?.[team.id] || []) {
-      const { updatedAt: _u4, createdAt: _c4, ...tRest } = training;
-      await setDoc(doc(db, ...base, 'teams', team.id, 'trainings', training.id), tRest, { merge: true });
-    }
-  }
-
-  for (const ex of data.exercises || []) {
-    const { updatedAt: _u5, createdAt: _c5, ...rest } = ex;
-    await setDoc(doc(db, ...base, 'exercises', ex.id), rest, { merge: true });
-  }
-
-  for (const s of data.calendarSessions || []) {
-    const { updatedAt: _u6, createdAt: _c6, ...rest } = s;
-    await setDoc(doc(db, ...base, 'calendarSessions', s.id), rest, { merge: true });
-  }
-}
-
-// ─── Delete all data ───────────────────────────────────────────────────────
-
 export async function deleteAllUserData(uid, db, appId) {
-  const base = ['artifacts', appId, 'users', uid];
-
-  const teamsSnap = await getDocs(collection(db, ...base, 'teams'));
-  for (const teamDoc of teamsSnap.docs) {
-    const mSnap = await getDocs(collection(db, ...base, 'teams', teamDoc.id, 'members'));
-    await Promise.all(mSnap.docs.map((d) => deleteDoc(d.ref)));
-    const tSnap = await getDocs(collection(db, ...base, 'teams', teamDoc.id, 'trainings'));
-    await Promise.all(tSnap.docs.map((d) => deleteDoc(d.ref)));
-    // Cuaderno subcollection docs
-    const cuadernoIds = ['jugadores', 'test-tiro', 'notas'];
-    await Promise.all(
-      cuadernoIds.map((cid) => deleteDoc(doc(db, ...base, 'teams', teamDoc.id, 'cuaderno', cid)).catch(() => {})),
-    );
-    await deleteDoc(teamDoc.ref);
-  }
-
-  const bracketsSnap = await getDocs(collection(db, ...base, 'brackets'));
-  await Promise.all(bracketsSnap.docs.map((d) => deleteDoc(d.ref)));
-
-  const exSnap = await getDocs(collection(db, ...base, 'exercises'));
-  await Promise.all(exSnap.docs.map((d) => deleteDoc(d.ref)));
-
-  const calSnap = await getDocs(collection(db, ...base, 'calendarSessions'));
-  await Promise.all(calSnap.docs.map((d) => deleteDoc(d.ref)));
-
-  await deleteDoc(doc(db, ...base, 'profile', 'main'));
+  await deleteAllUserDataCascade({ appId });
 }

@@ -139,7 +139,6 @@ export default function DayView({ sessions, loading, currentDate, onSelectSessio
 
   useEffect(() => {
     if (!isToday) return undefined;
-    setNowMin(currentMinutes());
     const id = setInterval(() => setNowMin(currentMinutes()), 60_000);
     return () => clearInterval(id);
   }, [isToday]);

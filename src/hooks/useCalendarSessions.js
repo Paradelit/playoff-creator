@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { useTeams } from './useTeams';
@@ -8,6 +8,7 @@ import { subscribeToCalendarSessions } from '../services/calendarService';
 import { userColRef } from '../services/firestoreHelpers';
 import { buildPlayoffSessions } from '../utils/calendarUtils';
 import { toYMD } from '../utils/dateUtils';
+import { mergeBracketsWithPrevious, useSharedBracketSubscriptions } from './useSharedBrackets';
 
 function getDateRange(date, mode) {
   if (mode === 'month') {
@@ -46,65 +47,43 @@ export function useCalendarSessions(currentDate, viewMode) {
 
   const [sessions, setSessions] = useState([]);
   const [brackets, setBrackets] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadedSubscriptionKey, setLoadedSubscriptionKey] = useState('');
+  const [start, end] = useMemo(() => getDateRange(currentDate, viewMode), [currentDate, viewMode]);
+  const subscriptionKey = `${user?.uid || 'guest'}:${appId}:${start}:${end}`;
+  const loading = Boolean(user && db) && loadedSubscriptionKey !== subscriptionKey;
+  const mergeBracketSnapshot = useCallback(
+    (fetchedBrackets, previousBrackets) =>
+      mergeBracketsWithPrevious(fetchedBrackets, previousBrackets, (bracket, existing) => {
+        if (!bracket.shareCode) return bracket;
+        return { ...bracket, bracketData: existing.bracketData || bracket.bracketData };
+      }),
+    [],
+  );
+  const handleSharedSnapshot = useCallback((code, data) => {
+    setBrackets((prev) =>
+      prev.map((bracket) => (bracket.shareCode === code ? { ...bracket, bracketData: data.bracketData } : bracket)),
+    );
+  }, []);
 
   // Subscribe to user bracket docs
   useEffect(() => {
-    if (!user || !db) return;
+    if (!user || !db) return undefined;
     return onSnapshot(userColRef(db, appId, user.uid, 'brackets'), (snap) => {
       const fetched = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
-      setBrackets((prev) =>
-        fetched.map((b) => {
-          const existing = prev.find((p) => p.id === b.id);
-          // For shared brackets, preserve the bracketData from the shared doc subscription
-          if (existing && b.shareCode) {
-            return { ...b, bracketData: existing.bracketData || b.bracketData };
-          }
-          return b;
-        }),
-      );
+      setBrackets((prev) => mergeBracketSnapshot(fetched, prev));
     });
-  }, [user, db, appId]);
+  }, [appId, db, mergeBracketSnapshot, user]);
 
-  // Subscribe to shared bracket docs so bracketData is available for buildPlayoffSessions
   const shareCodes = useMemo(() => brackets.filter((b) => b.shareCode).map((b) => b.shareCode), [brackets]);
-  const shareCodesKey = shareCodes.join(',');
-  const sharedUnsubs = useRef({});
+  useSharedBracketSubscriptions({ db, appId, shareCodes, onSharedSnapshot: handleSharedSnapshot });
 
   useEffect(() => {
-    if (!db) return;
-    const active = new Set(shareCodes);
-    Object.keys(sharedUnsubs.current).forEach((code) => {
-      if (!active.has(code)) {
-        sharedUnsubs.current[code]();
-        delete sharedUnsubs.current[code];
-      }
-    });
-    shareCodes.forEach((code) => {
-      if (sharedUnsubs.current[code]) return;
-      sharedUnsubs.current[code] = onSnapshot(doc(db, 'artifacts', appId, 'shared', code), (snap) => {
-        if (!snap.exists()) return;
-        const data = snap.data();
-        setBrackets((prev) =>
-          prev.map((pb) => (pb.shareCode === code ? { ...pb, bracketData: data.bracketData } : pb)),
-        );
-      });
-    });
-    return () => {
-      Object.values(sharedUnsubs.current).forEach((u) => u?.());
-      sharedUnsubs.current = {};
-    };
-  }, [db, appId, shareCodesKey]);
-
-  useEffect(() => {
-    if (!user || !db) return;
-    const [start, end] = getDateRange(currentDate, viewMode);
-    setLoading(true);
+    if (!user || !db) return undefined;
     return subscribeToCalendarSessions(user.uid, db, appId, start, end, (data) => {
       setSessions(data);
-      setLoading(false);
+      setLoadedSubscriptionKey(subscriptionKey);
     });
-  }, [user, db, appId, currentDate, viewMode]);
+  }, [appId, db, end, start, subscriptionKey, user]);
 
   const playoffSessions = useMemo(() => buildPlayoffSessions(brackets, teams), [brackets, teams]);
   const allSessions = useMemo(() => [...sessions, ...playoffSessions], [sessions, playoffSessions]);

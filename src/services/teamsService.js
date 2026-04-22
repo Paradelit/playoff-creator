@@ -1,5 +1,6 @@
 import { collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy } from 'firebase/firestore';
-import { userColRef, saveUserDoc, deleteUserDoc } from './firestoreHelpers';
+import { userColRef, saveUserDoc } from './firestoreHelpers';
+import { deleteTeamCascade } from './dataCleanupService';
 
 function membersCol(teamId, uid, db, appId) {
   return collection(db, 'artifacts', appId, 'users', uid, 'teams', teamId, 'members');
@@ -16,8 +17,8 @@ export async function saveTeam(team, { uid, db, appId }) {
   await saveUserDoc(db, appId, uid, 'teams', team.id, team);
 }
 
-export async function deleteTeam(teamId, { uid, db, appId }) {
-  await deleteUserDoc(db, appId, uid, 'teams', teamId);
+export async function deleteTeam(teamId, { appId }) {
+  await deleteTeamCascade({ appId, teamId });
 }
 
 export function subscribeToMembers(teamId, uid, db, appId, callback) {

@@ -68,7 +68,7 @@ export function useSharing({ user, db, appId, setBrackets, activeBracket, appMod
         cursorThrottleRef.current = null;
       }
     };
-  }, [appMode, activeBracket?.shareCode, user?.uid]);
+  }, [appMode, activeBracket?.shareCode, user, db, appId, mainRef]);
 
   const handleShare = async (bracket) => {
     if (!db) return;

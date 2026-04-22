@@ -1,19 +1,6 @@
-import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
 import type { OrchestratorResponse } from './contentBlocks';
-
-let emulatorConnected = false;
-
-// Match the backend Cloud Function timeoutSeconds: 300
-const CALLABLE_TIMEOUT_MS = 300_000;
-
-function getRegionalFunctions() {
-  const functions = getFunctions(undefined, 'europe-west1');
-  if (import.meta.env.DEV && !emulatorConnected) {
-    connectFunctionsEmulator(functions, '127.0.0.1', 5001);
-    emulatorConnected = true;
-  }
-  return functions;
-}
+import { CALLABLE_TIMEOUT_MS, getRegionalFunctions } from './functionsClient';
 
 export async function runAgent<TResult>(
   agentName: string,

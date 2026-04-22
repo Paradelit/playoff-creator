@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { saveTraining, subscribeToExercises } from '../services/trainingsService';
@@ -16,6 +16,7 @@ import { isMinibasketSextos } from '../utils/minibasketUtils';
 import { toYMD } from '../utils/dateUtils';
 import { buildPendingActions, buildNewsItems, buildWeekStrip, pickNextAction } from '../utils/homeUtils';
 import { useReminders } from './useReminders';
+import { mergeBracketsWithPrevious, useSharedBracketSubscriptions } from './useSharedBrackets';
 
 function getExtendedRange() {
   const now = new Date();
@@ -63,59 +64,38 @@ export function useHomeDashboard() {
   const today = useMemo(() => new Date(), []);
   const todayYMD = useMemo(() => toYMD(today), [today]);
   const { startStr, endStr } = useMemo(() => getExtendedRange(), []);
+  const mergeBracketSnapshot = useCallback(
+    (fetchedBrackets, previousBrackets) =>
+      mergeBracketsWithPrevious(fetchedBrackets, previousBrackets, (bracket, existing) => {
+        if (!bracket.shareCode) return bracket;
+        return { ...bracket, bracketData: existing.bracketData || bracket.bracketData };
+      }),
+    [],
+  );
+  const handleSharedSnapshot = useCallback((code, data) => {
+    setBrackets((prev) =>
+      prev.map((bracket) => (bracket.shareCode === code ? { ...bracket, bracketData: data.bracketData } : bracket)),
+    );
+  }, []);
 
   useEffect(() => {
-    if (!user || !db) return;
+    if (!user || !db) return undefined;
     return subscribeToCalendarSessions(user.uid, db, appId, startStr, endStr, setSessions);
   }, [user, db, appId, startStr, endStr]);
 
   useEffect(() => {
-    if (!user || !db) return;
+    if (!user || !db) return undefined;
     return onSnapshot(userColRef(db, appId, user.uid, 'brackets'), (snap) => {
       const fetched = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
-      setBrackets((prev) =>
-        fetched.map((b) => {
-          const existing = prev.find((p) => p.id === b.id);
-          if (existing && b.shareCode) {
-            return { ...b, bracketData: existing.bracketData || b.bracketData };
-          }
-          return b;
-        }),
-      );
+      setBrackets((prev) => mergeBracketSnapshot(fetched, prev));
     });
-  }, [user, db, appId]);
+  }, [appId, db, mergeBracketSnapshot, user]);
 
   const shareCodes = useMemo(() => brackets.filter((b) => b.shareCode).map((b) => b.shareCode), [brackets]);
-  const shareCodesKey = shareCodes.join(',');
-  const sharedUnsubs = useRef({});
+  useSharedBracketSubscriptions({ db, appId, shareCodes, onSharedSnapshot: handleSharedSnapshot });
 
   useEffect(() => {
-    if (!db) return;
-    const active = new Set(shareCodes);
-    Object.keys(sharedUnsubs.current).forEach((code) => {
-      if (!active.has(code)) {
-        sharedUnsubs.current[code]();
-        delete sharedUnsubs.current[code];
-      }
-    });
-    shareCodes.forEach((code) => {
-      if (sharedUnsubs.current[code]) return;
-      sharedUnsubs.current[code] = onSnapshot(doc(db, 'artifacts', appId, 'shared', code), (snap) => {
-        if (!snap.exists()) return;
-        const data = snap.data();
-        setBrackets((prev) =>
-          prev.map((pb) => (pb.shareCode === code ? { ...pb, bracketData: data.bracketData } : pb)),
-        );
-      });
-    });
-    return () => {
-      Object.values(sharedUnsubs.current).forEach((u) => u?.());
-      sharedUnsubs.current = {};
-    };
-  }, [db, appId, shareCodesKey]);
-
-  useEffect(() => {
-    if (!user || !db) return;
+    if (!user || !db) return undefined;
     return subscribeToExercises(user.uid, db, appId, setExercises);
   }, [user, db, appId]);
 

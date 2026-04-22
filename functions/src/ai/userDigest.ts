@@ -1,5 +1,6 @@
 import type { Firestore } from "firebase-admin/firestore";
 import { fetchMemoriesForDigest, MemoryType } from "./tools/memoryTools";
+import { formatTeamDisplayName } from "../shared/teamDomain";
 
 export interface UserDigest {
   teams: Array<{ id: string; name: string; categoria?: string; nivel?: string; memberCount: number }>;
@@ -58,7 +59,15 @@ export async function buildUserDigest(deps: {
       const data = d.data();
       return {
         id: d.id,
-        name: (data.teamName as string) || "(sin nombre)",
+        name:
+          formatTeamDisplayName({
+            teamName: (data.teamName as string | undefined) || null,
+            categoria: (data.categoria as string | undefined) || null,
+            "año": (data["año"] as string | undefined) || null,
+            letra: (data.letra as string | undefined) || null,
+            genero: (data.genero as string | undefined) || null,
+            division: (data.division as string | undefined) || null,
+          }) || "(sin nombre)",
         categoria: data.categoria as string | undefined,
         nivel: data.nivel as string | undefined,
         memberCount: memSnap.data().count,

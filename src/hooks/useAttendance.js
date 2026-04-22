@@ -90,7 +90,7 @@ export function useAttendance() {
   const trainingsRef = useRef([]);
 
   useEffect(() => {
-    if (!user || !db) return;
+    if (!user || !db) return undefined;
     return subscribeToMembers(teamId, user.uid, db, appId, (data) => {
       const jugadores = data.filter((m) => m.tipo === 'jugador');
       membersRef.current = jugadores;
@@ -99,7 +99,7 @@ export function useAttendance() {
   }, [user, db, appId, teamId]);
 
   useEffect(() => {
-    if (!user || !db) return;
+    if (!user || !db) return undefined;
     return subscribeToTeamSessions(user.uid, db, appId, teamId, 'entrenamiento', (data) => {
       calSessionsRef.current = data;
       setCalSessions(data);
@@ -107,7 +107,7 @@ export function useAttendance() {
   }, [user, db, appId, teamId]);
 
   useEffect(() => {
-    if (!user || !db) return;
+    if (!user || !db) return undefined;
     return subscribeToTrainings(teamId, user.uid, db, appId, (data) => {
       trainingsRef.current = data;
       setTrainings(data);
@@ -115,7 +115,7 @@ export function useAttendance() {
   }, [user, db, appId, teamId]);
 
   useEffect(() => {
-    if (!user || !db) return;
+    if (!user || !db) return undefined;
     return subscribeToAsistencia(teamId, user.uid, db, appId, (data) => {
       if (isFirstLoad.current) {
         const base = data.attendance || {};

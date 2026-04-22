@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
 import { saveTeam, subscribeToMembers, saveMember, deleteMember } from '../services/teamsService';
-import { TeamFormFields } from './TeamsScreen';
+import { TeamFormFields } from '../components/teams/TeamFormFields';
 import { useHomeDashboard } from '../hooks/useHomeDashboard';
 import TeamDashboard from '../components/teams/TeamDashboard';
 

@@ -1,27 +1,66 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
 
-    // Datos privados de cada usuario: brackets, teams, members y cualquier subcolecci\u00f3n futura
+    function sharedPath(appId, shareCode) {
+      return /databases/$(database)/documents/artifacts/$(appId)/shared/$(shareCode);
+    }
+
+    function sharedConfig(data) {
+      return data.shareConfig != null ? data.shareConfig : {};
+    }
+
+    function sharedInvites(data) {
+      return sharedConfig(data).invites != null ? sharedConfig(data).invites : {};
+    }
+
+    function invitePermission(data) {
+      return request.auth.token.email != null ? sharedInvites(data)[request.auth.token.email] : null;
+    }
+
+    function canReadSharedData(data) {
+      return isSignedIn() && (
+        sharedConfig(data).ownerId == request.auth.uid ||
+        sharedConfig(data).linkAccess == 'view' ||
+        sharedConfig(data).linkAccess == 'edit' ||
+        invitePermission(data) != null
+      );
+    }
+
+    function canEditSharedData(data) {
+      return isSignedIn() && (
+        sharedConfig(data).ownerId == request.auth.uid ||
+        sharedConfig(data).linkAccess == 'edit' ||
+        invitePermission(data) == 'edit'
+      );
+    }
+
+    function canReadSharedDoc(appId, shareCode) {
+      return exists(sharedPath(appId, shareCode)) && canReadSharedData(get(sharedPath(appId, shareCode)).data);
+    }
+
     match /artifacts/{appId}/users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
     }
 
-    // Brackets compartidos: cualquier usuario autenticado puede leer y escribir
-    // (los permisos de edici\u00f3n se gestionan en la l\u00f3gica de la app)
     match /artifacts/{appId}/shared/{shareCode} {
-      allow read, write: if request.auth != null;
+      allow read: if canReadSharedData(resource.data);
+      allow create: if isSignedIn() && sharedConfig(request.resource.data).ownerId == request.auth.uid;
+      allow update: if canEditSharedData(resource.data)
+        && sharedConfig(request.resource.data).ownerId == sharedConfig(resource.data).ownerId;
+      allow delete: if isSignedIn() && sharedConfig(resource.data).ownerId == request.auth.uid;
     }
 
-    match /artifacts/{appId}/presence/{document=**} {
-      allow read, write: if request.auth != null;
+    match /artifacts/{appId}/presence/{shareCode}/{document=**} {
+      allow read, write: if canReadSharedDoc(appId, shareCode);
     }
 
-    // Ejercicios compartidos: lectura abierta, escritura autenticada
     match /artifacts/{appId}/shared-exercises/{shareCode} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isSignedIn();
     }
-
   }
 }

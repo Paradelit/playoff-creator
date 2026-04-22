@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { doc, setDoc, deleteDoc, onSnapshot, getDoc } from 'firebase/firestore';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore';
 import { userDocRef, userColRef } from '../services/firestoreHelpers';
+import { deleteBracketCascade } from '../services/dataCleanupService';
 import logger from '../utils/logger';
 import { teamDisplayName } from '../utils/teamUtils';
 import { useToast } from '../contexts/ToastContext';
+import { mergeBracketsWithPrevious, useSharedBracketSubscriptions } from './useSharedBrackets';
 
 export function useBracketSync({
   user,
@@ -33,8 +35,8 @@ export function useBracketSync({
   const [bracketToDelete, setBracketToDelete] = useState(null);
   const [dashboardSearch, setDashboardSearch] = useState('');
   const [dashboardSort, setDashboardSort] = useState('recent');
+  const shareCodes = useMemo(() => brackets.filter((b) => b.shareCode).map((b) => b.shareCode), [brackets]);
 
-  const sharedUnsubscribers = useRef({});
   const isFirstSnapshot = useRef(true);
   const fileInputImport = useRef(null);
 
@@ -45,24 +47,61 @@ export function useBracketSync({
     }
   }, [appMode]);
 
+  const mergeBracketSnapshot = useCallback(
+    (fetchedBrackets, previousBrackets) =>
+      mergeBracketsWithPrevious(fetchedBrackets, previousBrackets, (bracket, existing) => {
+        if (bracket.shareCode) {
+          return { ...existing, shareCode: bracket.shareCode, isSharedRef: existing.isSharedRef };
+        }
+        if (existing.myTeam) {
+          return { ...bracket, myTeam: existing.myTeam };
+        }
+        return bracket;
+      }),
+    [],
+  );
+
+  const handleSharedSnapshot = useCallback((code, data) => {
+    setBrackets((prev) =>
+      prev.map((bracket) =>
+        bracket.shareCode === code
+          ? {
+              ...data,
+              isShared: true,
+              isSharedRef: bracket.isSharedRef,
+              id: bracket.id,
+              myTeam: bracket.myTeam,
+              teamId: bracket.teamId,
+              teamName: bracket.teamName,
+            }
+          : bracket,
+      ),
+    );
+  }, []);
+
+  const { unsubscribeShareCode } = useSharedBracketSubscriptions({
+    db,
+    appId,
+    shareCodes,
+    onSharedSnapshot: handleSharedSnapshot,
+  });
+
+  const resetPendingShare = useCallback(() => {
+    setPendingShareCode(null);
+    onShareCodeConsumed?.();
+  }, [onShareCodeConsumed]);
+
   // Sincronizacion Firestore principal
   useEffect(() => {
-    if (!user || !db) return;
+    if (!user || !db) return undefined;
     const bracketsRef = userColRef(db, appId, user.uid, 'brackets');
     isFirstSnapshot.current = true;
     const unsubscribe = onSnapshot(
       bracketsRef,
       (snapshot) => {
-        const fetchedBrackets = snapshot.docs.map((doc) => doc.data());
+        const fetchedBrackets = snapshot.docs.map((snapDoc) => snapDoc.data());
         const sorted = fetchedBrackets.sort((a, b) => b.createdAt - a.createdAt);
-        setBrackets((prev) => {
-          return sorted.map((b) => {
-            const existing = prev.find((p) => p.id === b.id);
-            if (existing && b.shareCode)
-              return { ...existing, shareCode: b.shareCode, isSharedRef: existing.isSharedRef };
-            return existing?.myTeam ? { ...b, myTeam: existing.myTeam } : b;
-          });
-        });
+        setBrackets((prev) => mergeBracketSnapshot(sorted, prev));
         if (isFirstSnapshot.current) {
           isFirstSnapshot.current = false;
           if (initialTeamId) {
@@ -94,74 +133,26 @@ export function useBracketSync({
       },
     );
     return () => unsubscribe();
-  }, [user]);
-
-  // Memoize share codes to avoid recreating the dependency on every render
-  const shareCodes = useMemo(() => brackets.filter((b) => b.shareCode).map((b) => b.shareCode), [brackets]);
-  const shareCodesKey = shareCodes.join(',');
-
-  // Suscripcion a cuadros compartidos
-  useEffect(() => {
-    if (!db) return;
-
-    // Unsubscribe from codes that are no longer active
-    const activeSet = new Set(shareCodes);
-    Object.keys(sharedUnsubscribers.current).forEach((code) => {
-      if (!activeSet.has(code)) {
-        sharedUnsubscribers.current[code]();
-        delete sharedUnsubscribers.current[code];
-      }
-    });
-
-    // Subscribe to new codes
-    shareCodes.forEach((code) => {
-      if (sharedUnsubscribers.current[code]) return;
-      const unsub = onSnapshot(doc(db, 'artifacts', appId, 'shared', code), (snap) => {
-        if (!snap.exists()) return;
-        const data = snap.data();
-        setBrackets((prev) =>
-          prev.map((pb) =>
-            pb.shareCode === code
-              ? {
-                  ...data,
-                  isShared: true,
-                  isSharedRef: pb.isSharedRef,
-                  id: pb.id,
-                  myTeam: pb.myTeam,
-                  teamId: pb.teamId,
-                  teamName: pb.teamName,
-                }
-              : pb,
-          ),
-        );
-      });
-      sharedUnsubscribers.current[code] = unsub;
-    });
-
-    return () => {
-      Object.values(sharedUnsubscribers.current).forEach((unsub) => unsub?.());
-      sharedUnsubscribers.current = {};
-    };
-  }, [shareCodesKey]);
+  }, [appId, db, initialTeamId, mergeBracketSnapshot, setAppMode, user]);
 
   // Auto-abrir cuadro compartido
   useEffect(() => {
-    if (!pendingShareCode || !user || !db || appMode === 'loading') return;
+    if (!pendingShareCode || !user || !db || appMode === 'loading') return undefined;
     const existing = brackets.find((b) => b.shareCode === pendingShareCode);
     if (existing) {
-      setActiveBracketId(existing.id); // eslint-disable-line react-hooks/set-state-in-effect
       localStorage.setItem('playoffs:lastActiveBracketId', existing.id);
-      setAppMode('bracket');
-      setPendingShareCode(null);
-      onShareCodeConsumed?.();
-      return;
+      queueMicrotask(() => {
+        setActiveBracketId(existing.id);
+        setAppMode('bracket');
+        resetPendingShare();
+      });
+      return undefined;
     }
     getDoc(doc(db, 'artifacts', appId, 'shared', pendingShareCode))
       .then((snap) => {
         if (!snap.exists()) {
           toast('El enlace no es válido o el cuadro no existe.', 'error');
-          setPendingShareCode(null);
-          onShareCodeConsumed?.();
+          resetPendingShare();
           return;
         }
         const data = snap.data();
@@ -173,8 +164,7 @@ export function useBracketSync({
           (user.email && cfg.invites?.[user.email]);
         if (!hasAccess) {
           toast('No tienes acceso a este cuadro compartido.', 'warning');
-          setPendingShareCode(null);
-          onShareCodeConsumed?.();
+          resetPendingShare();
           return;
         }
         const bookmarkId = `shared_${pendingShareCode}`;
@@ -201,15 +191,14 @@ export function useBracketSync({
         setActiveBracketId(bookmarkId);
         localStorage.setItem('playoffs:lastActiveBracketId', bookmarkId);
         setAppMode('bracket');
-        setPendingShareCode(null);
-        onShareCodeConsumed?.();
+        resetPendingShare();
       })
       .catch(() => {
         toast('Error al acceder al cuadro. Inténtalo de nuevo.', 'error');
-        setPendingShareCode(null);
-        onShareCodeConsumed?.();
+        resetPendingShare();
       });
-  }, [pendingShareCode, user, appMode]);
+    return undefined;
+  }, [appId, appMode, brackets, db, pendingShareCode, resetPendingShare, setAppMode, toast, user]);
 
   // Handlers
   const handleDeleteBracket = (idToDelete) => setBracketToDelete(idToDelete);
@@ -217,13 +206,12 @@ export function useBracketSync({
   const confirmDelete = async () => {
     if (bracketToDelete) {
       const bracketBeingDeleted = brackets.find((b) => b.id === bracketToDelete);
-      if (bracketBeingDeleted?.shareCode && sharedUnsubscribers.current[bracketBeingDeleted.shareCode]) {
-        sharedUnsubscribers.current[bracketBeingDeleted.shareCode]();
-        delete sharedUnsubscribers.current[bracketBeingDeleted.shareCode];
+      if (bracketBeingDeleted?.shareCode) {
+        unsubscribeShareCode(bracketBeingDeleted.shareCode);
       }
       setBrackets((prev) => prev.filter((b) => b.id !== bracketToDelete));
       if (user && db) {
-        await deleteDoc(userDocRef(db, appId, user.uid, 'brackets', bracketToDelete));
+        await deleteBracketCascade({ appId, bracketId: bracketToDelete });
       }
       setBracketToDelete(null);
     }

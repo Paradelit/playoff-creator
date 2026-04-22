@@ -2,6 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { cleanupUserData as runCleanupUserData, type CleanupAction } from "./dataCleanup";
 import {
   AgentRouter,
   ObservabilityService,
@@ -271,5 +272,50 @@ export const logInteractionScore = onCall(
     });
     await system.observability.flush();
     return { success: true };
+  }
+);
+
+// 4. cleanupUserData — backend cascade deletes for teams, brackets, conversations and full account data
+export const cleanupUserData = onCall(
+  {
+    region: "europe-west1",
+    timeoutSeconds: 300,
+    memory: "512MiB",
+  },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
+
+    const { action, appId, teamId, bracketId, conversationId } = request.data || {};
+    if (!appId || typeof appId !== "string") {
+      throw new HttpsError("invalid-argument", "Missing appId");
+    }
+    if (!action || typeof action !== "string") {
+      throw new HttpsError("invalid-argument", "Missing action");
+    }
+    const allowedActions: CleanupAction[] = [
+      "deleteTeam",
+      "deleteBracket",
+      "deleteConversation",
+      "deleteAllUserData",
+    ];
+    if (!allowedActions.includes(action as CleanupAction)) {
+      throw new HttpsError("invalid-argument", "Invalid action");
+    }
+
+    try {
+      const result = await runCleanupUserData({
+        db: getFirestore(),
+        appId,
+        userId: request.auth.uid,
+        action: action as CleanupAction,
+        teamId,
+        bracketId,
+        conversationId,
+      });
+      return { success: true, result };
+    } catch (err) {
+      const error = err as Error;
+      throw new HttpsError("internal", error.message || "Cleanup failed");
+    }
   }
 );

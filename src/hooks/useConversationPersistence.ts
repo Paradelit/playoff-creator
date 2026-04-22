@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, doc, setDoc, getDocs, deleteDoc, query, orderBy, limit } from 'firebase/firestore';
+import { collection, doc, setDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import type { Firestore } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import type { ContentBlock } from '../services/contentBlocks';
+import { deleteConversationCascade } from '../services/dataCleanupService';
 
 export interface ChatMessage {
   id: string;
@@ -26,9 +28,22 @@ export interface ConversationSummary {
 const MAX_MESSAGES = 30;
 const MAX_CONVERSATIONS = 15;
 
+interface AuthUser {
+  uid: string;
+}
+
+interface AuthContextValue {
+  user: AuthUser | null;
+}
+
+interface FirebaseContextValue {
+  db: Firestore | null;
+  appId: string;
+}
+
 export function useConversationPersistence() {
-  const { user } = useAuth() as any;
-  const { db, appId } = useFirebase() as any;
+  const { user } = useAuth() as AuthContextValue;
+  const { db, appId } = useFirebase() as FirebaseContextValue;
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loadedMessages, setLoadedMessages] = useState<ChatMessage[]>([]);
@@ -61,9 +76,9 @@ export function useConversationPersistence() {
 
   // Load conversations on mount
   useEffect(() => {
-    if (!db || !user) return;
+    if (!db || !user) return undefined;
     const ref = conversationsRef();
-    if (!ref) return;
+    if (!ref) return undefined;
     getDocs(query(ref, orderBy('lastMessageAt', 'desc'), limit(MAX_CONVERSATIONS)))
       .then((snap) => {
         const convs: ConversationSummary[] = [];
@@ -77,6 +92,7 @@ export function useConversationPersistence() {
         setLoaded(true);
       })
       .catch(() => setLoaded(true));
+    return undefined;
   }, [db, user, conversationsRef, loadMessages]);
 
   const saveMessage = useCallback(
@@ -115,11 +131,11 @@ export function useConversationPersistence() {
       // Enforce max conversations limit
       if (conversations.length >= MAX_CONVERSATIONS) {
         const oldest = conversations[conversations.length - 1];
-        await deleteDoc(doc(convRef, oldest.id));
+        await deleteConversationCascade({ appId, conversationId: oldest.id });
       }
       return id;
     },
-    [conversationsRef, conversations],
+    [appId, conversationsRef, conversations],
   );
 
   const renameConversation = useCallback(

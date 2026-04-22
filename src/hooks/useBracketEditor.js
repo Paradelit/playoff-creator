@@ -95,7 +95,7 @@ export function useBracketEditor({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [appMode, canEdit, canUndo, canRedo]);
+  }, [appMode, canEdit, handleUndo, handleRedo]);
 
   // Auto-scroll al abrir bracket
   useEffect(() => {
@@ -119,7 +119,7 @@ export function useBracketEditor({
       }
       mainEl.scrollTo({ left: (mainEl.scrollWidth - mainEl.clientWidth) / 2, top: 0, behavior: 'smooth' });
     }, 150);
-  }, [appMode, activeBracketId, !!activeBracket?.bracketData]);
+  }, [appMode, activeBracketId, activeBracket?.bracketData, activeBracket?.myTeam]);
 
   // --- Internal helpers ---
 
@@ -133,16 +133,19 @@ export function useBracketEditor({
     return (nextMatch || myMatches[0]).id;
   };
 
-  const fireSave = (bracket, updatedBracket) =>
-    saveBracketToFirestore(bracket, updatedBracket, {
-      user,
-      db,
-      appId,
-      onError: (msg) => {
-        setSaveError(msg);
-        setTimeout(() => setSaveError(''), 4000);
-      },
-    });
+  const fireSave = useCallback(
+    (bracket, updatedBracket) =>
+      saveBracketToFirestore(bracket, updatedBracket, {
+        user,
+        db,
+        appId,
+        onError: (msg) => {
+          setSaveError(msg);
+          setTimeout(() => setSaveError(''), 4000);
+        },
+      }),
+    [user, db, appId],
+  );
 
   const updateActiveBracketData = useCallback(
     async (updaterFn, skipHistory = false) => {
@@ -174,7 +177,7 @@ export function useBracketEditor({
       setBrackets((prevBrackets) => prevBrackets.map((b) => (b.id === id ? updatedBracket : b)));
       await fireSave(bracket, updatedBracket);
     },
-    [setBrackets, setPendingBracket],
+    [setBrackets, setPendingBracket, fireSave],
   );
 
   const clearForwardLocal = (stateDict, matchId, teamToClear) => {

@@ -9,7 +9,8 @@ import { autoAddCoachToTeam } from '../services/settingsService';
 import { useTeams } from '../hooks/useTeams';
 import { useProfile } from '../hooks/useProfile';
 import { teamDisplayName } from '../utils/teamUtils';
-import { TeamFormFields, EMPTY_FORM } from '../screens/TeamsScreen';
+import { TeamFormFields } from '../components/teams/TeamFormFields';
+import { EMPTY_FORM } from '../components/teams/teamFormConstants';
 
 const LEFT_ITEMS = [
   { to: '/', label: 'Inicio', Icon: Home, end: true },

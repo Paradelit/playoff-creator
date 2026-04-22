@@ -50,7 +50,7 @@ export function useBracketCreation({
         }
       })
       .catch((e) => logger.warn('Error cargando equipo inicial', e));
-  }, [initialTeamId, db, user]);
+  }, [initialTeamId, db, user, appId]);
 
   const handleProcessDocuments = async () => {
     if (!basesFile || !clasifFile) {

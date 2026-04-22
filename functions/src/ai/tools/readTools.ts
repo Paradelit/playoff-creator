@@ -1,4 +1,5 @@
 import { ToolDefinition, ToolContext } from "./registry";
+import { formatTeamDisplayName } from "../../shared/teamDomain";
 
 function userCol(ctx: ToolContext, collectionName: string) {
   return ctx.db
@@ -27,6 +28,17 @@ function resolveId(
   return "";
 }
 
+function teamNameFromData(data: Record<string, unknown>): string {
+  return formatTeamDisplayName({
+    teamName: typeof data.teamName === "string" ? data.teamName : null,
+    categoria: typeof data.categoria === "string" ? data.categoria : null,
+    "año": typeof data["año"] === "string" ? data["año"] : null,
+    letra: typeof data.letra === "string" ? data.letra : null,
+    genero: typeof data.genero === "string" ? data.genero : null,
+    division: typeof data.division === "string" ? data.division : null,
+  }) || "(sin nombre)";
+}
+
 export function createReadTools(): ToolDefinition[] {
   return [
     {
@@ -43,7 +55,7 @@ export function createReadTools(): ToolDefinition[] {
             const data = d.data();
             return {
               id: d.id,
-              name: data.teamName || "(sin nombre)",
+              name: teamNameFromData(data),
               categoria: data.categoria || "",
               nivel: data.nivel || "",
               memberCount: memSnap.data().count,
@@ -84,11 +96,82 @@ export function createReadTools(): ToolDefinition[] {
         const team = teamSnap.data() || {};
         return {
           id: teamId,
-          name: team.teamName,
+          name: teamNameFromData(team),
           categoria: team.categoria,
           nivel: team.nivel,
           members,
         };
+      },
+    },
+
+    {
+      name: "list_exercises",
+      description:
+        "Lista la biblioteca de ejercicios del entrenador. Úsalo cuando el usuario pida ejercicios guardados, favoritos o quiera reutilizar contenidos.",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: { type: "integer", description: "Máximo a devolver (default 20)" },
+          favoritesOnly: { type: "boolean", description: "Filtra solo favoritos" },
+          search: { type: "string", description: "Texto libre para filtrar por nombre, tags o contenido" },
+        },
+        required: [],
+      },
+      handler: async (args, ctx) => {
+        const limit = Math.min(Number(args.limit) || 20, 50);
+        const search = typeof args.search === "string" ? args.search.trim().toLowerCase() : "";
+        const snap = await userCol(ctx, "exercises").get();
+        let exercises = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Record<string, unknown>));
+        if (args.favoritesOnly) exercises = exercises.filter((ex) => ex.favorite === true);
+        if (search) {
+          exercises = exercises.filter((ex) => {
+            const haystack = [
+              ex.nombre,
+              ex.descripcion,
+              ex.contenido,
+              ...(Array.isArray(ex.tags) ? ex.tags : []),
+            ]
+              .filter(Boolean)
+              .join(" ")
+              .toLowerCase();
+            return haystack.includes(search);
+          });
+        }
+        return {
+          exercises: exercises.slice(0, limit).map((ex) => ({
+            id: ex.id,
+            nombre: ex.nombre || "",
+            favorite: ex.favorite === true,
+            tags: Array.isArray(ex.tags) ? ex.tags : [],
+            updatedAt:
+              ex.updatedAt &&
+              typeof ex.updatedAt === "object" &&
+              typeof (ex.updatedAt as { toMillis?: () => number }).toMillis === "function"
+                ? (ex.updatedAt as { toMillis: () => number }).toMillis()
+                : null,
+          })),
+        };
+      },
+    },
+
+    {
+      name: "get_exercise",
+      description:
+        "Devuelve el contenido completo de un ejercicio de la biblioteca por id.",
+      parameters: {
+        type: "object",
+        properties: {
+          exerciseId: { type: "string", description: "ID del ejercicio" },
+        },
+        required: ["exerciseId"],
+      },
+      handler: async (args, ctx) => {
+        const exerciseId = String(args.exerciseId || "");
+        if (!exerciseId) return { error: "Falta exerciseId." };
+        const snap = await ctx.db
+          .doc(`artifacts/${ctx.appId}/users/${ctx.userId}/exercises/${exerciseId}`).get();
+        if (!snap.exists) return { error: "Ejercicio no encontrado" };
+        return { id: exerciseId, ...snap.data() };
       },
     },
 
@@ -223,7 +306,44 @@ export function createReadTools(): ToolDefinition[] {
         const snap = await ctx.db
           .doc(`artifacts/${ctx.appId}/users/${ctx.userId}/brackets/${bracketId}`).get();
         if (!snap.exists) return { error: "Bracket no encontrado" };
-        return { id: bracketId, ...snap.data() };
+        const data = snap.data() || {};
+        if (typeof data.shareCode === "string" && data.shareCode) {
+          const sharedSnap = await ctx.db
+            .doc(`artifacts/${ctx.appId}/shared/${data.shareCode}`).get();
+          if (sharedSnap.exists) {
+            return { id: bracketId, ...data, ...sharedSnap.data(), isShared: true };
+          }
+        }
+        return { id: bracketId, ...data };
+      },
+    },
+
+    {
+      name: "get_bracket_share_config",
+      description:
+        "Lee la configuración de compartición de un bracket (owner, linkAccess, invitados). Úsalo cuando el usuario pregunte quién puede acceder o editar.",
+      parameters: {
+        type: "object",
+        properties: { bracketId: { type: "string", description: "Opcional si se infiere de la pantalla" } },
+        required: [],
+      },
+      handler: async (args, ctx) => {
+        const bracketId = resolveId(args, ctx, "bracketId");
+        if (!bracketId) return { error: "Falta bracketId." };
+        const snap = await ctx.db
+          .doc(`artifacts/${ctx.appId}/users/${ctx.userId}/brackets/${bracketId}`).get();
+        if (!snap.exists) return { error: "Bracket no encontrado" };
+        const data = snap.data() || {};
+        if (!data.shareCode) return { bracketId, shared: false };
+        const sharedSnap = await ctx.db.doc(`artifacts/${ctx.appId}/shared/${data.shareCode}`).get();
+        if (!sharedSnap.exists) return { bracketId, shared: false, shareCode: data.shareCode };
+        const shareConfig = sharedSnap.data()?.shareConfig || {};
+        return {
+          bracketId,
+          shared: true,
+          shareCode: data.shareCode,
+          shareConfig,
+        };
       },
     },
 
@@ -271,9 +391,61 @@ export function createReadTools(): ToolDefinition[] {
         if (!snap.exists) return { empty: true };
         const data = snap.data();
         if (args.sessionId && typeof args.sessionId === 'string') {
-          return { sessionId: args.sessionId, attendance: data?.[args.sessionId] || null };
+          return { sessionId: args.sessionId, attendance: data?.attendance?.[args.sessionId] || null };
         }
         return data || {};
+      }
+    },
+
+    {
+      name: "list_recurring_sessions",
+      description:
+        "Lista series recurrentes del calendario agrupando las sesiones por recurrenceId. Útil para responder sobre horarios repetidos o cambios en una serie.",
+      parameters: {
+        type: "object",
+        properties: {
+          teamId: { type: "string", description: "Filtrar por equipo (opcional)" },
+          from: { type: "string", description: "Fecha inicial YYYY-MM-DD (opcional)" },
+        },
+        required: [],
+      },
+      handler: async (args, ctx) => {
+        const teamId = (typeof args.teamId === "string" && args.teamId) || ctx.defaults?.teamId;
+        const from = typeof args.from === "string" ? args.from : "";
+        const snap = await userCol(ctx, "calendarSessions")
+          .where("recurrenceId", "!=", null)
+          .get();
+        let sessions = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Record<string, unknown>));
+        sessions = sessions.filter((session) => typeof session.recurrenceId === "string" && !!session.recurrenceId);
+        if (teamId) sessions = sessions.filter((session) => session.teamId === teamId);
+        if (from) sessions = sessions.filter((session) => typeof session.fecha === "string" && session.fecha >= from);
+
+        const grouped = new Map<string, Record<string, unknown>>();
+        for (const session of sessions) {
+          const recurrenceId = String(session.recurrenceId);
+          const existing = grouped.get(recurrenceId);
+          if (!existing) {
+            grouped.set(recurrenceId, {
+              recurrenceId,
+              teamId: session.teamId || null,
+              teamName: session.teamName || null,
+              tipo: session.tipo || "entrenamiento",
+              horaInicio: session.horaInicio || "",
+              horaFin: session.horaFin || "",
+              lugar: session.lugar || "",
+              sessionCount: 1,
+              firstDate: session.fecha || "",
+              lastDate: session.fecha || "",
+            });
+            continue;
+          }
+          existing.sessionCount = Number(existing.sessionCount || 0) + 1;
+          const fecha = typeof session.fecha === "string" ? session.fecha : "";
+          if (fecha && (!existing.firstDate || fecha < existing.firstDate)) existing.firstDate = fecha;
+          if (fecha && (!existing.lastDate || fecha > existing.lastDate)) existing.lastDate = fecha;
+        }
+
+        return { recurringSessions: Array.from(grouped.values()) };
       }
     },
 

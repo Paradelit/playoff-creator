@@ -14,11 +14,15 @@ vi.mock('firebase/firestore', () => ({
 vi.mock('./firestoreHelpers', () => ({
   userColRef: vi.fn(() => 'mock-user-col-ref'),
   saveUserDoc: vi.fn(() => Promise.resolve()),
-  deleteUserDoc: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock('./dataCleanupService', () => ({
+  deleteTeamCascade: vi.fn(() => Promise.resolve()),
 }));
 
 import { setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
-import { saveUserDoc, deleteUserDoc } from './firestoreHelpers';
+import { saveUserDoc } from './firestoreHelpers';
+import { deleteTeamCascade } from './dataCleanupService';
 import {
   subscribeToTeams,
   saveTeam,
@@ -63,9 +67,9 @@ describe('saveTeam / deleteTeam', () => {
     expect(saveUserDoc).toHaveBeenCalledWith({}, 'app1', 'u1', 'teams', 't1', { id: 't1', categoria: 'Cadete' });
   });
 
-  it('deleteTeam delegates to deleteUserDoc', async () => {
+  it('deleteTeam delegates to backend cleanup', async () => {
     await deleteTeam('t1', ctx);
-    expect(deleteUserDoc).toHaveBeenCalledWith({}, 'app1', 'u1', 'teams', 't1');
+    expect(deleteTeamCascade).toHaveBeenCalledWith({ appId: 'app1', teamId: 't1' });
   });
 });
 
