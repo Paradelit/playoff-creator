@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
 import { MessageCircle, X } from 'lucide-react';
 import { useCopilot } from '../../contexts/CopilotProvider';
 
@@ -18,7 +19,16 @@ export default function CopilotCompact({ animating }: Props) {
             onClick={() => setMode('panel')}
             className="text-sm text-slate-700 font-medium text-left flex-1 leading-snug"
           >
-            {currentTip}
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => (
+                  <p className="text-sm text-slate-700 font-medium text-left flex-1 leading-snug">{children}</p>
+                ),
+                strong: ({ children }) => <strong className="font-bold text-blue-700">{children}</strong>,
+              }}
+            >
+              {currentTip}
+            </ReactMarkdown>
           </button>
           <button
             onClick={(e) => {

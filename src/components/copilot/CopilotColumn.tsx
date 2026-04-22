@@ -6,6 +6,7 @@ import ActionButton from './ActionButton';
 import CopilotFeedback from './CopilotFeedback';
 import ConversationList from './ConversationList';
 import BlockRenderer from './blocks/BlockRenderer';
+import TextBlock from './blocks/TextBlock';
 
 const SCREEN_LABELS: Record<string, string> = {
   home: 'Inicio',
@@ -157,8 +158,8 @@ export default function CopilotColumn() {
                     {hasBlocks ? (
                       <BlockRenderer blocks={msg.blocks!} onConfirmProposal={confirmProposal} />
                     ) : (
-                      <div className="rounded-2xl rounded-bl-md px-3.5 py-2.5 text-sm leading-relaxed bg-slate-100 text-slate-800">
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      <div className="rounded-2xl rounded-bl-md px-3.5 py-2.5 bg-slate-100 text-slate-800">
+                        <TextBlock markdown={msg.content} />
                       </div>
                     )}
                     {msg.actions && msg.actions.length > 0 && (

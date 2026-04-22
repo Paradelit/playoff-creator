@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Check, X, Loader2, ShieldCheck } from 'lucide-react';
 import type { WriteProposal } from '../../../services/contentBlocks';
 
@@ -41,7 +42,16 @@ export default function ConfirmWriteBlock({ proposal, onConfirm, onCancel }: Con
         <p className="text-[11px] uppercase tracking-wide text-slate-500 font-semibold">
           {KIND_LABELS[proposal.kind] || proposal.kind}
         </p>
-        <p className="text-sm text-slate-800">{proposal.summary}</p>
+        <div className="text-sm text-slate-800">
+          <ReactMarkdown
+            components={{
+              p: ({ children }) => <p>{children}</p>,
+              strong: ({ children }) => <strong className="font-bold text-blue-700">{children}</strong>,
+            }}
+          >
+            {proposal.summary}
+          </ReactMarkdown>
+        </div>
         {error && <p className="text-xs text-red-600">{error}</p>}
         {status === 'pending' && (
           <div className="flex items-center gap-2 pt-1">

@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Dumbbell, Clock } from 'lucide-react';
 import type { TrainingPreviewData } from '../../../services/contentBlocks';
 
@@ -40,7 +41,18 @@ export default function TrainingPreviewBlock({ training }: { training: TrainingP
             <span className="text-slate-600">{summarize(training.cooldown)}</span>
           </div>
         ) : null}
-        {training.notes && <p className="text-[11px] text-slate-500 italic mt-1">{training.notes}</p>}
+        {training.notes && (
+          <div className="text-[11px] text-slate-500 italic mt-1">
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <p>{children}</p>,
+                strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+              }}
+            >
+              {training.notes}
+            </ReactMarkdown>
+          </div>
+        )}
       </div>
     </div>
   );
