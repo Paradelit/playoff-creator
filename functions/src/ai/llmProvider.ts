@@ -15,16 +15,16 @@ interface ProviderModel {
 }
 
 const DEFAULT_PROVIDERS: ProviderModel[] = [
-  { provider: "gemini", model: "gemini-flash-latest" },
-  { provider: "gemini", model: "gemini-2.0-flash" },
-  { provider: "gemini", model: "gemini-1.5-flash" },
-  // OpenRouter free-tier fallbacks: tool-use capable, good JSON, Spanish OK.
-  { provider: "openrouter", model: "deepseek/deepseek-chat-v3.1:free" },
-  { provider: "openrouter", model: "z-ai/glm-4.5-air:free" },
-  { provider: "openrouter", model: "meta-llama/llama-3.3-70b-instruct:free" },
+  { provider: "gemini", model: "gemini-2.5-flash" },
+  { provider: "gemini", model: "gemini-2.5-flash-lite" },
+  { provider: "gemini", model: "gemini-3-flash" },
+  // OpenRouter free-tier fallbacks (auto-router + specific models)
+  { provider: "openrouter", model: "openrouter/free" },
+  { provider: "openrouter", model: "google/gemma-4-31b-it:free" },
+  { provider: "openrouter", model: "nvidia/nemotron-3-super:free" },
 ];
 
-// With 7 models in the fallback chain, we must stay under the 300s GCF limit.
+// With 6 models in the fallback chain, we must stay under the 300s GCF limit.
 // We skip to the next model immediately on 429/503.
 const MAX_RETRIES_PER_MODEL = 1;
 const BASE_BACKOFF_MS = 800;
@@ -89,11 +89,17 @@ export class LLMProvider {
     this.providers = this.openRouterApiKey
       ? configured
       : configured.filter((p) => p.provider !== "openrouter");
+
+    console.log(
+      `[LLMProvider] Inicializado con ${this.providers.length} modelos. OpenRouter: ${this.openRouterApiKey ? "Configurado (Key presente)" : "NO configurado (Key ausente)"
+      }`
+    );
   }
 
   async generate<T>(request: LLMGenerateRequest): Promise<LLMResult<T>> {
     const startTime = Date.now();
     let lastParseError: Error | null = null;
+    let lastErrorMsg = "";
 
     for (let idx = 0; idx < this.providers.length; idx++) {
       // If we've spent more than 280s, don't even start a new model.
@@ -162,6 +168,7 @@ export class LLMProvider {
           };
         } catch (err) {
           const error = err as Error;
+          lastErrorMsg = error.message;
           if (error.message === "RATE_LIMIT" || error.message === "FORBIDDEN") {
             // Don't throw — skip to next provider/model so fallback kicks in.
             break;
@@ -180,11 +187,12 @@ export class LLMProvider {
         `La IA devolvió una respuesta no válida (${lastParseError.message}). Inténtalo de nuevo.`
       );
     }
-    throw new Error("Todos los modelos de IA están saturados. Inténtalo más tarde.");
+    throw new Error(`Todos los modelos de IA están saturados o fallaron. (Último error: ${lastErrorMsg || "desconocido"}). Inténtalo más tarde.`);
   }
 
   async generateWithTools(request: GenerateWithToolsRequest): Promise<GenerateWithToolsResult> {
     const startTime = Date.now();
+    let lastErrorMsg = "";
     for (let idx = 0; idx < this.providers.length; idx++) {
       // If we've spent more than 280s, don't even start a new model.
       if (Date.now() - startTime > GLOBAL_TIMEOUT_MS) break;
@@ -234,6 +242,7 @@ export class LLMProvider {
           };
         } catch (err) {
           const error = err as Error;
+          lastErrorMsg = error.message;
           if (error.message === "RATE_LIMIT" || error.message === "FORBIDDEN") break;
           if (attempt < MAX_RETRIES_PER_MODEL) {
             await sleep(BASE_BACKOFF_MS * Math.pow(2, attempt));
@@ -244,7 +253,7 @@ export class LLMProvider {
       }
     }
 
-    throw new Error("Todos los modelos de IA están saturados. Inténtalo más tarde.");
+    throw new Error(`Todos los modelos de IA están saturados o fallaron. (Último error: ${lastErrorMsg || "desconocido"}). Inténtalo más tarde.`);
   }
 
   // ----- Gemini calls -----
@@ -262,13 +271,17 @@ export class LLMProvider {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(90000),
     });
 
     if (response.status === 429) return { kind: "throw", error: "RATE_LIMIT" };
     if (response.status === 403) return { kind: "throw", error: "FORBIDDEN" };
     if (isOverloadedStatus(response.status)) return { kind: "retryable" };
-    if (!response.ok) return { kind: "fatal", error: await response.text() };
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error(`[LLMProvider] API Error ${response.status}:`, errText);
+      return { kind: "fatal", error: errText };
+    }
 
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -299,13 +312,17 @@ export class LLMProvider {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(90000),
     });
 
     if (response.status === 429) return { kind: "throw", error: "RATE_LIMIT" };
     if (response.status === 403) return { kind: "throw", error: "FORBIDDEN" };
     if (isOverloadedStatus(response.status)) return { kind: "retryable" };
-    if (!response.ok) return { kind: "fatal", error: await response.text() };
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error(`[LLMProvider] API Error ${response.status}:`, errText);
+      return { kind: "fatal", error: errText };
+    }
 
     const data = await response.json();
     const candidate = data.candidates?.[0];
@@ -336,7 +353,7 @@ export class LLMProvider {
         "X-Title": "Playoff Creator",
       },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(25000),
+      signal: AbortSignal.timeout(90000),
     });
 
     if (response.status === 429) return { kind: "throw", error: "RATE_LIMIT" };
@@ -344,7 +361,11 @@ export class LLMProvider {
       return { kind: "throw", error: "FORBIDDEN" };
     }
     if (isOverloadedStatus(response.status)) return { kind: "retryable" };
-    if (!response.ok) return { kind: "fatal", error: await response.text() };
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error(`[LLMProvider] OpenRouter Error ${response.status}:`, errText);
+      return { kind: "fatal", error: errText };
+    }
 
     const data = (await response.json()) as OpenAIResponse;
     if (data.error) return { kind: "fatal", error: data.error.message || "unknown" };
@@ -381,7 +402,7 @@ export class LLMProvider {
         "X-Title": "Playoff Creator",
       },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(25000),
+      signal: AbortSignal.timeout(90000),
     });
 
     if (response.status === 429) return { kind: "throw", error: "RATE_LIMIT" };
@@ -389,7 +410,11 @@ export class LLMProvider {
       return { kind: "throw", error: "FORBIDDEN" };
     }
     if (isOverloadedStatus(response.status)) return { kind: "retryable" };
-    if (!response.ok) return { kind: "fatal", error: await response.text() };
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error(`[LLMProvider] OpenRouter Error ${response.status}:`, errText);
+      return { kind: "fatal", error: errText };
+    }
 
     const data = (await response.json()) as OpenAIResponse;
     if (data.error) return { kind: "fatal", error: data.error.message || "unknown" };

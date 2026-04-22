@@ -59,9 +59,12 @@ export class PromptManager {
       throw new Error(`Prompt "${promptName}" not found locally or in Langfuse.`);
     }
 
+    console.log(`[PromptManager] Using local fallback for "${promptName}"`);
     let text = template;
     for (const [key, value] of Object.entries(variables)) {
-      text = text.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value);
+      // Use a function as the second argument to treat the value as a literal string
+      // and avoid issues with special characters like '$' in the replacement string.
+      text = text.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), () => value);
     }
 
     return { text, promptName, promptVersion: 0 };

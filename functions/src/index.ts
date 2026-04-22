@@ -58,9 +58,15 @@ function getSystem(): System {
   if (cached) return cached;
 
   const observability = new ObservabilityService();
+
+  const gKey = geminiKey.value();
+  const orKey = safeSecret(openRouterKey);
+
+  console.log(`[System] Cargando secretos... Gemini: ${gKey ? "OK" : "MISSING"}, OpenRouter: ${orKey ? "OK" : "MISSING"}`);
+
   const llmProvider = new LLMProvider({
-    apiKey: geminiKey.value(),
-    openRouterApiKey: safeSecret(openRouterKey),
+    apiKey: gKey,
+    openRouterApiKey: orKey,
     observability,
   });
 
@@ -138,13 +144,14 @@ export const runAgent = onCall(
       return await system.router.routeExplicit(agent, input, { userId: request.auth.uid, sessionId });
     } catch (err) {
       const error = err as Error;
-      if (error.message === "RATE_LIMIT") {
+      const msg = error.message || "";
+      if (msg === "RATE_LIMIT" || msg.includes("saturados")) {
         throw new HttpsError("resource-exhausted", "Demasiadas peticiones a la IA. Espera 60 segundos.");
       }
-      if (error.message === "FORBIDDEN") {
+      if (msg === "FORBIDDEN") {
         throw new HttpsError("permission-denied", "Error 403: La API Key no tiene acceso a la IA.");
       }
-      throw new HttpsError("internal", error.message);
+      throw new HttpsError("internal", msg);
     } finally {
       await system.observability.flush();
     }
@@ -227,14 +234,15 @@ export const aiChat = onCall(
       return { ...response, traceId };
     } catch (err) {
       const error = err as Error;
+      const msg = error.message || "";
       console.error("aiChat error:", error);
-      if (error.message === "RATE_LIMIT") {
+      if (msg === "RATE_LIMIT" || msg.includes("saturados")) {
         throw new HttpsError("resource-exhausted", "Demasiadas peticiones a la IA. Espera 60 segundos.");
       }
-      if (error.message === "FORBIDDEN") {
+      if (msg === "FORBIDDEN") {
         throw new HttpsError("permission-denied", "La API Key no tiene acceso a la IA.");
       }
-      throw new HttpsError("internal", error.message || "Error en el orquestador");
+      throw new HttpsError("internal", msg || "Error en el orquestador");
     } finally {
       await system.observability.flush();
     }

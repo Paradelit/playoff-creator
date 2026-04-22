@@ -124,6 +124,8 @@ export function useBracketCreation({
         setErrorMsg(
           'La IA tardó demasiado en responder. Los servidores pueden estar saturados. Inténtalo de nuevo en unos segundos.',
         );
+      } else if (code === 'functions/resource-exhausted' || msg.includes('saturados')) {
+        setErrorMsg('Los modelos de IA están saturados en este momento. Espera 30-60 segundos e inténtalo de nuevo.');
       } else {
         setErrorMsg(msg || 'Ocurrió un error inesperado al procesar los documentos.');
       }
