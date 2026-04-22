@@ -104,7 +104,7 @@ export default function TeamsScreen() {
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
               <ShieldHalf className="text-amber-500" size={36} /> Mis Equipos
             </h1>
-            <p className="text-slate-500 mt-2">Gestiona plantillas, jugadores y staff tÃ©cnico.</p>
+            <p className="text-slate-500 mt-2">Gestiona plantillas, jugadores y staff técnico.</p>
           </div>
           <button
             onClick={() => {
@@ -124,7 +124,7 @@ export default function TeamsScreen() {
         ) : teams.length === 0 ? (
           <div className="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-16 text-center shadow-sm">
             <FolderOpen size={64} className="mx-auto text-slate-300 mb-4" />
-            <h3 className="text-xl font-bold text-slate-700 mb-2">TodavÃ­a no tienes equipos</h3>
+            <h3 className="text-xl font-bold text-slate-700 mb-2">Todavía no tienes equipos</h3>
             <p className="text-slate-500 mb-6">Crea tu primer equipo para empezar a gestionar plantillas.</p>
             <button
               onClick={() => {
@@ -257,7 +257,7 @@ export default function TeamsScreen() {
           >
             <h3 className="text-xl font-bold mb-2 text-slate-800">Â¿Eliminar equipo?</h3>
             <p className="text-slate-600 mb-6 text-sm">
-              Esta acciÃ³n borrarÃ¡ el equipo y todos sus datos permanentemente.
+              Esta acción borrará el equipo y todos sus datos permanentemente.
             </p>
             <div className="flex justify-end gap-3">
               <button
@@ -270,7 +270,7 @@ export default function TeamsScreen() {
                 onClick={() => handleDelete(deletingTeamId)}
                 className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition shadow-sm"
               >
-                SÃ­, eliminar
+                Sí, eliminar
               </button>
             </div>
           </div>

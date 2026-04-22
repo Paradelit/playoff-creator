@@ -290,6 +290,72 @@ export function createWriteTools(): ToolDefinition[] {
           summary: args.summary
         };
       }
-    }
+    },
+
+    {
+      name: "propose_create_exercise",
+      description:
+        "Propone crear un ejercicio en la biblioteca del usuario. Incluye nombre, descripci\u00f3n, contenido/tags, tipo de pista, duraci\u00f3n, nivel. El usuario debe confirmar antes de guardar.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          exercise: {
+            type: "object",
+            description:
+              "Objeto del ejercicio: { nombre, descripcion?, contenido?, tags?: string[], duracion?: number, nivel?: string, tipoPista?: string, elementos?: string[], pasos?: string[] }",
+          },
+          summary: { type: "string", description: "Resumen de 1 l\u00ednea" },
+        },
+        required: ["exercise", "summary"],
+      },
+      handler: async (args) => {
+        const exercise = (args.exercise as Record<string, unknown>) || {};
+        if (!exercise.nombre) {
+          return { error: "Falta el nombre del ejercicio." };
+        }
+        return {
+          kind: "create_exercise",
+          exercise,
+          summary: args.summary,
+        };
+      },
+    },
+
+    {
+      name: "propose_create_exercises",
+      description:
+        "Propone crear varios ejercicios a la vez en la biblioteca del usuario. \u00datil cuando se genera una bater\u00eda de ejercicios o se extraen de un entrenamiento. exercises es un array de objetos ejercicio.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          exercises: {
+            type: "array",
+            description: "Array de objetos ejercicio (misma estructura que propose_create_exercise)",
+            items: { type: "object" },
+          },
+          summary: { type: "string" },
+        },
+        required: ["exercises", "summary"],
+      },
+      handler: async (args) => {
+        const exercises = Array.isArray(args.exercises) ? args.exercises : [];
+        if (exercises.length === 0) {
+          return { error: "El array de ejercicios est\u00e1 vac\u00edo." };
+        }
+        const invalid = exercises.filter(
+          (e) => !e || typeof e !== "object" || !(e as Record<string, unknown>).nombre
+        );
+        if (invalid.length > 0) {
+          return { error: `${invalid.length} ejercicio(s) sin nombre.` };
+        }
+        return {
+          kind: "create_exercises",
+          exercises,
+          summary: args.summary,
+        };
+      },
+    },
   ];
 }

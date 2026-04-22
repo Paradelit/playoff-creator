@@ -72,7 +72,9 @@ export type WriteProposalKind =
   | "save_player_report"
   | "save_shooting_test"
   | "save_scouting"
-  | "save_analysis";
+  | "save_analysis"
+  | "create_exercise"
+  | "create_exercises";
 
 export interface WriteProposal {
   proposalId: string;
@@ -89,7 +91,18 @@ export type ContentBlock =
   | { type: "bracket_preview"; bracket: BracketPreviewData }
   | { type: "session_preview"; session: CalendarSessionRecord | Record<string, unknown> }
   | { type: "score_update"; updates: ScoreUpdateEntry[] }
+  | { type: "exercise_preview"; exercises: ExercisePreviewData[] }
   | { type: "confirm_write"; proposal: WriteProposal };
+
+export interface ExercisePreviewData {
+  nombre: string;
+  descripcion?: string;
+  contenido?: string;
+  tags?: string[];
+  duracion?: number;
+  nivel?: string;
+  tipoPista?: string;
+}
 
 export interface OrchestratorResponse {
   blocks: ContentBlock[];

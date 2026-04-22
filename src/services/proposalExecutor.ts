@@ -256,6 +256,37 @@ async function handleSaveAnalysis(ctx: ExecuteContext, payload: ProposalPayload)
   await setDoc(ref, { ...analysisData, sessionId, updatedAt: serverTimestamp() }, { merge: true });
 }
 
+function normalizeExerciseTags(exercise: Record<string, unknown>): Record<string, unknown> {
+  const tags = Array.isArray(exercise.tags) ? exercise.tags : [];
+  const contenido = typeof exercise.contenido === 'string' && exercise.contenido ? exercise.contenido : tags.join(', ');
+  return { ...exercise, tags, contenido };
+}
+
+async function handleCreateExercise(ctx: ExecuteContext, payload: ProposalPayload) {
+  const exercise = asRecord(payload.exercise);
+  if (!exercise) throw invalidProposal('falta exercise');
+  if (!exercise.nombre) throw invalidProposal('falta nombre del ejercicio');
+
+  const id = (exercise.id as string) || `ex_${Date.now()}`;
+  const normalized = normalizeExerciseTags({ ...exercise, id });
+  await setDoc(
+    userDocRef(ctx.db, ctx.appId, ctx.uid, 'exercises', id),
+    { ...normalized, createdAt: serverTimestamp(), updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+async function handleCreateExercises(ctx: ExecuteContext, payload: ProposalPayload) {
+  const exercises = Array.isArray(payload.exercises) ? payload.exercises : [];
+  if (exercises.length === 0) throw invalidProposal('array de ejercicios vac\u00edo');
+
+  for (const raw of exercises) {
+    const exercise = asRecord(raw);
+    if (!exercise || !exercise.nombre) continue;
+    await handleCreateExercise(ctx, { exercise });
+  }
+}
+
 const proposalHandlers: Record<WriteProposalKind, ProposalHandler> = {
   create_training: handleCreateTraining,
   create_calendar_session: handleCreateCalendarSession,
@@ -267,6 +298,8 @@ const proposalHandlers: Record<WriteProposalKind, ProposalHandler> = {
   save_shooting_test: handleSaveShootingTest,
   save_scouting: handleSaveScouting,
   save_analysis: handleSaveAnalysis,
+  create_exercise: handleCreateExercise,
+  create_exercises: handleCreateExercises,
 };
 
 /**

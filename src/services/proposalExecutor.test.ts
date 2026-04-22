@@ -252,4 +252,62 @@ describe('executeProposal', () => {
       { merge: true },
     );
   });
+  it('creates a single exercise and normalizes its tags', async () => {
+    await executeProposal(ctx, {
+      proposalId: 'p7',
+      kind: 'create_exercise',
+      summary: 'Crear ejercicio',
+      payload: {
+        exercise: { nombre: 'Tiro libre', tags: ['tiro', 'libre'] },
+      },
+    });
+
+    expect(setDoc).toHaveBeenCalledWith(
+      expect.objectContaining({ path: expect.stringContaining('exercises/') }),
+      expect.objectContaining({
+        nombre: 'Tiro libre',
+        tags: ['tiro', 'libre'],
+        contenido: 'tiro, libre', // Auto-generated string representation
+        createdAt: 'SERVER_TS',
+        updatedAt: 'SERVER_TS',
+      }),
+      { merge: true },
+    );
+  });
+
+  it('creates multiple exercises in batch and skips invalid ones', async () => {
+    await executeProposal(ctx, {
+      proposalId: 'p8',
+      kind: 'create_exercises',
+      summary: 'Crear varios ejercicios',
+      payload: {
+        exercises: [{ nombre: 'Ex 1', contenido: 'tag1' }, { invalid: 'no name' }, { nombre: 'Ex 2', tags: ['tag2'] }],
+      },
+    });
+
+    // Should be called twice (for the 2 valid exercises)
+    const calls = vi.mocked(setDoc).mock.calls.filter((call) => {
+      const pathObj = call[0] as { path?: string };
+      return pathObj?.path?.includes('exercises/');
+    });
+    // the previous test 'creates a single exercise...' already called setDoc with exercises/ path, so we expect 3 calls total
+    // But since `vi.clearAllMocks()` runs `beforeEach`, we only expect 2 calls in this specific test.
+    expect(calls.length).toBe(2);
+
+    expect(calls[0]?.[1]).toEqual(
+      expect.objectContaining({
+        nombre: 'Ex 1',
+        tags: [],
+        contenido: 'tag1',
+      }),
+    );
+
+    expect(calls[1]?.[1]).toEqual(
+      expect.objectContaining({
+        nombre: 'Ex 2',
+        tags: ['tag2'],
+        contenido: 'tag2',
+      }),
+    );
+  });
 });
