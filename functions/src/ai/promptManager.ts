@@ -1,79 +1,141 @@
-import { AgentDescriptor, ScreenContextData } from "./types";
+import { Langfuse } from "langfuse";
 
-interface PromptTemplate {
-  version: string;
-  build: (...args: unknown[]) => string;
+/**
+ * PromptManager — fetches prompt templates from Langfuse with local fallback.
+ *
+ * Each prompt is stored in Langfuse as a text template with {{variable}} placeholders.
+ * At runtime, `compile()` fetches the template, substitutes variables, and returns
+ * the final string. If Langfuse is unreachable, the hardcoded LOCAL_PROMPTS are used.
+ */
+
+export interface CompiledPrompt {
+  text: string;
+  promptName: string;
+  promptVersion: number;
 }
 
-function bracketCreation(basesText: string, clasifText: string, userInstructions?: string): string {
-  let prompt = `
-      Actúa como el comité de competición de la Federación de Baloncesto.
-      He aquí dos textos extraídos de documentos:
+export class PromptManager {
+  private langfuse: Langfuse | null;
+  /** Cache TTL for prompts in Langfuse SDK (seconds). */
+  private cacheTtlSeconds: number;
 
-      --- DOCUMENTO 1: BASES DE COMPETICIÓN ---
-      ${basesText.substring(0, 45000)}
-
-      --- DOCUMENTO 2: CLASIFICACIÓN FINAL ---
-      ${clasifText.substring(0, 45000)}
-
-      INSTRUCCIONES CRÍTICAS PARA GENERAR EL CUADRO:
-      1. Identifica qué competición es y localiza las reglas para la Primera Ronda de Eliminatorias/Playoffs.
-      2. Identifica el número de partidos (cruces) que hay en esta primera ronda. initialMatches.length DEBE SER EXACTAMENTE una potencia de 2: 4, 8, 16 o 32. NO se acepta ningún otro número. Si la competición tiene un número distinto de cruces (ej. 6, 10, 12...), redondea a la potencia de 2 superior y rellena los cruces sobrantes con BYEs (team1 = equipo clasificado, team2 = null, team2Origin = "BYE").
-      3. Analiza las bases de competición paso a paso. Busca qué posición de qué grupo juega cada partido (Ej. "1º Gr.1 Oro contra 2º Gr. 4 Plata").
-      4. Busca en la Clasificación el nombre real de los equipos que ocupan esas posiciones. ¡Atención! Cruza bien el número de grupo y la posición (Ej. Busca exactamente al 2º del Grupo 1 y pon su nombre real).
-      4b. IMPORTANTE: Si el equipo está determinado por la clasificación, SIEMPRE pon su nombre real en "team1" o "team2". Solo usa null cuando genuinamente no se puede determinar el equipo (sorteo pendiente). NUNCA dejes null si la posición y grupo están definidos en las bases.
-      5. Construye el array "initialMatches" con la cantidad EXACTA de partidos (potencia de 2). Verifica antes de generar el JSON que initialMatches.length es 4, 8, 16 o 32.
-      6. ORDEN DEL ARRAY: El array initialMatches debe seguir un orden específico de emparejamiento para que el cuadro se dibuje correctamente. Cada "Partido N" indica la posición lógica del cruce según las bases. El ORDEN en el que aparecen en el array debe seguir estas secuencias:
-         - Si son 4 partidos, el orden del array DEBE SER los Partidos: 1, 4, 2, 3.
-         - Si son 8 partidos, el orden del array DEBE SER los Partidos: 1, 8, 4, 5, 2, 7, 3, 6.
-         - Si son 16 partidos, el orden del array DEBE SER los Partidos: 1, 16, 8, 9, 4, 13, 5, 12, 2, 15, 7, 10, 3, 14, 6, 11.
-         - Si son 32 partidos, el orden del array DEBE SER los Partidos: 1, 32, 16, 17, 8, 25, 9, 24, 4, 29, 13, 20, 5, 28, 12, 21, 2, 31, 15, 18, 7, 26, 10, 23, 3, 30, 14, 19, 6, 27, 11, 22.
-      7. Si la plaza es directa (Fija), pon el nombre en "team1" o "team2" y deja sus arrays de Opciones VACÍOS [].
-      8. Si la plaza es POR SORTEO, deja "team1" o "team2" como null, y pon los posibles rivales en el array "team1Options" o "team2Options".
-      9. En "team1Origin" y "team2Origin" detalla de dónde viene esa plaza (Ej. "1º Grupo 1").
-      10. Busca el calendario/fechas de la competición y crea el array 'rounds' indicando: 'name', 'dates' (formato "DD/MM/AAAA"), 'format' y 'gamesCount'.
-      11. Usa el campo "analysis" para razonar tu lógica de emparejamientos y cruce de datos antes de generar el array. En el analysis, CONFIRMA cuántos cruces has generado y que es potencia de 2.
-
-      DEVUELVE ÚNICAMENTE UN JSON ESTRICTAMENTE VÁLIDO.
-      {
-        "tournamentName": "Nombre Competición",
-        "analysis": "Razonamiento paso a paso...",
-        "rounds": [
-          { "name": "Dieciseisavos", "dates": ["12/04/2026", "19/04/2026", "26/04/2026"], "format": "Mejor de 3", "gamesCount": 3 }
-        ],
-        "initialMatches": [
-          {
-            "title": "Partido 1",
-            "team1": "Nombre",
-            "team1Origin": "1º Gr. 1",
-            "team1Options": [],
-            "team2": null,
-            "team2Origin": "Sorteo Bombo B",
-            "team2Options": ["A", "B", "C", "D"]
-          }
-        ]
-      }
-    `;
-
-  if (userInstructions && userInstructions.trim() !== "") {
-    prompt += `\n\nINSTRUCCIONES ADICIONALES DEL USUARIO:\n${userInstructions.trim()}`;
+  constructor(langfuse: Langfuse | null, cacheTtlSeconds = 300) {
+    this.langfuse = langfuse;
+    this.cacheTtlSeconds = cacheTtlSeconds;
   }
 
-  return prompt;
+  /**
+   * Fetch a prompt from Langfuse (production label), compile with variables,
+   * and return the result. Falls back to LOCAL_PROMPTS if Langfuse is unavailable.
+   */
+  async compile(
+    promptName: string,
+    variables: Record<string, string>
+  ): Promise<CompiledPrompt> {
+    // Try Langfuse remote prompt
+    if (this.langfuse) {
+      try {
+        const prompt = await this.langfuse.getPrompt(promptName, undefined, {
+          cacheTtlSeconds: this.cacheTtlSeconds,
+          type: "text",
+        });
+        const text = prompt.compile(variables);
+        return {
+          text,
+          promptName,
+          promptVersion: prompt.version,
+        };
+      } catch (err) {
+        console.warn(
+          `[PromptManager] Failed to fetch "${promptName}" from Langfuse, using local fallback:`,
+          (err as Error).message
+        );
+      }
+    }
+
+    // Fallback: use local template
+    const template = LOCAL_PROMPTS[promptName];
+    if (!template) {
+      throw new Error(`Prompt "${promptName}" not found locally or in Langfuse.`);
+    }
+
+    let text = template;
+    for (const [key, value] of Object.entries(variables)) {
+      text = text.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value);
+    }
+
+    return { text, promptName, promptVersion: 0 };
+  }
 }
 
-function calendarImport(excelText: string, teams: Array<{ id: string; teamName: string }>): string {
-  const teamsJson = JSON.stringify(teams);
-  return `
+// ---------------------------------------------------------------------------
+// LOCAL FALLBACK PROMPTS
+// These are the same prompts that were previously hardcoded in the build
+// functions, now stored as templates with {{variable}} placeholders.
+// They serve as a safety net if Langfuse is unreachable.
+// ---------------------------------------------------------------------------
+
+export const LOCAL_PROMPTS: Record<string, string> = {
+  "bracket-creation": `
+Actúa como el comité de competición de la Federación de Baloncesto.
+He aquí dos textos extraídos de documentos:
+
+--- DOCUMENTO 1: BASES DE COMPETICIÓN ---
+{{basesText}}
+
+--- DOCUMENTO 2: CLASIFICACIÓN FINAL ---
+{{clasifText}}
+
+INSTRUCCIONES CRÍTICAS PARA GENERAR EL CUADRO:
+1. Identifica qué competición es y localiza las reglas para la Primera Ronda de Eliminatorias/Playoffs.
+2. Identifica el número de partidos (cruces) que hay en esta primera ronda. initialMatches.length DEBE SER EXACTAMENTE una potencia de 2: 4, 8, 16 o 32. NO se acepta ningún otro número. Si la competición tiene un número distinto de cruces (ej. 6, 10, 12...), redondea a la potencia de 2 superior y rellena los cruces sobrantes con BYEs (team1 = equipo clasificado, team2 = null, team2Origin = "BYE").
+3. Analiza las bases de competición paso a paso. Busca qué posición de qué grupo juega cada partido (Ej. "1º Gr.1 Oro contra 2º Gr. 4 Plata").
+4. Busca en la Clasificación el nombre real de los equipos que ocupan esas posiciones. ¡Atención! Cruza bien el número de grupo y la posición (Ej. Busca exactamente al 2º del Grupo 1 y pon su nombre real).
+4b. IMPORTANTE: Si el equipo está determinado por la clasificación, SIEMPRE pon su nombre real en "team1" o "team2". Solo usa null cuando genuinamente no se puede determinar el equipo (sorteo pendiente). NUNCA dejes null si la posición y grupo están definidos en las bases.
+5. Construye el array "initialMatches" con la cantidad EXACTA de partidos (potencia de 2). Verifica antes de generar el JSON que initialMatches.length es 4, 8, 16 o 32.
+6. ORDEN DEL ARRAY: El array initialMatches debe seguir un orden específico de emparejamiento para que el cuadro se dibuje correctamente. Cada "Partido N" indica la posición lógica del cruce según las bases. El ORDEN en el que aparecen en el array debe seguir estas secuencias:
+   - Si son 4 partidos, el orden del array DEBE SER los Partidos: 1, 4, 2, 3.
+   - Si son 8 partidos, el orden del array DEBE SER los Partidos: 1, 8, 4, 5, 2, 7, 3, 6.
+   - Si son 16 partidos, el orden del array DEBE SER los Partidos: 1, 16, 8, 9, 4, 13, 5, 12, 2, 15, 7, 10, 3, 14, 6, 11.
+   - Si son 32 partidos, el orden del array DEBE SER los Partidos: 1, 32, 16, 17, 8, 25, 9, 24, 4, 29, 13, 20, 5, 28, 12, 21, 2, 31, 15, 18, 7, 26, 10, 23, 3, 30, 14, 19, 6, 27, 11, 22.
+7. Si la plaza es directa (Fija), pon el nombre en "team1" o "team2" y deja sus arrays de Opciones VACÍOS [].
+8. Si la plaza es POR SORTEO, deja "team1" o "team2" como null, y pon los posibles rivales en el array "team1Options" o "team2Options".
+9. En "team1Origin" y "team2Origin" detalla de dónde viene esa plaza (Ej. "1º Grupo 1").
+10. Busca el calendario/fechas de la competición y crea el array 'rounds' indicando: 'name', 'dates' (formato "DD/MM/AAAA"), 'format' y 'gamesCount'.
+11. Usa el campo "analysis" para razonar tu lógica de emparejamientos y cruce de datos antes de generar el array. En el analysis, CONFIRMA cuántos cruces has generado y que es potencia de 2.
+
+{{userInstructions}}
+
+DEVUELVE ÚNICAMENTE UN JSON ESTRICTAMENTE VÁLIDO.
+{
+  "tournamentName": "Nombre Competición",
+  "analysis": "Razonamiento paso a paso...",
+  "rounds": [
+    { "name": "Dieciseisavos", "dates": ["12/04/2026", "19/04/2026", "26/04/2026"], "format": "Mejor de 3", "gamesCount": 3 }
+  ],
+  "initialMatches": [
+    {
+      "title": "Partido 1",
+      "team1": "Nombre",
+      "team1Origin": "1º Gr. 1",
+      "team1Options": [],
+      "team2": null,
+      "team2Origin": "Sorteo Bombo B",
+      "team2Options": ["A", "B", "C", "D"]
+    }
+  ]
+}`,
+
+  "calendar-import": `
 Eres un asistente de planificación deportiva para un club de baloncesto.
 Se te entrega el contenido de un archivo Excel que contiene el CUADRANTE DE ENTRENAMIENTOS del club para la temporada.
 
 --- CONTENIDO DEL EXCEL ---
-${excelText.substring(0, 45000)}
+{{excelText}}
 ----------------------------
 
 EQUIPOS CONOCIDOS DEL ENTRENADOR (solo genera entradas para estos equipos; usa su id exacto):
-${teamsJson}
+{{teamsJson}}
 
 CONCEPTOS CLAVE:
 - HORARIO RECURRENTE: Una sesión sin fecha específica que ocurre cada semana en un día fijo (ej: "los lunes", "martes y jueves"). Va en el array "recurring".
@@ -123,65 +185,36 @@ DEVUELVE ÚNICAMENTE UN JSON ESTRICTAMENTE VÁLIDO con esta estructura:
       "rival": ""
     }
   ]
-}
-  `;
-}
+}`,
 
-function resultsExtract(
-  bracketState: Array<{ id: string; title: string; team1: string | null; team2: string | null; gamesCount: number; format: string }>,
-  resultsText: string
-): string {
-  return `
-      Actúa como un asistente de datos deportivos.
-      JSON del cuadro: ${JSON.stringify(bracketState)}
-      Texto del acta: ${resultsText.substring(0, 45000)}
+  "results-extract": `
+Actúa como un asistente de datos deportivos.
+JSON del cuadro: {{bracketStateJson}}
+Texto del acta: {{resultsText}}
 
-      Extrae las puntuaciones reales del documento para los partidos del cuadro.
-      Devuelve ÚNICAMENTE un JSON con la estructura:
-      {
-        "updatedMatches": [
-          { "id": "R1-M0", "scores": [{ "s1": "85", "s2": "80" }, { "s1": "", "s2": "" }, { "s1": "", "s2": "" }] }
-        ]
-      }
-    `;
-}
+Extrae las puntuaciones reales del documento para los partidos del cuadro.
+Devuelve ÚNICAMENTE un JSON con la estructura:
+{
+  "updatedMatches": [
+    { "id": "R1-M0", "scores": [{ "s1": "85", "s2": "80" }, { "s1": "", "s2": "" }, { "s1": "", "s2": "" }] }
+  ]
+}`,
 
-function intentRouting(
-  userMessage: string,
-  agents: AgentDescriptor[],
-  context: Record<string, unknown>,
-  screenContext?: ScreenContextData,
-  conversationHistory?: Array<{ role: string; content: string }>
-): string {
-  const agentList = agents
-    .filter((a) => a.name !== "conversational")
-    .map((a) => `- ${a.name}: ${a.description} (input: ${a.inputSchema})`)
-    .join("\n");
-
-  const screenInfo = screenContext
-    ? `\nPANTALLA ACTUAL: ${screenContext.screen} (ruta: ${screenContext.route})${screenContext.data ? `\nDatos de pantalla: ${JSON.stringify(screenContext.data)}` : ""}`
-    : "";
-
-  const historyInfo =
-    conversationHistory && conversationHistory.length > 0
-      ? `\nÚLTIMOS MENSAJES:\n${conversationHistory.slice(-5).map((m) => `${m.role}: ${m.content}`).join("\n")}`
-      : "";
-
-  return `
+  "intent-routing": `
 Eres un clasificador de intenciones para una aplicación de gestión de baloncesto.
 El usuario ha enviado un mensaje de texto libre. Tu trabajo es determinar si alguno de los agentes ESPECIALIZADOS puede responder, o si debe ir al agente conversacional.
 
 AGENTES ESPECIALIZADOS:
-${agentList}
+{{agentList}}
 
 AGENTE POR DEFECTO:
 - conversational: Responde preguntas generales, ayuda con navegación, da consejos. Se usa cuando ningún agente especializado encaja con confianza >= 0.5.
 
 CONTEXTO DEL USUARIO:
-${JSON.stringify(context)}${screenInfo}${historyInfo}
+{{contextJson}}{{screenInfo}}{{historyInfo}}
 
 MENSAJE DEL USUARIO:
-"${userMessage}"
+"{{userMessage}}"
 
 INSTRUCCIONES:
 1. Analiza el mensaje del usuario, el contexto y la pantalla actual.
@@ -196,25 +229,9 @@ DEVUELVE ÚNICAMENTE un JSON válido:
   "confidence": 0.0-1.0,
   "input": { ... datos extraídos para el agente ... },
   "fallbackMessage": "mensaje si no hay match (solo si agent es null)"
-}
-  `;
-}
+}`,
 
-function conversational(
-  userMessage: string,
-  screenContext?: ScreenContextData,
-  conversationHistory?: Array<{ role: string; content: string }>
-): string {
-  const screenInfo = screenContext
-    ? `\nPANTALLA ACTUAL: ${screenContext.screen} (ruta: ${screenContext.route})${screenContext.data ? `\nDatos visibles: ${JSON.stringify(screenContext.data)}` : ""}`
-    : "";
-
-  const historyInfo =
-    conversationHistory && conversationHistory.length > 0
-      ? `\nHISTORIAL DE CONVERSACIÓN:\n${conversationHistory.slice(-10).map((m) => `${m.role}: ${m.content}`).join("\n")}`
-      : "";
-
-  return `
+  "conversational": `
 Eres el asistente IA de una app de gestión de baloncesto llamada CoachApp.
 Respondes SIEMPRE en español, con tono profesional pero cercano.
 
@@ -235,10 +252,10 @@ CAPACIDADES:
 - Puedo crear cuadros de playoffs desde documentos de competición
 - Puedo extraer resultados de actas de partidos
 - Puedo ayudar con navegación y uso de la app
-${screenInfo}${historyInfo}
+{{screenInfo}}{{historyInfo}}
 
 MENSAJE DEL USUARIO:
-"${userMessage}"
+"{{userMessage}}"
 
 INSTRUCCIONES:
 1. Responde de forma natural y útil al mensaje del usuario.
@@ -256,23 +273,14 @@ DEVUELVE ÚNICAMENTE un JSON válido:
 }
 
 El array "actions" puede estar vacío si no hay acciones sugeridas.
-Los tipos de acción son: "navigate" (con path) o "create" (con label descriptivo).
-  `;
-}
+Los tipos de acción son: "navigate" (con path) o "create" (con label descriptivo).`,
 
-function naturalResponseWrapper(
-  agentName: string,
-  rawResult: unknown,
-  screenContext?: ScreenContextData
-): string {
-  const screenInfo = screenContext ? `Pantalla actual: ${screenContext.screen}` : "";
+  "natural-response-wrapper": `
+Eres el asistente IA de CoachApp. Acaba de ejecutarse el agente "{{agentName}}" y ha devuelto este resultado:
 
-  return `
-Eres el asistente IA de CoachApp. Acaba de ejecutarse el agente "${agentName}" y ha devuelto este resultado:
+{{resultJson}}
 
-${JSON.stringify(rawResult, null, 2)}
-
-${screenInfo}
+{{screenInfo}}
 
 INSTRUCCIONES:
 1. Genera un resumen amigable y natural en español del resultado.
@@ -287,25 +295,9 @@ DEVUELVE ÚNICAMENTE un JSON válido:
   "naturalResponse": "Resumen amigable...",
   "suggestedMode": "panel",
   "actions": []
-}
-  `;
-}
+}`,
 
-interface TrainingGenInput {
-  teamCategory: string;
-  duration: number;
-  objectives: string;
-  focusAreas?: string[];
-  playerCount?: number;
-  constraints?: string;
-}
-
-function trainingGeneration(input: TrainingGenInput): string {
-  const focusStr = input.focusAreas?.length ? `\nÁreas de enfoque: ${input.focusAreas.join(", ")}` : "";
-  const playersStr = input.playerCount ? `\nNúmero de jugadores: ${input.playerCount}` : "";
-  const constraintsStr = input.constraints ? `\nRestricciones: ${input.constraints}` : "";
-
-  return `
+  "training-generation": `
 Eres un entrenador experto de baloncesto español. Genera una sesión de entrenamiento completa.
 
 CATEGORÍAS Y ADAPTACIÓN:
@@ -317,9 +309,9 @@ CATEGORÍAS Y ADAPTACIÓN:
 - senior (18+): Táctica avanzada, preparación física específica, situaciones de partido.
 
 DATOS DE LA SESIÓN:
-- Categoría: ${input.teamCategory}
-- Duración total: ${input.duration} minutos
-- Objetivos: ${input.objectives}${focusStr}${playersStr}${constraintsStr}
+- Categoría: {{teamCategory}}
+- Duración total: {{duration}} minutos
+- Objetivos: {{objectives}}{{focusStr}}{{playersStr}}{{constraintsStr}}
 
 ESTRUCTURA OBLIGATORIA:
 1. Calentamiento (10-15 min): Activación, movilidad articular, ejercicios dinámicos con balón.
@@ -338,63 +330,39 @@ Para CADA ejercicio incluye:
 DEVUELVE ÚNICAMENTE un JSON válido:
 {
   "title": "Título descriptivo de la sesión",
-  "totalDuration": ${input.duration},
+  "totalDuration": {{duration}},
   "warmup": { "name": "...", "duration": 10, "description": "...", "setup": "...", "variations": ["..."], "players": "...", "materials": ["..."] },
   "mainBlocks": [
     { "name": "...", "duration": 20, "description": "...", "setup": "...", "variations": ["..."], "players": "...", "materials": ["..."] }
   ],
   "cooldown": { "name": "...", "duration": 5, "description": "...", "setup": "...", "variations": ["..."], "players": "...", "materials": ["..."] },
   "notes": "Notas adicionales para el entrenador..."
-}
-  `;
-}
+}`,
 
-export const PROMPTS: Record<string, PromptTemplate> = {
-  BRACKET_CREATION: {
-    version: "1.0.0",
-    build: (basesText: unknown, clasifText: unknown, userInstructions: unknown) =>
-      bracketCreation(basesText as string, clasifText as string, userInstructions as string | undefined),
-  },
-  CALENDAR_IMPORT: {
-    version: "1.0.0",
-    build: (excelText: unknown, teams: unknown) =>
-      calendarImport(excelText as string, teams as Array<{ id: string; teamName: string }>),
-  },
-  RESULTS_EXTRACT: {
-    version: "1.0.0",
-    build: (bracketState: unknown, resultsText: unknown) =>
-      resultsExtract(
-        bracketState as Array<{ id: string; title: string; team1: string | null; team2: string | null; gamesCount: number; format: string }>,
-        resultsText as string
-      ),
-  },
-  INTENT_ROUTING: {
-    version: "2.0.0",
-    build: (userMessage: unknown, agents: unknown, context: unknown, screenContext: unknown, conversationHistory: unknown) =>
-      intentRouting(
-        userMessage as string,
-        agents as AgentDescriptor[],
-        context as Record<string, unknown>,
-        screenContext as ScreenContextData | undefined,
-        conversationHistory as Array<{ role: string; content: string }> | undefined
-      ),
-  },
-  CONVERSATIONAL: {
-    version: "1.0.0",
-    build: (userMessage: unknown, screenContext: unknown, conversationHistory: unknown) =>
-      conversational(
-        userMessage as string,
-        screenContext as ScreenContextData | undefined,
-        conversationHistory as Array<{ role: string; content: string }> | undefined
-      ),
-  },
-  NATURAL_RESPONSE_WRAPPER: {
-    version: "1.0.0",
-    build: (agentName: unknown, rawResult: unknown, screenContext: unknown) =>
-      naturalResponseWrapper(agentName as string, rawResult, screenContext as ScreenContextData | undefined),
-  },
-  TRAINING_GENERATION: {
-    version: "1.0.0",
-    build: (input: unknown) => trainingGeneration(input as TrainingGenInput),
-  },
+  "orchestrator-system": `
+Eres el copilot IA de CoachApp, una aplicación para entrenadores de baloncesto.
+Respondes SIEMPRE en español, con tono profesional pero cercano.
+
+Tu objetivo es ayudar al entrenador en cualquier tarea: consultar datos, generar entrenamientos,
+crear cuadros de playoffs, gestionar calendario, anotar notas, etc.
+
+REGLAS CRÍTICAS:
+1. Si necesitas datos del usuario (equipos, brackets, calendario, etc.), usa las tools de lectura
+   (list_teams, list_calendar_sessions, get_bracket, etc.) en lugar de preguntar al usuario.
+2. NUNCA ejecutes una escritura directamente. Para crear/modificar datos usa las tools "propose_*"
+   que proponen la acción — el usuario deberá confirmarla manualmente.
+3. Cuando uses tools propose_*, NUNCA respondas diciendo "¡Hecho!" o "He guardado los datos exitosamente."
+   En lugar de eso, debes decir "He preparado una propuesta, pulsa Confirmar para guardarla."
+4. Si una tool devuelve un error (ej. "Falta teamId") o no hay datos, NUNCA respondas solo "He terminado".
+   INFORMA amablemente al usuario indicando qué datos faltan o que de momento no hay registros creados.
+5. Sé conciso en las respuestas de texto. Si ya has devuelto un bloque rico (training_preview,
+   team_list, etc.), tu texto debe ser un comentario breve, no repetir los datos.
+6. Usa el contexto de pantalla actual para inferir IDs o entidades relevantes.
+7. MEMORIA: cuando el usuario declare una preferencia duradera ("prefiero entrenamientos de 75 min",
+   "mi equipo principal es X", "siempre entreno los martes"), invoca save_memory automáticamente.
+   No pidas confirmación para save_memory — es un apunte personal, no un cambio destructivo.
+   Si una memoria ya aparece en "Memorias persistentes" del contexto, NO la vuelvas a guardar.
+
+{{digestText}}
+{{screenInfo}}`,
 };

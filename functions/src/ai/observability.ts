@@ -19,6 +19,8 @@ interface LogGenerationParams {
   latencyMs: number;
   inputTokens?: number;
   outputTokens?: number;
+  promptName?: string;
+  promptVersion?: number;
 }
 
 interface LogScoreParams {
@@ -38,6 +40,11 @@ export class ObservabilityService {
     if (publicKey && secretKey) {
       this.client = new Langfuse({ publicKey, secretKey, baseUrl });
     }
+  }
+
+  /** Expose the Langfuse client for prompt management. */
+  getLangfuseClient(): Langfuse | null {
+    return this.client;
   }
 
   createTrace(params: CreateTraceParams): unknown {
@@ -64,7 +71,8 @@ export class ObservabilityService {
     if (!this.client || !span) return;
     const s = span as { generation: (p: Record<string, unknown>) => void };
     if (typeof s.generation !== "function") return;
-    s.generation({
+
+    const genParams: Record<string, unknown> = {
       name: "llm-call",
       model: params.model,
       input: params.input,
@@ -74,7 +82,17 @@ export class ObservabilityService {
         inputTokens: params.inputTokens,
         outputTokens: params.outputTokens,
       },
-    });
+    };
+
+    // Link prompt version to generation for Langfuse prompt analytics
+    if (params.promptName && params.promptVersion !== undefined) {
+      genParams.prompt = {
+        name: params.promptName,
+        version: params.promptVersion,
+      };
+    }
+
+    s.generation(genParams);
   }
 
   endSpan(span: unknown, output?: unknown, error?: string): void {

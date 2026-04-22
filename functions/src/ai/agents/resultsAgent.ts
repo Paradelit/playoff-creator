@@ -1,5 +1,5 @@
 import { BaseAgent } from "./baseAgent";
-import { PROMPTS } from "../promptManager";
+import { CompiledPrompt } from "../promptManager";
 
 export interface ResultsInput {
   bracketState: Array<{
@@ -34,8 +34,11 @@ export class ResultsAgent extends BaseAgent<ResultsInput, ResultsAIResult> {
     return input;
   }
 
-  buildPrompt(input: ResultsInput): string {
-    return PROMPTS.RESULTS_EXTRACT.build(input.bracketState, input.resultsText);
+  async buildPrompt(input: ResultsInput): Promise<CompiledPrompt> {
+    return this.promptManager.compile("results-extract", {
+      bracketStateJson: JSON.stringify(input.bracketState),
+      resultsText: input.resultsText.substring(0, 45000),
+    });
   }
 
   processOutput(raw: unknown): ResultsAIResult {

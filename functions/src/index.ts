@@ -6,6 +6,7 @@ import {
   AgentRouter,
   ObservabilityService,
   LLMProvider,
+  PromptManager,
   BracketAgent,
   CalendarAgent,
   ResultsAgent,
@@ -32,6 +33,7 @@ interface System {
   router: AgentRouter;
   observability: ObservabilityService;
   llmProvider: LLMProvider;
+  promptManager: PromptManager;
   orchestrator: OrchestratorAgent;
   toolRegistry: ToolRegistry;
   agents: {
@@ -62,11 +64,15 @@ function getSystem(): System {
     observability,
   });
 
-  const bracketAgent = new BracketAgent({ llmProvider, observability });
-  const calendarAgent = new CalendarAgent({ llmProvider, observability });
-  const resultsAgent = new ResultsAgent({ llmProvider, observability });
-  const conversationalAgent = new ConversationalAgent({ llmProvider, observability });
-  const trainingAgent = new TrainingGeneratorAgent({ llmProvider, observability });
+  // PromptManager: uses the Langfuse client exposed by ObservabilityService
+  const promptManager = new PromptManager(observability.getLangfuseClient());
+
+  const agentDeps = { llmProvider, observability, promptManager };
+  const bracketAgent = new BracketAgent(agentDeps);
+  const calendarAgent = new CalendarAgent(agentDeps);
+  const resultsAgent = new ResultsAgent(agentDeps);
+  const conversationalAgent = new ConversationalAgent(agentDeps);
+  const trainingAgent = new TrainingGeneratorAgent(agentDeps);
 
   // Legacy router (kept for runAgent endpoint and backwards-compat)
   const router = new AgentRouter({
@@ -79,6 +85,7 @@ function getSystem(): System {
     },
     llmProvider,
     observability,
+    promptManager,
   });
 
   // New orchestrator with tools
@@ -92,12 +99,14 @@ function getSystem(): System {
     llmProvider,
     observability,
     toolRegistry,
+    promptManager,
   });
 
   cached = {
     router,
     observability,
     llmProvider,
+    promptManager,
     orchestrator,
     toolRegistry,
     agents: {

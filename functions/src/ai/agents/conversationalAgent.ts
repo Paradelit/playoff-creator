@@ -1,6 +1,6 @@
 import { BaseAgent } from "./baseAgent";
-import { PROMPTS } from "../promptManager";
 import { ScreenContextData } from "../types";
+import { CompiledPrompt } from "../promptManager";
 
 export interface ConversationalInput {
   userMessage: string;
@@ -24,8 +24,21 @@ export class ConversationalAgent extends BaseAgent<ConversationalInput, Conversa
     return input;
   }
 
-  buildPrompt(input: ConversationalInput): string {
-    return PROMPTS.CONVERSATIONAL.build(input.userMessage, input.screenContext, input.conversationHistory);
+  async buildPrompt(input: ConversationalInput): Promise<CompiledPrompt> {
+    const screenInfo = input.screenContext
+      ? `\nPANTALLA ACTUAL: ${input.screenContext.screen} (ruta: ${input.screenContext.route})${input.screenContext.data ? `\nDatos visibles: ${JSON.stringify(input.screenContext.data)}` : ""}`
+      : "";
+
+    const historyInfo =
+      input.conversationHistory && input.conversationHistory.length > 0
+        ? `\nHISTORIAL DE CONVERSACIÓN:\n${input.conversationHistory.slice(-10).map((m) => `${m.role}: ${m.content}`).join("\n")}`
+        : "";
+
+    return this.promptManager.compile("conversational", {
+      userMessage: input.userMessage,
+      screenInfo,
+      historyInfo,
+    });
   }
 
   processOutput(raw: unknown): ConversationalOutput {

@@ -4,6 +4,7 @@ import { ToolRegistry, ToolContext } from "../tools/registry";
 import { ContentBlock, OrchestratorResponse, WriteProposal } from "../contentBlocks";
 import { ScreenContextData, TraceContext, AgentExecutionOptions } from "../types";
 import { digestToPromptText, UserDigest } from "../userDigest";
+import { PromptManager } from "../promptManager";
 
 const MAX_TOOL_ITERATIONS = 8;
 
@@ -48,6 +49,7 @@ export class OrchestratorAgent {
       llmProvider: LLMProvider;
       observability: ObservabilityService;
       toolRegistry: ToolRegistry;
+      promptManager: PromptManager;
     }
   ) {}
 
@@ -59,7 +61,7 @@ export class OrchestratorAgent {
   ): Promise<OrchestratorResponse> {
     const blocks: ContentBlock[] = [];
     const toolDecls = this.deps.toolRegistry.toGeminiDeclarations();
-    const systemInstruction = this.buildSystemPrompt(input.screenContext, input.userDigest);
+    const systemInstruction = await this.buildSystemPrompt(input.screenContext, input.userDigest);
     const traceId = (traceContext.trace as { id?: string })?.id || "";
 
     const messages: GeminiMessage[] = [];
@@ -200,40 +202,19 @@ export class OrchestratorAgent {
     return { blocks, traceId };
   }
 
-  private buildSystemPrompt(screen: ScreenContextData | undefined, digest: UserDigest): string {
+  private async buildSystemPrompt(screen: ScreenContextData | undefined, digest: UserDigest): Promise<string> {
     const screenInfo = screen
       ? `\nPANTALLA ACTUAL: ${screen.screen} (ruta: ${screen.route})${
           screen.entityId ? `\nEntidad enfocada: ${screen.entityType} id=${screen.entityId}` : ""
         }${screen.data && Object.keys(screen.data).length > 0 ? `\nDatos visibles: ${JSON.stringify(screen.data)}` : ""}`
       : "";
 
-    return `
-Eres el copilot IA de CoachApp, una aplicación para entrenadores de baloncesto.
-Respondes SIEMPRE en español, con tono profesional pero cercano.
+    const compiled = await this.deps.promptManager.compile("orchestrator-system", {
+      digestText: digestToPromptText(digest),
+      screenInfo,
+    });
 
-Tu objetivo es ayudar al entrenador en cualquier tarea: consultar datos, generar entrenamientos,
-crear cuadros de playoffs, gestionar calendario, anotar notas, etc.
-
-REGLAS CRÍTICAS:
-1. Si necesitas datos del usuario (equipos, brackets, calendario, etc.), usa las tools de lectura
-   (list_teams, list_calendar_sessions, get_bracket, etc.) en lugar de preguntar al usuario.
-2. NUNCA ejecutes una escritura directamente. Para crear/modificar datos usa las tools "propose_*"
-   que proponen la acción — el usuario deberá confirmarla manualmente.
-3. Cuando uses tools propose_*, NUNCA respondas diciendo "¡Hecho!" o "He guardado los datos exitosamente." 
-   En lugar de eso, debes decir "He preparado una propuesta, pulsa Confirmar para guardarla."
-4. Si una tool devuelve un error (ej. "Falta teamId") o no hay datos, NUNCA respondas solo "He terminado". 
-   INFORMA amablemente al usuario indicando qué datos faltan o que de momento no hay registros creados.
-5. Sé conciso en las respuestas de texto. Si ya has devuelto un bloque rico (training_preview,
-   team_list, etc.), tu texto debe ser un comentario breve, no repetir los datos.
-6. Usa el contexto de pantalla actual para inferir IDs o entidades relevantes.
-7. MEMORIA: cuando el usuario declare una preferencia duradera ("prefiero entrenamientos de 75 min",
-   "mi equipo principal es X", "siempre entreno los martes"), invoca save_memory automáticamente.
-   No pidas confirmación para save_memory — es un apunte personal, no un cambio destructivo.
-   Si una memoria ya aparece en "Memorias persistentes" del contexto, NO la vuelvas a guardar.
-
-${digestToPromptText(digest)}
-${screenInfo}
-`.trim();
+    return compiled.text;
   }
 
   /** Execute a tool handler, retrying once on transient network errors. */

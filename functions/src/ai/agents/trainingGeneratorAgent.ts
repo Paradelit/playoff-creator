@@ -1,5 +1,5 @@
 import { BaseAgent } from "./baseAgent";
-import { PROMPTS } from "../promptManager";
+import { CompiledPrompt } from "../promptManager";
 
 export interface TrainingInput {
   teamCategory: string;
@@ -45,8 +45,19 @@ export class TrainingGeneratorAgent extends BaseAgent<TrainingInput, TrainingOut
     };
   }
 
-  buildPrompt(input: TrainingInput): string {
-    return PROMPTS.TRAINING_GENERATION.build(input);
+  async buildPrompt(input: TrainingInput): Promise<CompiledPrompt> {
+    const focusStr = input.focusAreas?.length ? `\nÁreas de enfoque: ${input.focusAreas.join(", ")}` : "";
+    const playersStr = input.playerCount ? `\nNúmero de jugadores: ${input.playerCount}` : "";
+    const constraintsStr = input.constraints ? `\nRestricciones: ${input.constraints}` : "";
+
+    return this.promptManager.compile("training-generation", {
+      teamCategory: input.teamCategory,
+      duration: String(input.duration),
+      objectives: input.objectives,
+      focusStr,
+      playersStr,
+      constraintsStr,
+    });
   }
 
   processOutput(raw: unknown): TrainingOutput {

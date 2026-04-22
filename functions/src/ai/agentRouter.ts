@@ -1,6 +1,7 @@
 import { BaseAgent } from "./agents/baseAgent";
 import { LLMProvider } from "./llmProvider";
 import { ObservabilityService } from "./observability";
+import { PromptManager } from "./promptManager";
 import {
   AgentExecutionOptions,
   AgentDescriptor,
@@ -9,20 +10,22 @@ import {
   ScreenContextData,
   EnrichedResponse,
 } from "./types";
-import { PROMPTS } from "./promptManager";
 
 export class AgentRouter {
   private agents: Map<string, BaseAgent<unknown, unknown>> = new Map();
   private llmProvider: LLMProvider;
   private observability: ObservabilityService;
+  private promptManager: PromptManager;
 
   constructor(deps: {
     agents: Record<string, BaseAgent<unknown, unknown>>;
     llmProvider: LLMProvider;
     observability: ObservabilityService;
+    promptManager: PromptManager;
   }) {
     this.llmProvider = deps.llmProvider;
     this.observability = deps.observability;
+    this.promptManager = deps.promptManager;
     for (const [name, agent] of Object.entries(deps.agents)) {
       this.agents.set(name, agent);
     }
@@ -153,9 +156,30 @@ export class AgentRouter {
       input: message,
     });
 
-    const prompt = PROMPTS.INTENT_ROUTING.build(message, agentDescriptions, context, screenContext, conversationHistory);
+    const agentList = agentDescriptions
+      .filter((a) => a.name !== "conversational")
+      .map((a) => `- ${a.name}: ${a.description} (input: ${a.inputSchema})`)
+      .join("\n");
+
+    const screenInfo = screenContext
+      ? `\nPANTALLA ACTUAL: ${screenContext.screen} (ruta: ${screenContext.route})${screenContext.data ? `\nDatos de pantalla: ${JSON.stringify(screenContext.data)}` : ""}`
+      : "";
+
+    const historyInfo =
+      conversationHistory && conversationHistory.length > 0
+        ? `\nÚLTIMOS MENSAJES:\n${conversationHistory.slice(-5).map((m) => `${m.role}: ${m.content}`).join("\n")}`
+        : "";
+
+    const compiled = await this.promptManager.compile("intent-routing", {
+      agentList,
+      contextJson: JSON.stringify(context),
+      screenInfo,
+      historyInfo,
+      userMessage: message,
+    });
+
     const result = await this.llmProvider.generate<IntentResult>({
-      prompt,
+      prompt: compiled.text,
       traceContext: { ...traceContext, span },
     });
 
@@ -175,13 +199,20 @@ export class AgentRouter {
     });
 
     try {
-      const prompt = PROMPTS.NATURAL_RESPONSE_WRAPPER.build(agentName, result, screenContext);
+      const screenInfo = screenContext ? `Pantalla actual: ${screenContext.screen}` : "";
+
+      const compiled = await this.promptManager.compile("natural-response-wrapper", {
+        agentName,
+        resultJson: JSON.stringify(result, null, 2),
+        screenInfo,
+      });
+
       const llmResult = await this.llmProvider.generate<{
         naturalResponse: string;
         suggestedMode: string;
         actions: Array<{ type: "navigate" | "create"; label: string; path?: string; data?: unknown }>;
       }>({
-        prompt,
+        prompt: compiled.text,
         traceContext: { ...traceContext, span },
       });
 

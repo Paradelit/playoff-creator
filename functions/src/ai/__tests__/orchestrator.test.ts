@@ -3,6 +3,7 @@ import { OrchestratorAgent } from '../agents/orchestratorAgent';
 import { ToolRegistry, ToolDefinition } from '../tools/registry';
 import type { GenerateWithToolsRequest, GenerateWithToolsResult, GeminiPart } from '../llmProvider';
 import type { UserDigest } from '../userDigest';
+import type { CompiledPrompt } from '../promptManager';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -21,6 +22,17 @@ class FakeObservability {
   }
   async flush() {
     /* no-op */
+  }
+}
+
+class FakePromptManager {
+  async compile(_name: string, variables: Record<string, string>): Promise<CompiledPrompt> {
+    // Return a simple concatenation of all variable values as the prompt text
+    return {
+      text: Object.values(variables).join('\n'),
+      promptName: _name,
+      promptVersion: 0,
+    };
   }
 }
 
@@ -67,6 +79,9 @@ function makeOrchestrator(
     >[0]['llmProvider'],
     observability,
     toolRegistry: registry,
+    promptManager: new FakePromptManager() as unknown as ConstructorParameters<
+      typeof OrchestratorAgent
+    >[0]['promptManager'],
   });
 }
 

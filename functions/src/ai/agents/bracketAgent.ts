@@ -1,5 +1,5 @@
 import { BaseAgent } from "./baseAgent";
-import { PROMPTS } from "../promptManager";
+import { CompiledPrompt } from "../promptManager";
 
 export interface BracketInput {
   basesText: string;
@@ -40,12 +40,17 @@ export class BracketAgent extends BaseAgent<BracketInput, BracketAIResult> {
     return input;
   }
 
-  buildPrompt(input: BracketInput): string {
-    return PROMPTS.BRACKET_CREATION.build(
-      input.basesText,
-      input.clasifText,
-      input.userInstructions
-    );
+  async buildPrompt(input: BracketInput): Promise<CompiledPrompt> {
+    const userInstructionBlock =
+      input.userInstructions && input.userInstructions.trim() !== ""
+        ? `\nINSTRUCCIONES ADICIONALES DEL USUARIO:\n${input.userInstructions.trim()}`
+        : "";
+
+    return this.promptManager.compile("bracket-creation", {
+      basesText: input.basesText.substring(0, 45000),
+      clasifText: input.clasifText.substring(0, 45000),
+      userInstructions: userInstructionBlock,
+    });
   }
 
   processOutput(raw: unknown, _input: BracketInput): BracketAIResult {

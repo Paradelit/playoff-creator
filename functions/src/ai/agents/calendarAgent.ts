@@ -1,5 +1,5 @@
 import { BaseAgent } from "./baseAgent";
-import { PROMPTS } from "../promptManager";
+import { CompiledPrompt } from "../promptManager";
 
 export interface CalendarInput {
   excelText: string;
@@ -43,8 +43,11 @@ export class CalendarAgent extends BaseAgent<CalendarInput, CalendarAIResult> {
     return input;
   }
 
-  buildPrompt(input: CalendarInput): string {
-    return PROMPTS.CALENDAR_IMPORT.build(input.excelText, input.teams);
+  async buildPrompt(input: CalendarInput): Promise<CompiledPrompt> {
+    return this.promptManager.compile("calendar-import", {
+      excelText: input.excelText.substring(0, 45000),
+      teamsJson: JSON.stringify(input.teams),
+    });
   }
 
   processOutput(raw: unknown): CalendarAIResult {
