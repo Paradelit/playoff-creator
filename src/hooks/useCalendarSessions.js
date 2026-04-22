@@ -86,7 +86,11 @@ export function useCalendarSessions(currentDate, viewMode) {
   }, [appId, db, end, start, subscriptionKey, user]);
 
   const playoffSessions = useMemo(() => buildPlayoffSessions(brackets, teams), [brackets, teams]);
-  const allSessions = useMemo(() => [...sessions, ...playoffSessions], [sessions, playoffSessions]);
+  const teamIds = useMemo(() => new Set(teams.map((t) => t.id)), [teams]);
+  const allSessions = useMemo(
+    () => [...sessions, ...playoffSessions].filter((s) => !s.teamId || teamIds.has(s.teamId)),
+    [sessions, playoffSessions, teamIds],
+  );
 
   function getTrainingNum(session) {
     return trainingNumbers.get(session.id) ?? session.sessionNumber;
