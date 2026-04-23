@@ -1,8 +1,8 @@
 export const YEAR_KEY = 'año';
-export const DEFAULT_YEAR = '1Âº';
+export const DEFAULT_YEAR = '1º';
 
 export const CATEGORIAS = ['Prebenjamín', 'Benjamín', 'Alevín', 'Infantil', 'Cadete', 'Junior', 'Senior'];
-export const ANOS = ['1Âº', '2Âº'];
+export const ANOS = ['1º', '2º'];
 export const LETRAS_RAPIDAS = ['A', 'B', 'C', 'D', 'E'];
 export const GENEROS = ['Masculino', 'Femenino', 'Mixto'];
 
