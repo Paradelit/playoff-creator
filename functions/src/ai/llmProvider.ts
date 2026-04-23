@@ -15,9 +15,10 @@ interface ProviderModel {
 }
 
 const DEFAULT_PROVIDERS: ProviderModel[] = [
+  // Solo modelos de la capa gratuita "Flash" y "Lite" para evitar costes de modelos Pro
   { provider: "gemini", model: "gemini-2.5-flash" },
-  { provider: "gemini", model: "gemini-2.5-flash-lite" },
-  { provider: "gemini", model: "gemini-3-flash" },
+  { provider: "gemini", model: "gemini-2.0-flash" },
+  { provider: "gemini", model: "gemini-1.5-flash" },
   // OpenRouter free-tier fallbacks (auto-router + specific models)
   { provider: "openrouter", model: "openrouter/free" },
   { provider: "openrouter", model: "google/gemma-4-31b-it:free" },

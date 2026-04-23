@@ -77,10 +77,12 @@ export class ObservabilityService {
       model: params.model,
       input: params.input,
       output: params.output,
+      usage: {
+        promptTokens: params.inputTokens,
+        completionTokens: params.outputTokens,
+      },
       metadata: {
         latencyMs: params.latencyMs,
-        inputTokens: params.inputTokens,
-        outputTokens: params.outputTokens,
       },
     };
 
