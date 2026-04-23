@@ -377,8 +377,10 @@ export default function BracketScreen() {
         </div>
       </header>
 
-      <main
+      <div
         ref={mainRef}
+        role="region"
+        aria-label="Cuadro de eliminatorias"
         className="flex-1 overflow-auto relative p-4 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]"
       >
         <div
@@ -434,7 +436,7 @@ export default function BracketScreen() {
             </div>
           );
         })}
-      </main>
+      </div>
     </div>
   );
 }

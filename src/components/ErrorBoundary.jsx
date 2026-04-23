@@ -18,20 +18,28 @@ export default class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="min-h-screen flex items-center justify-center bg-slate-100 p-6"
+        >
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">!</span>
+            <div
+              aria-hidden="true"
+              className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"
+            >
+              <span className="text-3xl text-red-600">!</span>
             </div>
             <h1 className="text-xl font-bold text-slate-800 mb-2">Algo ha ido mal</h1>
             <p className="text-slate-500 text-sm mb-6">
-              Ha ocurrido un error inesperado. Puedes intentar recargar la pagina.
+              Ha ocurrido un error inesperado. Puedes intentar recargar la página.
             </p>
             <button
+              type="button"
               onClick={() => window.location.reload()}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
             >
-              Recargar pagina
+              Recargar página
             </button>
           </div>
         </div>

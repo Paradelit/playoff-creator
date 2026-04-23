@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
+import Dialog from './Dialog';
 
 /**
  * Modal prompt dialog — replaces window.prompt().
@@ -27,16 +28,15 @@ export default function PromptDialog({
 }) {
   const [value, setValue] = useState(defaultValue);
   const inputRef = useRef(null);
+  const titleId = useId();
+  const descId = useId();
+  const inputId = useId();
 
-  // Reset value and focus input when dialog opens
   useEffect(() => {
     if (open) {
       setValue(defaultValue); // eslint-disable-line react-hooks/set-state-in-effect
-      setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open, defaultValue]);
-
-  if (!open) return null;
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -44,12 +44,30 @@ export default function PromptDialog({
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 z-[110] flex items-center justify-center px-4 pt-4 pb-20 sm:pb-4 backdrop-blur-sm">
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 animate-slide-up">
-        <h3 className="font-semibold text-slate-900 text-lg mb-1">{title}</h3>
-        {message && <p className="text-slate-600 text-sm mb-3">{message}</p>}
+    <Dialog
+      open={open}
+      onClose={onCancel}
+      labelledBy={titleId}
+      describedBy={message ? descId : undefined}
+      initialFocus={inputRef}
+      closeOnBackdrop={false}
+      panelClassName="bg-white rounded-xl shadow-xl max-w-sm w-full animate-slide-up"
+    >
+      <form onSubmit={handleSubmit} className="p-6">
+        <h2 id={titleId} className="font-semibold text-slate-900 text-lg mb-1">
+          {title}
+        </h2>
+        {message && (
+          <p id={descId} className="text-slate-600 text-sm mb-3">
+            {message}
+          </p>
+        )}
+        <label htmlFor={inputId} className="sr-only">
+          {title}
+        </label>
         <input
           ref={inputRef}
+          id={inputId}
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
@@ -60,19 +78,19 @@ export default function PromptDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
           >
             {cancelLabel}
           </button>
           <button
             type="submit"
             disabled={!value.trim()}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
           >
             {confirmLabel}
           </button>
         </div>
       </form>
-    </div>
+    </Dialog>
   );
 }

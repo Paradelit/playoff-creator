@@ -151,7 +151,7 @@ export default function TrainingEditorScreen() {
                   type="text"
                   value={training.meta?.numero || ''}
                   onChange={(e) => updateMeta('numero', e.target.value)}
-                  className="w-10 border-b border-black text-center focus:outline-none bg-transparent"
+                  className="w-10 border-b border-black text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent"
                 />
               </p>
             </div>
@@ -166,7 +166,7 @@ export default function TrainingEditorScreen() {
                   type="text"
                   value={training.meta?.equipo || ''}
                   onChange={(e) => updateMeta('equipo', e.target.value)}
-                  className="w-full ml-2 focus:outline-none bg-transparent"
+                  className="w-full ml-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent"
                 />
               </div>
               <div className="w-52 border-r border-black p-1.5 flex items-center gap-1">
@@ -174,7 +174,7 @@ export default function TrainingEditorScreen() {
                 <select
                   value={training.meta?.dia || ''}
                   onChange={(e) => updateMeta('dia', e.target.value)}
-                  className="ml-1 text-xs bg-transparent focus:outline-none cursor-pointer font-bold appearance-none"
+                  className="ml-1 text-xs bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 cursor-pointer font-bold appearance-none"
                 >
                   <option value="">Día</option>
                   {DIAS.map((d) => (
@@ -187,7 +187,7 @@ export default function TrainingEditorScreen() {
                   type="date"
                   value={training.meta?.fecha || ''}
                   onChange={(e) => updateMeta('fecha', e.target.value)}
-                  className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
                 />
               </div>
               <div className="w-48 border-r border-black p-1.5 flex items-center gap-1">
@@ -196,14 +196,14 @@ export default function TrainingEditorScreen() {
                   type="time"
                   value={training.meta?.horaInicio || ''}
                   onChange={(e) => updateMeta('horaInicio', e.target.value)}
-                  className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
                 />
                 <span className="font-bold">-</span>
                 <input
                   type="time"
                   value={training.meta?.horaFin || ''}
                   onChange={(e) => updateMeta('horaFin', e.target.value)}
-                  className="flex-1 focus:outline-none bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
+                  className="flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
                 />
               </div>
               <div className="flex-1 p-1.5 flex items-center">
@@ -212,7 +212,7 @@ export default function TrainingEditorScreen() {
                   type="text"
                   value={training.meta?.lugar || ''}
                   onChange={(e) => updateMeta('lugar', e.target.value)}
-                  className="w-full ml-2 focus:outline-none bg-transparent"
+                  className="w-full ml-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent"
                 />
               </div>
             </div>
@@ -221,7 +221,7 @@ export default function TrainingEditorScreen() {
               <textarea
                 value={training.objetivos || ''}
                 onChange={(e) => updateTraining((t) => ({ ...t, objetivos: e.target.value }))}
-                className="w-full flex-1 focus:outline-none bg-transparent resize-none leading-tight mt-1 text-sm"
+                className="w-full flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent resize-none leading-tight mt-1 text-sm"
               />
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function TrainingEditorScreen() {
                     type="text"
                     value={ej.tiempo || ''}
                     onChange={(e) => updateEjercicio(ej.id, 'tiempo', e.target.value)}
-                    className="w-full h-full text-center focus:outline-none bg-transparent text-xs"
+                    className="w-full h-full text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent text-xs"
                   />
                 </div>
                 <div className="w-32 border-r border-black p-1 relative">
@@ -260,14 +260,14 @@ export default function TrainingEditorScreen() {
                   <textarea
                     value={ej.contenido || ''}
                     onChange={(e) => updateEjercicio(ej.id, 'contenido', e.target.value)}
-                    className="w-full h-full resize-none focus:outline-none bg-transparent leading-tight text-xs"
+                    className="w-full h-full resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent leading-tight text-xs"
                   />
                 </div>
                 <div className="flex-1 border-r border-black p-1">
                   <textarea
                     value={ej.descripcion || ''}
                     onChange={(e) => updateEjercicio(ej.id, 'descripcion', e.target.value)}
-                    className="w-full h-full resize-none focus:outline-none bg-transparent leading-tight text-xs text-justify pb-2 pr-1"
+                    className="w-full h-full resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent leading-tight text-xs text-justify pb-2 pr-1"
                   />
                 </div>
                 <div className="w-40 flex flex-col items-center justify-center relative bg-white overflow-hidden">
@@ -306,7 +306,7 @@ export default function TrainingEditorScreen() {
                     <select
                       value={ej.tipoPista}
                       onChange={(e) => updateEjercicio(ej.id, 'tipoPista', e.target.value)}
-                      className="text-[10px] border border-gray-300 bg-white cursor-pointer focus:outline-none"
+                      className="text-[10px] border border-gray-300 bg-white cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0"
                     >
                       <option value="media">1/2</option>
                       <option value="entera">Full</option>
@@ -335,7 +335,7 @@ export default function TrainingEditorScreen() {
                   members={members}
                   placeholder=""
                   rows={2}
-                  className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
+                  className="w-full flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent resize-none text-xs leading-tight mt-1"
                 />
               </div>
               <div className="flex-1 p-1.5 flex flex-col">
@@ -346,7 +346,7 @@ export default function TrainingEditorScreen() {
                   members={members}
                   placeholder=""
                   rows={2}
-                  className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
+                  className="w-full flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent resize-none text-xs leading-tight mt-1"
                 />
               </div>
             </div>
@@ -359,7 +359,7 @@ export default function TrainingEditorScreen() {
                   members={members}
                   placeholder=""
                   rows={2}
-                  className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
+                  className="w-full flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent resize-none text-xs leading-tight mt-1"
                 />
               </div>
               <div className="flex-1 p-1.5 flex flex-col">
@@ -367,7 +367,7 @@ export default function TrainingEditorScreen() {
                 <textarea
                   value={training.cierre?.observaciones || ''}
                   onChange={(e) => updateCierre('observaciones', e.target.value)}
-                  className="w-full flex-1 focus:outline-none bg-transparent resize-none text-xs leading-tight mt-1"
+                  className="w-full flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent resize-none text-xs leading-tight mt-1"
                 />
               </div>
             </div>
