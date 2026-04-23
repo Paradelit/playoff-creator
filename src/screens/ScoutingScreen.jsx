@@ -208,6 +208,7 @@ export default function ScoutingScreen() {
               value={data.sistemaJuego}
               onChange={(e) => update('sistemaJuego', e.target.value)}
               placeholder="Formación, estilo de juego, ritmo, defensa habitual..."
+              aria-label="Sistema de juego"
               rows={3}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none font-sans"
             />
@@ -237,6 +238,7 @@ export default function ScoutingScreen() {
                       value={j.nombre}
                       onChange={(e) => updateJugadorClave(i, 'nombre', e.target.value)}
                       placeholder="Nombre"
+                      aria-label={`Nombre del jugador clave ${i + 1}`}
                       className="col-span-2 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                     />
                     <input
@@ -244,6 +246,7 @@ export default function ScoutingScreen() {
                       value={j.dorsal}
                       onChange={(e) => updateJugadorClave(i, 'dorsal', e.target.value)}
                       placeholder="Dorsal"
+                      aria-label={`Dorsal del jugador clave ${i + 1}`}
                       className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                     />
                     <input
@@ -251,12 +254,14 @@ export default function ScoutingScreen() {
                       value={j.posicion}
                       onChange={(e) => updateJugadorClave(i, 'posicion', e.target.value)}
                       placeholder="Posición"
+                      aria-label={`Posición del jugador clave ${i + 1}`}
                       className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                     />
                     <textarea
                       value={j.notas}
                       onChange={(e) => updateJugadorClave(i, 'notas', e.target.value)}
                       placeholder="Notas sobre este jugador..."
+                      aria-label={`Notas del jugador clave ${i + 1}`}
                       rows={2}
                       className="col-span-2 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
                     />
@@ -279,6 +284,7 @@ export default function ScoutingScreen() {
               value={data.patronesOfensivos}
               onChange={(e) => update('patronesOfensivos', e.target.value)}
               placeholder="Jugadas habituales, pick & roll, movimientos sin balón, contraataques..."
+              aria-label="Patrones ofensivos"
               rows={3}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none font-sans"
             />
@@ -290,6 +296,7 @@ export default function ScoutingScreen() {
               value={data.patronesDefensivos}
               onChange={(e) => update('patronesDefensivos', e.target.value)}
               placeholder="Tipo de defensa, presión, traps, rotaciones..."
+              aria-label="Patrones defensivos"
               rows={3}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none font-sans"
             />
@@ -301,6 +308,7 @@ export default function ScoutingScreen() {
               value={data.debilidades}
               onChange={(e) => update('debilidades', e.target.value)}
               placeholder="Puntos débiles del rival, transiciones, rebote, presión..."
+              aria-label="Debilidades a explotar"
               rows={3}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none font-sans"
             />
@@ -312,6 +320,7 @@ export default function ScoutingScreen() {
               value={data.notasLibres}
               onChange={(e) => update('notasLibres', e.target.value)}
               placeholder="Cualquier otra observación relevante..."
+              aria-label="Notas adicionales"
               rows={4}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none font-sans"
             />

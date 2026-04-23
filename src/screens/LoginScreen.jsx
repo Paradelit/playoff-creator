@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useId } from 'react';
 import { Trophy, Loader2, User, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -48,6 +48,8 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [pendingProvider, setPendingProvider] = useState(null);
+  const emailId = useId();
+  const passwordId = useId();
 
   const runProvider = (name, fn) => async () => {
     setPendingProvider(name);
@@ -84,7 +86,11 @@ export default function LoginScreen() {
           </p>
 
           {authError && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm text-left leading-tight">
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm text-left leading-tight"
+            >
               {authError}
             </div>
           )}
@@ -121,30 +127,40 @@ export default function LoginScreen() {
 
           <form onSubmit={onSubmitEmailForm} className="flex flex-col gap-3">
             <div className="relative">
+              <label htmlFor={emailId} className="sr-only">
+                Correo electrónico
+              </label>
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail size={18} className="text-slate-400" />
+                <Mail size={18} className="text-slate-400" aria-hidden="true" />
               </div>
               <input
+                id={emailId}
                 type="email"
                 placeholder="Correo electrónico"
                 className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={disableAll}
+                autoComplete="email"
                 required
               />
             </div>
             <div className="relative">
+              <label htmlFor={passwordId} className="sr-only">
+                Contraseña
+              </label>
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock size={18} className="text-slate-400" />
+                <Lock size={18} className="text-slate-400" aria-hidden="true" />
               </div>
               <input
+                id={passwordId}
                 type="password"
                 placeholder="Contraseña"
                 className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={disableAll}
+                autoComplete="current-password"
                 required
               />
             </div>

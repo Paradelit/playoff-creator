@@ -277,6 +277,7 @@ export default function AnalysisScreen() {
                   value={esLocal ? localScore : visitanteScore}
                   onChange={(e) => updateResultado(esLocal ? 'local' : 'visitante', e.target.value)}
                   placeholder="—"
+                  aria-label={`Puntos ${esLocal ? (team ? teamDisplayName(team) : 'Local') : data.rival || 'Visitante'}`}
                   className="w-20 h-16 text-center text-3xl font-black border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
@@ -290,6 +291,7 @@ export default function AnalysisScreen() {
                   value={esLocal ? visitanteScore : localScore}
                   onChange={(e) => updateResultado(esLocal ? 'visitante' : 'local', e.target.value)}
                   placeholder="—"
+                  aria-label={`Puntos ${esLocal ? data.rival || 'Visitante' : team ? teamDisplayName(team) : 'Local'}`}
                   className="w-20 h-16 text-center text-3xl font-black border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
@@ -307,6 +309,7 @@ export default function AnalysisScreen() {
                 value={data.funcionoBien}
                 onChange={(e) => update('funcionoBien', e.target.value)}
                 placeholder="Aspectos positivos del partido..."
+                aria-label="Qué funcionó bien"
                 rows={5}
                 className="w-full border border-green-200 bg-green-50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 resize-none"
               />
@@ -316,6 +319,7 @@ export default function AnalysisScreen() {
                 value={data.mejorar}
                 onChange={(e) => update('mejorar', e.target.value)}
                 placeholder="Aspectos a trabajar en próximos entrenamientos..."
+                aria-label="Qué mejorar"
                 rows={5}
                 className="w-full border border-rose-200 bg-rose-50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 resize-none"
               />
@@ -345,6 +349,7 @@ export default function AnalysisScreen() {
                     value={j.nombre}
                     onChange={(e) => updateJugadorDestacado(i, 'nombre', e.target.value)}
                     placeholder="Nombre"
+                    aria-label={`Nombre del jugador destacado ${i + 1}`}
                     className="w-40 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                   />
                   <input
@@ -352,6 +357,7 @@ export default function AnalysisScreen() {
                     value={j.notas}
                     onChange={(e) => updateJugadorDestacado(i, 'notas', e.target.value)}
                     placeholder="Notas (doble-doble, defensa, liderazgo...)"
+                    aria-label={`Notas del jugador destacado ${i + 1}`}
                     className="flex-1 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                   />
                   <button
@@ -385,8 +391,11 @@ export default function AnalysisScreen() {
                   ['asistencias', 'Asistencias'],
                 ].map(([key, label]) => (
                   <div key={key}>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">{label}</label>
+                    <label htmlFor={`stat-${key}`} className="block text-xs font-semibold text-gray-500 mb-1">
+                      {label}
+                    </label>
                     <input
+                      id={`stat-${key}`}
                       type="text"
                       value={data.estadisticas?.[key] || ''}
                       onChange={(e) => updateStat(key, e.target.value)}
@@ -405,6 +414,7 @@ export default function AnalysisScreen() {
               value={data.notasLibres}
               onChange={(e) => update('notasLibres', e.target.value)}
               placeholder="Cualquier otra observación del partido..."
+              aria-label="Notas adicionales"
               rows={3}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
             />
@@ -416,6 +426,7 @@ export default function AnalysisScreen() {
               value={data.planSiguiente}
               onChange={(e) => update('planSiguiente', e.target.value)}
               placeholder="Aspectos a trabajar basados en el análisis del partido..."
+              aria-label="Plan para próximo entrenamiento"
               rows={3}
               className="w-full border border-amber-200 bg-amber-50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
             />

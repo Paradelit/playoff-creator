@@ -33,21 +33,26 @@ function Section({ icon: Icon, title, iconColor, iconBg, children }) {
   );
 }
 
-function Field({ label, children, className = '' }) {
+function Field({ label, htmlFor, children, className = '' }) {
   return (
     <div className={className}>
-      <label className="block text-xs font-semibold text-slate-600 mb-1.5">{label}</label>
+      <label htmlFor={htmlFor} className="block text-xs font-semibold text-slate-600 mb-1.5">
+        {label}
+      </label>
       {children}
     </div>
   );
 }
 
-function Toggle({ checked, onChange }) {
+function Toggle({ checked, onChange, label }) {
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${checked ? 'bg-blue-600' : 'bg-slate-300'}`}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 ${checked ? 'bg-blue-600' : 'bg-slate-300'}`}
     >
       <span
         className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : 'translate-x-1'}`}
@@ -133,7 +138,11 @@ export function ProfileSection({ s }) {
               <p className="text-sm font-semibold text-slate-700">Añadirme como staff automáticamente</p>
               <p className="text-xs text-slate-500">Al crear un equipo, apareceré en el staff con mis datos</p>
             </div>
-            <Toggle checked={s.form.autoAddToTeams} onChange={(v) => s.setForm((f) => ({ ...f, autoAddToTeams: v }))} />
+            <Toggle
+              checked={s.form.autoAddToTeams}
+              onChange={(v) => s.setForm((f) => ({ ...f, autoAddToTeams: v }))}
+              label="Añadirme como staff automáticamente"
+            />
           </div>
 
           {s.form.autoAddToTeams && (
@@ -297,7 +306,7 @@ export function CopilotSection({ s }) {
         Controla cuánto puede hablarte el copilot sin que tú se lo pidas. Siempre responderá cuando le preguntes — esto
         solo afecta a sugerencias espontáneas.
       </p>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2" role="radiogroup" aria-label="Modo de proactividad del copilot">
         {[
           {
             value: 'off',
@@ -320,8 +329,10 @@ export function CopilotSection({ s }) {
             <button
               key={opt.value}
               type="button"
+              role="radio"
+              aria-checked={active}
               onClick={() => s.changeProactivityMode(opt.value)}
-              className={`text-left border rounded-xl px-4 py-3 transition ${
+              className={`text-left border rounded-xl px-4 py-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-2 ${
                 active
                   ? 'border-purple-400 bg-purple-50 ring-2 ring-purple-100'
                   : 'border-slate-200 bg-white hover:border-slate-300'
@@ -332,6 +343,7 @@ export function CopilotSection({ s }) {
                   className={`w-4 h-4 rounded-full border-2 mt-0.5 shrink-0 ${
                     active ? 'border-purple-600 bg-purple-600' : 'border-slate-300 bg-white'
                   }`}
+                  aria-hidden="true"
                 >
                   {active && <div className="w-full h-full rounded-full bg-white scale-[0.4]" />}
                 </div>
