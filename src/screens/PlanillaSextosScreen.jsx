@@ -190,21 +190,21 @@ export default function PlanillaSextosScreen() {
           onClick={() => navigate('/calendar')}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
         >
-          <ArrowLeft size={16} /> Calendario
+          <ArrowLeft size={16} aria-hidden="true" /> Calendario
         </button>
         <div className="flex items-center gap-2">
           <button
             onClick={addJugador}
             className="flex items-center px-3 py-1 bg-white border border-gray-400 text-sm hover:bg-gray-50 transition shadow-sm rounded"
           >
-            <Plus className="w-4 h-4 mr-1" /> Jugador
+            <Plus className="w-4 h-4 mr-1" aria-hidden="true" /> Jugador
           </button>
           <button
             onClick={removeJugador}
             disabled={jugadores.length <= 1}
             className="flex items-center px-3 py-1 bg-white border border-red-300 text-red-700 text-sm hover:bg-red-50 transition shadow-sm rounded disabled:opacity-40"
           >
-            <Minus className="w-4 h-4 mr-1" /> Jugador
+            <Minus className="w-4 h-4 mr-1" aria-hidden="true" /> Jugador
           </button>
         </div>
         <div className="flex items-center gap-3">
@@ -216,13 +216,13 @@ export default function PlanillaSextosScreen() {
             onClick={resetAll}
             className="flex items-center px-3 py-1 bg-white border border-gray-400 text-gray-700 text-sm hover:bg-gray-50 transition shadow-sm rounded"
           >
-            <RotateCcw className="w-4 h-4 mr-1" /> Limpiar
+            <RotateCcw className="w-4 h-4 mr-1" aria-hidden="true" /> Limpiar
           </button>
           <button
             onClick={() => window.print()}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
           >
-            <Printer className="w-4 h-4" /> Imprimir
+            <Printer className="w-4 h-4" aria-hidden="true" /> Imprimir
           </button>
         </div>
       </div>

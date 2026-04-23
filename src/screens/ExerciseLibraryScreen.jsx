@@ -142,7 +142,7 @@ export default function ExerciseLibraryScreen() {
           onClick={() => navigate(-1)}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition mb-5"
         >
-          <ArrowLeft size={16} /> Volver
+          <ArrowLeft size={16} aria-hidden="true" /> Volver
         </button>
 
         <LibraryHeader
@@ -156,7 +156,7 @@ export default function ExerciseLibraryScreen() {
 
         {isFirstRun ? (
           <div className="mt-10 bg-white border-2 border-dashed border-slate-300 rounded-2xl p-12 sm:p-16 text-center shadow-sm">
-            <FolderOpen size={56} className="mx-auto text-slate-300 mb-4" />
+            <FolderOpen size={56} className="mx-auto text-slate-300 mb-4" aria-hidden="true" />
             <h3 className="text-lg font-bold text-slate-700 mb-2">Sin ejercicios</h3>
             <p className="text-slate-500 mb-6 text-sm">Crea ejercicios reutilizables para tus entrenamientos.</p>
             <button onClick={openNewExercise} className="text-blue-600 font-bold hover:underline text-sm">

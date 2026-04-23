@@ -45,9 +45,9 @@ function ExplicacionInforme({ open, onToggle }) {
         onClick={onToggle}
         className="print:hidden flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition mb-2"
       >
-        <Info size={15} />
+        <Info size={15} aria-hidden="true" />
         Cómo cumplimentar el informe
-        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        {open ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
       </button>
 
       <div className={`${open ? 'block' : 'hidden'} print:block`}>
@@ -291,7 +291,7 @@ export default function InformeJugadoresScreen() {
           onClick={() => navigate(`/teams/${teamId}/cuaderno`)}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
         >
-          <ArrowLeft size={16} /> Cuaderno
+          <ArrowLeft size={16} aria-hidden="true" /> Cuaderno
         </button>
         <div className="flex items-center gap-2">
           <button
@@ -310,13 +310,13 @@ export default function InformeJugadoresScreen() {
             onClick={resetAll}
             className="flex items-center px-3 py-1 bg-white border border-gray-400 text-gray-700 text-sm hover:bg-gray-50 transition shadow-sm rounded"
           >
-            <RotateCcw className="w-4 h-4 mr-1" /> Limpiar
+            <RotateCcw className="w-4 h-4 mr-1" aria-hidden="true" /> Limpiar
           </button>
           <button
             onClick={() => window.print()}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
           >
-            <Printer size={15} /> Imprimir A4
+            <Printer size={15} aria-hidden="true" /> Imprimir A4
           </button>
         </div>
       </div>
@@ -346,7 +346,7 @@ export default function InformeJugadoresScreen() {
 
           {/* Observaciones generales */}
           <div className="mb-4 flex items-start gap-2 text-[12px] text-gray-500 font-sans print:hidden">
-            <GripVertical size={14} className="mt-0.5 text-gray-400 shrink-0" />
+            <GripVertical size={14} className="mt-0.5 text-gray-400 shrink-0" aria-hidden="true" />
             <span>
               Arrastra las filas con el icono de la izquierda para reordenar el ranking. También puedes asignar un
               número de ranking a cada jugador y pulsar «Ordenar por Ranking».
@@ -394,7 +394,7 @@ export default function InformeJugadoresScreen() {
                     {/* Drag handle */}
                     <td className="print:hidden border border-gray-300 p-0 w-[30px] text-center cursor-grab active:cursor-grabbing select-none">
                       <div className="flex items-center justify-center h-full py-2">
-                        <GripVertical size={14} className="text-gray-400" />
+                        <GripVertical size={14} className="text-gray-400" aria-hidden="true" />
                       </div>
                     </td>
 
@@ -407,6 +407,7 @@ export default function InformeJugadoresScreen() {
                           <textarea
                             value={row[col.key] || ''}
                             onChange={(e) => updateRow(row.id, col.key, e.target.value)}
+                            aria-label={`${col.label} de jugador fila ${row.id + 1}`}
                             className="w-full min-h-[52px] resize-y p-1.5 focus:outline-none bg-transparent font-sans text-[11px] leading-tight print:text-[9px] print:min-h-0 print:resize-none"
                             rows={2}
                           />
@@ -416,6 +417,7 @@ export default function InformeJugadoresScreen() {
                             min="1"
                             value={row.ranking || ''}
                             onChange={(e) => updateRow(row.id, 'ranking', e.target.value)}
+                            aria-label={`Ranking de jugador fila ${row.id + 1}`}
                             className="w-full h-full p-1.5 text-center focus:outline-none bg-transparent font-sans text-sm font-bold text-blue-800 print:text-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         ) : (
@@ -423,6 +425,7 @@ export default function InformeJugadoresScreen() {
                             type="text"
                             value={row[col.key] || ''}
                             onChange={(e) => updateRow(row.id, col.key, e.target.value)}
+                            aria-label={`${col.label} de jugador fila ${row.id + 1}`}
                             className="w-full h-full p-1.5 focus:outline-none bg-transparent font-sans text-[11px] print:text-[9px]"
                           />
                         )}
@@ -441,6 +444,7 @@ export default function InformeJugadoresScreen() {
               <textarea
                 className="w-full min-h-[80px] resize-y focus:outline-none bg-transparent font-sans text-sm print:min-h-[40px]"
                 placeholder="Observaciones generales sobre el equipo..."
+                aria-label="Observaciones generales sobre el equipo"
               />
             </div>
           </div>

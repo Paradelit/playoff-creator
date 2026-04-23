@@ -68,7 +68,7 @@ export default function TagInput({ tags = [], onChange, suggestions = [], placeh
               }}
               className="text-indigo-400 hover:text-indigo-700 transition-colors"
             >
-              <X size={12} />
+              <X size={12} aria-hidden="true" />
             </button>
           </span>
         ))}

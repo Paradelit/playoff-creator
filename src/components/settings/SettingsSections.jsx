@@ -167,7 +167,7 @@ export function ProfileSection({ s }) {
         >
           {s.profileSaved ? (
             <>
-              <Check size={16} /> Guardado
+              <Check size={16} aria-hidden="true" /> Guardado
             </>
           ) : s.savingProfile ? (
             'Guardando...'
@@ -291,7 +291,9 @@ export function RemindersSection({ s }) {
                 Permitir
               </button>
             )}
-            {s.notifPermission === 'granted' && <Check size={18} className="text-emerald-600 shrink-0" />}
+            {s.notifPermission === 'granted' && (
+              <Check size={18} className="text-emerald-600 shrink-0" aria-hidden="true" />
+            )}
           </div>
         </>
       )}
@@ -375,7 +377,7 @@ export function DataSection({ s }) {
         disabled={s.exporting}
         className="w-full flex items-center gap-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold py-3 px-4 rounded-xl transition disabled:opacity-60 text-sm"
       >
-        <Download size={18} className="shrink-0" />
+        <Download size={18} className="shrink-0" aria-hidden="true" />
         <div className="text-left">
           <p className="font-bold">{s.exporting ? 'Exportando...' : 'Exportar mis datos'}</p>
           <p className="text-xs font-normal text-emerald-600">Descarga un archivo .json con todo tu contenido</p>
@@ -386,7 +388,7 @@ export function DataSection({ s }) {
         onClick={() => s.importInputRef.current?.click()}
         className="w-full flex items-center gap-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-3 px-4 rounded-xl transition text-sm mt-3"
       >
-        <Upload size={18} className="shrink-0" />
+        <Upload size={18} className="shrink-0" aria-hidden="true" />
         <div className="text-left">
           <p className="font-bold">Importar datos</p>
           <p className="text-xs font-normal text-blue-600">Restaurar desde un backup .json de Urocoach</p>
@@ -422,14 +424,14 @@ export function AccountSection({ s }) {
               disabled={s.linkingGoogle}
               className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm px-4 py-2 rounded-xl transition disabled:opacity-60"
             >
-              <Link size={15} /> {s.linkingGoogle ? 'Vinculando...' : 'Vincular con Google'}
+              <Link size={15} aria-hidden="true" /> {s.linkingGoogle ? 'Vinculando...' : 'Vincular con Google'}
             </button>
           </div>
         )}
 
         {s.linkedOk && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center gap-2 text-emerald-700 text-sm font-semibold">
-            <Check size={16} /> Cuenta vinculada correctamente
+            <Check size={16} aria-hidden="true" /> Cuenta vinculada correctamente
           </div>
         )}
 
@@ -437,7 +439,7 @@ export function AccountSection({ s }) {
           onClick={s.handleLogout}
           className="flex items-center gap-3 text-slate-600 hover:text-red-600 font-semibold text-sm py-2 transition"
         >
-          <LogOut size={16} /> Cerrar sesión
+          <LogOut size={16} aria-hidden="true" /> Cerrar sesión
         </button>
       </div>
     </Section>
@@ -449,7 +451,7 @@ export function DangerZoneSection({ s }) {
     <div className="bg-white rounded-2xl shadow-sm border-2 border-red-200 overflow-hidden">
       <div className="flex items-center gap-3 px-5 py-4 bg-red-50 border-b border-red-100">
         <div className="w-9 h-9 bg-red-100 rounded-xl flex items-center justify-center shrink-0">
-          <AlertTriangle size={18} className="text-red-600" />
+          <AlertTriangle size={18} className="text-red-600" aria-hidden="true" />
         </div>
         <div>
           <p className="font-bold text-red-700 text-sm">Zona peligrosa</p>
@@ -466,7 +468,7 @@ export function DangerZoneSection({ s }) {
             onClick={() => s.setShowDeleteDataModal(true)}
             className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition"
           >
-            <Trash2 size={15} /> Borrar todos mis datos
+            <Trash2 size={15} aria-hidden="true" /> Borrar todos mis datos
           </button>
         </div>
       </div>

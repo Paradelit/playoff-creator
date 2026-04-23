@@ -122,7 +122,7 @@ export default function CalendarScreen() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <CalendarDays className="text-amber-500" size={36} /> Calendario
+              <CalendarDays className="text-amber-500" size={36} aria-hidden="true" /> Calendario
             </h1>
             <p className="text-slate-500 mt-1 text-sm">Entrenamientos y partidos de tus equipos.</p>
           </div>
@@ -131,7 +131,7 @@ export default function CalendarScreen() {
               onClick={importer.openImportSetup}
               className="bg-gradient-to-r from-orange-500 to-blue-700 hover:from-orange-600 hover:to-blue-800 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition text-sm"
             >
-              <Sparkles size={16} /> Importar con IA
+              <Sparkles size={16} aria-hidden="true" /> Importar con IA
             </button>
             <input
               ref={importer.fileInputRef}
@@ -150,7 +150,7 @@ export default function CalendarScreen() {
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-transform hover:scale-105 text-sm"
             >
-              <Plus size={18} /> Nueva sesión
+              <Plus size={18} aria-hidden="true" /> Nueva sesión
             </button>
           </div>
         </div>
@@ -163,7 +163,7 @@ export default function CalendarScreen() {
               aria-label="Período anterior"
               className="text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100 transition"
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={20} aria-hidden="true" />
             </button>
             <h2 className="text-base font-bold text-slate-800 min-w-[170px] text-center">{getNavLabel()}</h2>
             <button
@@ -171,7 +171,7 @@ export default function CalendarScreen() {
               aria-label="Período siguiente"
               className="text-slate-500 hover:text-slate-800 p-1.5 rounded-lg hover:bg-slate-100 transition"
             >
-              <ChevronRight size={20} />
+              <ChevronRight size={20} aria-hidden="true" />
             </button>
           </div>
           <div className="flex items-center gap-3 flex-wrap">

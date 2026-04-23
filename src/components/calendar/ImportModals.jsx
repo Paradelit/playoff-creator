@@ -301,7 +301,7 @@ export function DuplicateConflictModal({ duplicateConflict, importPreview, bulkS
     >
       <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0" aria-hidden="true">
-          <AlertTriangle size={20} className="text-amber-600" />
+          <AlertTriangle size={20} className="text-amber-600" aria-hidden="true" />
         </div>
         <div>
           <h3 id={titleId} className="font-bold text-slate-800">

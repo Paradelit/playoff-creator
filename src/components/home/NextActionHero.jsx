@@ -80,7 +80,7 @@ export default function NextActionHero({ session, teams, navigate, onCreateTrain
     return (
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex items-center gap-4">
         <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-          <ClipboardList size={22} className="text-emerald-600" />
+          <ClipboardList size={22} className="text-emerald-600" aria-hidden="true" />
         </div>
         <div className="min-w-0">
           <p className="font-bold text-slate-800">Todo al día</p>
@@ -121,13 +121,13 @@ export default function NextActionHero({ session, teams, navigate, onCreateTrain
           <div className={`mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs ${styles.accent}`}>
             {session.horaInicio && (
               <span className="inline-flex items-center gap-1">
-                <Clock size={12} /> {session.horaInicio}
+                <Clock size={12} aria-hidden="true" /> {session.horaInicio}
                 {session.horaFin ? `–${session.horaFin}` : ''}
               </span>
             )}
             {session.lugar && (
               <span className="inline-flex items-center gap-1 truncate max-w-[12rem]">
-                <MapPin size={12} /> {session.lugar}
+                <MapPin size={12} aria-hidden="true" /> {session.lugar}
               </span>
             )}
           </div>

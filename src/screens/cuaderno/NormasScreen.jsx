@@ -21,13 +21,13 @@ export default function NormasScreen() {
           onClick={() => navigate(`/teams/${teamId}/cuaderno`)}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
         >
-          <ArrowLeft size={16} /> Cuaderno
+          <ArrowLeft size={16} aria-hidden="true" /> Cuaderno
         </button>
         <button
           onClick={() => window.print()}
           className="flex items-center px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-lg shadow transition text-sm"
         >
-          <Printer className="w-4 h-4 mr-2" /> Imprimir A4
+          <Printer className="w-4 h-4 mr-2" aria-hidden="true" /> Imprimir A4
         </button>
       </div>
 

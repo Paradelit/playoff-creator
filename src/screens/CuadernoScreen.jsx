@@ -46,13 +46,13 @@ export default function CuadernoScreen() {
           onClick={() => navigate('/teams')}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
         >
-          <ArrowLeft size={16} /> Mis equipos
+          <ArrowLeft size={16} aria-hidden="true" /> Mis equipos
         </button>
         <button
           onClick={() => window.print()}
           className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold font-sans transition"
         >
-          <Printer size={15} /> Imprimir
+          <Printer size={15} aria-hidden="true" /> Imprimir
         </button>
       </div>
 

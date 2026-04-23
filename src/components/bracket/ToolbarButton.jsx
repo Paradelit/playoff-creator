@@ -32,7 +32,7 @@ export default function ToolbarButton({
       title={title}
       className={`inline-flex items-center justify-center font-bold rounded-lg shadow-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`}
     >
-      {Icon && <Icon size={computedIconSize} />}
+      {Icon && <Icon size={computedIconSize} aria-hidden="true" />}
       {label && <span>{label}</span>}
       {children}
     </button>

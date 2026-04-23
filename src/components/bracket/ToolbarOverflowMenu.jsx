@@ -25,7 +25,7 @@ export default function ToolbarOverflowMenu({ items }) {
         title="Más acciones"
         className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-blue-800 hover:bg-blue-700 text-white shadow-sm transition-colors"
       >
-        <MoreHorizontal size={16} />
+        <MoreHorizontal size={16} aria-hidden="true" />
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-lg shadow-xl py-1 min-w-[210px]">

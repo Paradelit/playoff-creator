@@ -89,9 +89,9 @@ export default function ExerciseCard({
               className="text-slate-400 hover:text-slate-600 p-1 flex items-center gap-1 text-xs font-semibold shrink-0"
               title={expanded ? 'Contraer variantes' : 'Expandir variantes'}
             >
-              <GitBranch size={13} className="text-indigo-500" />
+              <GitBranch size={13} className="text-indigo-500" aria-hidden="true" />
               <span className="text-indigo-500">{variantCount}</span>
-              {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              {expanded ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronRight size={14} aria-hidden="true" />}
             </button>
           )}
         </div>
@@ -122,28 +122,28 @@ export default function ExerciseCard({
             className="text-slate-400 hover:text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition-colors"
             title="Vista previa"
           >
-            <Eye size={15} />
+            <Eye size={15} aria-hidden="true" />
           </button>
           <button
             onClick={() => onCreateVariant(ex)}
             className="text-slate-400 hover:text-indigo-600 p-2 hover:bg-indigo-50 rounded-lg transition-colors"
             title="Crear variante"
           >
-            <GitBranch size={15} />
+            <GitBranch size={15} aria-hidden="true" />
           </button>
           <button
             onClick={() => onEdit(ex)}
             className="text-slate-400 hover:text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition-colors"
             title="Editar"
           >
-            <Pencil size={15} />
+            <Pencil size={15} aria-hidden="true" />
           </button>
           <button
             onClick={() => onDelete(ex.id)}
             className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors"
             title="Eliminar"
           >
-            <Trash2 size={15} />
+            <Trash2 size={15} aria-hidden="true" />
           </button>
         </div>
       </div>

@@ -75,7 +75,7 @@ const MatchCard = React.memo(
                     className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded shrink-0 opacity-0 group-hover/edit:opacity-100 transition-opacity"
                     title="Editar nombre libremente"
                   >
-                    <Edit2 size={12} />
+                    <Edit2 size={12} aria-hidden="true" />
                   </button>
                 </div>
               ) : (
@@ -90,6 +90,7 @@ const MatchCard = React.memo(
                     <Edit2
                       size={12}
                       className="text-slate-300 group-hover/name:text-blue-600 shrink-0 opacity-0 group-hover/edit:opacity-100 transition-opacity"
+                      aria-hidden="true"
                     />
                   )}
                 </div>
@@ -140,14 +141,14 @@ const MatchCard = React.memo(
           }`}
           title={!readOnly ? 'Hacer clic para modificar título y formato' : undefined}
         >
-          {isFinal && <Trophy size={14} />}
+          {isFinal && <Trophy size={14} aria-hidden="true" />}
           {match.title}
-          {isFinal && <Trophy size={14} />}
-          {!readOnly && <Edit2 size={10} className="opacity-50" />}
+          {isFinal && <Trophy size={14} aria-hidden="true" />}
+          {!readOnly && <Edit2 size={10} className="opacity-50" aria-hidden="true" />}
         </div>
         <div className="flex justify-between items-center bg-slate-50 border-b border-slate-200 px-2 py-1.5">
           <div className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider flex items-center gap-1">
-            <Calendar size={10} /> {match.format}
+            <Calendar size={10} aria-hidden="true" /> {match.format}
           </div>
           <div className="flex gap-1 justify-end pr-0.5">
             {match.scores.map((_, i) => {

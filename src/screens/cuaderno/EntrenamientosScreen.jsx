@@ -142,7 +142,7 @@ export default function EntrenamientosScreen() {
           onClick={() => navigate(`/teams/${teamId}/cuaderno`)}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
         >
-          <ArrowLeft size={16} /> Cuaderno
+          <ArrowLeft size={16} aria-hidden="true" /> Cuaderno
         </button>
 
         {/* Navigation */}
@@ -153,7 +153,7 @@ export default function EntrenamientosScreen() {
             className="p-2 rounded-lg hover:bg-slate-100 disabled:opacity-30 transition"
             title="Entrenamiento anterior"
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={20} aria-hidden="true" />
           </button>
           <span className="text-sm font-semibold text-slate-600 min-w-[80px] text-center">
             {current ? `${effectiveIndex + 1} / ${pages.length}` : '—'}
@@ -164,7 +164,7 @@ export default function EntrenamientosScreen() {
             className="p-2 rounded-lg hover:bg-slate-100 disabled:opacity-30 transition"
             title="Siguiente entrenamiento"
           >
-            <ChevronRight size={20} />
+            <ChevronRight size={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -175,17 +175,18 @@ export default function EntrenamientosScreen() {
               className={`p-2 rounded-lg transition ${searchOpen ? 'bg-blue-100 text-blue-700' : 'hover:bg-slate-100 text-slate-500'}`}
               title="Buscar entrenamiento"
             >
-              <Search size={18} />
+              <Search size={18} aria-hidden="true" />
             </button>
             {searchOpen && (
               <div className="absolute right-0 top-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl w-72 z-20">
                 <div className="p-3 border-b border-slate-100 flex items-center gap-2">
-                  <Search size={14} className="text-slate-400" />
+                  <Search size={14} className="text-slate-400" aria-hidden="true" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Nº sesión o fecha..."
+                    aria-label="Buscar entrenamiento"
                     className="flex-1 text-sm focus:outline-none"
                     autoFocus
                   />
@@ -195,7 +196,7 @@ export default function EntrenamientosScreen() {
                       aria-label="Limpiar búsqueda"
                       className="text-slate-400 hover:text-slate-600"
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   )}
                 </div>
@@ -237,7 +238,7 @@ export default function EntrenamientosScreen() {
             onClick={() => window.print()}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
           >
-            <Printer className="w-4 h-4" /> Imprimir
+            <Printer className="w-4 h-4" aria-hidden="true" /> Imprimir
           </button>
         </div>
       </div>
@@ -359,7 +360,7 @@ export default function EntrenamientosScreen() {
                     onClick={() => navigate(`/teams/${teamId}/trainings/${current.training.id}`)}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition font-sans"
                   >
-                    Editar entrenamiento <ArrowRight size={16} />
+                    Editar entrenamiento <ArrowRight size={16} aria-hidden="true" />
                   </button>
                 </div>
               </>

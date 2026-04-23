@@ -29,7 +29,7 @@ export default function FavoriteToggle({ active, onToggle, size = 16, className 
       disabled={pending}
       className={`${base} ${activeCls} ${className}`}
     >
-      <Star size={size} fill={active ? 'currentColor' : 'none'} />
+      <Star size={size} fill={active ? 'currentColor' : 'none'} aria-hidden="true" />
     </button>
   );
 }

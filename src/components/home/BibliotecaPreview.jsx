@@ -22,7 +22,7 @@ function DiscoveryStrip({ insights, navigate }) {
           onClick={() => navigate('/exercises#favoritos')}
           className={`${base} bg-amber-50 text-amber-700 hover:bg-amber-100`}
         >
-          <Star size={11} fill="currentColor" /> {favoritesCount} fav.
+          <Star size={11} fill="currentColor" aria-hidden="true" /> {favoritesCount} fav.
         </button>
       )}
       {recentlyCount > 0 && (
@@ -30,7 +30,7 @@ function DiscoveryStrip({ insights, navigate }) {
           onClick={() => navigate('/exercises#recien')}
           className={`${base} bg-blue-50 text-blue-700 hover:bg-blue-100`}
         >
-          <Clock size={11} /> {recentlyCount} recientes
+          <Clock size={11} aria-hidden="true" /> {recentlyCount} recientes
         </button>
       )}
       {trendingCount > 0 && (
@@ -38,7 +38,7 @@ function DiscoveryStrip({ insights, navigate }) {
           onClick={() => navigate('/exercises#tendencias')}
           className={`${base} bg-emerald-50 text-emerald-700 hover:bg-emerald-100`}
         >
-          <TrendingUp size={11} /> {trendingCount} en tendencia
+          <TrendingUp size={11} aria-hidden="true" /> {trendingCount} en tendencia
         </button>
       )}
     </div>
@@ -54,7 +54,7 @@ export default function BibliotecaPreview({ exercises, totalCount, navigate, ins
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left"
       >
         <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
-          <BookOpen size={18} className="text-rose-600" />
+          <BookOpen size={18} className="text-rose-600" aria-hidden="true" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-slate-800">Biblioteca de ejercicios</p>
@@ -62,7 +62,7 @@ export default function BibliotecaPreview({ exercises, totalCount, navigate, ins
             {totalCount > 0 ? `${totalCount} ${totalCount === 1 ? 'ejercicio' : 'ejercicios'}` : 'Vacía'}
           </p>
         </div>
-        <ChevronRight size={16} className="text-slate-400 shrink-0" />
+        <ChevronRight size={16} className="text-slate-400 shrink-0" aria-hidden="true" />
       </button>
 
       {hasAny ? (
@@ -80,7 +80,7 @@ export default function BibliotecaPreview({ exercises, totalCount, navigate, ins
                     </p>
                     <p className="text-xs text-slate-500 truncate">{exerciseSummary(ex)}</p>
                   </div>
-                  <ChevronRight size={14} className="text-slate-300 shrink-0" />
+                  <ChevronRight size={14} className="text-slate-300 shrink-0" aria-hidden="true" />
                 </button>
               </li>
             ))}
@@ -94,7 +94,7 @@ export default function BibliotecaPreview({ exercises, totalCount, navigate, ins
             onClick={() => navigate('/exercises')}
             className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition"
           >
-            <Plus size={14} /> Crear
+            <Plus size={14} aria-hidden="true" /> Crear
           </button>
         </div>
       )}

@@ -33,7 +33,7 @@ export default function UsageBadge({ count, lastUsedMs, now, variant = 'subtle' 
 
   return (
     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${toneCls}`}>
-      <Clock size={10} />
+      <Clock size={10} aria-hidden="true" />
       {countLabel && <span>{countLabel}</span>}
       {countLabel && timeLabel && <span aria-hidden="true">·</span>}
       {timeLabel && <span>{timeLabel}</span>}

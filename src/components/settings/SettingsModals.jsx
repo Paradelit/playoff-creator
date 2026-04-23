@@ -67,7 +67,7 @@ export function DeleteDataModal({ setShowDeleteDataModal, deletingData, handleDe
     >
       <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center shrink-0" aria-hidden="true">
-          <AlertTriangle size={20} className="text-red-600" />
+          <AlertTriangle size={20} className="text-red-600" aria-hidden="true" />
         </div>
         <h3 id={titleId} className="text-lg font-bold text-slate-800">
           ¿Borrar todos tus datos?
@@ -130,7 +130,7 @@ export function DeleteAccountModal({
           className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0"
           aria-hidden="true"
         >
-          <Check size={20} className="text-emerald-600" />
+          <Check size={20} className="text-emerald-600" aria-hidden="true" />
         </div>
         <h3 id={titleId} className="text-lg font-bold text-slate-800">
           Datos eliminados

@@ -52,9 +52,9 @@ export default function UploadScreen({ pendingTeamName }) {
             onClick={() => setAppMode('dashboard')}
             className="absolute left-6 top-8 text-blue-200 hover:text-white flex items-center gap-1 transition-colors"
           >
-            <ChevronLeft size={20} /> Volver
+            <ChevronLeft size={20} aria-hidden="true" /> Volver
           </button>
-          <Trophy size={48} className="mx-auto mb-4 text-amber-400" />
+          <Trophy size={48} className="mx-auto mb-4 text-amber-400" aria-hidden="true" />
           <h1 className="text-3xl font-bold tracking-wide">Crear Torneo</h1>
 
           <div className="flex bg-blue-800 rounded-lg p-1 mt-6 max-w-xl mx-auto">
@@ -62,19 +62,19 @@ export default function UploadScreen({ pendingTeamName }) {
               onClick={() => setCreationTab('manual')}
               className={`flex-1 py-2 px-3 text-sm font-semibold rounded-md flex items-center justify-center gap-2 transition-colors ${creationTab === 'manual' ? 'bg-white text-blue-900 shadow-sm' : 'text-blue-200 hover:text-white'}`}
             >
-              <PencilRuler size={16} /> Desde Cero
+              <PencilRuler size={16} aria-hidden="true" /> Desde Cero
             </button>
             <button
               onClick={() => setCreationTab('import')}
               className={`flex-1 py-2 px-3 text-sm font-semibold rounded-md flex items-center justify-center gap-2 transition-colors ${creationTab === 'import' ? 'bg-white text-blue-900 shadow-sm' : 'text-blue-200 hover:text-white'}`}
             >
-              <Upload size={16} /> Importar
+              <Upload size={16} aria-hidden="true" /> Importar
             </button>
             <button
               onClick={() => setCreationTab('ia')}
               className={`flex-1 py-2 px-3 text-sm font-semibold rounded-md flex items-center justify-center gap-2 transition-colors ${creationTab === 'ia' ? 'bg-white text-blue-900 shadow-sm' : 'text-blue-200 hover:text-white'}`}
             >
-              <Bot size={16} /> Con IA
+              <Bot size={16} aria-hidden="true" /> Con IA
             </button>
           </div>
         </div>
@@ -82,15 +82,18 @@ export default function UploadScreen({ pendingTeamName }) {
         <div className="p-8">
           {pendingTeamName && (
             <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 text-sm text-blue-700 font-semibold mb-6">
-              <ShieldHalf size={15} />
+              <ShieldHalf size={15} aria-hidden="true" />
               Torneo para: <span className="font-bold">{pendingTeamName}</span>
             </div>
           )}
 
           {creationTab !== 'import' && (
             <div className="mb-6">
-              <label className="block text-sm font-bold text-slate-700 mb-2">Nombre del Torneo</label>
+              <label htmlFor="bracket-name" className="block text-sm font-bold text-slate-700 mb-2">
+                Nombre del Torneo
+              </label>
               <input
+                id="bracket-name"
                 type="text"
                 value={newBracketName}
                 onChange={(e) => {
@@ -119,12 +122,12 @@ export default function UploadScreen({ pendingTeamName }) {
                   />
                   {basesFile ? (
                     <div className="flex flex-col items-center">
-                      <CheckCircle size={32} className="text-indigo-600" />{' '}
+                      <CheckCircle size={32} className="text-indigo-600" aria-hidden="true" />{' '}
                       <span className="text-xs mt-1 truncate w-full px-2">{basesFile.name}</span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center text-slate-500">
-                      <FileText size={32} /> <span className="font-medium">1. Subir Bases</span>
+                      <FileText size={32} aria-hidden="true" /> <span className="font-medium">1. Subir Bases</span>
                     </div>
                   )}
                 </div>
@@ -141,23 +144,28 @@ export default function UploadScreen({ pendingTeamName }) {
                   />
                   {clasifFile ? (
                     <div className="flex flex-col items-center">
-                      <CheckCircle size={32} className="text-indigo-600" />{' '}
+                      <CheckCircle size={32} className="text-indigo-600" aria-hidden="true" />{' '}
                       <span className="text-xs mt-1 truncate w-full px-2">{clasifFile.name}</span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center text-slate-500">
-                      <UploadCloud size={32} /> <span className="font-medium">2. Subir Clasificación</span>
+                      <UploadCloud size={32} aria-hidden="true" />{' '}
+                      <span className="font-medium">2. Subir Clasificación</span>
                     </div>
                   )}
                 </div>
               </div>
 
               <div className="mb-2">
-                <label className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
-                  <MessageSquare size={16} className="text-slate-500" />
+                <label
+                  htmlFor="custom-prompt"
+                  className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2"
+                >
+                  <MessageSquare size={16} className="text-slate-500" aria-hidden="true" />
                   Contexto Adicional (Opcional)
                 </label>
                 <textarea
+                  id="custom-prompt"
                   value={customPrompt}
                   onChange={(e) => setCustomPrompt(e.target.value)}
                   placeholder="Puedes darle pistas a la IA: 'Presta mucha atención al orden matemático de los cruces de Benjamín', 'Prioriza a UROS DE RIVAS', etc..."
@@ -168,7 +176,7 @@ export default function UploadScreen({ pendingTeamName }) {
 
               {isProcessing ? (
                 <div className="mt-6 flex flex-col items-center p-4 bg-indigo-50 rounded-xl">
-                  <Loader2 size={32} className="text-indigo-600 animate-spin mb-3" />
+                  <Loader2 size={32} className="text-indigo-600 animate-spin mb-3" aria-hidden="true" />
                   <span className="text-indigo-800 text-sm font-medium">{processStatus}</span>
                 </div>
               ) : (
@@ -177,7 +185,7 @@ export default function UploadScreen({ pendingTeamName }) {
                   disabled={!basesFile || !clasifFile || !newBracketName.trim()}
                   className="mt-6 w-full flex items-center justify-center gap-2 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Analizar y Construir Cuadro <ArrowRight size={20} />
+                  Analizar y Construir Cuadro <ArrowRight size={20} aria-hidden="true" />
                 </button>
               )}
             </>
@@ -187,8 +195,11 @@ export default function UploadScreen({ pendingTeamName }) {
             <>
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Número de Equipos</label>
+                  <label htmlFor="manual-team-count" className="block text-sm font-bold text-slate-700 mb-2">
+                    Número de Equipos
+                  </label>
                   <select
+                    id="manual-team-count"
                     value={manualTeamCount}
                     onChange={(e) => setManualTeamCount(parseInt(e.target.value))}
                     className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
@@ -200,8 +211,11 @@ export default function UploadScreen({ pendingTeamName }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Formato Defecto</label>
+                  <label htmlFor="manual-format" className="block text-sm font-bold text-slate-700 mb-2">
+                    Formato Defecto
+                  </label>
                   <select
+                    id="manual-format"
                     value={manualFormat}
                     onChange={(e) => setManualFormat(e.target.value)}
                     className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
@@ -222,7 +236,7 @@ export default function UploadScreen({ pendingTeamName }) {
                 disabled={!newBracketName.trim()}
                 className="mt-2 w-full flex items-center justify-center gap-2 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Generar Cuadro Vacío <ArrowRight size={20} />
+                Generar Cuadro Vacío <ArrowRight size={20} aria-hidden="true" />
               </button>
             </>
           )}
@@ -234,7 +248,7 @@ export default function UploadScreen({ pendingTeamName }) {
                 className="border-2 border-dashed border-slate-300 hover:border-indigo-400 rounded-xl p-10 text-center cursor-pointer transition-colors"
                 onClick={() => fileInputImport.current?.click()}
               >
-                <Upload size={36} className="mx-auto text-slate-400 mb-3" />
+                <Upload size={36} className="mx-auto text-slate-400 mb-3" aria-hidden="true" />
                 <p className="font-medium text-slate-700 mb-1">Selecciona un archivo .json</p>
                 <p className="text-xs text-slate-500">
                   Sube un cuadro exportado desde otro usuario. Podrás revisarlo y editarlo antes de guardar.

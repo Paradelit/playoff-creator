@@ -56,7 +56,7 @@ export default function NotasScreen() {
           onClick={() => navigate(`/teams/${teamId}/cuaderno`)}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
         >
-          <ArrowLeft size={16} /> Cuaderno
+          <ArrowLeft size={16} aria-hidden="true" /> Cuaderno
         </button>
         <div className="flex items-center gap-3">
           <span className="text-xs font-semibold text-slate-400">
@@ -67,7 +67,7 @@ export default function NotasScreen() {
             onClick={() => window.print()}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
           >
-            <Printer size={15} /> Imprimir A4
+            <Printer size={15} aria-hidden="true" /> Imprimir A4
           </button>
         </div>
       </div>
@@ -96,6 +96,7 @@ export default function NotasScreen() {
           value={texto}
           onChange={(e) => handleChange(e.target.value)}
           placeholder="Escribe aquí tus apuntes y notas..."
+          aria-label="Área de notas"
           className="w-full min-h-[550px] resize-none border-none focus:outline-none bg-transparent font-sans text-sm leading-relaxed text-gray-800 placeholder-gray-300"
         />
       </div>

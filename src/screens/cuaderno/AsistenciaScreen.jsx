@@ -33,9 +33,9 @@ function ExplicacionAsistencia({ open, onToggle }) {
         onClick={onToggle}
         className="print:hidden flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition mb-2"
       >
-        <Info size={15} />
+        <Info size={15} aria-hidden="true" />
         Instrucciones
-        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        {open ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
       </button>
       <div className={`${open ? 'block' : 'hidden'} print:block`}>
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-[12px] leading-relaxed text-gray-800 font-sans print:bg-transparent print:border-none print:p-0 print:text-[10px]">
@@ -237,7 +237,7 @@ export default function AsistenciaScreen() {
           onClick={() => navigate(`/teams/${teamId}/cuaderno`)}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
         >
-          <ArrowLeft size={16} /> Cuaderno
+          <ArrowLeft size={16} aria-hidden="true" /> Cuaderno
         </button>
         {!isResumen && (
           <div className="flex items-center gap-2">
@@ -245,14 +245,14 @@ export default function AsistenciaScreen() {
               onClick={() => addManualSession(activeMonth)}
               className="flex items-center px-3 py-1 bg-white border border-gray-400 text-sm hover:bg-gray-50 transition shadow-sm rounded"
             >
-              <Plus className="w-4 h-4 mr-1" /> Sesión
+              <Plus className="w-4 h-4 mr-1" aria-hidden="true" /> Sesión
             </button>
             <button
               onClick={() => removeManualSession(activeMonth)}
               disabled={!manualSessions[activeMonth]?.length}
               className="flex items-center px-3 py-1 bg-white border border-red-300 text-red-700 text-sm hover:bg-red-50 transition shadow-sm rounded disabled:opacity-40"
             >
-              <Minus className="w-4 h-4 mr-1" /> Sesión
+              <Minus className="w-4 h-4 mr-1" aria-hidden="true" /> Sesión
             </button>
           </div>
         )}
@@ -265,13 +265,13 @@ export default function AsistenciaScreen() {
             onClick={() => setShowResetConfirm(true)}
             className="flex items-center px-3 py-1 bg-white border border-gray-400 text-gray-700 text-sm hover:bg-gray-50 transition shadow-sm rounded"
           >
-            <RotateCcw className="w-4 h-4 mr-1" /> Limpiar
+            <RotateCcw className="w-4 h-4 mr-1" aria-hidden="true" /> Limpiar
           </button>
           <button
             onClick={() => window.print()}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
           >
-            <Printer size={15} /> Imprimir A4
+            <Printer size={15} aria-hidden="true" /> Imprimir A4
           </button>
         </div>
       </div>
@@ -330,7 +330,7 @@ export default function AsistenciaScreen() {
               {/* Info de sincronización */}
               {monthSessions.some((s) => s.isCalendar) && (
                 <div className="print:hidden flex items-center gap-2 text-[11px] text-emerald-600 font-sans mb-3">
-                  <CalendarDays size={13} />
+                  <CalendarDays size={13} aria-hidden="true" />
                   <span>{monthSessions.filter((s) => s.isCalendar).length} sesiones cargadas del calendario</span>
                 </div>
               )}
@@ -361,6 +361,7 @@ export default function AsistenciaScreen() {
                                 value={sess.label}
                                 onChange={(e) => updateManualLabel(activeMonth, manualIdx, e.target.value)}
                                 placeholder="X-0"
+                                aria-label="Etiqueta de sesión manual"
                                 className="w-full text-center text-[10px] font-bold bg-transparent focus:outline-none"
                               />
                             )}
@@ -396,6 +397,7 @@ export default function AsistenciaScreen() {
                                   type="text"
                                   value={code}
                                   onChange={(e) => handleCellInput(e, sess.id, member.id)}
+                                  aria-label={`Asistencia de ${member.nombre} en sesión ${sess.label}`}
                                   className={`w-full h-full text-center font-bold text-[12px] p-1 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-inset bg-transparent ${code === 'F' ? 'text-white' : code === '-' ? 'text-white' : code === 'L+' ? 'text-white' : ''}`}
                                   maxLength={2}
                                 />
@@ -429,7 +431,7 @@ export default function AsistenciaScreen() {
 
               {monthSessions.length === 0 && (
                 <div className="text-center text-gray-400 font-sans text-sm py-12">
-                  <CalendarDays size={32} className="mx-auto mb-3 text-gray-300" />
+                  <CalendarDays size={32} className="mx-auto mb-3 text-gray-300" aria-hidden="true" />
                   <p>No hay sesiones de entrenamiento en {currentMonthMeta?.full}.</p>
                   <p className="text-xs mt-1">
                     Añade entrenamientos en el calendario o pulsa «+ Sesión» para añadir manualmente.

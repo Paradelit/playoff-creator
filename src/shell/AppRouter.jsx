@@ -40,7 +40,7 @@ function ScrollToTop() {
 function LazyFallback() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-      <Loader2 size={48} className="text-blue-600 animate-spin" />
+      <Loader2 size={48} className="text-blue-600 animate-spin" aria-hidden="true" />
     </div>
   );
 }

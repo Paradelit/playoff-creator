@@ -96,7 +96,7 @@ export default function FilterSidebar({
               onChange={(e) => onSetFilter('favoritesOnly', e.target.checked)}
               className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-400"
             />
-            <Star size={14} className="text-amber-500" fill="currentColor" />
+            <Star size={14} className="text-amber-500" fill="currentColor" aria-hidden="true" />
             Solo favoritos
           </label>
         </FilterSection>

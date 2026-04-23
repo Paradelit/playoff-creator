@@ -30,7 +30,7 @@ const TeamSearchableSelect = React.memo(({ teams, selectedTeam, onSelectTeam }) 
         className="flex items-center gap-2 bg-blue-800/50 px-2 h-9 rounded-lg border border-blue-700 cursor-text"
         onClick={() => setIsOpen(true)}
       >
-        <Star size={16} className="text-fuchsia-300 shrink-0" />
+        <Star size={16} className="text-fuchsia-300 shrink-0" aria-hidden="true" />
         <input
           type="text"
           value={isOpen ? searchTerm : selectedTeam || ''}
@@ -52,7 +52,7 @@ const TeamSearchableSelect = React.memo(({ teams, selectedTeam, onSelectTeam }) 
             className="text-blue-300 hover:text-white p-1 shrink-0"
             title="Quitar equipo destacado"
           >
-            <X size={14} />
+            <X size={14} aria-hidden="true" />
           </button>
         )}
       </div>

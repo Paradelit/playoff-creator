@@ -53,7 +53,7 @@ function TeamCard({ team, idx, nextMatch, activePlayoff, navigate }) {
           </p>
           <h2 className="text-xl font-bold mt-0.5 leading-tight truncate">{teamDisplayName(team)}</h2>
         </div>
-        <ShieldHalf size={22} className="text-white/30 shrink-0 mt-0.5" />
+        <ShieldHalf size={22} className="text-white/30 shrink-0 mt-0.5" aria-hidden="true" />
       </div>
       {nextMatch && (
         <p className="text-xs text-blue-200/80 mt-2 truncate">
@@ -144,10 +144,13 @@ function TeamsSection({
 
 function TodaySection({ todayEvents, teams, trainingNumbers, handleEventAction, creatingTraining, navigate }) {
   return (
-    <section>
+    <section aria-labelledby="today-heading">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-          <Clock size={13} /> Hoy
+        <h2
+          id="today-heading"
+          className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5"
+        >
+          <Clock size={13} aria-hidden="true" /> Hoy
         </h2>
         <button
           onClick={() => navigate('/calendar')}
@@ -158,7 +161,7 @@ function TodaySection({ todayEvents, teams, trainingNumbers, handleEventAction, 
       </div>
       {todayEvents.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center">
-          <CalendarDays size={28} className="mx-auto text-slate-300 mb-2" />
+          <CalendarDays size={28} className="mx-auto text-slate-300 mb-2" aria-hidden="true" />
           <p className="text-slate-500 text-sm font-medium">Sin eventos hoy</p>
         </div>
       ) : (
@@ -184,7 +187,7 @@ function WeeklySummaryChip({ weeklySummary }) {
   if (!weeklySummary || weeklySummary.total === 0) return null;
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex items-center flex-wrap gap-2 text-xs text-slate-600 font-medium">
-      <CalendarDays size={14} className="text-slate-400 shrink-0" />
+      <CalendarDays size={14} className="text-slate-400 shrink-0" aria-hidden="true" />
       <span>Resumen:</span>
       {weeklySummary.entrenamientos > 0 && (
         <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">
@@ -212,7 +215,7 @@ function TournamentRow({ p, navigate }) {
       className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex items-center gap-3 hover:shadow-md transition-shadow text-left w-full"
     >
       <div className="w-11 h-11 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-        <Trophy size={20} className="text-amber-600" />
+        <Trophy size={20} className="text-amber-600" aria-hidden="true" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-slate-800 text-sm truncate">{p.name}</p>
@@ -231,7 +234,7 @@ function TournamentRow({ p, navigate }) {
           <p className="text-xs text-slate-400 mt-0.5">Esperando rival...</p>
         )}
       </div>
-      <ChevronRight size={16} className="text-slate-400 shrink-0" />
+      <ChevronRight size={16} className="text-slate-400 shrink-0" aria-hidden="true" />
     </button>
   );
 }
@@ -341,7 +344,7 @@ export default function HomeScreen() {
               aria-label="Ajustes"
               title="Ajustes"
             >
-              <Settings size={18} />
+              <Settings size={18} aria-hidden="true" />
             </button>
             <button
               onClick={handleLogout}
@@ -349,7 +352,7 @@ export default function HomeScreen() {
               aria-label="Cerrar sesión"
               title="Cerrar sesión"
             >
-              <LogOut size={18} />
+              <LogOut size={18} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -407,8 +410,13 @@ export default function HomeScreen() {
             <WeekStrip days={weekStrip} navigate={navigate} />
             <WeeklySummaryChip weeklySummary={weeklySummary} />
             {activePlayoffs.length > 0 && (
-              <section>
-                <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Torneos</h2>
+              <section aria-labelledby="tournaments-heading">
+                <h2
+                  id="tournaments-heading"
+                  className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2"
+                >
+                  Torneos
+                </h2>
                 <div className="flex flex-col gap-2">
                   {activePlayoffs.map((p) => (
                     <TournamentRow key={p.id} p={p} navigate={navigate} />

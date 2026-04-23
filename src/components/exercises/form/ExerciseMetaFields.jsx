@@ -30,16 +30,16 @@ export default function ExerciseMetaFields({ exercise, onChange, defaultOpen = f
         className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition"
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <Sliders size={15} className="text-slate-400" />
+          <Sliders size={15} className="text-slate-400" aria-hidden="true" />
           Más detalles
           {anySet && !open && (
             <span className="ml-1 inline-block w-2 h-2 rounded-full bg-emerald-500" aria-label="Con datos" />
           )}
         </span>
         {open ? (
-          <ChevronDown size={16} className="text-slate-400" />
+          <ChevronDown size={16} className="text-slate-400" aria-hidden="true" />
         ) : (
-          <ChevronRight size={16} className="text-slate-400" />
+          <ChevronRight size={16} className="text-slate-400" aria-hidden="true" />
         )}
       </button>
 

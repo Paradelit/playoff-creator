@@ -84,21 +84,21 @@ export default function JugadoresScreen() {
           onClick={() => navigate(`/teams/${teamId}/cuaderno`)}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
         >
-          <ArrowLeft size={16} /> Cuaderno
+          <ArrowLeft size={16} aria-hidden="true" /> Cuaderno
         </button>
         <div className="flex items-center gap-2">
           <button
             onClick={addRow}
             className="flex items-center px-3 py-1 bg-white border border-gray-400 text-sm hover:bg-gray-50 transition shadow-sm rounded"
           >
-            <Plus className="w-4 h-4 mr-1" /> Añadir Fila
+            <Plus className="w-4 h-4 mr-1" aria-hidden="true" /> Añadir Fila
           </button>
           <button
             onClick={removeRow}
             disabled={jugadores.length <= 3}
             className="flex items-center px-3 py-1 bg-white border border-red-300 text-red-700 text-sm hover:bg-red-50 transition shadow-sm rounded disabled:opacity-40"
           >
-            <Minus className="w-4 h-4 mr-1" /> Quitar Fila
+            <Minus className="w-4 h-4 mr-1" aria-hidden="true" /> Quitar Fila
           </button>
         </div>
         <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ export default function JugadoresScreen() {
             onClick={() => window.print()}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
           >
-            <Printer size={15} /> Imprimir A4
+            <Printer size={15} aria-hidden="true" /> Imprimir A4
           </button>
         </div>
       </div>

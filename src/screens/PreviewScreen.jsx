@@ -78,7 +78,7 @@ export default function PreviewScreen() {
             aria-label="Volver"
             className="p-2 bg-blue-800 rounded-lg shrink-0"
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={20} aria-hidden="true" />
           </button>
           <div className="min-w-0 flex flex-col gap-0.5">
             <input
@@ -86,12 +86,14 @@ export default function PreviewScreen() {
               value={pendingBracket.name}
               onChange={(e) => setPendingBracket((prev) => ({ ...prev, name: e.target.value }))}
               placeholder="Nombre del cuadro"
+              aria-label="Nombre del cuadro"
             />
             <input
               className="text-blue-200 text-xs font-semibold uppercase bg-transparent border-b border-blue-700 focus:outline-none focus:border-blue-300 truncate w-full"
               value={pendingBracket.tournamentNameDetected || ''}
               onChange={(e) => setPendingBracket((prev) => ({ ...prev, tournamentNameDetected: e.target.value }))}
               placeholder="Nombre del torneo"
+              aria-label="Nombre del torneo"
             />
           </div>
         </div>
@@ -102,7 +104,7 @@ export default function PreviewScreen() {
               aria-label="Reducir zoom"
               className="p-2"
             >
-              <ZoomOut size={18} />
+              <ZoomOut size={18} aria-hidden="true" />
             </button>
             <div className="px-3 py-2 text-sm border-x border-blue-700 w-16 text-center">
               {Math.round(previewZoom * 100)}%
@@ -112,7 +114,7 @@ export default function PreviewScreen() {
               aria-label="Aumentar zoom"
               className="p-2"
             >
-              <ZoomIn size={18} />
+              <ZoomIn size={18} aria-hidden="true" />
             </button>
           </div>
           <div className="flex bg-blue-800 rounded-lg border border-blue-700">
@@ -123,7 +125,7 @@ export default function PreviewScreen() {
               title="Deshacer (Ctrl+Z)"
               className="p-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <Undo2 size={18} />
+              <Undo2 size={18} aria-hidden="true" />
             </button>
             <button
               onClick={handleRedo}
@@ -132,7 +134,7 @@ export default function PreviewScreen() {
               title="Rehacer (Ctrl+Y)"
               className="p-2 border-l border-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <Redo2 size={18} />
+              <Redo2 size={18} aria-hidden="true" />
             </button>
           </div>
           <button
@@ -148,7 +150,7 @@ export default function PreviewScreen() {
             onClick={handleConfirmBracket}
             className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-bold rounded-lg flex items-center gap-2"
           >
-            <CheckCircle size={16} /> Confirmar y guardar
+            <CheckCircle size={16} aria-hidden="true" /> Confirmar y guardar
           </button>
         </div>
       </header>
@@ -156,7 +158,7 @@ export default function PreviewScreen() {
       {/* Team selector banner */}
       <div className="bg-blue-950 border-b border-blue-800 px-4 py-2.5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <ShieldHalf size={16} className="text-amber-400 shrink-0" />
+          <ShieldHalf size={16} className="text-amber-400 shrink-0" aria-hidden="true" />
           <span className="text-blue-300 text-sm font-medium shrink-0">Mi equipo en el cuadro:</span>
           <div className="relative">
             <button
@@ -164,7 +166,7 @@ export default function PreviewScreen() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition ${myTeam ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-blue-800 text-blue-300 border border-blue-700'}`}
             >
               {myTeam || 'Seleccionar equipo'}
-              <ChevronDown size={14} />
+              <ChevronDown size={14} aria-hidden="true" />
             </button>
             {showTeamPicker && (
               <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-2xl border border-slate-200 max-h-60 overflow-y-auto z-50 min-w-[240px]">

@@ -16,8 +16,8 @@ function sessionBgClass(s) {
 }
 
 function sessionIcon(s) {
-  if (s.tipo === 'playoff' || s.tipo === 'partido') return <Trophy size={14} />;
-  return <ClipboardList size={14} />;
+  if (s.tipo === 'playoff' || s.tipo === 'partido') return <Trophy size={14} aria-hidden="true" />;
+  return <ClipboardList size={14} aria-hidden="true" />;
 }
 
 function sessionTitle(s, getTrainingNum) {
@@ -113,11 +113,11 @@ function UntimedRow({ session, onSelectSession, getTrainingNum }) {
         className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isPlayoff ? 'bg-amber-100' : isPartido ? 'bg-rose-100' : 'bg-blue-100'}`}
       >
         {isPlayoff ? (
-          <Trophy size={16} className="text-amber-600" />
+          <Trophy size={16} className="text-amber-600" aria-hidden="true" />
         ) : isPartido ? (
-          <Trophy size={16} className="text-rose-600" />
+          <Trophy size={16} className="text-rose-600" aria-hidden="true" />
         ) : (
-          <ClipboardList size={16} className="text-blue-600" />
+          <ClipboardList size={16} className="text-blue-600" aria-hidden="true" />
         )}
       </div>
       <div className="flex-1 min-w-0">
@@ -257,7 +257,7 @@ export default function DayView({ sessions, loading, currentDate, onSelectSessio
 
         {!hasAnySession && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 pointer-events-none">
-            <CalendarDays size={40} className="mb-3 text-slate-300" />
+            <CalendarDays size={40} className="mb-3 text-slate-300" aria-hidden="true" />
             <p className="text-sm font-medium">No hay sesiones este día</p>
           </div>
         )}

@@ -102,7 +102,7 @@ export default function TeamsScreen() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-6">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <ShieldHalf className="text-amber-500" size={36} /> Mis Equipos
+              <ShieldHalf className="text-amber-500" size={36} aria-hidden="true" /> Mis Equipos
             </h1>
             <p className="text-slate-500 mt-2">Gestiona plantillas, jugadores y staff técnico.</p>
           </div>
@@ -113,7 +113,7 @@ export default function TeamsScreen() {
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-transform hover:scale-105"
           >
-            <Plus size={20} /> Nuevo equipo
+            <Plus size={20} aria-hidden="true" /> Nuevo equipo
           </button>
         </div>
 
@@ -123,7 +123,7 @@ export default function TeamsScreen() {
           </div>
         ) : teams.length === 0 ? (
           <div className="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-16 text-center shadow-sm">
-            <FolderOpen size={64} className="mx-auto text-slate-300 mb-4" />
+            <FolderOpen size={64} className="mx-auto text-slate-300 mb-4" aria-hidden="true" />
             <h3 className="text-xl font-bold text-slate-700 mb-2">Todavía no tienes equipos</h3>
             <p className="text-slate-500 mb-6">Crea tu primer equipo para empezar a gestionar plantillas.</p>
             <button
@@ -206,14 +206,14 @@ export default function TeamsScreen() {
           >
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <ShieldHalf size={20} className="text-blue-600" /> Nuevo equipo
+                <ShieldHalf size={20} className="text-blue-600" aria-hidden="true" /> Nuevo equipo
               </h3>
               <button
                 onClick={() => setShowCreateModal(false)}
                 aria-label="Cerrar"
                 className="text-slate-400 hover:text-slate-600"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
 

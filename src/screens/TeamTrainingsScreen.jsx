@@ -65,7 +65,7 @@ export default function TeamTrainingsScreen() {
           onClick={() => navigate(`/teams/${teamId}/cuaderno`)}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition mb-6"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={16} aria-hidden="true" />
           Cuaderno
         </button>
 
@@ -73,11 +73,11 @@ export default function TeamTrainingsScreen() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-6">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <ClipboardList className="text-amber-500" size={36} /> Entrenamientos
+              <ClipboardList className="text-amber-500" size={36} aria-hidden="true" /> Entrenamientos
             </h1>
             {team && (
               <p className="text-slate-500 mt-1 flex items-center gap-1.5">
-                <ShieldHalf size={14} className="text-blue-600" />
+                <ShieldHalf size={14} className="text-blue-600" aria-hidden="true" />
                 {teamDisplayName(team)}
               </p>
             )}
@@ -87,14 +87,14 @@ export default function TeamTrainingsScreen() {
               onClick={() => navigate('/exercises')}
               className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm transition"
             >
-              <BookOpen size={16} /> Biblioteca
+              <BookOpen size={16} aria-hidden="true" /> Biblioteca
             </button>
             <button
               onClick={handleCreate}
               disabled={creating}
               className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-transform hover:scale-105 disabled:opacity-60"
             >
-              <Plus size={18} /> Nuevo entrenamiento
+              <Plus size={18} aria-hidden="true" /> Nuevo entrenamiento
             </button>
           </div>
         </div>
@@ -106,7 +106,7 @@ export default function TeamTrainingsScreen() {
           </div>
         ) : trainings.length === 0 ? (
           <div className="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-16 text-center shadow-sm">
-            <FolderOpen size={56} className="mx-auto text-slate-300 mb-4" />
+            <FolderOpen size={56} className="mx-auto text-slate-300 mb-4" aria-hidden="true" />
             <h3 className="text-lg font-bold text-slate-700 mb-2">Sin entrenamientos</h3>
             <p className="text-slate-500 mb-6 text-sm">Crea el primer entrenamiento para este equipo.</p>
             <button onClick={handleCreate} className="text-blue-600 font-bold hover:underline text-sm">
@@ -144,13 +144,13 @@ export default function TeamTrainingsScreen() {
                   onClick={() => navigate(`/teams/${teamId}/trainings/${t.id}`)}
                   className="text-blue-600 font-bold hover:text-blue-800 flex items-center gap-1 text-sm shrink-0"
                 >
-                  Abrir <ArrowRight size={15} />
+                  Abrir <ArrowRight size={15} aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => setDeletingId(t.id)}
                   className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={16} aria-hidden="true" />
                 </button>
               </div>
             ))}

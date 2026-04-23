@@ -134,7 +134,7 @@ export default function TeamDetailScreen() {
           onClick={() => navigate('/teams')}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition mb-4"
         >
-          <ArrowLeft size={16} /> Equipos
+          <ArrowLeft size={16} aria-hidden="true" /> Equipos
         </button>
 
         <div className="mb-6">
@@ -173,7 +173,7 @@ export default function TeamDetailScreen() {
               onClick={() => setEditingMember(emptyMember('staff'))}
               className="text-blue-600 font-bold hover:text-blue-800 flex items-center gap-1 text-sm transition"
             >
-              <Plus size={16} /> Añadir
+              <Plus size={16} aria-hidden="true" /> Añadir
             </button>
           </div>
           <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
@@ -206,7 +206,7 @@ export default function TeamDetailScreen() {
               onClick={() => setEditingMember(emptyMember('jugador'))}
               className="text-blue-600 font-bold hover:text-blue-800 flex items-center gap-1 text-sm transition"
             >
-              <Plus size={16} /> Añadir
+              <Plus size={16} aria-hidden="true" /> Añadir
             </button>
           </div>
           <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
@@ -239,7 +239,7 @@ export default function TeamDetailScreen() {
           >
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100 sticky top-0 bg-white rounded-t-2xl">
               <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <User size={18} className="text-blue-600" />
+                <User size={18} className="text-blue-600" aria-hidden="true" />
                 {editingMember.id ? 'Editar' : 'Añadir'} {editingMember.tipo === 'staff' ? 'staff' : 'jugador'}
               </h3>
               <button
@@ -247,13 +247,14 @@ export default function TeamDetailScreen() {
                 aria-label="Cerrar"
                 className="text-slate-400 hover:text-slate-600"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
 
             <form onSubmit={handleSaveMember} className="px-6 py-5 flex flex-col gap-4">
-              <Field label="Nombre *" error={memberErrors.nombre}>
+              <Field label="Nombre *" error={memberErrors.nombre} htmlFor="member-nombre">
                 <input
+                  id="member-nombre"
                   type="text"
                   required
                   value={editingMember.nombre}
@@ -267,16 +268,18 @@ export default function TeamDetailScreen() {
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Fecha de nacimiento">
+                <Field label="Fecha de nacimiento" htmlFor="member-fecha">
                   <input
+                    id="member-fecha"
                     type="date"
                     value={editingMember.fechaNacimiento || ''}
                     onChange={(e) => setEditingMember((m) => ({ ...m, fechaNacimiento: e.target.value }))}
                     className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
                 </Field>
-                <Field label="DNI / NIE">
+                <Field label="DNI / NIE" htmlFor="member-dni">
                   <input
+                    id="member-dni"
                     type="text"
                     value={editingMember.dni || ''}
                     onChange={(e) => setEditingMember((m) => ({ ...m, dni: e.target.value }))}
@@ -286,8 +289,9 @@ export default function TeamDetailScreen() {
                 </Field>
               </div>
 
-              <Field label="Alergias / notas médicas">
+              <Field label="Alergias / notas médicas" htmlFor="member-alergias">
                 <textarea
+                  id="member-alergias"
                   value={editingMember.alergias || ''}
                   onChange={(e) => setEditingMember((m) => ({ ...m, alergias: e.target.value }))}
                   placeholder="Sin alergias conocidas..."
@@ -297,8 +301,9 @@ export default function TeamDetailScreen() {
               </Field>
 
               {editingMember.tipo === 'staff' && (
-                <Field label="Rol">
+                <Field label="Rol" htmlFor="member-rol">
                   <select
+                    id="member-rol"
                     value={editingMember.rol || ''}
                     onChange={(e) => setEditingMember((m) => ({ ...m, rol: e.target.value }))}
                     className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
@@ -313,8 +318,9 @@ export default function TeamDetailScreen() {
 
               {editingMember.tipo === 'jugador' && (
                 <div className="grid grid-cols-3 gap-3">
-                  <Field label="Dorsal" error={memberErrors.dorsal}>
+                  <Field label="Dorsal" error={memberErrors.dorsal} htmlFor="member-dorsal">
                     <input
+                      id="member-dorsal"
                       type="number"
                       min="0"
                       max="99"
@@ -327,8 +333,9 @@ export default function TeamDetailScreen() {
                       className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${memberErrors.dorsal ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-blue-400'}`}
                     />
                   </Field>
-                  <Field label="Altura (cm)" error={memberErrors.altura}>
+                  <Field label="Altura (cm)" error={memberErrors.altura} htmlFor="member-altura">
                     <input
+                      id="member-altura"
                       type="number"
                       min="100"
                       max="250"
@@ -341,8 +348,9 @@ export default function TeamDetailScreen() {
                       className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${memberErrors.altura ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-blue-400'}`}
                     />
                   </Field>
-                  <Field label="Posición">
+                  <Field label="Posición" htmlFor="member-posicion">
                     <select
+                      id="member-posicion"
                       value={editingMember.posicion || ''}
                       onChange={(e) => setEditingMember((m) => ({ ...m, posicion: e.target.value }))}
                       className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
@@ -424,7 +432,7 @@ export default function TeamDetailScreen() {
                 aria-label="Cerrar"
                 className="text-slate-400 hover:text-slate-600"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
             <form onSubmit={handleSaveTeam} className="flex flex-col gap-4">
@@ -457,7 +465,7 @@ function MemberRow({ primary, secondary, onEdit, onDelete }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 last:border-0">
       <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center shrink-0">
-        <User size={15} className="text-slate-500" />
+        <User size={15} className="text-slate-500" aria-hidden="true" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-slate-800 text-sm truncate">{primary}</p>
@@ -469,14 +477,14 @@ function MemberRow({ primary, secondary, onEdit, onDelete }) {
           className="text-slate-400 hover:text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition-colors"
           title="Editar"
         >
-          <Pencil size={15} />
+          <Pencil size={15} aria-hidden="true" />
         </button>
         <button
           onClick={onDelete}
           className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors"
           title="Eliminar"
         >
-          <Trash2 size={15} />
+          <Trash2 size={15} aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -486,15 +494,17 @@ function MemberRow({ primary, secondary, onEdit, onDelete }) {
 function EmptySection({ text }) {
   return (
     <div className="flex items-center justify-center py-10 text-slate-400 text-sm gap-2">
-      <Users size={16} /> {text}
+      <Users size={16} aria-hidden="true" /> {text}
     </div>
   );
 }
 
-function Field({ label, error, children }) {
+function Field({ label, htmlFor, error, children }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-slate-600 mb-1.5">{label}</label>
+      <label htmlFor={htmlFor} className="block text-xs font-semibold text-slate-600 mb-1.5">
+        {label}
+      </label>
       {children}
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>

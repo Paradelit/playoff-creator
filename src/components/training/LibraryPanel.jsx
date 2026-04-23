@@ -26,14 +26,14 @@ export default function LibraryPanel({
       <div className="relative z-10 bg-white h-full w-full sm:shadow-2xl sm:border-l border-slate-200 flex flex-col animate-in slide-in-from-right duration-200">
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
           <h3 className="font-bold text-slate-800 flex items-center gap-2">
-            <BookOpen size={16} className="text-blue-600" /> Biblioteca
+            <BookOpen size={16} className="text-blue-600" aria-hidden="true" /> Biblioteca
           </h3>
           <button
             onClick={() => setLibraryPanel({ open: false, targetId: null })}
             aria-label="Cerrar"
             className="text-slate-400 hover:text-slate-600"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
         <div className="px-4 py-3 border-b border-slate-100 space-y-2">

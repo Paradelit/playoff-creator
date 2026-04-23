@@ -97,13 +97,13 @@ export default function BracketScreen() {
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 animate-in fade-in duration-700">
       {isProcessingResults && (
         <div className="fixed inset-0 bg-slate-900/80 z-[60] flex flex-col items-center justify-center p-4 backdrop-blur-sm">
-          <Loader2 size={48} className="text-indigo-400 animate-spin mb-4" />
+          <Loader2 size={48} className="text-indigo-400 animate-spin mb-4" aria-hidden="true" />
           <h3 className="text-2xl font-bold text-white mb-2">Autocompletando...</h3>
         </div>
       )}
       {isExportingImage && (
         <div className="fixed inset-0 bg-slate-900/70 z-[60] flex flex-col items-center justify-center p-4 backdrop-blur-sm">
-          <Loader2 size={48} className="text-white animate-spin mb-4" />
+          <Loader2 size={48} className="text-white animate-spin mb-4" aria-hidden="true" />
           <h3 className="text-xl font-bold text-white">Generando imagen...</h3>
         </div>
       )}
@@ -189,7 +189,7 @@ export default function BracketScreen() {
               aria-label="Volver"
               className="p-2 bg-blue-800 rounded-lg shrink-0"
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={20} aria-hidden="true" />
             </button>
             <div className="min-w-0">
               {editingBracketName ? (
@@ -236,17 +236,17 @@ export default function BracketScreen() {
                 </p>
                 {activeBracket.isShared && (
                   <span className="hidden sm:inline-flex items-center gap-1 bg-purple-500/30 text-purple-200 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    <Users size={9} /> Compartido
+                    <Users size={9} aria-hidden="true" /> Compartido
                   </span>
                 )}
                 {activeBracket.shareConfig && !canEdit && (
                   <span className="hidden sm:inline-flex items-center gap-1 bg-amber-500/30 text-amber-200 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    <Eye size={9} /> Solo lectura
+                    <Eye size={9} aria-hidden="true" /> Solo lectura
                   </span>
                 )}
                 {activeBracket.teamName ? (
                   <span className="hidden sm:inline-flex items-center gap-1 bg-blue-500/30 text-blue-200 text-[10px] font-bold px-1.5 py-0.5 rounded-full group/tbadge">
-                    <ShieldHalf size={9} /> {activeBracket.teamName}
+                    <ShieldHalf size={9} aria-hidden="true" /> {activeBracket.teamName}
                     <button
                       onClick={() => handleUnlinkTeam(activeBracketId)}
                       className="opacity-0 group-hover/tbadge:opacity-100 hover:text-red-300 transition-opacity ml-0.5"
@@ -264,7 +264,7 @@ export default function BracketScreen() {
                         onClick={() => setShowLinkDropdown(!showLinkDropdown)}
                         className="inline-flex items-center gap-1 bg-blue-800/50 hover:bg-blue-700/50 text-blue-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-colors"
                       >
-                        <ShieldHalf size={9} /> Vincular <ChevronDown size={9} />
+                        <ShieldHalf size={9} aria-hidden="true" /> Vincular <ChevronDown size={9} aria-hidden="true" />
                       </button>
                       {showLinkDropdown && (
                         <div className="absolute left-0 top-full mt-1 z-20 bg-white border border-slate-200 rounded-lg shadow-xl py-1 min-w-[200px] max-h-48 overflow-y-auto">
@@ -293,7 +293,7 @@ export default function BracketScreen() {
             aria-label="Herramientas"
             className="lg:hidden p-2 bg-blue-800 rounded-lg shrink-0"
           >
-            <MoreVertical size={20} />
+            <MoreVertical size={20} aria-hidden="true" />
           </button>
         </div>
         {/* Row 2: Toolbar (desktop only) */}
@@ -312,7 +312,7 @@ export default function BracketScreen() {
               aria-label="Reducir zoom"
               className="px-2 hover:bg-blue-700"
             >
-              <ZoomOut size={15} />
+              <ZoomOut size={15} aria-hidden="true" />
             </button>
             <div className="px-2 text-xs border-x border-blue-700 w-12 flex items-center justify-center">
               {Math.round(zoom * 100)}%
@@ -322,7 +322,7 @@ export default function BracketScreen() {
               aria-label="Aumentar zoom"
               className="px-2 hover:bg-blue-700"
             >
-              <ZoomIn size={15} />
+              <ZoomIn size={15} aria-hidden="true" />
             </button>
           </div>
           {canEdit && (
@@ -334,7 +334,7 @@ export default function BracketScreen() {
                 aria-label="Deshacer"
                 className="px-2 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Undo2 size={15} />
+                <Undo2 size={15} aria-hidden="true" />
               </button>
               <button
                 onClick={handleRedo}
@@ -343,7 +343,7 @@ export default function BracketScreen() {
                 aria-label="Rehacer"
                 className="px-2 border-l border-blue-700 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Redo2 size={15} />
+                <Redo2 size={15} aria-hidden="true" />
               </button>
             </div>
           )}

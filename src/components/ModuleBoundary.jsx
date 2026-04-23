@@ -27,7 +27,7 @@ export default class ModuleBoundary extends React.Component {
       return (
         <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
           <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mb-4">
-            <AlertTriangle size={24} className="text-red-500" />
+            <AlertTriangle size={24} className="text-red-500" aria-hidden="true" />
           </div>
           <h2 className="text-lg font-bold text-slate-800 mb-1">Error en {this.props.name || 'este módulo'}</h2>
           <p className="text-sm text-slate-500 mb-5 max-w-xs">
@@ -37,7 +37,7 @@ export default class ModuleBoundary extends React.Component {
             onClick={this.handleRetry}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-colors"
           >
-            <RotateCcw size={15} /> Reintentar
+            <RotateCcw size={15} aria-hidden="true" /> Reintentar
           </button>
         </div>
       );

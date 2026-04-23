@@ -51,7 +51,7 @@ function CollapsedFooter({ navigate, handleLogout, photoURL, initial, displayNam
         title="Ajustes"
         className="flex items-center justify-center p-2 rounded-xl text-blue-300 hover:bg-blue-900 hover:text-white transition-colors"
       >
-        <Settings size={16} />
+        <Settings size={16} aria-hidden="true" />
       </button>
       <button
         type="button"
@@ -59,7 +59,7 @@ function CollapsedFooter({ navigate, handleLogout, photoURL, initial, displayNam
         title="Cerrar sesión"
         className="flex items-center justify-center p-2 rounded-xl text-blue-300 hover:bg-blue-900 hover:text-white transition-colors"
       >
-        <LogOut size={16} />
+        <LogOut size={16} aria-hidden="true" />
       </button>
     </>
   );
@@ -81,14 +81,14 @@ function ExpandedFooter({ navigate, handleLogout, photoURL, initial, displayName
         onClick={() => navigate('/settings')}
         className="flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-medium text-blue-300 hover:bg-blue-900 hover:text-white transition-colors"
       >
-        <Settings size={14} /> Ajustes
+        <Settings size={14} aria-hidden="true" /> Ajustes
       </button>
       <button
         type="button"
         onClick={handleLogout}
         className="flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-medium text-blue-300 hover:bg-blue-900 hover:text-white transition-colors"
       >
-        <LogOut size={14} /> Cerrar sesión
+        <LogOut size={14} aria-hidden="true" /> Cerrar sesión
       </button>
     </>
   );
@@ -105,7 +105,7 @@ function SidebarHeader({ collapsed, toggle, ToggleIcon }) {
           aria-label="Expandir panel lateral"
           className="w-10 h-10 flex items-center justify-center rounded-lg text-amber-400 hover:bg-blue-900 transition-colors"
         >
-          <ShieldHalf size={20} />
+          <ShieldHalf size={20} aria-hidden="true" />
         </button>
       </div>
     );
@@ -113,7 +113,7 @@ function SidebarHeader({ collapsed, toggle, ToggleIcon }) {
   return (
     <div className="pt-6 pb-4 flex items-center border-b border-blue-900 px-5 gap-2 justify-between">
       <div className="flex items-center gap-2 min-w-0">
-        <ShieldHalf size={22} className="text-amber-400 shrink-0" />
+        <ShieldHalf size={22} className="text-amber-400 shrink-0" aria-hidden="true" />
         <span className="text-white font-bold text-base tracking-tight truncate">Playoff Creator</span>
       </div>
       <button
@@ -163,7 +163,7 @@ export default function DesktopSidebar() {
             title={collapsed ? 'Crear' : undefined}
             className={`mt-3 flex items-center ${collapsed ? 'justify-center px-2' : 'px-4 gap-3'} py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-blue-950 font-bold text-sm transition-colors`}
           >
-            <Plus size={18} strokeWidth={3} />
+            <Plus size={18} strokeWidth={3} aria-hidden="true" />
             {!collapsed && <span>Crear</span>}
           </button>
         </nav>

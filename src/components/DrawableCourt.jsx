@@ -155,7 +155,7 @@ const DrawableCourt = React.memo(function DrawableCourt({ tipo = 'media', trazos
             onClick={() => setTrazos([])}
             className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
           >
-            <Trash2 size={13} /> Borrar
+            <Trash2 size={13} aria-hidden="true" /> Borrar
           </button>
         </div>
       )}

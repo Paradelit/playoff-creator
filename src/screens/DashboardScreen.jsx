@@ -70,14 +70,14 @@ export default function DashboardScreen() {
           >
             <div className="flex justify-between items-center mb-5">
               <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                <Share2 size={20} className="text-blue-600" /> Compartir cuadro
+                <Share2 size={20} className="text-blue-600" aria-hidden="true" /> Compartir cuadro
               </h3>
               <button
                 onClick={() => setSharingBracket(null)}
                 aria-label="Cerrar"
                 className="text-slate-400 hover:text-slate-600"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
             <p className="text-sm font-semibold text-slate-600 mb-2">Invitar personas</p>
@@ -88,6 +88,7 @@ export default function DashboardScreen() {
                 onChange={(e) => setInviteEmail(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddInvite()}
                 placeholder="correo@ejemplo.com"
+                aria-label="Correo electrónico para invitar"
                 className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
               <div className="flex gap-2">
@@ -146,7 +147,7 @@ export default function DashboardScreen() {
                       onClick={() => handleRemoveInvite(email)}
                       className="text-slate-300 hover:text-red-500 p-1 transition-colors"
                     >
-                      <X size={14} />
+                      <X size={14} aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -154,7 +155,7 @@ export default function DashboardScreen() {
             </div>
             <div className="border-t border-slate-100 pt-4">
               <p className="text-sm font-semibold text-slate-600 mb-2 flex items-center gap-1.5">
-                <Link size={14} /> Acceso con enlace
+                <Link size={14} aria-hidden="true" /> Acceso con enlace
               </p>
               <select
                 value={sharingBracket.shareConfig.linkAccess}
@@ -177,11 +178,11 @@ export default function DashboardScreen() {
               >
                 {copiedCode ? (
                   <>
-                    <Check size={16} /> ¡Enlace copiado!
+                    <Check size={16} aria-hidden="true" /> ¡Enlace copiado!
                   </>
                 ) : (
                   <>
-                    <Copy size={16} /> Copiar enlace
+                    <Copy size={16} aria-hidden="true" /> Copiar enlace
                   </>
                 )}
               </button>
@@ -220,7 +221,7 @@ export default function DashboardScreen() {
         <div className="flex flex-col sm:flex-row justify-between items-center mb-10 gap-6">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <Trophy className="text-amber-500" size={36} /> Mis Torneos
+              <Trophy className="text-amber-500" size={36} aria-hidden="true" /> Mis Torneos
             </h1>
             <p className="text-slate-500 mt-2">Plataforma dinámica de cuadros deportivos impulsada por IA.</p>
           </div>
@@ -228,14 +229,14 @@ export default function DashboardScreen() {
             <div
               className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold ${firebaseError ? 'bg-red-100 text-red-600 border border-red-200' : 'bg-green-100 text-green-700 border border-green-200'}`}
             >
-              {firebaseError ? <CloudOff size={14} /> : <Cloud size={14} />}
+              {firebaseError ? <CloudOff size={14} aria-hidden="true" /> : <Cloud size={14} aria-hidden="true" />}
               {firebaseError ? 'Solo Local' : 'Guardado en la Nube'}
             </div>
             <button
               onClick={() => setAppMode('upload')}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg transition-transform hover:scale-105"
             >
-              <Plus size={20} /> Nuevo Cuadro
+              <Plus size={20} aria-hidden="true" /> Nuevo Cuadro
             </button>
           </div>
         </div>
@@ -254,6 +255,7 @@ export default function DashboardScreen() {
               value={dashboardSearch}
               onChange={(e) => setDashboardSearch(e.target.value)}
               placeholder="Buscar torneo..."
+              aria-label="Buscar torneo"
               className="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
             />
             <select
@@ -289,7 +291,7 @@ export default function DashboardScreen() {
           if (brackets.length === 0)
             return (
               <div className="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-16 text-center shadow-sm">
-                <FolderOpen size={64} className="mx-auto text-slate-300 mb-4" />
+                <FolderOpen size={64} className="mx-auto text-slate-300 mb-4" aria-hidden="true" />
                 <h3 className="text-xl font-bold text-slate-700 mb-2">Aún no tienes torneos creados</h3>
                 <p className="text-slate-500 mb-6">Sube las bases de la FBM y tu clasificación para empezar.</p>
                 <button onClick={() => setAppMode('upload')} className="text-blue-600 font-bold hover:underline">
@@ -318,7 +320,7 @@ export default function DashboardScreen() {
                     <h3 className="text-xl font-bold text-slate-800 truncate">{b.name}</h3>
                     {b.isShared && (
                       <span className="shrink-0 flex items-center gap-1 bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full">
-                        <Users size={11} /> Compartido
+                        <Users size={11} aria-hidden="true" /> Compartido
                       </span>
                     )}
                   </div>
@@ -327,7 +329,7 @@ export default function DashboardScreen() {
                   </p>
                   {b.teamName ? (
                     <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold mb-3 group/badge">
-                      <ShieldHalf size={10} /> {b.teamName}
+                      <ShieldHalf size={10} aria-hidden="true" /> {b.teamName}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -336,7 +338,7 @@ export default function DashboardScreen() {
                         className="opacity-0 group-hover/badge:opacity-100 hover:text-red-500 transition-opacity ml-0.5"
                         title="Desvincular equipo"
                       >
-                        <X size={10} />
+                        <X size={10} aria-hidden="true" />
                       </button>
                     </span>
                   ) : (
@@ -346,7 +348,8 @@ export default function DashboardScreen() {
                           onClick={() => setLinkingBracketId(linkingBracketId === b.id ? null : b.id)}
                           className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-blue-600 border border-dashed border-slate-300 hover:border-blue-400 px-2 py-0.5 rounded-full font-semibold transition-colors"
                         >
-                          <ShieldHalf size={10} /> Vincular equipo <ChevronDown size={10} />
+                          <ShieldHalf size={10} aria-hidden="true" /> Vincular equipo{' '}
+                          <ChevronDown size={10} aria-hidden="true" />
                         </button>
                         {linkingBracketId === b.id && (
                           <div className="absolute left-0 top-full mt-1 z-20 bg-white border border-slate-200 rounded-lg shadow-xl py-1 min-w-[200px] max-h-48 overflow-y-auto">
@@ -369,7 +372,7 @@ export default function DashboardScreen() {
                   )}
                   {b.shareCode && (
                     <p className="text-xs text-slate-400 mb-3 flex items-center gap-1">
-                      <Link size={11} /> Enlace de compartir activo
+                      <Link size={11} aria-hidden="true" /> Enlace de compartir activo
                     </p>
                   )}
                   <div className="flex justify-between items-center mt-auto border-t border-slate-100 pt-4">
@@ -382,7 +385,7 @@ export default function DashboardScreen() {
                       }}
                       className="text-blue-600 font-bold hover:text-blue-800 flex items-center gap-1"
                     >
-                      Abrir cuadro <ArrowRight size={16} />
+                      Abrir cuadro <ArrowRight size={16} aria-hidden="true" />
                     </button>
                     <div className="flex items-center gap-1">
                       <button
@@ -391,7 +394,7 @@ export default function DashboardScreen() {
                         aria-label="Compartir cuadro"
                         title="Compartir cuadro"
                       >
-                        <Share2 size={18} />
+                        <Share2 size={18} aria-hidden="true" />
                       </button>
                       <button
                         onClick={() => handleExport(b)}
@@ -399,7 +402,7 @@ export default function DashboardScreen() {
                         aria-label="Exportar cuadro"
                         title="Exportar cuadro"
                       >
-                        <Download size={18} />
+                        <Download size={18} aria-hidden="true" />
                       </button>
                       <button
                         onClick={() => handleDeleteBracket(b.id)}
@@ -407,7 +410,7 @@ export default function DashboardScreen() {
                         aria-label="Eliminar cuadro"
                         title="Eliminar cuadro"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={18} aria-hidden="true" />
                       </button>
                     </div>
                   </div>

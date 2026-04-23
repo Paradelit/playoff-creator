@@ -140,7 +140,7 @@ export default function ScoutingScreen() {
           onClick={() => navigate(-1)}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
         >
-          <ArrowLeft size={16} /> Volver
+          <ArrowLeft size={16} aria-hidden="true" /> Volver
         </button>
         <div className="flex items-center gap-3">
           <span className="text-xs font-semibold text-slate-400">
@@ -151,13 +151,13 @@ export default function ScoutingScreen() {
             onClick={handleReset}
             className="flex items-center px-3 py-1 bg-white border border-gray-400 text-gray-700 text-sm hover:bg-gray-50 transition shadow-sm rounded"
           >
-            <RotateCcw className="w-4 h-4 mr-1" /> Limpiar
+            <RotateCcw className="w-4 h-4 mr-1" aria-hidden="true" /> Limpiar
           </button>
           <button
             onClick={() => window.print()}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
           >
-            <Printer size={15} /> Imprimir
+            <Printer size={15} aria-hidden="true" /> Imprimir
           </button>
         </div>
       </div>
@@ -222,7 +222,7 @@ export default function ScoutingScreen() {
                 onClick={addJugadorClave}
                 className="print:hidden flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-bold transition"
               >
-                <Plus size={14} /> Añadir
+                <Plus size={14} aria-hidden="true" /> Añadir
               </button>
             }
           >
@@ -271,7 +271,7 @@ export default function ScoutingScreen() {
                     className="print:hidden text-red-400 hover:text-red-600 p-1 mt-1 transition"
                     aria-label="Eliminar jugador"
                   >
-                    <Trash2 size={15} />
+                    <Trash2 size={15} aria-hidden="true" />
                   </button>
                 </div>
               ))}

@@ -134,21 +134,21 @@ export default function TestTiroScreen() {
           onClick={() => navigate(`/teams/${teamId}/cuaderno`)}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
         >
-          <ArrowLeft size={16} /> Cuaderno
+          <ArrowLeft size={16} aria-hidden="true" /> Cuaderno
         </button>
         <div className="flex items-center gap-2">
           <button
             onClick={addRowToBoth}
             className="flex items-center px-3 py-1 bg-white border border-gray-400 text-sm hover:bg-gray-50 transition shadow-sm rounded"
           >
-            <Plus className="w-4 h-4 mr-1" /> Añadir Fila
+            <Plus className="w-4 h-4 mr-1" aria-hidden="true" /> Añadir Fila
           </button>
           <button
             onClick={removeRowFromBoth}
             disabled={tables[0].rows.length <= 1}
             className="flex items-center px-3 py-1 bg-white border border-red-300 text-red-700 text-sm hover:bg-red-50 transition shadow-sm rounded disabled:opacity-40"
           >
-            <Minus className="w-4 h-4 mr-1" /> Quitar Fila
+            <Minus className="w-4 h-4 mr-1" aria-hidden="true" /> Quitar Fila
           </button>
         </div>
         <div className="flex items-center gap-3">
@@ -160,13 +160,13 @@ export default function TestTiroScreen() {
             onClick={resetAll}
             className="flex items-center px-3 py-1 bg-white border border-gray-400 text-gray-700 text-sm hover:bg-gray-50 transition shadow-sm rounded"
           >
-            <RotateCcw className="w-4 h-4 mr-1" /> Limpiar
+            <RotateCcw className="w-4 h-4 mr-1" aria-hidden="true" /> Limpiar
           </button>
           <button
             onClick={() => window.print()}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
           >
-            <Printer size={15} /> Imprimir A4
+            <Printer size={15} aria-hidden="true" /> Imprimir A4
           </button>
         </div>
       </div>
@@ -200,6 +200,7 @@ export default function TestTiroScreen() {
                     type="text"
                     value={table.fecha}
                     onChange={(e) => updateFecha(tIndex, e.target.value)}
+                    aria-label="Fecha del test"
                     className="w-48 border-b border-black focus:outline-none bg-transparent font-sans text-sm pb-px px-1"
                   />
                 </div>
@@ -216,6 +217,7 @@ export default function TestTiroScreen() {
                             onChange={(e) => updateHeader(tIndex, colIdx, e.target.value)}
                             className="w-full h-full text-center focus:outline-none bg-transparent font-sans text-xs px-1"
                             placeholder={`Test ${colIdx + 1}`}
+                            aria-label={`Encabezado de columna ${colIdx + 1}`}
                           />
                         </th>
                       ))}
@@ -229,6 +231,7 @@ export default function TestTiroScreen() {
                             type="text"
                             value={row.jugador}
                             onChange={(e) => updateRow(tIndex, row.id, 'jugador', e.target.value)}
+                            aria-label={`Nombre de jugador fila ${row.id + 1}`}
                             className="w-full h-full focus:outline-none bg-transparent font-sans text-sm px-2"
                           />
                         </td>
@@ -238,6 +241,7 @@ export default function TestTiroScreen() {
                               type="text"
                               value={score}
                               onChange={(e) => updateRow(tIndex, row.id, 'score', e.target.value, colIdx)}
+                              aria-label={`Puntuación fila ${row.id + 1} columna ${colIdx + 1}`}
                               className="w-full h-full text-center focus:outline-none bg-transparent font-sans text-sm font-semibold text-blue-900 print:text-black"
                             />
                           </td>

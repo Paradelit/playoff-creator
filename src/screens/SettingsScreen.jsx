@@ -23,7 +23,7 @@ export default function SettingsScreen() {
           onClick={() => s.navigate('/')}
           className="flex items-center gap-1.5 text-blue-400 hover:text-white text-sm font-medium transition mb-4"
         >
-          <ArrowLeft size={16} /> Inicio
+          <ArrowLeft size={16} aria-hidden="true" /> Inicio
         </button>
         <h1 className="text-white text-2xl font-bold">Ajustes</h1>
         <p className="text-blue-400 text-sm mt-0.5">Perfil, club y configuración de la cuenta</p>

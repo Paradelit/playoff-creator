@@ -153,7 +153,12 @@ export function CreateSheet({ onClose }) {
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-slate-900/50 z-[150] backdrop-blur-sm" onClick={onClose} />
+      <button
+        type="button"
+        aria-label="Cerrar menú de creación"
+        className="fixed inset-0 w-full h-full border-none bg-slate-900/50 z-[150] backdrop-blur-sm cursor-default"
+        onClick={onClose}
+      />
 
       {/* Sheet */}
       <div
@@ -169,7 +174,7 @@ export function CreateSheet({ onClose }) {
           <div className="flex items-center justify-between mb-4 px-1 pt-1">
             <h3 className="text-xl font-bold text-slate-800">Crear</h3>
             <button onClick={onClose} aria-label="Cerrar" className="text-slate-400 hover:text-slate-600 p-1">
-              <X size={20} />
+              <X size={20} aria-hidden="true" />
             </button>
           </div>
 
@@ -211,7 +216,7 @@ export function CreateSheet({ onClose }) {
                     onClick={() => pendingAction === 'training' && handleNewTrainingForTeam(team)}
                     className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition text-left"
                   >
-                    <ShieldHalf size={18} className="text-blue-600 shrink-0" />
+                    <ShieldHalf size={18} className="text-blue-600 shrink-0" aria-hidden="true" />
                     <span className="font-semibold text-slate-800 text-sm">{teamDisplayName(team)}</span>
                   </button>
                 ))}
@@ -284,7 +289,7 @@ export default function CoachesNav() {
             className="w-14 h-14 bg-amber-400 hover:bg-amber-300 active:scale-95 rounded-full -translate-y-5 shadow-2xl border-4 border-blue-950 flex items-center justify-center transition-all duration-150"
             aria-label="Crear"
           >
-            <Plus size={28} className="text-blue-950" strokeWidth={3} />
+            <Plus size={28} className="text-blue-950" strokeWidth={3} aria-hidden="true" />
           </button>
         </div>
 

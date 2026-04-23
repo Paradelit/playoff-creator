@@ -12,13 +12,13 @@ export { MONTHS };
 export function EmptyTeamCard({ navigate }) {
   return (
     <div className="w-full bg-gradient-to-br from-blue-900 to-blue-700 rounded-2xl p-6 text-white shadow-2xl flex flex-col items-center justify-center text-center min-h-[180px] gap-3">
-      <FolderOpen size={36} className="text-blue-400" />
+      <FolderOpen size={36} className="text-blue-400" aria-hidden="true" />
       <p className="text-blue-100 font-semibold">Aún no tienes equipos</p>
       <button
         onClick={() => navigate('/teams')}
         className="bg-white/15 hover:bg-white/25 text-white font-bold text-sm px-4 py-2 rounded-xl flex items-center gap-2 transition"
       >
-        <Plus size={16} /> Crear equipo
+        <Plus size={16} aria-hidden="true" /> Crear equipo
       </button>
     </div>
   );
@@ -39,7 +39,7 @@ export function MatchDayWidget({ session, teams, todayYMD, navigate }) {
   return (
     <div className="mt-4 bg-gradient-to-r from-rose-500 to-rose-600 rounded-2xl p-4 text-white shadow-lg">
       <div className="flex items-center gap-2 mb-2">
-        <Swords size={16} className="text-rose-200" />
+        <Swords size={16} className="text-rose-200" aria-hidden="true" />
         <span className="text-xs font-bold uppercase tracking-wider text-rose-200">Día de partido</span>
         <span className="ml-auto text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full">{timeLabel}</span>
       </div>
@@ -130,7 +130,11 @@ export function ActionEventRow({ session, onAction, creating, teams, variant, tr
           '...'
         ) : (
           <>
-            {variant === 'past' ? <History size={12} /> : <ArrowRight size={12} />}
+            {variant === 'past' ? (
+              <History size={12} aria-hidden="true" />
+            ) : (
+              <ArrowRight size={12} aria-hidden="true" />
+            )}
             <span className="hidden sm:inline">{actionLabel}</span>
           </>
         )}

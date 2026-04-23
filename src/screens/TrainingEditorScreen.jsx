@@ -81,7 +81,7 @@ export default function TrainingEditorScreen() {
           onClick={() => navigate(`/teams/${teamId}/cuaderno/entrenamientos`)}
           className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-sm font-medium transition"
         >
-          <ArrowLeft size={16} /> Entrenamientos
+          <ArrowLeft size={16} aria-hidden="true" /> Entrenamientos
         </button>
 
         <div className="flex gap-2">
@@ -89,13 +89,13 @@ export default function TrainingEditorScreen() {
             onClick={addEjercicio}
             className="flex items-center px-3 py-1.5 bg-white border border-gray-300 text-sm hover:bg-gray-50 transition shadow-sm rounded-lg gap-1"
           >
-            <Plus size={14} /> Fila Extra
+            <Plus size={14} aria-hidden="true" /> Fila Extra
           </button>
           <button
             onClick={removeLastEjercicio}
             className="flex items-center px-3 py-1.5 bg-white border border-red-300 text-red-700 text-sm hover:bg-red-50 transition shadow-sm rounded-lg gap-1"
           >
-            <Minus size={14} /> Quitar Fila
+            <Minus size={14} aria-hidden="true" /> Quitar Fila
           </button>
         </div>
 
@@ -114,19 +114,19 @@ export default function TrainingEditorScreen() {
             }}
             className="flex items-center gap-1.5 text-sm font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition border border-indigo-200"
           >
-            <BookOpen size={15} /> Cargar de Biblioteca
+            <BookOpen size={15} aria-hidden="true" /> Cargar de Biblioteca
           </button>
           <button
             onClick={() => navigate('/exercises')}
             className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 transition"
           >
-            <BookOpen size={15} /> Biblioteca
+            <BookOpen size={15} aria-hidden="true" /> Biblioteca
           </button>
           <button
             onClick={() => window.print()}
             className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-lg transition shadow"
           >
-            <Printer size={15} /> Imprimir A4
+            <Printer size={15} aria-hidden="true" /> Imprimir A4
           </button>
         </div>
       </div>
@@ -151,6 +151,7 @@ export default function TrainingEditorScreen() {
                   type="text"
                   value={training.meta?.numero || ''}
                   onChange={(e) => updateMeta('numero', e.target.value)}
+                  aria-label="Número de entrenamiento"
                   className="w-10 border-b border-black text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent"
                 />
               </p>
@@ -166,6 +167,7 @@ export default function TrainingEditorScreen() {
                   type="text"
                   value={training.meta?.equipo || ''}
                   onChange={(e) => updateMeta('equipo', e.target.value)}
+                  aria-label="Equipo"
                   className="w-full ml-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent"
                 />
               </div>
@@ -174,6 +176,7 @@ export default function TrainingEditorScreen() {
                 <select
                   value={training.meta?.dia || ''}
                   onChange={(e) => updateMeta('dia', e.target.value)}
+                  aria-label="Día de la semana"
                   className="ml-1 text-xs bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 cursor-pointer font-bold appearance-none"
                 >
                   <option value="">Día</option>
@@ -187,6 +190,7 @@ export default function TrainingEditorScreen() {
                   type="date"
                   value={training.meta?.fecha || ''}
                   onChange={(e) => updateMeta('fecha', e.target.value)}
+                  aria-label="Fecha"
                   className="flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
                 />
               </div>
@@ -196,6 +200,7 @@ export default function TrainingEditorScreen() {
                   type="time"
                   value={training.meta?.horaInicio || ''}
                   onChange={(e) => updateMeta('horaInicio', e.target.value)}
+                  aria-label="Hora de inicio"
                   className="flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
                 />
                 <span className="font-bold">-</span>
@@ -203,6 +208,7 @@ export default function TrainingEditorScreen() {
                   type="time"
                   value={training.meta?.horaFin || ''}
                   onChange={(e) => updateMeta('horaFin', e.target.value)}
+                  aria-label="Hora de fin"
                   className="flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent text-xs [&::-webkit-calendar-picker-indicator]:hidden"
                 />
               </div>
@@ -212,6 +218,7 @@ export default function TrainingEditorScreen() {
                   type="text"
                   value={training.meta?.lugar || ''}
                   onChange={(e) => updateMeta('lugar', e.target.value)}
+                  aria-label="Lugar"
                   className="w-full ml-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent"
                 />
               </div>
@@ -221,6 +228,7 @@ export default function TrainingEditorScreen() {
               <textarea
                 value={training.objetivos || ''}
                 onChange={(e) => updateTraining((t) => ({ ...t, objetivos: e.target.value }))}
+                aria-label="Objetivos de la semana"
                 className="w-full flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent resize-none leading-tight mt-1 text-sm"
               />
             </div>
@@ -245,6 +253,7 @@ export default function TrainingEditorScreen() {
                     type="text"
                     value={ej.tiempo || ''}
                     onChange={(e) => updateEjercicio(ej.id, 'tiempo', e.target.value)}
+                    aria-label={`Tiempo ejercicio ${ej.id}`}
                     className="w-full h-full text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent text-xs"
                   />
                 </div>
@@ -254,12 +263,13 @@ export default function TrainingEditorScreen() {
                       className="absolute top-1 right-1 print:hidden"
                       title={`Enlazado: ${ej.libExerciseName || 'Biblioteca'}`}
                     >
-                      <BookOpen size={9} className="text-amber-500" />
+                      <BookOpen size={9} className="text-amber-500" aria-hidden="true" />
                     </span>
                   )}
                   <textarea
                     value={ej.contenido || ''}
                     onChange={(e) => updateEjercicio(ej.id, 'contenido', e.target.value)}
+                    aria-label={`Contenido ejercicio ${ej.id}`}
                     className="w-full h-full resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent leading-tight text-xs"
                   />
                 </div>
@@ -267,6 +277,7 @@ export default function TrainingEditorScreen() {
                   <textarea
                     value={ej.descripcion || ''}
                     onChange={(e) => updateEjercicio(ej.id, 'descripcion', e.target.value)}
+                    aria-label={`Descripción ejercicio ${ej.id}`}
                     className="w-full h-full resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent leading-tight text-xs text-justify pb-2 pr-1"
                   />
                 </div>
@@ -283,7 +294,7 @@ export default function TrainingEditorScreen() {
                       className="text-blue-600 hover:text-blue-800"
                       title="Abrir editor"
                     >
-                      <Maximize2 size={11} />
+                      <Maximize2 size={11} aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => {
@@ -294,18 +305,19 @@ export default function TrainingEditorScreen() {
                       className="text-indigo-500 hover:text-indigo-700"
                       title="Cargar de biblioteca"
                     >
-                      <BookOpen size={11} />
+                      <BookOpen size={11} aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => saveToLibrary(ej)}
                       className="text-emerald-600 hover:text-emerald-800"
                       title="Guardar en biblioteca"
                     >
-                      <Save size={11} />
+                      <Save size={11} aria-hidden="true" />
                     </button>
                     <select
                       value={ej.tipoPista}
                       onChange={(e) => updateEjercicio(ej.id, 'tipoPista', e.target.value)}
+                      aria-label={`Tipo pista ejercicio ${ej.id}`}
                       className="text-[10px] border border-gray-300 bg-white cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0"
                     >
                       <option value="media">1/2</option>
@@ -316,7 +328,7 @@ export default function TrainingEditorScreen() {
                       className="text-red-500 hover:text-red-700"
                       title="Eliminar fila"
                     >
-                      <Trash2 size={11} />
+                      <Trash2 size={11} aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -334,6 +346,7 @@ export default function TrainingEditorScreen() {
                   onChange={(e) => updateCierre('faltas', e.target.value)}
                   members={members}
                   placeholder=""
+                  aria-label="Faltas"
                   rows={2}
                   className="w-full flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent resize-none text-xs leading-tight mt-1"
                 />
@@ -345,6 +358,7 @@ export default function TrainingEditorScreen() {
                   onChange={(e) => updateCierre('retrasos', e.target.value)}
                   members={members}
                   placeholder=""
+                  aria-label="Retrasos"
                   rows={2}
                   className="w-full flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent resize-none text-xs leading-tight mt-1"
                 />
@@ -358,6 +372,7 @@ export default function TrainingEditorScreen() {
                   onChange={(e) => updateCierre('anotaciones', e.target.value)}
                   members={members}
                   placeholder=""
+                  aria-label="Anotaciones"
                   rows={2}
                   className="w-full flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent resize-none text-xs leading-tight mt-1"
                 />
@@ -367,6 +382,7 @@ export default function TrainingEditorScreen() {
                 <textarea
                   value={training.cierre?.observaciones || ''}
                   onChange={(e) => updateCierre('observaciones', e.target.value)}
+                  aria-label="Observaciones"
                   className="w-full flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 print:focus-visible:ring-0 bg-transparent resize-none text-xs leading-tight mt-1"
                 />
               </div>

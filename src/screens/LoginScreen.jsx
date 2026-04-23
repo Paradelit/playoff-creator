@@ -75,7 +75,7 @@ export default function LoginScreen() {
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-blue-50 flex items-center justify-center p-4 sm:p-6 font-sans">
       <div className="w-full max-w-md md:max-w-xl bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
         <div className="bg-gradient-to-br from-blue-900 to-blue-950 p-6 md:p-10 text-center text-white">
-          <Trophy size={48} className="mx-auto mb-3 text-amber-400" />
+          <Trophy size={48} className="mx-auto mb-3 text-amber-400" aria-hidden="true" />
           <h1 className="text-2xl md:text-3xl font-bold tracking-wide">FBM Brackets</h1>
           <p className="text-blue-200 mt-2 text-sm md:text-base">Gestiona tus equipos</p>
         </div>
@@ -102,7 +102,7 @@ export default function LoginScreen() {
               className="w-full flex items-center justify-center gap-2.5 bg-white border-2 border-slate-200 hover:border-blue-500 text-slate-700 hover:bg-blue-50 px-4 py-3 rounded-xl font-semibold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isPending('google') ? (
-                <Loader2 size={20} className="animate-spin text-blue-600" />
+                <Loader2 size={20} className="animate-spin text-blue-600" aria-hidden="true" />
               ) : (
                 <GoogleIcon size={20} />
               )}
@@ -114,7 +114,11 @@ export default function LoginScreen() {
               disabled={disableAll}
               className="w-full flex items-center justify-center gap-2.5 bg-black hover:bg-gray-900 text-white px-4 py-3 rounded-xl font-semibold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed border-2 border-black"
             >
-              {isPending('apple') ? <Loader2 size={20} className="animate-spin text-white" /> : <AppleIcon size={20} />}
+              {isPending('apple') ? (
+                <Loader2 size={20} className="animate-spin text-white" aria-hidden="true" />
+              ) : (
+                <AppleIcon size={20} />
+              )}
               <span className="text-sm md:text-base">Apple</span>
             </button>
           </div>
@@ -169,7 +173,7 @@ export default function LoginScreen() {
               disabled={disableAll}
               className="w-full mt-1 bg-blue-600 text-white hover:bg-blue-700 px-6 py-2.5 rounded-xl font-semibold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
             >
-              {isPending('email') && <Loader2 size={16} className="animate-spin" />}
+              {isPending('email') && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
               {isRegisterMode ? 'Crear cuenta' : 'Entrar con correo'}
             </button>
           </form>
@@ -194,9 +198,9 @@ export default function LoginScreen() {
             className="w-full flex items-center justify-center gap-3 bg-slate-100 text-slate-600 hover:bg-slate-200 px-6 py-3 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPending('anon') ? (
-              <Loader2 size={20} className="animate-spin text-slate-500" />
+              <Loader2 size={20} className="animate-spin text-slate-500" aria-hidden="true" />
             ) : (
-              <User size={20} className="text-slate-500" />
+              <User size={20} className="text-slate-500" aria-hidden="true" />
             )}
             Continuar como Invitado
           </button>

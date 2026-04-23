@@ -67,7 +67,7 @@ export default function SharedExerciseScreen() {
   if (!exercise) {
     return (
       <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6 text-center">
-        <BookOpen size={48} className="text-slate-300 mb-4" />
+        <BookOpen size={48} className="text-slate-300 mb-4" aria-hidden="true" />
         <h2 className="text-xl font-bold text-slate-700 mb-2">Ejercicio no encontrado</h2>
         <p className="text-slate-500 text-sm mb-6">El enlace puede haber expirado o ser incorrecto.</p>
         <button onClick={() => navigate('/')} className="text-blue-600 font-bold hover:underline text-sm">
@@ -84,7 +84,7 @@ export default function SharedExerciseScreen() {
           onClick={() => navigate('/')}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition mb-6"
         >
-          <ArrowLeft size={16} /> Inicio
+          <ArrowLeft size={16} aria-hidden="true" /> Inicio
         </button>
 
         <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
@@ -137,7 +137,7 @@ export default function SharedExerciseScreen() {
               disabled={saving || !user}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-60 flex items-center justify-center gap-2"
             >
-              <Download size={16} /> {saving ? 'Guardando...' : 'Añadir a mi biblioteca'}
+              <Download size={16} aria-hidden="true" /> {saving ? 'Guardando...' : 'Añadir a mi biblioteca'}
             </button>
             {!user && (
               <p className="text-xs text-slate-400 text-center mt-2">Inicia sesión para guardar este ejercicio</p>

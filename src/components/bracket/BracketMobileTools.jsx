@@ -41,12 +41,14 @@ export default function BracketMobileTools({
   const [showLinkDropdown, setShowLinkDropdown] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setShowMobileTools(false)}>
-      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" />
-      <div
-        className="absolute bottom-0 left-0 right-0 bg-blue-900 rounded-t-2xl p-5 flex flex-col gap-3 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-40 lg:hidden">
+      <button
+        type="button"
+        className="absolute inset-0 w-full h-full border-none bg-slate-900/50 backdrop-blur-sm cursor-default"
+        onClick={() => setShowMobileTools(false)}
+        aria-label="Cerrar acciones del torneo"
+      />
+      <div className="absolute bottom-0 left-0 right-0 bg-blue-900 rounded-t-2xl p-5 flex flex-col gap-3 shadow-2xl">
         <div className="flex justify-between items-center mb-1">
           <span className="text-white font-bold text-base">Acciones del torneo</span>
           <button
@@ -54,7 +56,7 @@ export default function BracketMobileTools({
             aria-label="Cerrar"
             className="p-1 text-blue-300 hover:text-white"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -94,7 +96,7 @@ export default function BracketMobileTools({
         {activeBracket.teamName ? (
           <div className="flex items-center justify-between bg-blue-800 px-4 py-3 rounded-lg">
             <span className="flex items-center gap-2 text-sm font-bold text-blue-200">
-              <ShieldHalf size={14} /> {activeBracket.teamName}
+              <ShieldHalf size={14} aria-hidden="true" /> {activeBracket.teamName}
             </span>
             <button
               onClick={() => {
@@ -113,7 +115,8 @@ export default function BracketMobileTools({
                 onClick={() => setShowLinkDropdown(!showLinkDropdown)}
                 className="flex items-center gap-3 w-full bg-blue-800 text-blue-200 px-4 py-3 rounded-lg text-sm font-bold"
               >
-                <ShieldHalf size={16} /> Vincular equipo <ChevronDown size={14} className="ml-auto" />
+                <ShieldHalf size={16} aria-hidden="true" /> Vincular equipo{' '}
+                <ChevronDown size={14} className="ml-auto" aria-hidden="true" />
               </button>
               {showLinkDropdown && (
                 <div className="mt-1 bg-blue-800 rounded-lg overflow-hidden max-h-40 overflow-y-auto">
@@ -173,7 +176,7 @@ export default function BracketMobileTools({
               aria-label="Reducir zoom"
               className="flex-1 flex justify-center items-center hover:bg-blue-700"
             >
-              <ZoomOut size={18} />
+              <ZoomOut size={18} aria-hidden="true" />
             </button>
             <div className="px-3 text-sm border-x border-blue-700 flex items-center justify-center w-16">
               {Math.round(zoom * 100)}%
@@ -183,7 +186,7 @@ export default function BracketMobileTools({
               aria-label="Aumentar zoom"
               className="flex-1 flex justify-center items-center hover:bg-blue-700"
             >
-              <ZoomIn size={18} />
+              <ZoomIn size={18} aria-hidden="true" />
             </button>
           </div>
         </div>

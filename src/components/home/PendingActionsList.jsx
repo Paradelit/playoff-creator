@@ -6,13 +6,13 @@ function ItemIcon({ type }) {
   if (type === 'result') {
     return (
       <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-        <Trophy size={18} className="text-amber-600" />
+        <Trophy size={18} className="text-amber-600" aria-hidden="true" />
       </div>
     );
   }
   return (
     <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
-      <ClipboardList size={18} className="text-blue-600" />
+      <ClipboardList size={18} className="text-blue-600" aria-hidden="true" />
     </div>
   );
 }
@@ -37,7 +37,7 @@ export default function PendingActionsList({ items, onAction, creatingId }) {
   return (
     <section aria-label="Acciones pendientes" className="bg-white rounded-2xl border border-slate-200 shadow-sm">
       <header className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-        <AlertCircle size={15} className="text-amber-500" />
+        <AlertCircle size={15} className="text-amber-500" aria-hidden="true" />
         <h3 className="text-xs font-bold text-slate-700 uppercase tracking-widest">Pendientes</h3>
         <span className="ml-auto text-[11px] font-bold text-slate-400">
           {items.length > 0 ? `${items.length}` : ''}
@@ -45,7 +45,7 @@ export default function PendingActionsList({ items, onAction, creatingId }) {
       </header>
       {items.length === 0 ? (
         <div className="px-4 py-6 flex items-center gap-3 text-slate-500 text-sm">
-          <CheckCircle2 size={20} className="text-emerald-500 shrink-0" />
+          <CheckCircle2 size={20} className="text-emerald-500 shrink-0" aria-hidden="true" />
           <p>Todo al día. Nada pendiente por hacer.</p>
         </div>
       ) : (
@@ -71,7 +71,7 @@ export default function PendingActionsList({ items, onAction, creatingId }) {
                   '...'
                 ) : (
                   <>
-                    <ArrowRight size={12} /> <span className="hidden sm:inline">{item.cta}</span>
+                    <ArrowRight size={12} aria-hidden="true" /> <span className="hidden sm:inline">{item.cta}</span>
                   </>
                 )}
               </button>
