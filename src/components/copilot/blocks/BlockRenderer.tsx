@@ -8,6 +8,7 @@ import BracketPreviewBlock from './BracketPreviewBlock';
 import SessionPreviewBlock from './SessionPreviewBlock';
 import ScoreUpdateBlock from './ScoreUpdateBlock';
 import ConfirmWriteBlock from './ConfirmWriteBlock';
+import ExercisePreviewBlock from './ExercisePreviewBlock';
 
 export interface BlockRendererProps {
   blocks: ContentBlock[];
@@ -50,6 +51,8 @@ function SingleBlock({
       return <SessionPreviewBlock session={block.session} />;
     case 'score_update':
       return <ScoreUpdateBlock updates={block.updates} />;
+    case 'exercise_preview':
+      return <ExercisePreviewBlock exercises={block.exercises} />;
     case 'confirm_write':
       return <ConfirmWriteBlock proposal={block.proposal} onConfirm={onConfirmProposal} onCancel={onCancelProposal} />;
     default:
