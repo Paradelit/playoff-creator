@@ -2,7 +2,7 @@ import type { Firestore } from 'firebase/firestore';
 import { setDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { userDocRef, userColRef } from './firestoreHelpers';
 import type { WriteProposal, WriteProposalKind } from './contentBlocks';
-import { calculateMatchWinner } from '../utils/bracketEngine';
+import { calculateMatchWinner, buildDynamicBracket } from '../utils/bracketEngine';
 
 export interface ExecuteContext {
   db: Firestore;
@@ -133,7 +133,8 @@ async function handleUpdateBracketScores(ctx: ExecuteContext, payload: ProposalP
 
   for (const rawUpdate of updates) {
     const update = asRecord(rawUpdate);
-    const matchId = typeof update?.matchId === 'string' ? update.matchId : undefined;
+    if (!update) continue;
+    const matchId = typeof update.matchId === 'string' ? update.matchId : undefined;
     if (!matchId) continue;
 
     const currentMatch = state[matchId];
@@ -184,9 +185,34 @@ async function handleCreateBracket(ctx: ExecuteContext, payload: ProposalPayload
   const teamId = (payload.teamId as string | undefined) || (bracket.teamId as string | undefined) || null;
   const teamName = (payload.teamName as string | undefined) || (bracket.teamName as string | undefined) || null;
 
+  let finalBracketData = bracket.bracketData;
+  if (!finalBracketData) {
+    const initialMatches = Array.isArray(bracket.initialMatches)
+      ? bracket.initialMatches
+      : Array.isArray(bracket.initialMatchesArray)
+        ? bracket.initialMatchesArray
+        : [];
+    const rounds = Array.isArray(bracket.rounds)
+      ? bracket.rounds
+      : Array.isArray(bracket.roundsData)
+        ? bracket.roundsData
+        : [];
+    if (initialMatches.length > 0) {
+      finalBracketData = buildDynamicBracket(initialMatches, rounds);
+    }
+  }
+
   await setDoc(
     userDocRef(ctx.db, ctx.appId, ctx.uid, 'brackets', id),
-    { ...bracket, id, teamId, teamName, createdAt: serverTimestamp(), updatedAt: serverTimestamp() },
+    {
+      ...bracket,
+      bracketData: finalBracketData,
+      id,
+      teamId,
+      teamName,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    },
     { merge: true },
   );
 }

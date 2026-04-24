@@ -7,7 +7,9 @@ import { useProfile } from '../hooks/useProfile';
 
 function bestTeamMatch(allTeams, clubName, teamName) {
   if (!allTeams || allTeams.length === 0) return null;
-  const needles = [clubName, teamName].filter(Boolean).map((s) => s.toLowerCase().trim());
+  const needles = [clubName, teamName]
+    .filter((s) => typeof s === 'string' && s.trim().length > 0)
+    .map((s) => s.toLowerCase().trim());
   if (needles.length === 0) return null;
 
   let best = null;

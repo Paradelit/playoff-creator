@@ -198,8 +198,8 @@ export function useCopilotInternal(): CopilotAPI {
           role: 'assistant',
           content,
           blocks,
-          actions: actions && actions.length > 0 ? actions : undefined,
-          traceId: response.traceId,
+          ...(actions && actions.length > 0 ? { actions } : {}),
+          ...(response.traceId ? { traceId: response.traceId } : {}),
           timestamp: Date.now(),
         };
         setMessages((prev) => [...prev, assistantMsg]);

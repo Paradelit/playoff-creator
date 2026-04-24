@@ -100,7 +100,15 @@ export function useConversationPersistence() {
       const ref = messagesRef(convId);
       const convRef = conversationsRef();
       if (!ref || !convRef) return;
-      await setDoc(doc(ref, message.id), { ...message, timestamp: message.timestamp });
+
+      const messageData = { ...message, timestamp: message.timestamp } as Record<string, any>;
+      Object.keys(messageData).forEach((key) => {
+        if (messageData[key] === undefined) {
+          delete messageData[key];
+        }
+      });
+
+      await setDoc(doc(ref, message.id), messageData);
       await setDoc(
         doc(convRef, convId),
         {
