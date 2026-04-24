@@ -17,9 +17,10 @@ export { createReadTools } from "./tools/readTools";
 export { createWriteTools } from "./tools/writeTools";
 export { createAgentTools } from "./tools/agentTools";
 export { createMemoryTools } from "./tools/memoryTools";
+export { createNavigationTools } from "./tools/navigationTools";
 export { buildUserDigest, digestToPromptText } from "./userDigest";
 export type { UserDigest } from "./userDigest";
-export type { ContentBlock, OrchestratorResponse, WriteProposal } from "./contentBlocks";
+export type { ContentBlock, CopilotAction, OrchestratorResponse, WriteProposal } from "./contentBlocks";
 export type { ToolDefinition, ToolContext } from "./tools/registry";
 export type {
   TraceContext,

@@ -8,6 +8,7 @@ export type {
   BracketRecord,
   CalendarSessionRecord,
   ContentBlock,
+  CopilotAction,
   ExercisePreviewData,
   OrchestratorResponse,
   ScoreUpdateEntry,

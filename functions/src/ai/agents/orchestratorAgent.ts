@@ -1,7 +1,7 @@
 import { LLMProvider, GeminiMessage, GeminiPart } from "../llmProvider";
 import { ObservabilityService } from "../observability";
 import { ToolRegistry, ToolContext } from "../tools/registry";
-import { ContentBlock, OrchestratorResponse, WriteProposal } from "../contentBlocks";
+import { ContentBlock, CopilotAction, OrchestratorResponse, WriteProposal } from "../contentBlocks";
 import { ScreenContextData, TraceContext, AgentExecutionOptions } from "../types";
 import { digestToPromptText, UserDigest } from "../userDigest";
 import { PromptManager } from "../promptManager";
@@ -60,6 +60,7 @@ export class OrchestratorAgent {
     _options: AgentExecutionOptions
   ): Promise<OrchestratorResponse> {
     const blocks: ContentBlock[] = [];
+    const actions: CopilotAction[] = [];
     const toolDecls = this.deps.toolRegistry.toGeminiDeclarations();
     const systemInstruction = await this.buildSystemPrompt(input.screenContext, input.userDigest);
     const traceId = (traceContext.trace as { id?: string })?.id || "";
@@ -147,6 +148,17 @@ export class OrchestratorAgent {
           const output = await this.runToolWithRetry(tool.handler, args, toolCtx);
           totalToolCalls += 1;
 
+          if (toolName === "suggest_navigation") {
+            const out = output as Record<string, unknown>;
+            if (out.ok === true && typeof out.path === "string" && typeof out.label === "string") {
+              const path = out.path;
+              const label = out.label;
+              if (!actions.some((a) => a.type === "navigate" && a.path === path)) {
+                actions.push({ type: "navigate", label, path });
+              }
+            }
+          }
+
           // Emit block according to tool type
           if (tool.isWrite) {
             const proposalBlock = this.buildConfirmWriteBlock(output);
@@ -183,9 +195,18 @@ export class OrchestratorAgent {
       this.deps.observability.endSpan(span, { calls: callParts.length, textBlocks: textParts.length });
     }
 
-    // Safety: ensure at least one text block
+    // Safety: ensure al menos texto o tarjetas ricas no queden "mudas"
     if (!blocks.some((b) => b.type === "text" || b.type === "confirm_write")) {
-      blocks.push({ type: "text", markdown: "He terminado." });
+      const hasRichCard = blocks.some((b) =>
+        ["team_list", "training_preview", "bracket_preview", "session_preview", "score_update", "exercise_preview"].includes(
+          b.type
+        )
+      );
+      if (actions.length > 0 && !hasRichCard) {
+        blocks.push({ type: "text", markdown: "He dejado un acceso directo abajo." });
+      } else if (!hasRichCard && actions.length === 0) {
+        blocks.push({ type: "text", markdown: "He terminado." });
+      }
     }
 
     if (traceId) {
@@ -199,7 +220,7 @@ export class OrchestratorAgent {
       }
     }
 
-    return { blocks, traceId };
+    return { blocks, traceId, actions: actions.length > 0 ? actions : undefined };
   }
 
   private async buildSystemPrompt(screen: ScreenContextData | undefined, digest: UserDigest): Promise<string> {

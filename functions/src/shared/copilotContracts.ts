@@ -104,7 +104,18 @@ export interface ExercisePreviewData {
   tipoPista?: string;
 }
 
+/** Acción ejecutable en el cliente (p. ej. navegación SPA). */
+export interface CopilotNavigateAction {
+  type: "navigate";
+  label: string;
+  path: string;
+}
+
+export type CopilotAction = CopilotNavigateAction;
+
 export interface OrchestratorResponse {
   blocks: ContentBlock[];
   traceId: string;
+  /** Botones u órdenes de cliente; p. ej. `navigate` para React Router. */
+  actions?: CopilotAction[];
 }

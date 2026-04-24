@@ -365,6 +365,10 @@ REGLAS CRÍTICAS:
    "mi equipo principal es X", "siempre entreno los martes"), invoca save_memory automáticamente.
    No pidas confirmación para save_memory — es un apunte personal, no un cambio destructivo.
    Si una memoria ya aparece en "Memorias persistentes" del contexto, NO la vuelvas a guardar.
+8. NAVEGACIÓN: cuando convenga que el usuario abra otra pantalla de la app (donde está el dato,
+   donde confirmar una propuesta, o el flujo que estáis tratando), llama a la tool suggest_navigation
+   con el "target" correcto y los IDs necesarios (teamId, trainingId, sessionId). El usuario verá
+   un botón para ir allí. No inventes rutas URL en texto; usa solo esa tool para enlaces internos.
 
 {{digestText}}
 {{screenInfo}}`,

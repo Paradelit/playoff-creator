@@ -3,6 +3,7 @@ export type {
   BracketRecord,
   CalendarSessionRecord,
   ContentBlock,
+  CopilotAction,
   OrchestratorResponse,
   ScoreUpdateEntry,
   TeamListEntry,

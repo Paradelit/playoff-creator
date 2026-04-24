@@ -165,17 +165,40 @@ export function useCopilotInternal(): CopilotAPI {
         });
 
         const blocks: ContentBlock[] = response.blocks || [];
-        const content = blocks
+        const actions = response.actions;
+        let content = blocks
           .filter((b): b is { type: 'text'; markdown: string } => b.type === 'text')
           .map((b) => b.markdown)
           .join('\n\n')
           .trim();
 
+        if (!content) {
+          const hasRichCard = blocks.some((b) =>
+            [
+              'team_list',
+              'training_preview',
+              'bracket_preview',
+              'session_preview',
+              'score_update',
+              'exercise_preview',
+              'confirm_write',
+            ].includes(b.type),
+          );
+          if (actions && actions.length > 0) {
+            content = 'He dejado un acceso directo abajo.';
+          } else if (hasRichCard) {
+            content = 'Ver la respuesta en las tarjetas.';
+          } else {
+            content = 'He terminado.';
+          }
+        }
+
         const assistantMsg: ChatMessage = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: content || 'He terminado.',
+          content,
           blocks,
+          actions: actions && actions.length > 0 ? actions : undefined,
           traceId: response.traceId,
           timestamp: Date.now(),
         };

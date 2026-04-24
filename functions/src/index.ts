@@ -19,6 +19,7 @@ import {
   createWriteTools,
   createAgentTools,
   createMemoryTools,
+  createNavigationTools,
   buildUserDigest,
 } from "./ai";
 
@@ -101,6 +102,7 @@ function getSystem(): System {
   toolRegistry.registerMany(createWriteTools());
   toolRegistry.registerMany(createAgentTools());
   toolRegistry.registerMany(createMemoryTools());
+  toolRegistry.registerMany(createNavigationTools());
 
   const orchestrator = new OrchestratorAgent({
     llmProvider,

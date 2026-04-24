@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { OrchestratorAgent } from '../agents/orchestratorAgent';
 import { ToolRegistry, ToolDefinition } from '../tools/registry';
+import { createNavigationTools } from '../tools/navigationTools';
 import type { GenerateWithToolsRequest, GenerateWithToolsResult, GeminiPart } from '../llmProvider';
 import type { UserDigest } from '../userDigest';
 import type { CompiledPrompt } from '../promptManager';
@@ -199,6 +200,27 @@ describe('OrchestratorAgent smoke tests', () => {
       expect(preview.training.title).toBe('Sesión defensiva');
       expect(preview.training.totalDuration).toBe(75);
     }
+  });
+
+  it('suggest_navigation adds client actions', async () => {
+    const navTool = createNavigationTools()[0];
+    const orchestrator = makeOrchestrator(navTool, [
+      [{ functionCall: { name: 'suggest_navigation', args: { target: 'calendar' } } }],
+      [{ text: 'Aquí tienes el acceso al calendario.' }],
+    ]);
+
+    const res = await orchestrator.run(
+      { userMessage: 'llévame al calendario', userDigest: EMPTY_DIGEST },
+      EMPTY_TOOL_CTX,
+      TRACE_CTX,
+      AGENT_OPTS
+    );
+
+    expect(res.actions).toBeDefined();
+    expect(res.actions?.[0]).toMatchObject({
+      type: 'navigate',
+      path: '/calendar',
+    });
   });
 
   it('returns a fallback text block when nothing else is emitted', async () => {
