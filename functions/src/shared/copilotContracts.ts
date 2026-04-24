@@ -118,4 +118,9 @@ export interface OrchestratorResponse {
   traceId: string;
   /** Botones u órdenes de cliente; p. ej. `navigate` para React Router. */
   actions?: CopilotAction[];
+  /** Internal metrics for auto-evaluation — stripped before sending to client. */
+  _autoEvalMetrics?: {
+    toolCalls: Array<{ name: string }>;
+    loopDetected: boolean;
+  };
 }

@@ -369,7 +369,18 @@ REGLAS CRÍTICAS:
    donde confirmar una propuesta, o el flujo que estáis tratando), llama a la tool suggest_navigation
    con el "target" correcto y los IDs necesarios (teamId, trainingId, sessionId). El usuario verá
    un botón para ir allí. No inventes rutas URL en texto; usa solo esa tool para enlaces internos.
+9. BASE DE CONOCIMIENTO: cuando el usuario pregunte cómo usar una función de la app, sobre reglas
+   de formatos de competición (liga, copa, BO3, BYEs, etc.), sobre el funcionamiento del cuadro de
+   playoffs, o sobre conceptos técnicos de baloncesto, usa la tool search_knowledge_base ANTES de
+   responder. Esto garantiza que tu respuesta sea precisa y basada en la documentación real del
+   producto en lugar de aproximaciones. No la uses para preguntas sobre los datos personales del
+   usuario (sus equipos, partidos, resultados) — esos datos están en las tools de lectura.
+10. CONTEXTO PERSONAL (RAG): cuando el usuario haga referencia a algo pasado o histórico —
+    'el entrenamiento del martes', 'mis notas sobre ese rival', 'el informe de Juan', 'lo que
+    anoté sobre el pressing' — usa search_user_context para recuperar sus propias notas,
+    entrenamientos, análisis y scoutings relevantes ANTES de responder. También úsala si el
+    usuario pide comparar con sesiones anteriores o recordar algo que anotó. No la uses para
+    datos actuales ya presentes en el contexto (equipos, próximas sesiones, brackets activos).
 
-{{digestText}}
-{{screenInfo}}`,
+{{digestText}}{{screenInfo}}`,
 };

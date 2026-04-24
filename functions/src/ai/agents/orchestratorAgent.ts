@@ -8,6 +8,71 @@ import { PromptManager } from "../promptManager";
 
 const MAX_TOOL_ITERATIONS = 8;
 
+// ── History compression ──────────────────────────────────────────────────────
+
+/** Number of most-recent turns to keep verbatim; older turns are condensed. */
+const RECENT_TURNS_KEEP = 6;
+
+/**
+ * Keeps the last RECENT_TURNS_KEEP turns verbatim.
+ * Older turns are condensed into a single bracketed context message so the
+ * model retains narrative continuity without burning tokens on full history.
+ */
+function compressConversationHistory(
+  history: Array<{ role: "user" | "assistant"; content: string }>
+): Array<{ role: "user" | "assistant"; content: string }> {
+  if (history.length <= RECENT_TURNS_KEEP) return history;
+
+  const older = history.slice(0, history.length - RECENT_TURNS_KEEP);
+  const recent = history.slice(history.length - RECENT_TURNS_KEEP);
+
+  const summaryLines = older.map((turn) => {
+    const label = turn.role === "user" ? "U" : "A";
+    const excerpt = turn.content.replace(/\n/g, " ").substring(0, 130);
+    return `${label}: ${excerpt}${turn.content.length > 130 ? "…" : ""}`;
+  });
+
+  const contextTurn: { role: "user" | "assistant"; content: string } = {
+    role: "user",
+    content: `[Contexto resumido de la conversación anterior]\n${summaryLines.join("\n")}`,
+  };
+
+  return [contextTurn, ...recent];
+}
+
+// ── Model routing by complexity ───────────────────────────────────────────────
+
+const COMPLEX_KEYWORDS = [
+  "crea", "genera", "bracket", "playoff", "entrenamiento", "analiza", "análisis",
+  "importa", "extrae", "puntuaciones", "calendario", "planifica", "diseña",
+  "construye", "configura", "modifica", "actualiza", "clasifica", "informe",
+  "report", "create", "generate", "analyze", "training", "bracket",
+];
+
+const SIMPLE_PATTERNS = [
+  /^(hola|hi|hey|hello|buenos días|buenas tardes|buenas noches)\b/i,
+  /^(gracias|de nada|ok|vale|perfecto|entendido|genial|bien)\b/i,
+  /^(qué es|qué son|qué hace|cómo funciona|explícame|cuéntame)\b/i,
+  /^(ir a|navega|abre|muéstrame|llévame|ve a)\b/i,
+  /^(quién|cuándo|dónde|cuántos|cuántas)\b/i,
+];
+
+function classifyQueryComplexity(message: string): "fast" | "capable" {
+  const lower = message.toLowerCase().trim();
+
+  // Explicit complex keywords always win
+  if (COMPLEX_KEYWORDS.some((kw) => lower.includes(kw))) return "capable";
+
+  // Long messages are usually multi-step
+  if (message.length > 200) return "capable";
+
+  // Short messages matching simple patterns → fast model
+  if (message.length < 100 && SIMPLE_PATTERNS.some((p) => p.test(lower))) return "fast";
+
+  // Short messages with no complex keywords default to fast
+  return message.length < 100 ? "fast" : "capable";
+}
+
 /** Human-readable status shown before each slow tool runs. */
 const SLOW_TOOL_STATUS: Record<string, string> = {
   run_training_generator: "Generando entrenamiento...",
@@ -65,8 +130,10 @@ export class OrchestratorAgent {
     const systemInstruction = await this.buildSystemPrompt(input.screenContext, input.userDigest);
     const traceId = (traceContext.trace as { id?: string })?.id || "";
 
+    // Compress old history to save tokens, keep recent turns verbatim
+    const compressedHistory = compressConversationHistory(input.conversationHistory || []);
     const messages: GeminiMessage[] = [];
-    for (const m of input.conversationHistory || []) {
+    for (const m of compressedHistory) {
       messages.push({
         role: m.role === "assistant" ? "model" : "user",
         parts: [{ text: m.content }],
@@ -74,9 +141,17 @@ export class OrchestratorAgent {
     }
     messages.push({ role: "user", parts: [{ text: input.userMessage }] });
 
+    // Route simple queries to a faster/cheaper model
+    const modelHint = classifyQueryComplexity(input.userMessage);
+
     let totalToolCalls = 0;
     let totalToolErrors = 0;
     let completedIterations = 0;
+    const toolCallNames: Array<{ name: string }> = [];
+    let loopDetected = false;
+
+    // Loop-protection: track the last set of tool calls to detect repeated identical calls
+    let lastToolCallKey: string | null = null;
 
     for (let iter = 0; iter < MAX_TOOL_ITERATIONS; iter++) {
       completedIterations = iter + 1;
@@ -92,6 +167,7 @@ export class OrchestratorAgent {
           messages,
           tools: toolDecls,
           traceContext: { ...traceContext, span },
+          modelHint,
         });
       } catch (err) {
         const msg = (err as Error).message || String(err);
@@ -122,6 +198,22 @@ export class OrchestratorAgent {
         break;
       }
 
+      // Loop protection: break if the model is calling the same tool(s) with identical args again
+      const currentToolCallKey = JSON.stringify(
+        callParts.map((c) => ({ n: c.functionCall.name, a: c.functionCall.args }))
+      );
+      if (currentToolCallKey === lastToolCallKey) {
+        loopDetected = true;
+        this.deps.observability.endSpan(span, { loopDetected: true });
+        blocks.push({
+          type: "text",
+          markdown:
+            "No he podido completar la acción (respuesta repetida detectada). Por favor, reformula tu petición con más detalle.",
+        });
+        break;
+      }
+      lastToolCallKey = currentToolCallKey;
+
       // Add the model turn (with functionCalls) to messages BEFORE responding
       messages.push({ role: "model", parts: result.parts });
 
@@ -147,6 +239,7 @@ export class OrchestratorAgent {
         try {
           const output = await this.runToolWithRetry(tool.handler, args, toolCtx);
           totalToolCalls += 1;
+          toolCallNames.push({ name: toolName });
 
           if (toolName === "suggest_navigation") {
             const out = output as Record<string, unknown>;
@@ -220,7 +313,12 @@ export class OrchestratorAgent {
       }
     }
 
-    return { blocks, traceId, actions: actions.length > 0 ? actions : undefined };
+    return {
+      blocks,
+      traceId,
+      actions: actions.length > 0 ? actions : undefined,
+      _autoEvalMetrics: { toolCalls: toolCallNames, loopDetected },
+    };
   }
 
   private async buildSystemPrompt(screen: ScreenContextData | undefined, digest: UserDigest): Promise<string> {

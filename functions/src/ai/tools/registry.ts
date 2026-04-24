@@ -24,6 +24,8 @@ export interface ToolContext {
   agents?: AgentsMap;
   traceContext?: TraceContext;
   agentOptions?: AgentExecutionOptions;
+  /** Gemini API key — needed by tools that call embedding or generation APIs directly. */
+  geminiApiKey?: string;
 }
 
 /** JSON Schema subset supported by Gemini function declarations */

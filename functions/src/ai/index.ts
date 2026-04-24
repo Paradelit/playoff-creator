@@ -18,6 +18,13 @@ export { createWriteTools } from "./tools/writeTools";
 export { createAgentTools } from "./tools/agentTools";
 export { createMemoryTools } from "./tools/memoryTools";
 export { createNavigationTools } from "./tools/navigationTools";
+export { createKnowledgeTools } from "./tools/knowledgeTools";
+export { createUserContextTools } from "./tools/userContextTools";
+export { embedText, cosineSimilarity, searchKnowledgeBase } from "./embeddingService";
+export { searchUserContext } from "./userRagService";
+export type { KnowledgeChunk } from "./embeddingService";
+export type { UserContextChunk, RankedChunk } from "./userRagService";
+export { KNOWLEDGE_BASE } from "./knowledge";
 export { buildUserDigest, digestToPromptText } from "./userDigest";
 export type { UserDigest } from "./userDigest";
 export type { ContentBlock, CopilotAction, OrchestratorResponse, WriteProposal } from "./contentBlocks";
@@ -33,3 +40,5 @@ export type {
   AgentAction,
   EnrichedResponse,
 } from "./types";
+export { AutoEvaluator } from "./evaluators";
+export type { AutoEvalMetrics } from "./evaluators";

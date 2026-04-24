@@ -59,6 +59,8 @@ export interface GenerateWithToolsRequest {
   tools: ToolDeclaration[];
   traceContext: TraceContext;
   temperature?: number;
+  /** "fast" uses cheaper/faster models; "capable" uses the full fallback chain (default). */
+  modelHint?: "fast" | "capable";
 }
 
 export interface GenerateWithToolsResult {
@@ -194,11 +196,16 @@ export class LLMProvider {
   async generateWithTools(request: GenerateWithToolsRequest): Promise<GenerateWithToolsResult> {
     const startTime = Date.now();
     let lastErrorMsg = "";
-    for (let idx = 0; idx < this.providers.length; idx++) {
+    // For "fast" queries, skip the most capable (and slowest) model — gemini-2.5-flash.
+    // Fall back to the full list if filtering would leave nothing.
+    const fastProviders = this.providers.filter((p) => p.model !== "gemini-2.5-flash");
+    const activeProviders =
+      request.modelHint === "fast" && fastProviders.length > 0 ? fastProviders : this.providers;
+    for (let idx = 0; idx < activeProviders.length; idx++) {
       // If we've spent more than 280s, don't even start a new model.
       if (Date.now() - startTime > GLOBAL_TIMEOUT_MS) break;
 
-      const { provider, model } = this.providers[idx];
+      const { provider, model } = activeProviders[idx];
 
       for (let attempt = 0; attempt <= MAX_RETRIES_PER_MODEL; attempt++) {
         try {

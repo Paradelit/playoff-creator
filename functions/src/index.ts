@@ -1,8 +1,10 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { onSchedule } from "firebase-functions/v2/scheduler";
 import { defineSecret } from "firebase-functions/params";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { cleanupUserData as runCleanupUserData, type CleanupAction } from "./dataCleanup";
+import { runProactiveBriefing } from "./proactiveEngine";
 import {
   AgentRouter,
   ObservabilityService,
@@ -20,7 +22,10 @@ import {
   createAgentTools,
   createMemoryTools,
   createNavigationTools,
+  createKnowledgeTools,
+  createUserContextTools,
   buildUserDigest,
+  AutoEvaluator,
 } from "./ai";
 
 if (getApps().length === 0) initializeApp();
@@ -103,6 +108,8 @@ function getSystem(): System {
   toolRegistry.registerMany(createAgentTools());
   toolRegistry.registerMany(createMemoryTools());
   toolRegistry.registerMany(createNavigationTools());
+  toolRegistry.registerMany(createKnowledgeTools(gKey));
+  toolRegistry.registerMany(createUserContextTools(gKey));
 
   const orchestrator = new OrchestratorAgent({
     llmProvider,
@@ -220,6 +227,7 @@ export const aiChat = onCall(
         agents: system.agents,
         traceContext,
         agentOptions,
+        geminiApiKey: geminiKey.value(),
       };
 
       const response = await system.orchestrator.run(
@@ -234,7 +242,19 @@ export const aiChat = onCall(
         agentOptions
       );
 
-      return { ...response, traceId };
+      // Fire-and-forget: auto-score the trace without adding latency
+      if (traceId && response._autoEvalMetrics) {
+        const autoEvaluator = new AutoEvaluator(system.observability);
+        autoEvaluator.score(traceId, {
+          toolCalls: response._autoEvalMetrics.toolCalls,
+          loopDetected: response._autoEvalMetrics.loopDetected,
+          contentBlocks: response.blocks,
+        });
+      }
+
+      // Strip internal metrics before sending to client
+      const { _autoEvalMetrics: _omit, ...clientResponse } = response;
+      return { ...clientResponse, traceId };
     } catch (err) {
       const error = err as Error;
       const msg = error.message || "";
@@ -274,6 +294,74 @@ export const logInteractionScore = onCall(
     });
     await system.observability.flush();
     return { success: true };
+  }
+);
+
+// 5. seedKnowledgeBase — one-time admin function to embed and store the knowledge base in Firestore.
+//    Call once after deploying the functions. Safe to re-run (skips unchanged entries).
+//    Only callable by authenticated users (acts as a basic guard — add stricter checks if needed).
+export const seedKnowledgeBase = onCall(
+  {
+    secrets: [geminiKey],
+    region: "europe-west1",
+    timeoutSeconds: 300,
+    memory: "512MiB",
+  },
+  async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
+
+    const { KNOWLEDGE_BASE } = await import("./ai/knowledge/index");
+    const { embedText } = await import("./ai/embeddingService");
+    const db = getFirestore();
+    const apiKey = geminiKey.value();
+    const col = db.collection("knowledgeBase");
+
+    // Load existing entries to skip unchanged ones
+    const existingSnap = await col.get();
+    const existingMap = new Map<string, string>();
+    for (const doc of existingSnap.docs) {
+      existingMap.set(doc.id, (doc.data().content as string) || "");
+    }
+
+    let created = 0, updated = 0, skipped = 0, errors = 0;
+
+    for (const entry of KNOWLEDGE_BASE) {
+      const existingContent = existingMap.get(entry.id);
+      if (existingContent === entry.content) {
+        skipped++;
+        continue;
+      }
+      try {
+        const textToEmbed = entry.title + "\n\n" + entry.content;
+        const embedding = await embedText(textToEmbed, apiKey);
+        await col.doc(entry.id).set({
+          id: entry.id,
+          category: entry.category,
+          title: entry.title,
+          content: entry.content,
+          embedding,
+          indexedAt: new Date().toISOString(),
+        });
+        const isNew = !existingMap.has(entry.id);
+        if (isNew) created++; else updated++;
+        await new Promise((r) => setTimeout(r, 200));
+      } catch (err) {
+        console.error("[seedKnowledgeBase] Error embedding", entry.id, (err as Error).message);
+        errors++;
+      }
+    }
+
+    // Remove stale entries
+    const knownIds = new Set(KNOWLEDGE_BASE.map((e) => e.id));
+    let deleted = 0;
+    for (const doc of existingSnap.docs) {
+      if (!knownIds.has(doc.id)) {
+        await doc.ref.delete();
+        deleted++;
+      }
+    }
+
+    return { success: true, created, updated, skipped, deleted, errors };
   }
 );
 
@@ -318,6 +406,30 @@ export const cleanupUserData = onCall(
     } catch (err) {
       const error = err as Error;
       throw new HttpsError("internal", error.message || "Cleanup failed");
+    }
+  }
+);
+
+// 6. proactiveDailyBriefing — scheduled function that runs every morning at 08:00 Europe/Madrid.
+//    Queries active users, finds sessions for today/tomorrow, generates AI suggestions,
+//    and writes them to proactiveNotifications/{date}-{sessionId} (idempotent).
+export const proactiveDailyBriefing = onSchedule(
+  {
+    schedule: "0 8 * * *",
+    timeZone: "Europe/Madrid",
+    secrets: [geminiKey],
+    region: "europe-west1",
+    timeoutSeconds: 540,
+    memory: "256MiB",
+  },
+  async (_event) => {
+    const apiKey = geminiKey.value();
+    try {
+      const result = await runProactiveBriefing(apiKey);
+      console.log("[proactiveDailyBriefing] Completed:", result);
+    } catch (err) {
+      console.error("[proactiveDailyBriefing] Fatal error:", (err as Error).message);
+      // Don't rethrow — let the function succeed so Cloud Scheduler doesn't retry aggressively.
     }
   }
 );
