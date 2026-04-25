@@ -117,7 +117,7 @@ export function useSettings() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `urocoach-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `pickandcoach-backup-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
     } finally {
@@ -136,7 +136,7 @@ export function useSettings() {
       if (!data.version || !data.exportDate) throw new Error('Formato de archivo no reconocido.');
       setImportPreview(data);
     } catch (err) {
-      setImportError(err.message || 'Archivo inválido. Usa un backup exportado desde Urocoach.');
+      setImportError(err.message || 'Archivo inválido. Usa un backup exportado desde Pick&Coach.');
     }
   }
 

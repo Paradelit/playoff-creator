@@ -391,7 +391,7 @@ export function DataSection({ s }) {
         <Upload size={18} className="shrink-0" aria-hidden="true" />
         <div className="text-left">
           <p className="font-bold">Importar datos</p>
-          <p className="text-xs font-normal text-blue-600">Restaurar desde un backup .json de Urocoach</p>
+          <p className="text-xs font-normal text-blue-600">Restaurar desde un backup .json de Pick&amp;Coach</p>
         </div>
       </button>
       <input ref={s.importInputRef} type="file" accept=".json" className="hidden" onChange={s.handleImportFile} />
