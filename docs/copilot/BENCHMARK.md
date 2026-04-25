@@ -1,6 +1,6 @@
-# Benchmark: Copilot CoachApp vs referencias
+# Benchmark: Copilot Pick&Coach vs referencias
 
-Objetivo: puntuar (1–5) y anotar brechas para priorizar P0/P1/P2. Las puntuaciones de **CoachApp** reflejan el estado tras la revisión documentada en [INVENTORY.md](./INVENTORY.md).
+Objetivo: puntuar (1–5) y anotar brechas para priorizar P0/P1/P2. Las puntuaciones de **Pick&Coach** reflejan el estado tras la revisión documentada en [INVENTORY.md](./INVENTORY.md).
 
 ## Productos de referencia
 
@@ -12,7 +12,7 @@ Objetivo: puntuar (1–5) y anotar brechas para priorizar P0/P1/P2. Las puntuaci
 
 ## Matriz de criterios
 
-Leyenda: **C** = CoachApp. Puntuación 1 = muy débil, 5 = al nivel o mejor que la referencia típica en ese criterio.
+Leyenda: **C** = Pick&Coach. Puntuación 1 = muy débil, 5 = al nivel o mejor que la referencia típica en ese criterio.
 
 | Criterio                                   | ChatGPT | Claude | M365 Copilot | Notion AI | Linear | **C** |
 | ------------------------------------------ | ------- | ------ | ------------ | --------- | ------ | ----- |
@@ -29,7 +29,7 @@ Leyenda: **C** = CoachApp. Puntuación 1 = muy débil, 5 = al nivel o mejor que 
 | Observabilidad / feedback (thumbs, trazas) | 2       | 2      | 2            | 2         | 3      | **4** |
 | Proactividad (tips fuera del panel)        | 2       | 2      | 3            | 2         | 3      | **3** |
 
-### Fortalezas relativas de CoachApp
+### Fortalezas relativas de Pick&Coach
 
 - **Guardarraíles:** solo escrituras vía `propose_*` + confirmación en UI (`confirm_write`).
 - **Dominio baloncesto:** bloques `training_preview`, `bracket_preview`, `session_preview`, etc.

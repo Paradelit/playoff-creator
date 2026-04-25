@@ -73,7 +73,7 @@ async function embedText(text: string): Promise<number[]> {
 }
 
 async function main() {
-  console.log(`\n🏀 CoachApp Knowledge Base Indexer`);
+  console.log(`\n🏀 Pick&Coach Help Indexer`);
   console.log(`📚 Indexing ${KNOWLEDGE_BASE.length} entries into Firestore...\n`);
 
   const col = db.collection("knowledgeBase");
