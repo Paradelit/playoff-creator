@@ -76,7 +76,7 @@ export default function LoginScreen() {
       <div className="w-full max-w-md md:max-w-xl bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
         <div className="bg-gradient-to-br from-blue-900 to-blue-950 p-6 md:p-10 text-center text-white">
           <Trophy size={48} className="mx-auto mb-3 text-amber-400" aria-hidden="true" />
-          <h1 className="text-2xl md:text-3xl font-bold tracking-wide">FBM Brackets</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-wide">Pick&amp;Coach</h1>
           <p className="text-blue-200 mt-2 text-sm md:text-base">Gestiona tus equipos</p>
         </div>
 
