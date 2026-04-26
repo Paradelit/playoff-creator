@@ -6,6 +6,7 @@ import ModuleBoundary from '../components/ModuleBoundary';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import LegacyPathRedirect from '../router/LegacyPathRedirect';
+import { PUBLIC_ROUTE_DEFS } from './publicRoutes';
 
 const TeamsScreen = lazy(() => import('../screens/TeamsScreen'));
 const TeamDetailScreen = lazy(() => import('../screens/TeamDetailScreen'));
@@ -103,17 +104,6 @@ function Guarded({ name, children }) {
   );
 }
 
-// Public placeholders for F1.1 — real implementations land in F1.4 (landing) and F1.5 (help center).
-function LandingPlaceholder() {
-  return <div style={{ padding: 40 }}>Pick&amp;Coach landing (placeholder — implemented in F1.4)</div>;
-}
-function HelpIndexPlaceholder() {
-  return <div style={{ padding: 40 }}>Centro de ayuda (placeholder — implemented in F1.5)</div>;
-}
-function HelpArticlePlaceholder() {
-  return <div style={{ padding: 40 }}>Artículo de ayuda (placeholder — implemented in F1.5)</div>;
-}
-
 export default function AppRouter() {
   const { authReady } = useAuth();
 
@@ -132,10 +122,10 @@ export default function AppRouter() {
     <Suspense fallback={<LazyFallback />}>
       <ScrollToTop />
       <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<LandingPlaceholder />} />
-        <Route path="/ayuda" element={<HelpIndexPlaceholder />} />
-        <Route path="/ayuda/:slug" element={<HelpArticlePlaceholder />} />
+        {/* Public routes — defined in publicRoutes.jsx so the prerender entry can mount them too */}
+        {PUBLIC_ROUTE_DEFS.map((r) => (
+          <Route key={r.path} path={r.path} element={r.element} />
+        ))}
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/s/:code" element={<ShareRedirect />} />
         <Route

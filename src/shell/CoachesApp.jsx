@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { FirebaseProvider } from '../contexts/FirebaseContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ScreenContextProvider } from '../contexts/ScreenContextProvider';
@@ -13,25 +14,27 @@ import PickRoot from '../components/pick/PickRoot';
 
 export default function CoachesApp() {
   return (
-    <BrowserRouter>
-      <FirebaseProvider>
-        <AuthProvider>
-          <ScreenContextProvider>
-            <PickProvider>
-              <ToastProvider>
-                <ErrorBoundary>
-                  <SidebarProvider>
-                    <AppShell>
-                      <AppRouter />
-                    </AppShell>
-                    <PickRoot />
-                  </SidebarProvider>
-                </ErrorBoundary>
-              </ToastProvider>
-            </PickProvider>
-          </ScreenContextProvider>
-        </AuthProvider>
-      </FirebaseProvider>
-    </BrowserRouter>
+    <HelmetProvider>
+      <BrowserRouter>
+        <FirebaseProvider>
+          <AuthProvider>
+            <ScreenContextProvider>
+              <PickProvider>
+                <ToastProvider>
+                  <ErrorBoundary>
+                    <SidebarProvider>
+                      <AppShell>
+                        <AppRouter />
+                      </AppShell>
+                      <PickRoot />
+                    </SidebarProvider>
+                  </ErrorBoundary>
+                </ToastProvider>
+              </PickProvider>
+            </ScreenContextProvider>
+          </AuthProvider>
+        </FirebaseProvider>
+      </BrowserRouter>
+    </HelmetProvider>
   );
 }
