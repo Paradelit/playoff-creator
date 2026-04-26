@@ -2,17 +2,25 @@ import type { Firestore } from "firebase-admin/firestore";
 
 export interface KnowledgeChunk {
   id: string;
+  slug?: string;
   category: string;
   title: string;
-  content: string;
+  summary: string;
+  body: string;
+  tags?: string[];
   score: number;
 }
 
 interface StoredKnowledgeDoc {
   id: string;
+  slug?: string;
   category: string;
   title: string;
-  content: string;
+  summary?: string;
+  body?: string;
+  // Legacy field — older docs only have `content`; fallback when body missing.
+  content?: string;
+  tags?: string[];
   embedding: number[];
 }
 
@@ -101,11 +109,15 @@ export async function searchKnowledgeBase(
   // Sort by score descending and return top-K
   scored.sort((a, b) => b.score - a.score);
 
-  return scored.slice(0, topK).map(({ id, category, title, content, score }) => ({
+  return scored.slice(0, topK).map(({ id, slug, category, title, summary, body, content, tags, score }) => ({
     id,
+    slug,
     category,
     title,
-    content,
+    // Prefer new fields; fall back to legacy `content` if doc was indexed before the schema migration.
+    summary: summary ?? "",
+    body: body ?? content ?? "",
+    tags: tags ?? [],
     score,
   }));
 }
