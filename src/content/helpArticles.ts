@@ -255,14 +255,16 @@ Puedes revocar el acceso en cualquier momento desde la configuración de compart
     category: 'competition-rules',
     title: 'Formato liga (todos contra todos)',
     summary:
-      'En una liga, cada equipo juega una o dos veces contra todos los demás. La clasificación se decide por puntos y, en caso de empate, por el resultado entre los implicados.',
-    body: `La liga o formato round-robin es el más común en competiciones regulares de baloncesto.
+      'En una liga, cada equipo juega una o dos veces contra todos los demás. Los puntos por resultado y los criterios de desempate los fija cada competición.',
+    body: `> El formato exacto de tu competición puede variar — consulta siempre las bases oficiales.
+
+La liga o formato round-robin es un formato habitual en competiciones regulares de baloncesto.
 
 En una liga simple, cada equipo juega UNA vez contra todos los demás.
 
 En una liga doble (liguilla de vuelta), cada equipo juega DOS veces contra cada rival (una en casa, una fuera).
 
-La clasificación se decide por: puntos (2 por victoria, 1 por derrota), y en caso de empate: diferencia de puntos en los partidos directos entre los equipos empatados.
+La clasificación se decide por los puntos acumulados según el resultado de cada partido, y los criterios de desempate los fija cada competición.
 
 La liga es el formato más equitativo porque minimiza el efecto del azar.
 
@@ -278,13 +280,15 @@ Muchas competiciones usan una fase de liga regular seguida de una fase de playof
     title: 'Formato eliminatoria directa (copa)',
     summary:
       'En la eliminatoria directa, perder significa quedar eliminado. El seeding determina los emparejamientos y los BYEs aparecen cuando el número de equipos no es potencia de 2.',
-    body: `En la eliminatoria directa o formato copa, el equipo que pierde queda eliminado inmediatamente.
+    body: `> El formato exacto de tu competición puede variar — consulta siempre las bases oficiales.
+
+En la eliminatoria directa o formato copa, el equipo que pierde queda eliminado inmediatamente.
 
 El cuadro se dibuja antes del inicio del torneo y los emparejamientos están prefijados.
 
 La ventaja es que requiere menos partidos totales que una liga.
 
-El seeding (cabezas de serie) determina los emparejamientos: el 1º del grupo A juega contra el último del grupo B, etc.
+El seeding (cabezas de serie) determina los emparejamientos: un ejemplo habitual sería que el 1º de un grupo juegue contra el 2º de otro grupo. Los emparejamientos exactos dependen de las bases del torneo.
 
 Las posibles BYE rounds ocurren cuando el número de equipos no es potencia de 2 — los equipos con BYE avanzan directamente a la siguiente ronda sin jugar.`,
     tags: ['eliminatoria', 'copa', 'seeding', 'bye'],
@@ -297,14 +301,16 @@ Las posibles BYE rounds ocurren cuando el número de equipos no es potencia de 2
     category: 'competition-rules',
     title: 'Formatos de serie: BO1, BO2, BO3, BO5',
     summary:
-      'Las eliminatorias pueden jugarse en partido único (BO1) o en series de 2, 3, 5 o 7 partidos. El más habitual en baloncesto juvenil español es el BO3.',
-    body: `Las eliminatorias de playoffs suelen jugarse en series en lugar de partido único:
+      'Las eliminatorias pueden jugarse en partido único (BO1) o en series de 2, 3, 5 o 7 partidos. El formato concreto lo determinan las bases de cada competición.',
+    body: `> El formato exacto de tu competición puede variar — consulta siempre las bases oficiales.
+
+Las eliminatorias de playoffs suelen jugarse en series en lugar de partido único:
 
 - BO1 (Best of 1): Un solo partido. El ganador avanza. Es el formato más rápido.
-- BO2 (Best of 2): Dos partidos con marcador global. En caso de empate (1-1), se usa diferencia de puntos o partido de desempate. Poco común.
-- BO3 (Best of 3): Se juega hasta que un equipo gane 2 partidos. Máximo 3 partidos. Es el más común en playoffs de baloncesto juvenil español.
-- BO5 (Best of 5): Se juega hasta que un equipo gane 3 partidos. Máximo 5 partidos. Usado en competiciones de alto nivel.
-- BO7 (Best of 7): Se juega hasta que un equipo gane 4 partidos. Propio de la NBA y ACB.
+- BO2 (Best of 2): Dos partidos con marcador global. En caso de empate (1-1), se usa diferencia de puntos o partido de desempate.
+- BO3 (Best of 3): Se juega hasta que un equipo gane 2 partidos. Máximo 3 partidos.
+- BO5 (Best of 5): Se juega hasta que un equipo gane 3 partidos. Máximo 5 partidos.
+- BO7 (Best of 7): Se juega hasta que un equipo gane 4 partidos.
 
 El equipo con mejor clasificación suele tener ventaja de campo (juega más partidos en casa).`,
     tags: ['serie', 'bo3', 'bo1', 'playoffs'],
@@ -317,15 +323,17 @@ El equipo con mejor clasificación suele tener ventaja de campo (juega más part
     category: 'competition-rules',
     title: 'Categorías del baloncesto español',
     summary:
-      'El baloncesto federado español se organiza por edades: minibasket, alevín, infantil, cadete, júnior y sénior, cada una con su balón, canasta y reglamento específico.',
-    body: `Las categorías del baloncesto español por edad:
+      'El baloncesto federado español se organiza por tramos de edad: minibasket, alevín, infantil, cadete, júnior y sénior, cada una con su balón, canasta y reglamento específico.',
+    body: `> El formato exacto de tu competición puede variar — consulta siempre las bases oficiales.
 
-- Minibasket (prebenjamín/benjamín): nacidos en 2016-2019. Pista reducida, canasta a 2.60m, balón talla 5.
-- Alevín: nacidos en 2014-2015. Canasta a 2.60m (en algunas federaciones a 3.05m), balón talla 5.
-- Infantil: nacidos en 2012-2013. Canasta reglamentaria (3.05m), balón talla 6.
-- Cadete: nacidos en 2010-2011. Canasta reglamentaria, balón talla 7 (masculino) o 6 (femenino).
-- Júnior: nacidos en 2008-2009. Reglamento completo.
-- Sénior: nacidos antes de 2008. Reglamento completo.
+Las categorías del baloncesto español por tramo de edad (los años de nacimiento concretos varían cada temporada y los publica cada federación):
+
+- Minibasket (prebenjamín/benjamín): aproximadamente 6-9 años. Pista reducida, canasta a 2.60m, balón talla 5.
+- Alevín: aproximadamente 10-11 años. Canasta a 2.60m (en algunas federaciones a 3.05m), balón talla 5.
+- Infantil: aproximadamente 12-13 años. Canasta reglamentaria (3.05m), balón talla 6.
+- Cadete: aproximadamente 14-15 años. Canasta reglamentaria, balón talla 7 (masculino) o 6 (femenino).
+- Júnior: aproximadamente 16-17 años. Reglamento completo.
+- Sénior: 18 años en adelante. Reglamento completo.
 
 En competición federada, los jugadores pueden jugar en categorías superiores (sube) pero no inferiores (baja), salvo casos especiales.`,
     tags: ['categorias', 'edad', 'federacion', 'reglamento'],
@@ -339,10 +347,12 @@ En competición federada, los jugadores pueden jugar en categorías superiores (
     title: 'Fase de grupos + playoffs',
     summary:
       'Muchas competiciones combinan una fase de grupos (liga interna) con una fase de playoffs eliminatoria. El seeding cruza grupos para evitar repetir rivales hasta la final.',
-    body: `Muchas competiciones combinan una fase de grupos (liga) con una fase de playoffs:
+    body: `> El formato exacto de tu competición puede variar — consulta siempre las bases oficiales.
+
+Muchas competiciones combinan una fase de grupos (liga) con una fase de playoffs:
 
 1. Fase de grupos: Todos los equipos se dividen en grupos y juegan una liga interna.
-2. Clasificación: Los mejores de cada grupo (típicamente los 2 primeros) pasan a playoffs.
+2. Clasificación: Los primeros de cada grupo (el número exacto lo fijan las bases) pasan a playoffs.
 3. Playoffs: Eliminatorias directas o en series con los clasificados.
 
 El seeding para los playoffs suele cruzar grupos para evitar que dos equipos del mismo grupo se encuentren hasta la final.
@@ -502,13 +512,13 @@ En categorías inferiores (minibasket, alevín) no se asignan posiciones fijas p
     category: 'basketball-concepts',
     title: 'Minibasket y Planilla de Sextos',
     summary:
-      'El minibasket tiene reglas adaptadas a niños de 8-10 años: canasta a 2.60m, balón talla 5 y puntuación en sextos. La Planilla de Sextos está disponible para equipos de categoría minibasket.',
-    body: `El minibasket tiene reglas específicas adaptadas a niños de 8-10 años:
+      'El minibasket tiene reglas adaptadas a niños de 6-9 años: canasta a 2.60m y balón talla 5. Algunas federaciones usan puntuación en sextos. La Planilla de Sextos está disponible en Pick&Coach.',
+    body: `El minibasket tiene reglas específicas adaptadas a los más pequeños:
 
 - Pista reducida o pista completa según la federación.
 - Canasta a 2.60m de altura.
 - Balón talla 5.
-- Se puntúa con sextos: en lugar de 1-2-3 puntos, se usan fracciones de sexto.
+- La puntuación en sextos (fracciones en lugar de 1-2-3 puntos) es propia de algunas federaciones autonómicas; el reglamento de puntuación varía según la competición.
 
 La Planilla de Sextos es una hoja de registro específica de minibasket que recoge el marcador en formato de sextos.
 
@@ -525,16 +535,16 @@ En el partido de minibasket se permite tiempo muerto, cambios libres y el marcad
     category: 'basketball-concepts',
     title: 'Estructura típica de un entrenamiento de baloncesto',
     summary:
-      'Un entrenamiento bien estructurado tiene calentamiento (10-15 min), parte principal (45-60 min) y vuelta a la calma (5-10 min). La duración varía según la categoría.',
+      'Un entrenamiento bien estructurado tiene calentamiento, parte principal y vuelta a la calma. Las duraciones orientativas varían según la categoría y el grupo.',
     body: `Un entrenamiento de baloncesto bien estructurado tiene tres partes:
 
-1. Calentamiento (10-15 min): Activación cardiovascular, movilidad articular dinámica, manejo de balón suave. Objetivo: preparar el cuerpo y la mente para el esfuerzo.
-2. Parte principal (variable, 45-60 min): Trabajo técnico-táctico dividido en bloques temáticos. Cada bloque tiene ejercicios progresivos (del fácil al difícil, del analítico al global).
-3. Vuelta a la calma (5-10 min): Partido libre reducido, tiros libres, estiramientos estáticos, reflexión grupal sobre lo trabajado.
+1. Calentamiento (habitualmente entre 10 y 15 min, según la categoría): Activación cardiovascular, movilidad articular dinámica, manejo de balón suave. Objetivo: preparar el cuerpo y la mente para el esfuerzo.
+2. Parte principal (variable, habitualmente entre 40 y 60 min): Trabajo técnico-táctico dividido en bloques temáticos. Cada bloque tiene ejercicios progresivos (del fácil al difícil, del analítico al global).
+3. Vuelta a la calma (habitualmente entre 5 y 10 min): Partido libre reducido, tiros libres, estiramientos estáticos, reflexión grupal sobre lo trabajado.
 
-La duración total varía: 75-90 min para categorías superiores, 60-75 min para infantil-cadete, 60 min para alevín, 45-60 min para minibasket.
+La duración total varía según la categoría y el grupo: orientativamente 75-90 min para categorías superiores, 60-75 min para infantil-cadete, 60 min para alevín, 45-60 min para minibasket.
 
-Un entrenamiento de calidad tiene entre 3 y 5 ejercicios diferentes en la parte principal.`,
+Un entrenamiento de calidad suele incluir varios ejercicios diferentes en la parte principal (el número depende de la duración y los objetivos de la sesión).`,
     tags: ['entrenamiento', 'estructura', 'calentamiento', 'planificacion'],
     updatedAt: '2026-04-25',
   },
