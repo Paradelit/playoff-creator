@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /ayuda
+Allow: /ayuda/
+Disallow: /login
+Disallow: /area-privada
+Disallow: /s/
+Disallow: /exercise/
+
+Sitemap: https://pickandcoach.web.app/sitemap.xml

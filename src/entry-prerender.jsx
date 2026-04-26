@@ -13,6 +13,13 @@ import { HELP_ARTICLES } from './content/helpArticles';
 // and load everything it needs from this single SSR bundle (no tsx dependency).
 export const publicRoutes = ['/', '/ayuda', ...HELP_ARTICLES.map((a) => `/ayuda/${a.slug}`)];
 
+// Article metadata used by scripts/buildSitemap.mjs. Re-exported from this bundle so
+// the sitemap script can read TS content (HELP_ARTICLES) without needing a TS loader.
+export const helpArticles = HELP_ARTICLES.map((a) => ({
+  slug: a.slug,
+  updatedAt: a.updatedAt,
+}));
+
 /**
  * SSR entry used by scripts/prerender.ts.
  *
