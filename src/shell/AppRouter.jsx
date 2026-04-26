@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import ModuleBoundary from '../components/ModuleBoundary';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
+import LegacyPathRedirect from '../router/LegacyPathRedirect';
 
 const TeamsScreen = lazy(() => import('../screens/TeamsScreen'));
 const TeamDetailScreen = lazy(() => import('../screens/TeamDetailScreen'));
@@ -47,13 +48,17 @@ function LazyFallback() {
 
 function AuthGuard({ children }) {
   const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
+  const location = useLocation();
+  if (!user) {
+    const redirect = encodeURIComponent(location.pathname + location.search + location.hash);
+    return <Navigate to={`/login?redirect=${redirect}`} replace />;
+  }
   return children;
 }
 
 function ShareRedirect() {
   const { code } = useParams();
-  return <Navigate to={`/playoffs?share=${code}`} replace />;
+  return <Navigate to={`/area-privada/playoffs?share=${code}`} replace />;
 }
 
 function PlayoffsRoute() {
@@ -68,7 +73,7 @@ function PlayoffsRoute() {
     <PlayoffCreatorModule
       initialShareCode={shareCode}
       initialTeamId={initialTeamId}
-      onShareCodeConsumed={() => navigate('/playoffs', { replace: true })}
+      onShareCodeConsumed={() => navigate('/area-privada/playoffs', { replace: true })}
       shareUrlBase={`${window.location.origin}/s`}
     />
   );
@@ -76,8 +81,16 @@ function PlayoffsRoute() {
 
 function LoginRoute() {
   const { user } = useAuth();
+  const location = useLocation();
 
-  if (user) return <Navigate to="/" replace />;
+  if (user) {
+    const params = new URLSearchParams(location.search);
+    const redirect = params.get('redirect');
+    if (redirect && redirect.startsWith('/area-privada')) {
+      return <Navigate to={redirect} replace />;
+    }
+    return <Navigate to="/area-privada" replace />;
+  }
 
   return <LoginScreen />;
 }
@@ -88,6 +101,17 @@ function Guarded({ name, children }) {
       <ModuleBoundary name={name}>{children}</ModuleBoundary>
     </AuthGuard>
   );
+}
+
+// Public placeholders for F1.1 — real implementations land in F1.4 (landing) and F1.5 (help center).
+function LandingPlaceholder() {
+  return <div style={{ padding: 40 }}>Pick&amp;Coach landing (placeholder — implemented in F1.4)</div>;
+}
+function HelpIndexPlaceholder() {
+  return <div style={{ padding: 40 }}>Centro de ayuda (placeholder — implemented in F1.5)</div>;
+}
+function HelpArticlePlaceholder() {
+  return <div style={{ padding: 40 }}>Artículo de ayuda (placeholder — implemented in F1.5)</div>;
 }
 
 export default function AppRouter() {
@@ -108,188 +132,11 @@ export default function AppRouter() {
     <Suspense fallback={<LazyFallback />}>
       <ScrollToTop />
       <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<LandingPlaceholder />} />
+        <Route path="/ayuda" element={<HelpIndexPlaceholder />} />
+        <Route path="/ayuda/:slug" element={<HelpArticlePlaceholder />} />
         <Route path="/login" element={<LoginRoute />} />
-        <Route
-          path="/"
-          element={
-            <AuthGuard>
-              <HomeScreen />
-            </AuthGuard>
-          }
-        />
-
-        <Route
-          path="/playoffs"
-          element={
-            <Guarded name="Playoffs">
-              <PlayoffsRoute />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/teams"
-          element={
-            <Guarded name="Equipos">
-              <TeamsScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/teams/:teamId"
-          element={
-            <Guarded name="Equipos">
-              <TeamDetailScreen />
-            </Guarded>
-          }
-        />
-
-        <Route
-          path="/teams/:teamId/cuaderno"
-          element={
-            <Guarded name="Cuaderno">
-              <CuadernoScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/teams/:teamId/cuaderno/info"
-          element={
-            <Guarded name="Cuaderno">
-              <InfoScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/teams/:teamId/cuaderno/pilares"
-          element={
-            <Guarded name="Cuaderno">
-              <PilaresScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/teams/:teamId/cuaderno/normas"
-          element={
-            <Guarded name="Cuaderno">
-              <NormasScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/teams/:teamId/cuaderno/test-tiro"
-          element={
-            <Guarded name="Cuaderno">
-              <TestTiroScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/teams/:teamId/cuaderno/jugadores"
-          element={
-            <Guarded name="Cuaderno">
-              <JugadoresScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/teams/:teamId/cuaderno/notas"
-          element={
-            <Guarded name="Cuaderno">
-              <NotasScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/teams/:teamId/cuaderno/informe-jugadores"
-          element={
-            <Guarded name="Cuaderno">
-              <InformeJugadoresScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/teams/:teamId/cuaderno/asistencia"
-          element={
-            <Guarded name="Cuaderno">
-              <AsistenciaScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/teams/:teamId/cuaderno/entrenamientos"
-          element={
-            <Guarded name="Cuaderno">
-              <EntrenamientosScreen />
-            </Guarded>
-          }
-        />
-
-        <Route
-          path="/teams/:teamId/trainings"
-          element={
-            <Guarded name="Entrenamientos">
-              <TeamTrainingsScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/teams/:teamId/trainings/:trainingId"
-          element={
-            <Guarded name="Entrenamientos">
-              <TrainingEditorScreen />
-            </Guarded>
-          }
-        />
-
-        <Route
-          path="/exercises"
-          element={
-            <Guarded name="Ejercicios">
-              <ExerciseLibraryScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/calendar"
-          element={
-            <Guarded name="Calendario">
-              <CalendarScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/calendar/:sessionId/planilla"
-          element={
-            <AuthGuard>
-              <PlanillaSextosScreen />
-            </AuthGuard>
-          }
-        />
-        <Route
-          path="/calendar/:sessionId/scouting"
-          element={
-            <Guarded name="Scouting">
-              <ScoutingScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/calendar/:sessionId/analysis"
-          element={
-            <Guarded name="Análisis">
-              <AnalysisScreen />
-            </Guarded>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <Guarded name="Ajustes">
-              <SettingsScreen />
-            </Guarded>
-          }
-        />
-
         <Route path="/s/:code" element={<ShareRedirect />} />
         <Route
           path="/exercise/:shareCode"
@@ -302,6 +149,198 @@ export default function AppRouter() {
           }
         />
 
+        {/* Authenticated app under /area-privada */}
+        <Route
+          path="/area-privada"
+          element={
+            <AuthGuard>
+              <HomeScreen />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/area-privada/playoffs"
+          element={
+            <Guarded name="Playoffs">
+              <PlayoffsRoute />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/teams"
+          element={
+            <Guarded name="Equipos">
+              <TeamsScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/teams/:teamId"
+          element={
+            <Guarded name="Equipos">
+              <TeamDetailScreen />
+            </Guarded>
+          }
+        />
+
+        <Route
+          path="/area-privada/teams/:teamId/cuaderno"
+          element={
+            <Guarded name="Cuaderno">
+              <CuadernoScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/teams/:teamId/cuaderno/info"
+          element={
+            <Guarded name="Cuaderno">
+              <InfoScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/teams/:teamId/cuaderno/pilares"
+          element={
+            <Guarded name="Cuaderno">
+              <PilaresScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/teams/:teamId/cuaderno/normas"
+          element={
+            <Guarded name="Cuaderno">
+              <NormasScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/teams/:teamId/cuaderno/test-tiro"
+          element={
+            <Guarded name="Cuaderno">
+              <TestTiroScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/teams/:teamId/cuaderno/jugadores"
+          element={
+            <Guarded name="Cuaderno">
+              <JugadoresScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/teams/:teamId/cuaderno/notas"
+          element={
+            <Guarded name="Cuaderno">
+              <NotasScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/teams/:teamId/cuaderno/informe-jugadores"
+          element={
+            <Guarded name="Cuaderno">
+              <InformeJugadoresScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/teams/:teamId/cuaderno/asistencia"
+          element={
+            <Guarded name="Cuaderno">
+              <AsistenciaScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/teams/:teamId/cuaderno/entrenamientos"
+          element={
+            <Guarded name="Cuaderno">
+              <EntrenamientosScreen />
+            </Guarded>
+          }
+        />
+
+        <Route
+          path="/area-privada/teams/:teamId/trainings"
+          element={
+            <Guarded name="Entrenamientos">
+              <TeamTrainingsScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/teams/:teamId/trainings/:trainingId"
+          element={
+            <Guarded name="Entrenamientos">
+              <TrainingEditorScreen />
+            </Guarded>
+          }
+        />
+
+        <Route
+          path="/area-privada/exercises"
+          element={
+            <Guarded name="Ejercicios">
+              <ExerciseLibraryScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/calendar"
+          element={
+            <Guarded name="Calendario">
+              <CalendarScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/calendar/:sessionId/planilla"
+          element={
+            <AuthGuard>
+              <PlanillaSextosScreen />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/area-privada/calendar/:sessionId/scouting"
+          element={
+            <Guarded name="Scouting">
+              <ScoutingScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/calendar/:sessionId/analysis"
+          element={
+            <Guarded name="Análisis">
+              <AnalysisScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/settings"
+          element={
+            <Guarded name="Ajustes">
+              <SettingsScreen />
+            </Guarded>
+          }
+        />
+
+        {/* Legacy bookmark redirects → /area-privada/<old> */}
+        <Route path="/teams" element={<LegacyPathRedirect />} />
+        <Route path="/teams/*" element={<LegacyPathRedirect />} />
+        <Route path="/playoffs" element={<LegacyPathRedirect />} />
+        <Route path="/calendar" element={<LegacyPathRedirect />} />
+        <Route path="/calendar/*" element={<LegacyPathRedirect />} />
+        <Route path="/settings" element={<LegacyPathRedirect />} />
+        <Route path="/exercises" element={<LegacyPathRedirect />} />
+        <Route path="/exercises/*" element={<LegacyPathRedirect />} />
+
+        {/* Catch-all → landing */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
