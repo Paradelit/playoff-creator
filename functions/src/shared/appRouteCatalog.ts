@@ -1,5 +1,5 @@
 /**
- * Catálogo de destinos de navegación in-app para el Copilot.
+ * Catálogo de destinos de navegación in-app para Pick.
  * Debe mantenerse alineado con AppRouter.jsx y ScreenContextProvider.
  */
 

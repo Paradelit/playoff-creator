@@ -301,7 +301,7 @@ export function RemindersSection({ s }) {
   );
 }
 
-export function CopilotSection({ s }) {
+export function PickSection({ s }) {
   return (
     <Section icon={Sparkles} title="Copilot IA" iconColor="text-purple-600" iconBg="bg-purple-50">
       <p className="text-xs text-slate-500 mb-4">

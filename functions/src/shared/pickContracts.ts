@@ -60,7 +60,7 @@ export interface BracketRecord {
   shareConfig?: Record<string, unknown>;
 }
 
-export type CopilotTeamRecord = TeamRecord;
+export type PickTeamRecord = TeamRecord;
 
 export type WriteProposalKind =
   | "create_training"
@@ -105,19 +105,19 @@ export interface ExercisePreviewData {
 }
 
 /** Acción ejecutable en el cliente (p. ej. navegación SPA). */
-export interface CopilotNavigateAction {
+export interface PickNavigateAction {
   type: "navigate";
   label: string;
   path: string;
 }
 
-export type CopilotAction = CopilotNavigateAction;
+export type PickAction = PickNavigateAction;
 
 export interface OrchestratorResponse {
   blocks: ContentBlock[];
   traceId: string;
   /** Botones u órdenes de cliente; p. ej. `navigate` para React Router. */
-  actions?: CopilotAction[];
+  actions?: PickAction[];
   /** Internal metrics for auto-evaluation — stripped before sending to client. */
   _autoEvalMetrics?: {
     toolCalls: Array<{ name: string }>;

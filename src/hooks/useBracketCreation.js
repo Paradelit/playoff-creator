@@ -5,7 +5,7 @@ import logger from '../utils/logger';
 import { buildDynamicBracket } from '../utils/bracketEngine';
 import { extractTextFromFile } from '../services/aiService';
 import { toFirestore } from '../services/firestoreService';
-import { useCopilot } from '../contexts/CopilotProvider';
+import { usePick } from '../contexts/PickProvider';
 import { teamDisplayName } from '../utils/teamUtils';
 
 export function useBracketCreation({
@@ -20,7 +20,7 @@ export function useBracketCreation({
   setPendingBracket,
   setPreviewZoom,
 }) {
-  const { runAgent } = useCopilot();
+  const { runAgent } = usePick();
   const [newBracketName, setNewBracketName] = useState('');
   const [basesFile, setBasesFile] = useState(null);
   const [clasifFile, setClasifFile] = useState(null);

@@ -3,13 +3,13 @@ import { BrowserRouter } from 'react-router-dom';
 import { FirebaseProvider } from '../contexts/FirebaseContext';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ScreenContextProvider } from '../contexts/ScreenContextProvider';
-import { CopilotProvider } from '../contexts/CopilotProvider';
+import { PickProvider } from '../contexts/PickProvider';
 import { ToastProvider } from '../contexts/ToastContext';
 import { SidebarProvider } from '../contexts/SidebarContext';
 import ErrorBoundary from '../components/ErrorBoundary';
 import AppShell from './AppShell';
 import AppRouter from './AppRouter';
-import CopilotRoot from '../components/copilot/CopilotRoot';
+import PickRoot from '../components/pick/PickRoot';
 
 export default function CoachesApp() {
   return (
@@ -17,18 +17,18 @@ export default function CoachesApp() {
       <FirebaseProvider>
         <AuthProvider>
           <ScreenContextProvider>
-            <CopilotProvider>
+            <PickProvider>
               <ToastProvider>
                 <ErrorBoundary>
                   <SidebarProvider>
                     <AppShell>
                       <AppRouter />
                     </AppShell>
-                    <CopilotRoot />
+                    <PickRoot />
                   </SidebarProvider>
                 </ErrorBoundary>
               </ToastProvider>
-            </CopilotProvider>
+            </PickProvider>
           </ScreenContextProvider>
         </AuthProvider>
       </FirebaseProvider>

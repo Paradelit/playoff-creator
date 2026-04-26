@@ -1,28 +1,28 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { useCopilot } from '../../contexts/CopilotProvider';
-import CopilotCompact from './CopilotCompact';
-import CopilotPanel from './CopilotPanel';
-import CopilotColumn from './CopilotColumn';
+import { usePick } from '../../contexts/PickProvider';
+import PickCompact from './PickCompact';
+import PickPanel from './PickPanel';
+import PickColumn from './PickColumn';
 
-export default function CopilotRoot() {
+export default function PickRoot() {
   const location = useLocation();
-  const { mode, isTransitioning, isDesktop } = useCopilot();
+  const { mode, isTransitioning, isDesktop } = usePick();
 
   if (location.pathname === '/login') return null;
 
-  if (isTransitioning) return <CopilotCompact animating />;
+  if (isTransitioning) return <PickCompact animating />;
 
   const effectiveMode = mode === 'column' && !isDesktop ? 'panel' : mode;
 
   switch (effectiveMode) {
     case 'compact':
-      return <CopilotCompact />;
+      return <PickCompact />;
     case 'panel':
-      return <CopilotPanel />;
+      return <PickPanel />;
     case 'column':
-      return <CopilotColumn />;
+      return <PickColumn />;
     default:
-      return <CopilotCompact />;
+      return <PickCompact />;
   }
 }

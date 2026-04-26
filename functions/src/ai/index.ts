@@ -27,7 +27,7 @@ export type { UserContextChunk, RankedChunk } from "./userRagService";
 export { KNOWLEDGE_BASE } from "./knowledge";
 export { buildUserDigest, digestToPromptText } from "./userDigest";
 export type { UserDigest } from "./userDigest";
-export type { ContentBlock, CopilotAction, OrchestratorResponse, WriteProposal } from "./contentBlocks";
+export type { ContentBlock, PickAction, OrchestratorResponse, WriteProposal } from "./contentBlocks";
 export type { ToolDefinition, ToolContext } from "./tools/registry";
 export type {
   TraceContext,

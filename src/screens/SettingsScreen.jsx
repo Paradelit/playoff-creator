@@ -6,7 +6,7 @@ import {
   ProfileSection,
   ClubSection,
   RemindersSection,
-  CopilotSection,
+  PickSection,
   DataSection,
   AccountSection,
   DangerZoneSection,
@@ -33,7 +33,7 @@ export default function SettingsScreen() {
         <ProfileSection s={s} />
         <ClubSection s={s} />
         <RemindersSection s={s} />
-        <CopilotSection s={s} />
+        <PickSection s={s} />
         <DataSection s={s} />
         <AccountSection s={s} />
         <DangerZoneSection s={s} />

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
-import { useCopilot } from '../../contexts/CopilotProvider';
+import { usePick } from '../../contexts/PickProvider';
 
 interface Props {
   traceId: string;
 }
 
-export default function CopilotFeedback({ traceId }: Props) {
-  const { submitFeedback } = useCopilot();
+export default function PickFeedback({ traceId }: Props) {
+  const { submitFeedback } = usePick();
   const [submitted, setSubmitted] = useState<'positive' | 'negative' | null>(null);
 
   const handleFeedback = async (value: number) => {

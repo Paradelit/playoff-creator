@@ -264,7 +264,7 @@ export function useSettings() {
     toggleNotif,
     changeNotifAntelacion,
     requestNotifPermission,
-    // Copilot preferences
+    // Pick preferences
     changeProactivityMode,
   };
 }

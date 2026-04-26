@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Minimize2, Loader2, MapPin } from 'lucide-react';
-import { useCopilot } from '../../contexts/CopilotProvider';
+import { usePick } from '../../contexts/PickProvider';
 import { useScreenContext } from '../../contexts/ScreenContextProvider';
 import ActionButton from './ActionButton';
-import CopilotFeedback from './CopilotFeedback';
+import PickFeedback from './PickFeedback';
 import ConversationList from './ConversationList';
 import BlockRenderer from './blocks/BlockRenderer';
 import TextBlock from './blocks/TextBlock';
@@ -23,7 +23,7 @@ const SCREEN_LABELS: Record<string, string> = {
   analysis: 'Análisis',
 };
 
-export default function CopilotColumn() {
+export default function PickColumn() {
   const {
     messages,
     isProcessing,
@@ -35,7 +35,7 @@ export default function CopilotColumn() {
     conversations,
     conversationId,
     loadConversation,
-  } = useCopilot();
+  } = usePick();
   const { screenContext } = useScreenContext();
   const [input, setInput] = useState('');
   const [tab, setTab] = useState<'chat' | 'conversations'>('chat');
@@ -70,7 +70,7 @@ export default function CopilotColumn() {
   const screenLabel = SCREEN_LABELS[screenContext.screen] || screenContext.screen;
 
   return (
-    <div className="fixed top-0 right-0 bottom-0 w-[400px] bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col overflow-hidden animate-copilot-panel-open">
+    <div className="fixed top-0 right-0 bottom-0 w-[400px] bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col overflow-hidden animate-pick-panel-open">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
         <div className="flex items-center gap-2">
@@ -171,7 +171,7 @@ export default function CopilotColumn() {
                     )}
                     {msg.traceId && (
                       <div>
-                        <CopilotFeedback traceId={msg.traceId} />
+                        <PickFeedback traceId={msg.traceId} />
                       </div>
                     )}
                   </div>
