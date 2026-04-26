@@ -1,13 +1,14 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 
-// Public placeholders for F1.1 — real implementations land in F1.4 (landing) and F1.5 (help center).
+// Public routes for F1.4 (landing) and F1.5 (help center).
 // Defined here (not in AppRouter) so the prerender entry can mount the same components without
 // pulling in the full client provider tree (Firebase, Auth, Pick, etc.).
+//
+// NOTE: LandingScreen is imported directly (not lazy) so the SSR prerender entry
+// (entry-prerender.jsx) can render it synchronously via renderToString.
 
-function LandingPlaceholder() {
-  return <div style={{ padding: 40 }}>Pick&amp;Coach landing (placeholder — implemented in F1.4)</div>;
-}
+import LandingScreen from '../screens/LandingScreen';
 
 function HelpIndexPlaceholder() {
   return <div style={{ padding: 40 }}>Centro de ayuda (placeholder — implemented in F1.5)</div>;
@@ -18,7 +19,7 @@ function HelpArticlePlaceholder() {
 }
 
 export const PUBLIC_ROUTE_DEFS = [
-  { path: '/', element: <LandingPlaceholder /> },
+  { path: '/', element: <LandingScreen /> },
   { path: '/ayuda', element: <HelpIndexPlaceholder /> },
   { path: '/ayuda/:slug', element: <HelpArticlePlaceholder /> },
 ];
