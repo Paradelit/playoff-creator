@@ -70,7 +70,7 @@ export default function SharedExerciseScreen() {
         <BookOpen size={48} className="text-slate-300 mb-4" aria-hidden="true" />
         <h2 className="text-xl font-bold text-slate-700 mb-2">Ejercicio no encontrado</h2>
         <p className="text-slate-500 text-sm mb-6">El enlace puede haber expirado o ser incorrecto.</p>
-        <button onClick={() => navigate('/')} className="text-blue-600 font-bold hover:underline text-sm">
+        <button onClick={() => navigate('/area-privada')} className="text-blue-600 font-bold hover:underline text-sm">
           Ir al inicio
         </button>
       </div>
@@ -81,7 +81,7 @@ export default function SharedExerciseScreen() {
     <div className="min-h-screen bg-slate-100 p-6 sm:p-12 font-sans">
       <div className="max-w-3xl mx-auto">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/area-privada')}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition mb-6"
         >
           <ArrowLeft size={16} aria-hidden="true" /> Inicio

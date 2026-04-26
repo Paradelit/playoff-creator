@@ -39,7 +39,7 @@ function CollapsedFooter({ navigate, handleLogout, photoURL, initial, displayNam
     <>
       <button
         type="button"
-        onClick={() => navigate('/settings')}
+        onClick={() => navigate('/area-privada/settings')}
         title={displayName}
         className="flex items-center justify-center p-2 rounded-xl text-blue-200 hover:bg-blue-900 hover:text-white transition-colors"
       >
@@ -47,7 +47,7 @@ function CollapsedFooter({ navigate, handleLogout, photoURL, initial, displayNam
       </button>
       <button
         type="button"
-        onClick={() => navigate('/settings')}
+        onClick={() => navigate('/area-privada/settings')}
         title="Ajustes"
         className="flex items-center justify-center p-2 rounded-xl text-blue-300 hover:bg-blue-900 hover:text-white transition-colors"
       >
@@ -70,7 +70,7 @@ function ExpandedFooter({ navigate, handleLogout, photoURL, initial, displayName
     <>
       <button
         type="button"
-        onClick={() => navigate('/settings')}
+        onClick={() => navigate('/area-privada/settings')}
         className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-blue-200 hover:bg-blue-900 hover:text-white transition-colors"
       >
         <Avatar photoURL={photoURL} initial={initial} size="w-6 h-6" />
@@ -78,7 +78,7 @@ function ExpandedFooter({ navigate, handleLogout, photoURL, initial, displayName
       </button>
       <button
         type="button"
-        onClick={() => navigate('/settings')}
+        onClick={() => navigate('/area-privada/settings')}
         className="flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-medium text-blue-300 hover:bg-blue-900 hover:text-white transition-colors"
       >
         <Settings size={14} aria-hidden="true" /> Ajustes

@@ -65,7 +65,7 @@ export function CreateSheet({ onClose }) {
         await autoAddCoachToTeam(teamId, profile, { uid: user.uid, db, appId });
       }
       onClose();
-      navigate('/teams');
+      navigate('/area-privada/teams');
     } finally {
       setSaving(false);
     }
@@ -92,7 +92,7 @@ export function CreateSheet({ onClose }) {
   function handleTrainingAction() {
     if (teams.length === 0) {
       onClose();
-      navigate('/teams');
+      navigate('/area-privada/teams');
       return;
     }
     if (teams.length === 1) {
@@ -125,7 +125,7 @@ export function CreateSheet({ onClose }) {
       color: 'bg-emerald-50 text-emerald-600',
       action: () => {
         onClose();
-        navigate('/calendar');
+        navigate('/area-privada/calendar');
       },
     },
     {
@@ -135,7 +135,7 @@ export function CreateSheet({ onClose }) {
       color: 'bg-amber-50 text-amber-600',
       action: () => {
         onClose();
-        navigate('/playoffs');
+        navigate('/area-privada/playoffs');
       },
     },
     {
@@ -145,7 +145,7 @@ export function CreateSheet({ onClose }) {
       color: 'bg-rose-50 text-rose-600',
       action: () => {
         onClose();
-        navigate('/exercises');
+        navigate('/area-privada/exercises');
       },
     },
   ];

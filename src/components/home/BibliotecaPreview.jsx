@@ -19,7 +19,7 @@ function DiscoveryStrip({ insights, navigate }) {
     <div className="flex flex-wrap items-center gap-1.5 px-4 pb-3 border-t border-slate-100 pt-2">
       {favoritesCount > 0 && (
         <button
-          onClick={() => navigate('/exercises#favoritos')}
+          onClick={() => navigate('/area-privada/exercises#favoritos')}
           className={`${base} bg-amber-50 text-amber-700 hover:bg-amber-100`}
         >
           <Star size={11} fill="currentColor" aria-hidden="true" /> {favoritesCount} fav.
@@ -27,7 +27,7 @@ function DiscoveryStrip({ insights, navigate }) {
       )}
       {recentlyCount > 0 && (
         <button
-          onClick={() => navigate('/exercises#recien')}
+          onClick={() => navigate('/area-privada/exercises#recien')}
           className={`${base} bg-blue-50 text-blue-700 hover:bg-blue-100`}
         >
           <Clock size={11} aria-hidden="true" /> {recentlyCount} recientes
@@ -35,7 +35,7 @@ function DiscoveryStrip({ insights, navigate }) {
       )}
       {trendingCount > 0 && (
         <button
-          onClick={() => navigate('/exercises#tendencias')}
+          onClick={() => navigate('/area-privada/exercises#tendencias')}
           className={`${base} bg-emerald-50 text-emerald-700 hover:bg-emerald-100`}
         >
           <TrendingUp size={11} aria-hidden="true" /> {trendingCount} en tendencia
@@ -50,7 +50,7 @@ export default function BibliotecaPreview({ exercises, totalCount, navigate, ins
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <button
-        onClick={() => navigate('/exercises')}
+        onClick={() => navigate('/area-privada/exercises')}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left"
       >
         <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
@@ -71,7 +71,7 @@ export default function BibliotecaPreview({ exercises, totalCount, navigate, ins
             {exercises.map((ex) => (
               <li key={ex.id}>
                 <button
-                  onClick={() => navigate('/exercises')}
+                  onClick={() => navigate('/area-privada/exercises')}
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-left"
                 >
                   <div className="flex-1 min-w-0">
@@ -91,7 +91,7 @@ export default function BibliotecaPreview({ exercises, totalCount, navigate, ins
         <div className="border-t border-slate-100 px-4 py-4 flex items-center gap-3">
           <p className="text-xs text-slate-500 flex-1">Aún no has añadido ejercicios. Empieza creando el primero.</p>
           <button
-            onClick={() => navigate('/exercises')}
+            onClick={() => navigate('/area-privada/exercises')}
             className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition"
           >
             <Plus size={14} aria-hidden="true" /> Crear
