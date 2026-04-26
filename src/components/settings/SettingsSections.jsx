@@ -303,17 +303,17 @@ export function RemindersSection({ s }) {
 
 export function PickSection({ s }) {
   return (
-    <Section icon={Sparkles} title="Copilot IA" iconColor="text-purple-600" iconBg="bg-purple-50">
+    <Section icon={Sparkles} title="Pick (asistente IA)" iconColor="text-purple-600" iconBg="bg-purple-50">
       <p className="text-xs text-slate-500 mb-4">
-        Controla cuánto puede hablarte el copilot sin que tú se lo pidas. Siempre responderá cuando le preguntes — esto
-        solo afecta a sugerencias espontáneas.
+        Controla cuánto puede hablarte Pick sin que tú se lo pidas. Siempre responderá cuando le preguntes — esto solo
+        afecta a sugerencias espontáneas.
       </p>
-      <div className="flex flex-col gap-2" role="radiogroup" aria-label="Modo de proactividad del copilot">
+      <div className="flex flex-col gap-2" role="radiogroup" aria-label="Modo de proactividad de Pick">
         {[
           {
             value: 'off',
             title: 'Solo bajo petición',
-            desc: 'El copilot no propone nada. Responde solo cuando le escribes.',
+            desc: 'Pick no propone nada. Responde solo cuando le escribes.',
           },
           {
             value: 'suggestions',

@@ -61,7 +61,7 @@ export default function PickPanel() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
         <div className="flex items-center gap-2">
-          <h3 className="font-bold text-slate-800 text-sm">Copilot</h3>
+          <h3 className="font-bold text-slate-800 text-sm">Pick</h3>
           <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
             <MapPin size={10} /> {screenLabel}
           </span>
@@ -97,7 +97,7 @@ export default function PickPanel() {
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[200px]">
         {messages.length === 0 && (
           <div className="text-center text-slate-400 text-sm py-8">
-            <p className="font-medium">¡Hola! Soy tu copilot.</p>
+            <p className="font-medium">¡Hola! Soy Pick.</p>
             <p className="mt-1 text-xs">Pregúntame lo que necesites sobre la app.</p>
           </div>
         )}

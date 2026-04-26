@@ -49,7 +49,7 @@ export default function PickCompact({ animating }: Props) {
       <button
         onClick={() => setMode('panel')}
         className="w-12 h-12 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-full shadow-lg flex items-center justify-center transition-colors shrink-0"
-        aria-label="Abrir copilot"
+        aria-label="Abrir Pick"
       >
         <MessageCircle size={22} className="text-white" />
       </button>
