@@ -3,11 +3,11 @@ export type {
   BracketRecord,
   CalendarSessionRecord,
   ContentBlock,
-  CopilotAction,
+  PickAction,
   OrchestratorResponse,
   ScoreUpdateEntry,
   TeamListEntry,
   TrainingPreviewData,
   WriteProposal,
   WriteProposalKind,
-} from "../shared/copilotContracts";
+} from "../shared/pickContracts";

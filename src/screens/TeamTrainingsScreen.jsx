@@ -84,7 +84,7 @@ export default function TeamTrainingsScreen() {
           </div>
           <div className="flex gap-3 flex-wrap">
             <button
-              onClick={() => navigate('/exercises')}
+              onClick={() => navigate('/area-privada/exercises')}
               className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm transition"
             >
               <BookOpen size={16} aria-hidden="true" /> Biblioteca

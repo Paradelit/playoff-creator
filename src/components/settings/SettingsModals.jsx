@@ -113,7 +113,7 @@ export function DeleteAccountModal({
   const onCancel = () => {
     setShowDeleteAccountModal(false);
     setDeleteConfirmText('');
-    navigate('/');
+    navigate('/area-privada');
   };
   return (
     <Dialog

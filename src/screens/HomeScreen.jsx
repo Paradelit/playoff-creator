@@ -153,7 +153,7 @@ function TodaySection({ todayEvents, teams, trainingNumbers, handleEventAction, 
           <Clock size={13} aria-hidden="true" /> Hoy
         </h2>
         <button
-          onClick={() => navigate('/calendar')}
+          onClick={() => navigate('/area-privada/calendar')}
           className="text-xs font-bold text-blue-600 hover:text-blue-800 transition"
         >
           Calendario →
@@ -339,7 +339,7 @@ export default function HomeScreen() {
               </div>
             )}
             <button
-              onClick={() => navigate('/settings')}
+              onClick={() => navigate('/area-privada/settings')}
               className="text-blue-400 hover:text-white transition p-1.5 md:hidden"
               aria-label="Ajustes"
               title="Ajustes"

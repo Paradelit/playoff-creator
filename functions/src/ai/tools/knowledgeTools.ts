@@ -55,8 +55,10 @@ export function createKnowledgeTools(geminiApiKey: string): ToolDefinition[] {
             query,
             results: results.map((r) => ({
               title: r.title,
+              slug: r.slug,
               category: r.category,
-              content: r.content,
+              summary: r.summary,
+              body: r.body,
               relevance: Math.round(r.score * 100),
             })),
           };

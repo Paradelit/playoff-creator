@@ -8,7 +8,7 @@ import {
   deleteCalendarSessionsByTeamAndRange,
 } from '../services/calendarService';
 import { saveTraining } from '../services/trainingsService';
-import { useCopilot } from '../contexts/CopilotProvider';
+import { usePick } from '../contexts/PickProvider';
 import { teamDisplayName } from '../utils/teamUtils';
 import { toYMD, getSeasonDateRange } from '../utils/dateUtils';
 
@@ -50,7 +50,7 @@ function expandRecurring(patterns, startDate, endDate) {
 export function useCalendarImport(teams, getTrainingNum) {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
-  const { runAgent } = useCopilot();
+  const { runAgent } = usePick();
   const fileInputRef = useRef(null);
 
   const [importSetup, setImportSetup] = useState(null);

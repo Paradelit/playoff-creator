@@ -14,7 +14,6 @@ import {
   Bell,
   Sparkles,
 } from 'lucide-react';
-
 const ROLES_STAFF = ['Entrenador', 'Entrenador asistente', 'Fisioterapeuta', 'Delegado', 'Médico', 'Otro'];
 
 // ─── Subcomponentes ───────────────────────────────────────────────────────
@@ -301,19 +300,19 @@ export function RemindersSection({ s }) {
   );
 }
 
-export function CopilotSection({ s }) {
+export function PickSection({ s }) {
   return (
-    <Section icon={Sparkles} title="Copilot IA" iconColor="text-purple-600" iconBg="bg-purple-50">
+    <Section icon={Sparkles} title="Pick (asistente IA)" iconColor="text-purple-600" iconBg="bg-purple-50">
       <p className="text-xs text-slate-500 mb-4">
-        Controla cuánto puede hablarte el copilot sin que tú se lo pidas. Siempre responderá cuando le preguntes — esto
-        solo afecta a sugerencias espontáneas.
+        Controla cuánto puede hablarte Pick sin que tú se lo pidas. Siempre responderá cuando le preguntes — esto solo
+        afecta a sugerencias espontáneas.
       </p>
-      <div className="flex flex-col gap-2" role="radiogroup" aria-label="Modo de proactividad del copilot">
+      <div className="flex flex-col gap-2" role="radiogroup" aria-label="Modo de proactividad de Pick">
         {[
           {
             value: 'off',
             title: 'Solo bajo petición',
-            desc: 'El copilot no propone nada. Responde solo cuando le escribes.',
+            desc: 'Pick no propone nada. Responde solo cuando le escribes.',
           },
           {
             value: 'suggestions',
@@ -391,7 +390,7 @@ export function DataSection({ s }) {
         <Upload size={18} className="shrink-0" aria-hidden="true" />
         <div className="text-left">
           <p className="font-bold">Importar datos</p>
-          <p className="text-xs font-normal text-blue-600">Restaurar desde un backup .json de Urocoach</p>
+          <p className="text-xs font-normal text-blue-600">Restaurar desde un backup .json de Pick&amp;Coach</p>
         </div>
       </button>
       <input ref={s.importInputRef} type="file" accept=".json" className="hidden" onChange={s.handleImportFile} />

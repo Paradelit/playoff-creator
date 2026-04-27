@@ -15,7 +15,7 @@ export function EmptyTeamCard({ navigate }) {
       <FolderOpen size={36} className="text-blue-400" aria-hidden="true" />
       <p className="text-blue-100 font-semibold">Aún no tienes equipos</p>
       <button
-        onClick={() => navigate('/teams')}
+        onClick={() => navigate('/area-privada/teams')}
         className="bg-white/15 hover:bg-white/25 text-white font-bold text-sm px-4 py-2 rounded-xl flex items-center gap-2 transition"
       >
         <Plus size={16} aria-hidden="true" /> Crear equipo

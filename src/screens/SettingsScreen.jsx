@@ -6,7 +6,7 @@ import {
   ProfileSection,
   ClubSection,
   RemindersSection,
-  CopilotSection,
+  PickSection,
   DataSection,
   AccountSection,
   DangerZoneSection,
@@ -20,7 +20,7 @@ export default function SettingsScreen() {
       {/* Header */}
       <div className="bg-blue-950 px-5 pt-10 pb-6">
         <button
-          onClick={() => s.navigate('/')}
+          onClick={() => s.navigate('/area-privada')}
           className="flex items-center gap-1.5 text-blue-400 hover:text-white text-sm font-medium transition mb-4"
         >
           <ArrowLeft size={16} aria-hidden="true" /> Inicio
@@ -33,7 +33,7 @@ export default function SettingsScreen() {
         <ProfileSection s={s} />
         <ClubSection s={s} />
         <RemindersSection s={s} />
-        <CopilotSection s={s} />
+        <PickSection s={s} />
         <DataSection s={s} />
         <AccountSection s={s} />
         <DangerZoneSection s={s} />

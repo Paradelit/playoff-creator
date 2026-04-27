@@ -120,7 +120,7 @@ export default function TeamDetailScreen() {
     return (
       <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center gap-4 font-sans">
         <p className="text-slate-600">Equipo no encontrado</p>
-        <button onClick={() => navigate('/teams')} className="text-blue-600 font-bold hover:underline">
+        <button onClick={() => navigate('/area-privada/teams')} className="text-blue-600 font-bold hover:underline">
           Volver a Equipos
         </button>
       </div>
@@ -131,7 +131,7 @@ export default function TeamDetailScreen() {
     <div className="min-h-screen bg-slate-100 p-6 sm:p-8 font-sans pb-24">
       <div className="max-w-2xl lg:max-w-4xl mx-auto">
         <button
-          onClick={() => navigate('/teams')}
+          onClick={() => navigate('/area-privada/teams')}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition mb-4"
         >
           <ArrowLeft size={16} aria-hidden="true" /> Equipos

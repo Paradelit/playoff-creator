@@ -187,7 +187,7 @@ export default function PlanillaSextosScreen() {
       {/* Toolbar */}
       <div className="print:hidden sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm px-4 py-2.5 flex items-center justify-between gap-4">
         <button
-          onClick={() => navigate('/calendar')}
+          onClick={() => navigate('/area-privada/calendar')}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
         >
           <ArrowLeft size={16} aria-hidden="true" /> Calendario

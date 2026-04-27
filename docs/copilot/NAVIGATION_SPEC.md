@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-El agente debe poder **dirigir al usuario a la pantalla concreta** de CoachApp donde está la información, donde confirmar una propuesta o donde continúa el flujo conversacional, sin inventar URLs en texto libre.
+El agente debe poder **dirigir al usuario a la pantalla concreta** de Pick&Coach donde está la información, donde confirmar una propuesta o donde continúa el flujo conversacional, sin inventar URLs en texto libre.
 
 ## Principios
 

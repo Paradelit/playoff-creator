@@ -43,7 +43,7 @@ export default function CuadernoScreen() {
       {/* Toolbar */}
       <div className="max-w-[800px] mx-auto mb-4 flex items-center justify-between print:hidden font-sans">
         <button
-          onClick={() => navigate('/teams')}
+          onClick={() => navigate('/area-privada/teams')}
           className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
         >
           <ArrowLeft size={16} aria-hidden="true" /> Mis equipos
