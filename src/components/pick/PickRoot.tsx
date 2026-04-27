@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { usePick } from '../../contexts/PickProvider';
+import { isPublicPath } from '../../router/publicPaths';
 import PickCompact from './PickCompact';
 import PickPanel from './PickPanel';
 import PickColumn from './PickColumn';
@@ -9,7 +10,9 @@ export default function PickRoot() {
   const location = useLocation();
   const { mode, isTransitioning, isDesktop } = usePick();
 
-  if (location.pathname === '/login') return null;
+  // Pick is the authenticated assistant — never mount it on public surfaces
+  // (landing, /ayuda, /ayuda/*, /login, /s/*, /exercise/*).
+  if (isPublicPath(location.pathname)) return null;
 
   if (isTransitioning) return <PickCompact animating />;
 

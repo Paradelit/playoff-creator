@@ -11,11 +11,42 @@ import { Routes, Route } from 'react-router-dom';
 import LandingScreen from '../screens/LandingScreen';
 import HelpIndexScreen from '../screens/HelpIndexScreen';
 import HelpArticleScreen from '../screens/HelpArticleScreen';
+import PublicNavbar from '../components/public/PublicNavbar';
+
+function PublicLayout({ children }) {
+  return (
+    <>
+      <PublicNavbar />
+      {children}
+    </>
+  );
+}
 
 export const PUBLIC_ROUTE_DEFS = [
-  { path: '/', element: <LandingScreen /> },
-  { path: '/ayuda', element: <HelpIndexScreen /> },
-  { path: '/ayuda/:slug', element: <HelpArticleScreen /> },
+  {
+    path: '/',
+    element: (
+      <PublicLayout>
+        <LandingScreen />
+      </PublicLayout>
+    ),
+  },
+  {
+    path: '/ayuda',
+    element: (
+      <PublicLayout>
+        <HelpIndexScreen />
+      </PublicLayout>
+    ),
+  },
+  {
+    path: '/ayuda/:slug',
+    element: (
+      <PublicLayout>
+        <HelpArticleScreen />
+      </PublicLayout>
+    ),
+  },
 ];
 
 // Used by the prerender entry (src/entry-prerender.jsx). Rendered in a StaticRouter context

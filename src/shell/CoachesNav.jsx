@@ -13,12 +13,12 @@ import { TeamFormFields } from '../components/teams/TeamFormFields';
 import { EMPTY_FORM } from '../components/teams/teamFormConstants';
 
 const LEFT_ITEMS = [
-  { to: '/', label: 'Inicio', Icon: Home, end: true },
-  { to: '/teams', label: 'Equipos', Icon: Users, end: false },
+  { to: '/area-privada', label: 'Inicio', Icon: Home, end: true },
+  { to: '/area-privada/teams', label: 'Equipos', Icon: Users, end: false },
 ];
 const RIGHT_ITEMS = [
-  { to: '/exercises', label: 'Biblioteca', Icon: BookOpen, end: false },
-  { to: '/calendar', label: 'Calendario', Icon: CalendarDays, end: false },
+  { to: '/area-privada/exercises', label: 'Biblioteca', Icon: BookOpen, end: false },
+  { to: '/area-privada/calendar', label: 'Calendario', Icon: CalendarDays, end: false },
 ];
 
 /* eslint-disable react-refresh/only-export-components */
@@ -86,7 +86,7 @@ export function CreateSheet({ onClose }) {
       { uid: user.uid, db, appId },
     );
     onClose();
-    navigate(`/teams/${team.id}/trainings/${trainingId}`);
+    navigate(`/area-privada/teams/${team.id}/trainings/${trainingId}`);
   }
 
   function handleTrainingAction() {
