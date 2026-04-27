@@ -69,6 +69,7 @@ async function embedText(text: string): Promise<number[]> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       content: { parts: [{ text }] },
+      outputDimensionality: 768,
     }),
   });
 
@@ -91,26 +92,32 @@ async function main() {
 
   const col = db.collection("knowledgeBase");
   const knownIds = new Set(HELP_ARTICLES.map((e) => e.id));
+  const force = process.env.FORCE_REINDEX === "1";
 
   // Fetch existing docs to check if body changed
   const existingSnap = await col.get();
   const existingMap = new Map<string, string>();
+  const existingDimMap = new Map<string, number>();
   for (const doc of existingSnap.docs) {
     const data = doc.data();
     // Backward compat: read either body (new) or content (old indexed records)
     existingMap.set(doc.id, (data.body as string) || (data.content as string) || "");
+    const emb = data.embedding;
+    existingDimMap.set(doc.id, Array.isArray(emb) ? emb.length : 0);
   }
 
   let created = 0;
   let updated = 0;
   let skipped = 0;
+  const TARGET_EMBEDDING_DIMS = 768;
 
   for (const entry of HELP_ARTICLES) {
     const textToEmbed = `${entry.title}\n\n${entry.summary}\n\n${entry.body}`;
     const existingBody = existingMap.get(entry.id);
+    const existingDim = existingDimMap.get(entry.id);
 
-    // Skip if body hasn't changed
-    if (existingBody === entry.body) {
+    // Skip only if body unchanged AND embedding dim matches what we'd produce now AND not forced.
+    if (!force && existingBody === entry.body && existingDim === TARGET_EMBEDDING_DIMS) {
       console.log(`  ⏭️  Skipping "${entry.title}" (unchanged)`);
       skipped++;
       continue;

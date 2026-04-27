@@ -26,10 +26,11 @@ interface StoredKnowledgeDoc {
 
 /**
  * Generate an embedding vector for a text using Google's gemini-embedding-001.
- * Returns a float array (3072 dimensions by default).
+ * Returns a float array of 768 dimensions (Matryoshka-truncated).
  *
- * NOTE: query-time and index-time MUST use the same model — embedding spaces
- * across model versions are not comparable for cosine similarity. Update the
+ * NOTE: query-time and index-time MUST use the same model AND
+ * outputDimensionality — embedding spaces across model versions or different
+ * truncation widths are not comparable for cosine similarity. Update the
  * indexer (functions/scripts/indexKnowledge.ts) and re-run if you change this.
  */
 export async function embedText(text: string, apiKey: string): Promise<number[]> {
@@ -39,6 +40,7 @@ export async function embedText(text: string, apiKey: string): Promise<number[]>
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       content: { parts: [{ text }] },
+      outputDimensionality: 768,
     }),
     signal: AbortSignal.timeout(15000),
   });

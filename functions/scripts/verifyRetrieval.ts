@@ -46,7 +46,7 @@ async function embed(text: string): Promise<number[]> {
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content: { parts: [{ text }] } }),
+    body: JSON.stringify({ content: { parts: [{ text }] }, outputDimensionality: 768 }),
   });
   if (!res.ok) throw new Error(`Embed ${res.status}: ${await res.text()}`);
   const data = (await res.json()) as { embedding: { values: number[] } };
