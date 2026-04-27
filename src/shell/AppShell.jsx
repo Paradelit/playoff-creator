@@ -4,6 +4,7 @@ import CoachesNav from './CoachesNav';
 import DesktopSidebar from './DesktopSidebar';
 import { useSidebar } from '../contexts/SidebarContext';
 import { isPublicPath } from '../router/publicPaths';
+import ProactiveNotificationsBanner from '../components/ProactiveNotificationsBanner';
 
 export default function AppShell({ children }) {
   const location = useLocation();
@@ -27,6 +28,7 @@ export default function AppShell({ children }) {
         tabIndex={-1}
         className={publicPath ? 'outline-none' : `${pad} pb-16 md:pb-0 transition-[padding] duration-200 outline-none`}
       >
+        {!publicPath && <ProactiveNotificationsBanner />}
         {children}
       </main>
       {!publicPath && (

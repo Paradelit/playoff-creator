@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   User,
   Building2,
@@ -13,10 +13,7 @@ import {
   Shield,
   Bell,
   Sparkles,
-  RefreshCw,
 } from 'lucide-react';
-import { seedKnowledgeBase } from '../../services/aiClient';
-
 const ROLES_STAFF = ['Entrenador', 'Entrenador asistente', 'Fisioterapeuta', 'Delegado', 'Médico', 'Otro'];
 
 // ─── Subcomponentes ───────────────────────────────────────────────────────
@@ -362,58 +359,7 @@ export function PickSection({ s }) {
           );
         })}
       </div>
-
-      <SeedKnowledgeBaseButton />
     </Section>
-  );
-}
-
-/** One-time admin button to index the AI knowledge base in Firestore. */
-function SeedKnowledgeBaseButton() {
-  const [status, setStatus] = useState('idle'); // 'idle' | 'loading' | 'done' | 'error'
-  const [result, setResult] = useState(null);
-
-  async function handleSeed() {
-    setStatus('loading');
-    setResult(null);
-    try {
-      const data = await seedKnowledgeBase();
-      setResult(data);
-      setStatus('done');
-    } catch (err) {
-      console.error('[seedKnowledgeBase]', err);
-      setStatus('error');
-    }
-  }
-
-  return (
-    <div className="mt-5 border-t border-slate-100 pt-4">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Base de conocimiento IA</p>
-      <p className="text-xs text-slate-400 mb-3">
-        Indexa la documentación de la app para que el asistente pueda responder preguntas sobre cómo usar las funciones.
-        Solo necesitas hacerlo una vez tras el despliegue.
-      </p>
-      <button
-        onClick={handleSeed}
-        disabled={status === 'loading'}
-        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-600 text-white text-sm font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-      >
-        <RefreshCw size={14} className={status === 'loading' ? 'animate-spin' : ''} />
-        {status === 'loading' ? 'Indexando…' : 'Indexar base de conocimiento'}
-      </button>
-
-      {status === 'done' && result && (
-        <p className="mt-2 text-xs text-emerald-600 font-medium">
-          ✓ Listo — {result.created} creados, {result.updated} actualizados, {result.skipped} sin cambios
-          {result.errors > 0 ? `, ${result.errors} errores` : ''}
-        </p>
-      )}
-      {status === 'error' && (
-        <p className="mt-2 text-xs text-red-500 font-medium">
-          Error al indexar. Comprueba que las funciones estén desplegadas y vuelve a intentarlo.
-        </p>
-      )}
-    </div>
   );
 }
 
