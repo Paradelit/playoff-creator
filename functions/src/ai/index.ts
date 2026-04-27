@@ -24,7 +24,6 @@ export { embedText, cosineSimilarity, searchKnowledgeBase } from "./embeddingSer
 export { searchUserContext } from "./userRagService";
 export type { KnowledgeChunk } from "./embeddingService";
 export type { UserContextChunk, RankedChunk } from "./userRagService";
-export { KNOWLEDGE_BASE } from "./knowledge";
 export { buildUserDigest, digestToPromptText } from "./userDigest";
 export type { UserDigest } from "./userDigest";
 export type { ContentBlock, PickAction, OrchestratorResponse, WriteProposal } from "./contentBlocks";
