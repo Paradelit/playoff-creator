@@ -25,10 +25,10 @@ describe('HeroSection', () => {
     expect(screen.getByRole('link', { name: /empezar gratis/i })).toHaveAttribute('href', '/login');
   });
 
-  it('shows "Ir a tu área privada" CTA when authenticated', () => {
+  it('shows "Ir a tu area" CTA when authenticated', () => {
     useAuth.mockReturnValue({ user: { email: 'coach@test.com' } });
     renderHero();
-    expect(screen.getByRole('link', { name: /ir a tu área privada/i })).toHaveAttribute('href', '/area-privada');
+    expect(screen.getByRole('link', { name: /ir a tu .rea/i })).toHaveAttribute('href', '/area-privada');
   });
 
   it('shows session badge with email when authenticated', () => {
@@ -40,6 +40,6 @@ describe('HeroSection', () => {
   it('always shows secondary CTA to /ayuda', () => {
     useAuth.mockReturnValue({ user: null });
     renderHero();
-    expect(screen.getByRole('link', { name: /ver centro de ayuda/i })).toHaveAttribute('href', '/ayuda');
+    expect(screen.getByRole('link', { name: /ver gu.as/i })).toHaveAttribute('href', '/ayuda');
   });
 });

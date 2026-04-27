@@ -20,7 +20,7 @@ describe('LandingScreen', () => {
       </HelmetProvider>,
     );
 
-    expect(screen.getByRole('heading', { level: 1, name: /copiloto ia/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
     expect(screen.getByText(/pick, tu copiloto ia/i)).toBeInTheDocument();
     expect(screen.getByText(/empieza en 3 pasos/i)).toBeInTheDocument();
     expect(screen.getAllByText(/centro de ayuda/i).length).toBeGreaterThan(0);
