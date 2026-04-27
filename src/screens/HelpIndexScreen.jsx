@@ -5,11 +5,10 @@ import { HELP_ARTICLES, HELP_CATEGORIES } from '../content/helpArticles';
 import HelpSearch from '../components/help/HelpSearch';
 import HelpArticleCard from '../components/help/HelpArticleCard';
 import { searchArticles } from '../components/help/searchArticles';
+import { SITE_URL, OG_IMAGE } from '../siteConfig';
 
-const SITE_URL = 'https://pickandcoach.web.app';
 const TITLE = 'Centro de ayuda — Pick&Coach';
 const DESCRIPTION = 'Guías, reglas, y conceptos. Aprende a sacar el máximo partido a Pick&Coach.';
-const OG_IMAGE = `${SITE_URL}/og-image.png`;
 
 function articlesByCategory(articles) {
   const byCat = {};

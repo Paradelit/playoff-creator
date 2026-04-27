@@ -17,7 +17,7 @@ const ROOT = resolve(__dirname, '..');
 const DIST = join(ROOT, 'dist');
 const SSR_ENTRY = join(ROOT, 'dist-ssr', 'entry-prerender.js');
 
-const SITE_URL = (process.env.SITE_URL || 'https://pickandcoach.web.app').replace(/\/$/, '');
+const SITE_URL = (process.env.SITE_URL || 'https://playoff-creator.web.app').replace(/\/$/, '');
 const TODAY = new Date().toISOString().slice(0, 10);
 
 function urlEntry({ loc, lastmod, changefreq, priority }) {

@@ -8,9 +8,7 @@ import { HELP_ARTICLES, HELP_CATEGORIES } from '../content/helpArticles';
 import { useAuth } from '../contexts/AuthContext';
 import HelpBreadcrumb from '../components/help/HelpBreadcrumb';
 import HelpArticleCard from '../components/help/HelpArticleCard';
-
-const SITE_URL = 'https://pickandcoach.web.app';
-const OG_IMAGE = `${SITE_URL}/og-image.png`;
+import { SITE_URL, OG_IMAGE } from '../siteConfig';
 
 function formatDateEs(iso) {
   const d = new Date(iso);

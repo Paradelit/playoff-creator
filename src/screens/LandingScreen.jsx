@@ -6,12 +6,11 @@ import HowItWorks from '../components/landing/HowItWorks';
 import FeaturedHelp from '../components/landing/FeaturedHelp';
 import FinalCTA from '../components/landing/FinalCTA';
 import LandingFooter from '../components/landing/LandingFooter';
+import { SITE_URL, OG_IMAGE } from '../siteConfig';
 
-const SITE_URL = 'https://pickandcoach.web.app';
 const TITLE = 'Pick&Coach — Copiloto IA para entrenadores de baloncesto';
 const DESCRIPTION =
   'Playoffs, entrenamientos, calendario y scouting. Todo en un sitio, con un copiloto IA que hace el trabajo contigo.';
-const OG_IMAGE = `${SITE_URL}/og-image.png`;
 
 const JSON_LD = {
   '@context': 'https://schema.org',
