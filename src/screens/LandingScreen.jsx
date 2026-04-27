@@ -2,6 +2,8 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import HeroSection from '../components/landing/HeroSection';
 import FeaturesGrid from '../components/landing/FeaturesGrid';
+import ContextoReal from '../components/landing/ContextoReal';
+import PlayoffScrollTelling from '../components/landing/PlayoffScrollTelling';
 import HowItWorks from '../components/landing/HowItWorks';
 import FeaturedHelp from '../components/landing/FeaturedHelp';
 import FinalCTA from '../components/landing/FinalCTA';
@@ -48,6 +50,8 @@ export default function LandingScreen() {
 
       <HeroSection />
       <FeaturesGrid />
+      <ContextoReal />
+      <PlayoffScrollTelling />
       <HowItWorks />
       <FeaturedHelp />
       <FinalCTA />

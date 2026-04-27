@@ -1,5 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
+import { afterEach, beforeAll } from 'vitest';
+import { installLandingBrowserMocks, resetLandingBrowserMocks } from './landingHelpers';
 
 // Global Firebase mocks to prevent the heavy SDK from loading
 // Individual test files can override specific functions with vi.mocked()
@@ -43,3 +45,11 @@ vi.mock('firebase/storage', () => ({
   uploadBytes: vi.fn(),
   getDownloadURL: vi.fn(),
 }));
+
+beforeAll(() => {
+  installLandingBrowserMocks();
+});
+
+afterEach(() => {
+  resetLandingBrowserMocks();
+});

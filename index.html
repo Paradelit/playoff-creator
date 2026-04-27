@@ -5,6 +5,20 @@
     <link rel="icon" type="image/webp" href="/favicon.webp" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pick&Coach</title>
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem('pickcoach.publicTheme');
+          if (!theme) {
+            theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          }
+          document.documentElement.dataset.publicTheme = theme;
+          if (!/^\/area-privada(\/|$)/.test(window.location.pathname) && theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (error) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

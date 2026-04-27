@@ -20,6 +20,9 @@ import {
 import { teamDisplayName } from '../utils/teamUtils';
 import { useBracket } from '../contexts/BracketContext';
 
+const LINK_ACCESS_NOTE =
+  'Los enlaces requieren iniciar sesion en Pick&Coach. Tras entrar, el cuadro se abrira automaticamente.';
+
 export default function DashboardScreen() {
   const {
     user,
@@ -162,10 +165,11 @@ export default function DashboardScreen() {
                 onChange={(e) => handleUpdateShareConfig({ linkAccess: e.target.value })}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
               >
-                <option value="none">Sin acceso — solo las personas invitadas</option>
-                <option value="view">Cualquiera con el enlace puede ver</option>
-                <option value="edit">Cualquiera con el enlace puede editar</option>
+                <option value="none">Sin acceso por enlace; solo personas invitadas</option>
+                <option value="view">Quien abra el enlace y entre en su cuenta puede ver</option>
+                <option value="edit">Quien abra el enlace y entre en su cuenta puede editar</option>
               </select>
+              <p className="text-xs text-slate-500 mb-3">{LINK_ACCESS_NOTE}</p>
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(

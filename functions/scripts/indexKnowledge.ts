@@ -19,19 +19,19 @@
  * Safe to re-run: uses upsert (set with merge), only re-embeds if body changed.
  */
 
-import { initializeApp, applicationDefault, cert, getApps } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import { HELP_ARTICLES } from "../../src/content/helpArticles";
+import { initializeApp, applicationDefault, cert, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { HELP_ARTICLES } from '../../src/content/helpArticles';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || '';
 
 if (!GEMINI_API_KEY) {
-  console.error("❌ Missing GEMINI_API_KEY environment variable.");
+  console.error('❌ Missing GEMINI_API_KEY environment variable.');
   process.exit(1);
 }
 if (!PROJECT_ID) {
-  console.error("❌ Missing FIREBASE_PROJECT_ID environment variable.");
+  console.error('❌ Missing FIREBASE_PROJECT_ID environment variable.');
   process.exit(1);
 }
 
@@ -43,9 +43,9 @@ if (getApps().length === 0) {
   let useCert = false;
   if (credPath) {
     try {
-      const fs = require("node:fs");
-      const json = JSON.parse(fs.readFileSync(credPath, "utf8"));
-      useCert = json.type === "service_account";
+      const fs = require('node:fs');
+      const json = JSON.parse(fs.readFileSync(credPath, 'utf8'));
+      useCert = json.type === 'service_account';
     } catch {
       // fall through; applicationDefault() will surface a clearer error
     }
@@ -65,8 +65,8 @@ const db = getFirestore();
 async function embedText(text: string): Promise<number[]> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${GEMINI_API_KEY}`;
   const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       content: { parts: [{ text }] },
       outputDimensionality: 768,
@@ -78,30 +78,41 @@ async function embedText(text: string): Promise<number[]> {
     throw new Error(`Embedding API error ${response.status}: ${err}`);
   }
 
-  const data = await response.json() as { embedding?: { values?: number[] } };
+  const data = (await response.json()) as { embedding?: { values?: number[] } };
   const values = data?.embedding?.values;
   if (!Array.isArray(values) || values.length === 0) {
-    throw new Error("Empty embedding returned");
+    throw new Error('Empty embedding returned');
   }
   return values;
+}
+
+function buildTextToEmbed(entry: { title?: string; summary?: string; body?: string; content?: string }) {
+  return `${entry.title || ''}\n\n${entry.summary || ''}\n\n${entry.body || entry.content || ''}`;
 }
 
 async function main() {
   console.log(`\n🏀 Pick&Coach Help Indexer`);
   console.log(`📚 Indexing ${HELP_ARTICLES.length} entries into Firestore...\n`);
 
-  const col = db.collection("knowledgeBase");
+  const col = db.collection('knowledgeBase');
   const knownIds = new Set(HELP_ARTICLES.map((e) => e.id));
-  const force = process.env.FORCE_REINDEX === "1";
+  const force = process.env.FORCE_REINDEX === '1';
 
-  // Fetch existing docs to check if body changed
+  // Fetch existing docs to check if the embedded text changed.
   const existingSnap = await col.get();
   const existingMap = new Map<string, string>();
   const existingDimMap = new Map<string, number>();
   for (const doc of existingSnap.docs) {
     const data = doc.data();
-    // Backward compat: read either body (new) or content (old indexed records)
-    existingMap.set(doc.id, (data.body as string) || (data.content as string) || "");
+    existingMap.set(
+      doc.id,
+      buildTextToEmbed({
+        title: data.title as string,
+        summary: data.summary as string,
+        body: data.body as string,
+        content: data.content as string,
+      }),
+    );
     const emb = data.embedding;
     existingDimMap.set(doc.id, Array.isArray(emb) ? emb.length : 0);
   }
@@ -112,12 +123,12 @@ async function main() {
   const TARGET_EMBEDDING_DIMS = 768;
 
   for (const entry of HELP_ARTICLES) {
-    const textToEmbed = `${entry.title}\n\n${entry.summary}\n\n${entry.body}`;
-    const existingBody = existingMap.get(entry.id);
+    const textToEmbed = buildTextToEmbed(entry);
+    const existingText = existingMap.get(entry.id);
     const existingDim = existingDimMap.get(entry.id);
 
-    // Skip only if body unchanged AND embedding dim matches what we'd produce now AND not forced.
-    if (!force && existingBody === entry.body && existingDim === TARGET_EMBEDDING_DIMS) {
+    // Skip only if the full embedded text is unchanged AND the embedding dim matches.
+    if (!force && existingText === textToEmbed && existingDim === TARGET_EMBEDDING_DIMS) {
       console.log(`  ⏭️  Skipping "${entry.title}" (unchanged)`);
       skipped++;
       continue;
@@ -139,8 +150,9 @@ async function main() {
       });
 
       const isNew = !existingMap.has(entry.id);
-      console.log(` ✅ ${isNew ? "created" : "updated"}`);
-      if (isNew) created++; else updated++;
+      console.log(` ✅ ${isNew ? 'created' : 'updated'}`);
+      if (isNew) created++;
+      else updated++;
 
       // Small delay to avoid rate limiting
       await new Promise((r) => setTimeout(r, 200));
@@ -165,6 +177,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("Fatal error:", err);
+  console.error('Fatal error:', err);
   process.exit(1);
 });

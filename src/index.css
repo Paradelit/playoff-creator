@@ -56,3 +56,585 @@
 .animate-pick-collapse {
   animation: pick-collapse 0.2s ease-in forwards;
 }
+
+/* ── Landing animations ──────────────────────────────────────── */
+/* Hero chat simulator */
+@keyframes pc-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes pc-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes pc-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes pc-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 24px 0 rgba(249, 115, 22, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 48px 8px rgba(249, 115, 22, 0.35);
+  }
+}
+@keyframes pc-scan {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+.pc-cursor {
+  animation: pc-blink 1s step-end infinite;
+}
+.pc-chat-box {
+  animation: pc-glow 3s ease-in-out infinite;
+}
+.pc-fsu {
+  animation: pc-slide-up 0.38s ease forwards;
+}
+.pc-d1 {
+  animation: pc-dot 1.2s infinite 0s;
+}
+.pc-d2 {
+  animation: pc-dot 1.2s infinite 0.22s;
+}
+.pc-d3 {
+  animation: pc-dot 1.2s infinite 0.44s;
+}
+
+/* FeaturesGrid reveal */
+@keyframes fg-slide {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fg-card {
+  opacity: 0;
+}
+.fg-card.fg-visible {
+  animation: fg-slide 0.55s ease forwards;
+}
+
+/* HowItWorks reveal */
+@keyframes hi-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.hi-step {
+  opacity: 0;
+}
+.hi-step.hi-visible {
+  animation: hi-step-in 0.5s ease forwards;
+}
+
+/* PlayoffScrollTelling */
+@keyframes pt-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes pt-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes pt-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 24px 4px rgba(249, 115, 22, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 48px 12px rgba(249, 115, 22, 0.5);
+  }
+}
+@keyframes pt-land {
+  from {
+    opacity: 0;
+    transform: scale(0.4) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.pt-pdf-idle {
+  animation:
+    pt-float 3s ease-in-out infinite,
+    pt-glow 3s ease-in-out infinite;
+}
+.pt-bracket-cell {
+  animation: pt-land 0.4s ease forwards;
+}
+
+/* ContextoReal: caos→orden + scan beam */
+@keyframes cr-pulse-warn {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+@keyframes cr-scan-beam {
+  0% {
+    transform: translateX(-30%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(130%);
+    opacity: 0;
+  }
+}
+.cr-warn {
+  animation: cr-pulse-warn 1.6s ease-in-out infinite;
+}
+.cr-beam {
+  animation: cr-scan-beam 2.4s ease-in-out infinite;
+}
+
+/* Feature micro-scenes (used inside FeaturesGrid cards) */
+@keyframes fm-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fm-typing-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+@keyframes fm-write-line {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: var(--fm-line-w, 100%);
+  }
+}
+@keyframes fm-tick-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes fm-fan-out-1 {
+  to {
+    transform: translateY(-4px) rotate(-8deg);
+  }
+}
+@keyframes fm-fan-out-2 {
+  to {
+    transform: translateY(-2px) rotate(0deg);
+  }
+}
+@keyframes fm-fan-out-3 {
+  to {
+    transform: translateY(-4px) rotate(8deg);
+  }
+}
+@keyframes fm-heat-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes fm-block-glide {
+  to {
+    transform: translate(var(--fm-bx, 0), var(--fm-by, 0));
+  }
+}
+@keyframes fm-bracket-stroke {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.fm-scene {
+  position: relative;
+  min-height: 80px;
+}
+
+.fm-pick-scene {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+.fm-pick-bubble {
+  border-radius: 999px;
+  height: 12px;
+  opacity: 0.65;
+}
+
+.fm-pick-bubble-user {
+  align-self: flex-end;
+  width: 62%;
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.fm-pick-bubble-assistant {
+  width: 78%;
+  background: rgba(249, 115, 22, 0.18);
+}
+
+.fm-pick-typing {
+  display: inline-flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.fm-pick-dot {
+  background: rgba(249, 115, 22, 0.85);
+  border-radius: 999px;
+  display: inline-block;
+  height: 6px;
+  opacity: 0.5;
+  width: 6px;
+}
+
+.fm-calendar-scene {
+  min-height: 82px;
+}
+
+.fm-calendar-grid {
+  position: absolute;
+  inset: 8px 0 0 0;
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.16) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.16) 1px, transparent 1px);
+  background-size: 33.33% 26px;
+  border-radius: 12px;
+  opacity: 0.6;
+}
+
+.fm-calendar-block {
+  position: absolute;
+  border-radius: 10px;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.08);
+}
+
+.fm-calendar-block-a {
+  left: 10%;
+  top: 18px;
+  width: 34%;
+  height: 18px;
+  background: rgba(59, 130, 246, 0.22);
+}
+
+.fm-calendar-block-b {
+  left: 46%;
+  top: 34px;
+  width: 26%;
+  height: 16px;
+  background: rgba(249, 115, 22, 0.2);
+}
+
+.fm-calendar-block-c {
+  left: 22%;
+  top: 56px;
+  width: 41%;
+  height: 14px;
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.fm-notebook-scene {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+}
+
+.fm-note-row {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.fm-note-line {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.8), rgba(139, 92, 246, 0.28));
+  border-radius: 999px;
+  display: inline-block;
+  height: 6px;
+  transform: scaleX(0.74);
+  transform-origin: left center;
+  transition: transform 0.35s ease;
+  width: var(--fm-line-w, 100%);
+}
+
+.fm-note-tick {
+  border-bottom: 2px solid #10b981;
+  border-right: 2px solid #10b981;
+  display: inline-block;
+  height: 10px;
+  opacity: 0;
+  transform: rotate(45deg);
+  width: 6px;
+}
+
+.fm-library-scene {
+  min-height: 84px;
+}
+
+.fm-library-card {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  width: 94px;
+  height: 54px;
+  margin-left: -47px;
+  border-radius: 14px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(240, 253, 244, 0.88));
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+}
+
+.dark .fm-library-card {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.12), rgba(17, 24, 39, 0.92));
+}
+
+.fm-library-card-a {
+  z-index: 1;
+  transform: translateY(6px) rotate(-2deg);
+}
+
+.fm-library-card-b {
+  z-index: 2;
+}
+
+.fm-library-card-c {
+  z-index: 3;
+  transform: translateY(-6px) rotate(2deg);
+}
+
+.fm-library-card::before,
+.fm-library-card::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.fm-library-card::before {
+  top: 16px;
+}
+
+.fm-library-card::after {
+  top: 28px;
+}
+
+.fm-heatmap-scene {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  min-height: 82px;
+}
+
+.fm-heat-cell {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background: rgba(6, 182, 212, 0.14);
+  opacity: 0.45;
+}
+
+.fm-bracket-scene {
+  min-height: 84px;
+}
+
+.fm-bracket-line {
+  stroke: rgba(245, 158, 11, 0.8);
+  stroke-dasharray: 80;
+  stroke-dashoffset: 28;
+  stroke-width: 3;
+}
+
+.fm-bracket-node {
+  fill: rgba(245, 158, 11, 0.12);
+  stroke: rgba(245, 158, 11, 0.42);
+}
+
+.fm-bracket-node-final {
+  fill: rgba(249, 115, 22, 0.16);
+  stroke: rgba(249, 115, 22, 0.5);
+}
+
+.group:hover .fm-pick-bubble-user {
+  animation: fm-bubble-in 0.35s ease forwards;
+}
+
+.group:hover .fm-pick-bubble-assistant {
+  animation: fm-bubble-in 0.35s ease 0.1s forwards;
+}
+
+.group:hover .fm-pick-dot {
+  animation: fm-typing-dot 1.1s infinite;
+}
+
+.group:hover .fm-pick-dot:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.group:hover .fm-pick-dot:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+.group:hover .fm-calendar-block {
+  animation: fm-block-glide 0.45s ease forwards;
+}
+
+.group:hover .fm-note-line {
+  transform: scaleX(1);
+}
+
+.group:hover .fm-note-tick {
+  animation: fm-tick-pop 0.35s ease forwards 0.35s;
+  opacity: 0;
+}
+
+.group:hover .fm-library-card-a {
+  animation: fm-fan-out-1 0.35s ease forwards;
+}
+
+.group:hover .fm-library-card-b {
+  animation: fm-fan-out-2 0.35s ease forwards;
+}
+
+.group:hover .fm-library-card-c {
+  animation: fm-fan-out-3 0.35s ease forwards;
+}
+
+.group:hover .fm-heat-cell {
+  animation: fm-heat-pulse 1.2s ease-in-out infinite;
+}
+
+.group:hover .fm-bracket-line {
+  animation: fm-bracket-stroke 0.55s ease forwards;
+}
+
+.fm-scene[data-reduced='true'] .fm-pick-bubble,
+.fm-scene[data-reduced='true'] .fm-pick-dot,
+.fm-scene[data-reduced='true'] .fm-calendar-block,
+.fm-scene[data-reduced='true'] .fm-note-line,
+.fm-scene[data-reduced='true'] .fm-note-tick,
+.fm-scene[data-reduced='true'] .fm-library-card,
+.fm-scene[data-reduced='true'] .fm-heat-cell,
+.fm-scene[data-reduced='true'] .fm-bracket-line {
+  animation: none !important;
+}
+
+.fm-scene[data-reduced='true'] .fm-note-tick {
+  opacity: 1;
+}
+
+.fm-scene[data-reduced='true'] .fm-bracket-line {
+  stroke-dashoffset: 0;
+}
+
+/* Reduced motion: disable landing animations */
+@media (prefers-reduced-motion: reduce) {
+  .pc-cursor,
+  .pc-chat-box,
+  .pc-fsu,
+  .pc-d1,
+  .pc-d2,
+  .pc-d3,
+  .pt-pdf-idle,
+  .pt-bracket-cell,
+  .fg-card,
+  .hi-step,
+  .cr-warn,
+  .cr-beam,
+  .fm-pick-bubble-user,
+  .fm-pick-bubble-assistant,
+  .fm-pick-dot,
+  .fm-calendar-block,
+  .fm-note-line,
+  .fm-note-tick,
+  .fm-library-card,
+  .fm-heat-cell,
+  .fm-bracket-line {
+    animation: none !important;
+  }
+  .fg-card,
+  .hi-step {
+    opacity: 1 !important;
+  }
+}

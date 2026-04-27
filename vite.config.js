@@ -22,6 +22,23 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          const normalizedId = id.replaceAll('\\', '/');
+          if (
+            normalizedId.includes('/src/screens/LandingScreen.jsx') ||
+            normalizedId.includes('/src/components/landing/')
+          ) {
+            return 'public-landing';
+          }
+          if (
+            normalizedId.includes('/src/screens/HelpIndexScreen.jsx') ||
+            normalizedId.includes('/src/screens/HelpArticleScreen.jsx') ||
+            normalizedId.includes('/src/components/help/') ||
+            normalizedId.includes('/src/content/helpArticles') ||
+            normalizedId.includes('/node_modules/react-markdown') ||
+            normalizedId.includes('/node_modules/remark-gfm')
+          ) {
+            return 'public-help';
+          }
           if (id.includes('pdfjs-dist')) return 'pdf';
           if (id.includes('xlsx')) return 'xlsx';
           if (id.includes('html-to-image')) return 'html-to-image';

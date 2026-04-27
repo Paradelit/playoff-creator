@@ -6,6 +6,7 @@ import ModuleBoundary from '../components/ModuleBoundary';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import LegacyPathRedirect from '../router/LegacyPathRedirect';
+import { isPublicPath } from '../router/publicPaths';
 import { PUBLIC_ROUTE_DEFS } from './publicRoutes';
 
 const TeamsScreen = lazy(() => import('../screens/TeamsScreen'));
@@ -59,7 +60,15 @@ function AuthGuard({ children }) {
 
 function ShareRedirect() {
   const { code } = useParams();
-  return <Navigate to={`/area-privada/playoffs?share=${code}`} replace />;
+  const { user, authReady } = useAuth();
+
+  if (!code) return <Navigate to="/" replace />;
+  if (!authReady) return <LazyFallback />;
+
+  const target = `/area-privada/playoffs?share=${encodeURIComponent(code)}`;
+  if (user) return <Navigate to={target} replace />;
+
+  return <Navigate to={`/login?redirect=${encodeURIComponent(target)}`} replace />;
 }
 
 function PlayoffsRoute() {
@@ -106,8 +115,10 @@ function Guarded({ name, children }) {
 
 export default function AppRouter() {
   const { authReady } = useAuth();
+  const location = useLocation();
+  const waitingOnProtectedRoute = !authReady && !isPublicPath(location.pathname) && location.pathname !== '/login';
 
-  if (!authReady) {
+  if (waitingOnProtectedRoute) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">

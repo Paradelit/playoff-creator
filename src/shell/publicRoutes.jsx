@@ -12,13 +12,16 @@ import LandingScreen from '../screens/LandingScreen';
 import HelpIndexScreen from '../screens/HelpIndexScreen';
 import HelpArticleScreen from '../screens/HelpArticleScreen';
 import PublicNavbar from '../components/public/PublicNavbar';
+import { PublicThemeProvider } from '../contexts/PublicThemeContext';
 
 function PublicLayout({ children }) {
   return (
-    <>
-      <PublicNavbar />
-      {children}
-    </>
+    <PublicThemeProvider>
+      <div className="min-h-screen bg-white text-slate-900 transition-colors dark:bg-[#05050d] dark:text-white">
+        <PublicNavbar />
+        {children}
+      </div>
+    </PublicThemeProvider>
   );
 }
 

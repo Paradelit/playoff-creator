@@ -2,6 +2,9 @@ import React, { useId } from 'react';
 import { Share2, X, Copy, Check, Link } from 'lucide-react';
 import Dialog from '../Dialog';
 
+const LINK_ACCESS_NOTE =
+  'Los enlaces requieren iniciar sesion en Pick&Coach. Tras entrar, el cuadro se abrira automaticamente.';
+
 export default function BracketShareModal({
   sharingBracket,
   setSharingBracket,
@@ -152,10 +155,11 @@ export default function BracketShareModal({
           onChange={(e) => handleUpdateShareConfig({ linkAccess: e.target.value })}
           className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
-          <option value="none">Sin acceso — solo las personas invitadas</option>
-          <option value="view">Cualquiera con el enlace puede ver</option>
-          <option value="edit">Cualquiera con el enlace puede editar</option>
+          <option value="none">Sin acceso por enlace; solo personas invitadas</option>
+          <option value="view">Quien abra el enlace y entre en su cuenta puede ver</option>
+          <option value="edit">Quien abra el enlace y entre en su cuenta puede editar</option>
         </select>
+        <p className="text-xs text-slate-500 mb-3">{LINK_ACCESS_NOTE}</p>
         <button
           type="button"
           onClick={() => {
