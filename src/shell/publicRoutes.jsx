@@ -9,19 +9,13 @@ import { Routes, Route } from 'react-router-dom';
 // (entry-prerender.jsx) can render it synchronously via renderToString.
 
 import LandingScreen from '../screens/LandingScreen';
-
-function HelpIndexPlaceholder() {
-  return <div style={{ padding: 40 }}>Centro de ayuda (placeholder — implemented in F1.5)</div>;
-}
-
-function HelpArticlePlaceholder() {
-  return <div style={{ padding: 40 }}>Artículo de ayuda (placeholder — implemented in F1.5)</div>;
-}
+import HelpIndexScreen from '../screens/HelpIndexScreen';
+import HelpArticleScreen from '../screens/HelpArticleScreen';
 
 export const PUBLIC_ROUTE_DEFS = [
   { path: '/', element: <LandingScreen /> },
-  { path: '/ayuda', element: <HelpIndexPlaceholder /> },
-  { path: '/ayuda/:slug', element: <HelpArticlePlaceholder /> },
+  { path: '/ayuda', element: <HelpIndexScreen /> },
+  { path: '/ayuda/:slug', element: <HelpArticleScreen /> },
 ];
 
 // Used by the prerender entry (src/entry-prerender.jsx). Rendered in a StaticRouter context
