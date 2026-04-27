@@ -12,14 +12,14 @@
  *
  * What it does:
  *   - Reads all entries from HELP_ARTICLES (src/content/helpArticles.ts at repo root)
- *   - Generates a text-embedding-004 vector for each entry (title + summary + body)
+ *   - Generates a gemini-embedding-001 vector for each entry (title + summary + body)
  *   - Upserts each entry into Firestore at `knowledgeBase/{entry.id}`
  *   - Deletes any stale entries no longer present in the local source
  *
  * Safe to re-run: uses upsert (set with merge), only re-embeds if body changed.
  */
 
-import { initializeApp, cert, getApps } from "firebase-admin/app";
+import { initializeApp, applicationDefault, cert, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { HELP_ARTICLES } from "../../src/content/helpArticles";
 
@@ -38,10 +38,24 @@ if (!PROJECT_ID) {
 // Initialize Firebase Admin
 if (getApps().length === 0) {
   const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  // Detect credential type: service-account JSON has "type":"service_account",
+  // firebase-cli ADC has "type":"authorized_user". cert() only accepts the former.
+  let useCert = false;
   if (credPath) {
+    try {
+      const fs = require("node:fs");
+      const json = JSON.parse(fs.readFileSync(credPath, "utf8"));
+      useCert = json.type === "service_account";
+    } catch {
+      // fall through; applicationDefault() will surface a clearer error
+    }
+  }
+  if (credPath && useCert) {
     initializeApp({ credential: cert(credPath), projectId: PROJECT_ID });
+  } else if (credPath) {
+    // authorized_user creds — use applicationDefault (it picks up GOOGLE_APPLICATION_CREDENTIALS too).
+    initializeApp({ credential: applicationDefault(), projectId: PROJECT_ID });
   } else {
-    // Use Application Default Credentials (firebase login)
     initializeApp({ projectId: PROJECT_ID });
   }
 }
@@ -49,12 +63,11 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 async function embedText(text: string): Promise<number[]> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${GEMINI_API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${GEMINI_API_KEY}`;
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "models/text-embedding-004",
       content: { parts: [{ text }] },
     }),
   });
