@@ -4,8 +4,7 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 /* ─── Chat simulation data ──────────────────────────────────────── */
-const USER_MSG =
-  'Pick, crea un entrenamiento para mañana. 45 min, bloqueo directo y transición rápida.';
+const USER_MSG = 'Pick, crea un entrenamiento para mañana. 45 min, bloqueo directo y transición rápida.';
 
 const PICK_BLOCKS = [
   { icon: '🏀', text: 'Entrenamiento generado — 45 min', bold: true },
@@ -109,7 +108,6 @@ export default function HeroSection() {
 
         <div className="relative max-w-7xl mx-auto px-6 lg:px-8 pt-14 pb-20 lg:pt-20 lg:pb-28">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-
             {/* ── Left: copy ── */}
             <div>
               {/* Badge */}
@@ -202,7 +200,11 @@ export default function HeroSection() {
                     <div className="flex justify-end">
                       <div
                         className="max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tr-sm text-sm leading-snug"
-                        style={{ background: 'rgba(59,130,246,.25)', color: '#cbd5e1', border: '1px solid rgba(59,130,246,.2)' }}
+                        style={{
+                          background: 'rgba(59,130,246,.25)',
+                          color: '#cbd5e1',
+                          border: '1px solid rgba(59,130,246,.2)',
+                        }}
                       >
                         {USER_MSG.slice(0, typedLen)}
                         {showCursor && (
@@ -250,10 +252,10 @@ export default function HeroSection() {
                               border: `1px solid ${i === 0 ? 'rgba(249,115,22,.25)' : 'rgba(255,255,255,.07)'}`,
                             }}
                           >
-                            <span className="shrink-0 text-base leading-none" aria-hidden="true">{block.icon}</span>
-                            <span
-                              className={block.bold ? 'font-semibold text-orange-300' : 'text-slate-300'}
-                            >
+                            <span className="shrink-0 text-base leading-none" aria-hidden="true">
+                              {block.icon}
+                            </span>
+                            <span className={block.bold ? 'font-semibold text-orange-300' : 'text-slate-300'}>
                               {block.text}
                             </span>
                           </div>

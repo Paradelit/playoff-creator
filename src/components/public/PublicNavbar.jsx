@@ -94,7 +94,10 @@ export default function PublicNavbar() {
         </div>
 
         {mobileOpen && (
-          <nav className="md:hidden pb-4 flex flex-col gap-1 border-t border-white/10 pt-3" aria-label="Principal móvil">
+          <nav
+            className="md:hidden pb-4 flex flex-col gap-1 border-t border-white/10 pt-3"
+            aria-label="Principal móvil"
+          >
             {NAV_LINKS.map((link) => (
               <NavLink
                 key={link.to}

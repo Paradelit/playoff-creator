@@ -24,10 +24,10 @@ const STYLES = `
 /* Bracket data: 8-team single-elim */
 const BRACKET = {
   qf: [
-    { a: 'Calasanz',   b: 'Joventut'  },
-    { a: 'Juventud',   b: 'Estudiantes', bye: true },
-    { a: 'Baskonia',   b: 'Unicaja'   },
-    { a: 'Real Madrid',b: 'Barcelona', bo: 'BO3' },
+    { a: 'Calasanz', b: 'Joventut' },
+    { a: 'Juventud', b: 'Estudiantes', bye: true },
+    { a: 'Baskonia', b: 'Unicaja' },
+    { a: 'Real Madrid', b: 'Barcelona', bo: 'BO3' },
   ],
   sf: [
     { a: '?', b: '?' },
@@ -38,17 +38,17 @@ const BRACKET = {
 
 /* Flying particles (the "exploding PDF data") */
 const PARTICLES = [
-  { label: 'Calasanz',    x: -55, y: -70 },
-  { label: 'Joventut',   x:  55, y: -80 },
-  { label: 'Baskonia',   x: -80, y: -10 },
-  { label: 'Unicaja',    x:  80, y: -20 },
-  { label: 'Juventud',   x: -65, y:  50 },
-  { label: 'Estudiantes',x:  65, y:  60 },
-  { label: 'Barcelona',  x: -45, y:  80 },
-  { label: 'Real Madrid',x:  45, y:  90 },
-  { label: 'BO3',        x:  90, y:  30, accent: true },
-  { label: 'BYE',        x: -90, y:  20, accent: true },
-  { label: '8 equipos',  x:   0, y: -95, accent: true },
+  { label: 'Calasanz', x: -55, y: -70 },
+  { label: 'Joventut', x: 55, y: -80 },
+  { label: 'Baskonia', x: -80, y: -10 },
+  { label: 'Unicaja', x: 80, y: -20 },
+  { label: 'Juventud', x: -65, y: 50 },
+  { label: 'Estudiantes', x: 65, y: 60 },
+  { label: 'Barcelona', x: -45, y: 80 },
+  { label: 'Real Madrid', x: 45, y: 90 },
+  { label: 'BO3', x: 90, y: 30, accent: true },
+  { label: 'BYE', x: -90, y: 20, accent: true },
+  { label: '8 equipos', x: 0, y: -95, accent: true },
   { label: 'R1 · R2 · Final', x: 0, y: 95, accent: true },
 ];
 
@@ -94,8 +94,10 @@ function BracketDisplay({ visible }) {
               <div className="px-2.5 py-1.5 border-b border-white/10 flex justify-between items-center">
                 <span className="text-slate-200 font-medium truncate">{m.a}</span>
                 {m.bo && (
-                  <span className="ml-1 shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                    style={{ background: 'rgba(249,115,22,.2)', color: '#f97316' }}>
+                  <span
+                    className="ml-1 shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                    style={{ background: 'rgba(249,115,22,.2)', color: '#f97316' }}
+                  >
                     {m.bo}
                   </span>
                 )}
@@ -103,8 +105,10 @@ function BracketDisplay({ visible }) {
               <div className="px-2.5 py-1.5 flex justify-between items-center">
                 <span className="text-slate-200 font-medium truncate">{m.b}</span>
                 {m.bye && (
-                  <span className="ml-1 shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                    style={{ background: 'rgba(16,185,129,.15)', color: '#34d399' }}>
+                  <span
+                    className="ml-1 shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                    style={{ background: 'rgba(16,185,129,.15)', color: '#34d399' }}
+                  >
                     BYE
                   </span>
                 )}
@@ -163,12 +167,17 @@ function BracketDisplay({ visible }) {
               border: '1px solid rgba(249,115,22,.3)',
             }}
           >
-            <div className="px-2.5 py-2 border-b text-orange-300 font-semibold" style={{ borderColor: 'rgba(249,115,22,.2)' }}>
+            <div
+              className="px-2.5 py-2 border-b text-orange-300 font-semibold"
+              style={{ borderColor: 'rgba(249,115,22,.2)' }}
+            >
               Ganador SF 1
             </div>
             <div className="px-2.5 py-2 text-orange-300 font-semibold">Ganador SF 2</div>
-            <div className="px-2.5 py-1 text-center text-[10px] font-bold text-orange-400"
-              style={{ background: 'rgba(249,115,22,.1)' }}>
+            <div
+              className="px-2.5 py-1 text-center text-[10px] font-bold text-orange-400"
+              style={{ background: 'rgba(249,115,22,.1)' }}
+            >
               FINAL
             </div>
           </div>
@@ -199,12 +208,12 @@ export default function PlayoffScrollTelling() {
   }, []);
 
   /* Derived animation values */
-  const act1 = Math.min(1, progress / 0.33);           // 0 → 1 during first third
+  const act1 = Math.min(1, progress / 0.33); // 0 → 1 during first third
   const act2 = Math.max(0, Math.min(1, (progress - 0.33) / 0.33)); // 0 → 1 during middle third
   const act3 = Math.max(0, Math.min(1, (progress - 0.66) / 0.34)); // 0 → 1 during last third
 
-  const pdfOpacity     = lerp(1, 0, easeOut(act2));
-  const pdfScale       = lerp(1, 0.4, easeOut(act2));
+  const pdfOpacity = lerp(1, 0, easeOut(act2));
+  const pdfScale = lerp(1, 0.4, easeOut(act2));
   const particleSpread = easeInOut(act2);
   const bracketVisible = act3 > 0.3;
 
@@ -228,7 +237,10 @@ export default function PlayoffScrollTelling() {
             <p className="text-xs font-bold tracking-widest text-orange-400 uppercase mb-2">Playoffs con IA</p>
             <h2
               className="text-3xl lg:text-4xl font-extrabold text-white"
-              style={{ opacity: lerp(0, 1, easeOut(act1 * 3)), transform: 'translateY(' + lerp(20, 0, easeOut(act1 * 3)) + 'px)' }}
+              style={{
+                opacity: lerp(0, 1, easeOut(act1 * 3)),
+                transform: 'translateY(' + lerp(20, 0, easeOut(act1 * 3)) + 'px)',
+              }}
             >
               Un PDF. Un cuadro perfecto.
             </h2>
@@ -236,7 +248,6 @@ export default function PlayoffScrollTelling() {
 
           {/* Stage */}
           <div className="relative w-full max-w-2xl flex items-center justify-center" style={{ minHeight: 320 }}>
-
             {/* ── Act 1: PDF icon ── */}
             <div
               className={pdfOpacity > 0.05 ? 'pt-pdf-idle' : ''}
@@ -287,7 +298,7 @@ export default function PlayoffScrollTelling() {
                   className="absolute text-xs font-semibold px-2 py-1 rounded-lg pointer-events-none"
                   style={{
                     opacity: Math.max(0, opacity),
-                    transform: 'translate(' + tx + 'px,' + ty + 'px) rotate(' + (angle * 30) + 'deg)',
+                    transform: 'translate(' + tx + 'px,' + ty + 'px) rotate(' + angle * 30 + 'deg)',
                     background: p.accent ? 'rgba(249,115,22,.15)' : 'rgba(255,255,255,.06)',
                     border: p.accent ? '1px solid rgba(249,115,22,.3)' : '1px solid rgba(255,255,255,.1)',
                     color: p.accent ? '#f97316' : '#cbd5e1',
@@ -327,9 +338,7 @@ export default function PlayoffScrollTelling() {
                 />
               ))}
             </div>
-            {act3 < 0.1 && (
-              <p className="text-slate-500 text-xs animate-bounce mt-1">Sigue bajando</p>
-            )}
+            {act3 < 0.1 && <p className="text-slate-500 text-xs animate-bounce mt-1">Sigue bajando</p>}
           </div>
         </div>
       </section>

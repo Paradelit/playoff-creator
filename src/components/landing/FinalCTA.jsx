@@ -12,10 +12,7 @@ export default function FinalCTA() {
       style={{ background: 'linear-gradient(135deg, #0e0e20 0%, #111128 100%)' }}
     >
       {/* Radial glow */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 flex items-center justify-center"
-      >
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center">
         <div
           className="w-[700px] h-[400px] rounded-full blur-3xl"
           style={{ background: 'radial-gradient(ellipse, rgba(249,115,22,.18) 0%, transparent 70%)' }}
@@ -29,11 +26,11 @@ export default function FinalCTA() {
         </div>
 
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-5 leading-tight">
-          Empieza a entrenar<br />con tu copiloto hoy
+          Empieza a entrenar
+          <br />
+          con tu copiloto hoy
         </h2>
-        <p className="text-lg text-slate-400 mb-10">
-          Sin tarjeta. Sin compromiso. Gratis para entrenadores.
-        </p>
+        <p className="text-lg text-slate-400 mb-10">Sin tarjeta. Sin compromiso. Gratis para entrenadores.</p>
 
         <Link
           to={user ? '/area-privada' : '/login'}

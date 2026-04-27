@@ -120,10 +120,7 @@ export default function FeaturesGrid() {
   return (
     <>
       <style>{STYLES}</style>
-      <section
-        className="py-20 lg:py-28"
-        style={{ background: 'linear-gradient(180deg, #06060f 0%, #0a0a18 100%)' }}
-      >
+      <section className="py-20 lg:py-28" style={{ background: 'linear-gradient(180deg, #06060f 0%, #0a0a18 100%)' }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="max-w-2xl mb-14">
             <p className="text-xs font-bold tracking-widest text-orange-400 uppercase mb-3">Funcionalidades</p>

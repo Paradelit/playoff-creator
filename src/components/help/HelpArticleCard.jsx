@@ -22,7 +22,9 @@ export default function HelpArticleCard({ article, dark = false }) {
           e.currentTarget.style.boxShadow = 'none';
         }}
       >
-        <h3 className="font-semibold text-white mb-1.5 group-hover:text-orange-300 transition-colors">{article.title}</h3>
+        <h3 className="font-semibold text-white mb-1.5 group-hover:text-orange-300 transition-colors">
+          {article.title}
+        </h3>
         <p className="text-sm text-slate-400 leading-relaxed">{article.summary}</p>
         <span className="inline-flex items-center gap-1 mt-3 text-sm text-orange-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
           Leer más <ArrowRight size={14} aria-hidden="true" />

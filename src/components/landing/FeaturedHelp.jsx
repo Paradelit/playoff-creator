@@ -24,10 +24,7 @@ export default function FeaturedHelp() {
   if (featured.length === 0) return null;
 
   return (
-    <section
-      className="py-20 lg:py-28"
-      style={{ background: 'linear-gradient(180deg, #0a0a18 0%, #0a0a18 100%)' }}
-    >
+    <section className="py-20 lg:py-28" style={{ background: 'linear-gradient(180deg, #0a0a18 0%, #0a0a18 100%)' }}>
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-end justify-between mb-12">
           <div>
