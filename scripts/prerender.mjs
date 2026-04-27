@@ -26,20 +26,37 @@ const ROOT = resolve(__dirname, '..');
 const DIST = join(ROOT, 'dist');
 const SSR_ENTRY = join(ROOT, 'dist-ssr', 'entry-prerender.js');
 
+// Under React 19, react-helmet-async 3.x is a no-op Fragment (it expects React 19's native
+// head deduplication, which only works in the streaming SSR APIs — not renderToString).
+// So Helmet's <title>/<meta>/<link>/<script type="application/ld+json"> elements get rendered
+// inline into the body output. We extract them here and move them into <head> so crawlers
+// and social-card scrapers find them where they expect.
+const HEAD_TAG_PATTERNS = [
+  /<title\b[^>]*>[\s\S]*?<\/title>/g,
+  /<meta\b[^>]*\/?>(?:<\/meta>)?/g,
+  /<link\b[^>]*\/?>(?:<\/link>)?/g,
+  /<script\b[^>]*type="application\/ld\+json"[^>]*>[\s\S]*?<\/script>/g,
+];
+
+function extractHeadTags(html) {
+  let body = html;
+  const headTags = [];
+  for (const pattern of HEAD_TAG_PATTERNS) {
+    const matches = body.match(pattern);
+    if (matches) headTags.push(...matches);
+    body = body.replace(pattern, '');
+  }
+  // Strip the original <title>Pick&Coach</title> from the template so we don't end up with two.
+  return { body, headTags };
+}
+
 function injectIntoTemplate(template, result) {
-  let out = template.replace('<div id="root"></div>', `<div id="root">${result.html}</div>`);
-  if (result.helmet) {
-    const headParts = [
-      result.helmet.title?.toString() ?? '',
-      result.helmet.meta?.toString() ?? '',
-      result.helmet.link?.toString() ?? '',
-      result.helmet.script?.toString() ?? '',
-    ]
-      .filter(Boolean)
-      .join('\n    ');
-    if (headParts.trim().length > 0) {
-      out = out.replace('</head>', `    ${headParts}\n  </head>`);
-    }
+  const { body, headTags } = extractHeadTags(result.html);
+  let out = template.replace('<div id="root"></div>', `<div id="root">${body}</div>`);
+  if (headTags.length > 0) {
+    // Drop the placeholder <title> in the template — Helmet's title supersedes it.
+    out = out.replace(/\s*<title>[^<]*<\/title>/, '');
+    out = out.replace('</head>', `    ${headTags.join('\n    ')}\n  </head>`);
   }
   return out;
 }
@@ -53,6 +70,13 @@ async function main() {
   console.log('\n🏀 Pick&Coach prerender\n');
 
   const template = readFileSync(join(DIST, 'index.html'), 'utf8');
+  if (!template.includes('<div id="root"></div>')) {
+    throw new Error(
+      'dist/index.html is missing the <div id="root"></div> placeholder. ' +
+        'It was likely overwritten by a previous prerender run. ' +
+        "Run `npm run build:client` first to regenerate Vite's pristine template.",
+    );
+  }
   const ssr = await import(pathToFileURL(SSR_ENTRY).href);
 
   if (typeof ssr.render !== 'function' || !Array.isArray(ssr.publicRoutes)) {

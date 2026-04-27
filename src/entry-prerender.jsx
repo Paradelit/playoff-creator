@@ -1,11 +1,7 @@
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { StaticRouter } from 'react-router-dom';
-// react-helmet-async ships dual ESM/CJS but lists `.js` rather than `.mjs` for its ESM
-// build, which trips Node's strict named-export check on some loaders. Use a namespace
-// import + destructure as a workaround.
-import * as ReactHelmetAsync from 'react-helmet-async';
-const { HelmetProvider } = ReactHelmetAsync;
+import { HelmetProvider } from 'react-helmet-async';
 import PublicRoutesOnly from './shell/publicRoutes';
 import { HELP_ARTICLES } from './content/helpArticles';
 
