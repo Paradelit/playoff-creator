@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Minimize2, Loader2, MapPin } from 'lucide-react';
-import { useCopilot } from '../../contexts/CopilotProvider';
+import { usePick } from '../../contexts/PickProvider';
 import { useScreenContext } from '../../contexts/ScreenContextProvider';
 import ActionButton from './ActionButton';
-import CopilotFeedback from './CopilotFeedback';
+import PickFeedback from './PickFeedback';
 import ConversationList from './ConversationList';
 import BlockRenderer from './blocks/BlockRenderer';
 import TextBlock from './blocks/TextBlock';
@@ -23,7 +23,7 @@ const SCREEN_LABELS: Record<string, string> = {
   analysis: 'Análisis',
 };
 
-export default function CopilotColumn() {
+export default function PickColumn() {
   const {
     messages,
     isProcessing,
@@ -35,7 +35,7 @@ export default function CopilotColumn() {
     conversations,
     conversationId,
     loadConversation,
-  } = useCopilot();
+  } = usePick();
   const { screenContext } = useScreenContext();
   const [input, setInput] = useState('');
   const [tab, setTab] = useState<'chat' | 'conversations'>('chat');
@@ -70,11 +70,11 @@ export default function CopilotColumn() {
   const screenLabel = SCREEN_LABELS[screenContext.screen] || screenContext.screen;
 
   return (
-    <div className="fixed top-0 right-0 bottom-0 w-[400px] bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col overflow-hidden animate-copilot-panel-open">
+    <div className="fixed top-0 right-0 bottom-0 w-[400px] bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col overflow-hidden animate-pick-panel-open">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
         <div className="flex items-center gap-2">
-          <h3 className="font-bold text-slate-800 text-sm">Copilot</h3>
+          <h3 className="font-bold text-slate-800 text-sm">Pick</h3>
           <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200">
             <MapPin size={10} /> {screenLabel}
           </span>
@@ -136,7 +136,7 @@ export default function CopilotColumn() {
           <div className="flex-1 overflow-y-auto min-h-0 px-4 py-3 space-y-3">
             {messages.length === 0 && (
               <div className="text-center text-slate-400 text-sm py-12">
-                <p className="font-medium">¡Hola! Soy tu copilot.</p>
+                <p className="font-medium">¡Hola! Soy Pick.</p>
                 <p className="mt-1 text-xs">Pregúntame lo que necesites sobre la app.</p>
               </div>
             )}
@@ -171,7 +171,7 @@ export default function CopilotColumn() {
                     )}
                     {msg.traceId && (
                       <div>
-                        <CopilotFeedback traceId={msg.traceId} />
+                        <PickFeedback traceId={msg.traceId} />
                       </div>
                     )}
                   </div>

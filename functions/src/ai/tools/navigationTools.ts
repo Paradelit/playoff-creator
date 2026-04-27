@@ -7,7 +7,7 @@ export function createNavigationTools(): ToolDefinition[] {
   return [
     {
       name: "suggest_navigation",
-      description: `Propone llevar al usuario a una pantalla concreta de CoachApp. No modifica datos.
+      description: `Propone llevar al usuario a una pantalla concreta de Pick&Coach. No modifica datos.
 Usa esta tool cuando el usuario quiera ver/editar algo en otro sitio de la app, tras generar contenido relacionado,
 o cuando expliques dónde encontrar la información. Los destinos válidos son: ${enumList}.
 Pasa teamId, trainingId o sessionId cuando el destino lo requiera; si el usuario ya está en un equipo o sesión,

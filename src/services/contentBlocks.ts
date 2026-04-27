@@ -1,5 +1,5 @@
 /**
- * Shared Copilot contracts.
+ * Shared Pick contracts.
  * Source of truth lives in functions/src/shared so frontend and backend keep
  * the same discriminated unions and proposal kinds.
  */
@@ -8,7 +8,7 @@ export type {
   BracketRecord,
   CalendarSessionRecord,
   ContentBlock,
-  CopilotAction,
+  PickAction,
   ExercisePreviewData,
   OrchestratorResponse,
   ScoreUpdateEntry,
@@ -16,4 +16,4 @@ export type {
   TrainingPreviewData,
   WriteProposal,
   WriteProposalKind,
-} from '../../functions/src/shared/copilotContracts';
+} from '../../functions/src/shared/pickContracts';

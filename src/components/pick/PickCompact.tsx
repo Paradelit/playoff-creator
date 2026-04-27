@@ -1,20 +1,20 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { MessageCircle, X } from 'lucide-react';
-import { useCopilot } from '../../contexts/CopilotProvider';
+import { usePick } from '../../contexts/PickProvider';
 
 interface Props {
   animating?: boolean;
 }
 
-export default function CopilotCompact({ animating }: Props) {
-  const { setMode, currentTip, dismissTip } = useCopilot();
+export default function PickCompact({ animating }: Props) {
+  const { setMode, currentTip, dismissTip } = usePick();
 
   return (
-    <div className={`fixed bottom-20 right-4 z-50 flex items-end gap-2 ${animating ? 'animate-copilot-collapse' : ''}`}>
+    <div className={`fixed bottom-20 right-4 z-50 flex items-end gap-2 ${animating ? 'animate-pick-collapse' : ''}`}>
       {/* Speech bubble */}
       {currentTip && !animating && (
-        <div className="animate-copilot-fade-in flex items-center gap-2 bg-white shadow-lg rounded-xl px-3.5 py-2.5 max-w-[220px] border border-slate-200">
+        <div className="animate-pick-fade-in flex items-center gap-2 bg-white shadow-lg rounded-xl px-3.5 py-2.5 max-w-[220px] border border-slate-200">
           <button
             onClick={() => setMode('panel')}
             className="text-sm text-slate-700 font-medium text-left flex-1 leading-snug"
@@ -49,7 +49,7 @@ export default function CopilotCompact({ animating }: Props) {
       <button
         onClick={() => setMode('panel')}
         className="w-12 h-12 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-full shadow-lg flex items-center justify-center transition-colors shrink-0"
-        aria-label="Abrir copilot"
+        aria-label="Abrir Pick"
       >
         <MessageCircle size={22} className="text-white" />
       </button>

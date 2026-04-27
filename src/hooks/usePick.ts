@@ -4,19 +4,19 @@ import { useScreenContext } from '../contexts/ScreenContextProvider';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { runAgent, aiChatV2, submitFeedback } from '../services/aiClient';
-import { useCopilotTips, type ProactivityMode } from './useCopilotTips';
+import { usePickTips, type ProactivityMode } from './usePickTips';
 import { useProfile } from './useProfile';
 import { useConversationPersistence } from './useConversationPersistence';
 import type { ChatMessage } from './useConversationPersistence';
 import type { ContentBlock, OrchestratorResponse, WriteProposal } from '../services/contentBlocks';
 import { executeProposal } from '../services/proposalExecutor';
 
-export type CopilotMode = 'compact' | 'panel' | 'column';
+export type PickMode = 'compact' | 'panel' | 'column';
 
-export interface CopilotAPI {
+export interface PickAPI {
   // Mode
-  mode: CopilotMode;
-  setMode: (m: CopilotMode) => void;
+  mode: PickMode;
+  setMode: (m: PickMode) => void;
   isTransitioning: boolean;
   isDesktop: boolean;
 
@@ -51,14 +51,14 @@ export interface CopilotAPI {
   lastTraceId: string | null;
 }
 
-export function useCopilotInternal(): CopilotAPI {
+export function usePickInternal(): PickAPI {
   const navigate = useNavigate();
   const location = useLocation();
   const { screenContext } = useScreenContext();
   const { user } = useAuth() as { user: { uid: string } | null };
   const { db, appId } = useFirebase() as { db: import('firebase/firestore').Firestore; appId: string };
 
-  const [mode, setModeRaw] = useState<CopilotMode>('compact');
+  const [mode, setModeRaw] = useState<PickMode>('compact');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isDesktop, setIsDesktop] = useState(
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)').matches : false,
@@ -68,12 +68,12 @@ export function useCopilotInternal(): CopilotAPI {
   const [lastTraceId, setLastTraceId] = useState<string | null>(null);
 
   const previousRouteRef = useRef(location.pathname);
-  const modeBeforeTransitionRef = useRef<CopilotMode>('compact');
+  const modeBeforeTransitionRef = useRef<PickMode>('compact');
 
   const persistence = useConversationPersistence();
   const { profile } = useProfile();
   const proactivityMode = (profile?.proactivityMode as ProactivityMode | undefined) ?? 'suggestions';
-  const tips = useCopilotTips(screenContext, { proactivityMode });
+  const tips = usePickTips(screenContext, { proactivityMode });
 
   // Sync messages from persistence (initial load + conversation switch)
   useEffect(() => {
@@ -112,7 +112,7 @@ export function useCopilotInternal(): CopilotAPI {
   }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setMode = useCallback(
-    (m: CopilotMode) => {
+    (m: PickMode) => {
       setModeRaw(m === 'column' && !isDesktop ? 'panel' : m);
     },
     [isDesktop],
@@ -221,7 +221,7 @@ export function useCopilotInternal(): CopilotAPI {
           timestamp: Date.now(),
         };
         setMessages((prev) => [...prev, errorMsg]);
-        console.error('Copilot error:', err);
+        console.error('Pick error:', err);
       } finally {
         setIsProcessing(false);
       }

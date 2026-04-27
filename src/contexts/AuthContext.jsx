@@ -198,6 +198,9 @@ export function AuthProvider({ children }) {
   );
 }
 
+const SSR_AUTH_FALLBACK = { user: null, authReady: false };
+
 export function useAuth() {
-  return useContext(AuthContext);
+  // During SSR prerender, AuthProvider is not mounted — return a safe fallback.
+  return useContext(AuthContext) ?? SSR_AUTH_FALLBACK;
 }

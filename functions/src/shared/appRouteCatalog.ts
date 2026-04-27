@@ -1,5 +1,5 @@
 /**
- * Catálogo de destinos de navegación in-app para el Copilot.
+ * Catálogo de destinos de navegación in-app para Pick.
  * Debe mantenerse alineado con AppRouter.jsx y ScreenContextProvider.
  */
 
@@ -99,100 +99,100 @@ export function resolveAppNavigation(
 
   switch (target) {
     case "home":
-      return { path: "/", label: "Ir a inicio" };
+      return { path: "/area-privada", label: "Ir a inicio" };
     case "teams":
-      return { path: "/teams", label: "Ir a mis equipos" };
+      return { path: "/area-privada/teams", label: "Ir a mis equipos" };
     case "team_detail": {
       const err = needTeam(teamId);
       if (err) return { error: err };
-      return { path: `/teams/${teamId}`, label: "Ir al equipo" };
+      return { path: `/area-privada/teams/${teamId}`, label: "Ir al equipo" };
     }
     case "team_trainings": {
       const err = needTeam(teamId);
       if (err) return { error: err };
-      return { path: `/teams/${teamId}/trainings`, label: "Ir a entrenamientos del equipo" };
+      return { path: `/area-privada/teams/${teamId}/trainings`, label: "Ir a entrenamientos del equipo" };
     }
     case "training_editor": {
       const err = needTraining(teamId, trainingId);
       if (err) return { error: err };
-      return { path: `/teams/${teamId}/trainings/${trainingId}`, label: "Abrir editor de entrenamiento" };
+      return { path: `/area-privada/teams/${teamId}/trainings/${trainingId}`, label: "Abrir editor de entrenamiento" };
     }
     case "calendar":
-      return { path: "/calendar", label: "Ir al calendario" };
+      return { path: "/area-privada/calendar", label: "Ir al calendario" };
     case "session_scouting": {
       const err = needSession(sessionId);
       if (err) return { error: err };
-      return { path: `/calendar/${sessionId}/scouting`, label: "Ir a scouting del partido" };
+      return { path: `/area-privada/calendar/${sessionId}/scouting`, label: "Ir a scouting del partido" };
     }
     case "session_analysis": {
       const err = needSession(sessionId);
       if (err) return { error: err };
-      return { path: `/calendar/${sessionId}/analysis`, label: "Ir al análisis del partido" };
+      return { path: `/area-privada/calendar/${sessionId}/analysis`, label: "Ir al análisis del partido" };
     }
     case "session_planilla": {
       const err = needSession(sessionId);
       if (err) return { error: err };
-      return { path: `/calendar/${sessionId}/planilla`, label: "Ir a la planilla de sextos" };
+      return { path: `/area-privada/calendar/${sessionId}/planilla`, label: "Ir a la planilla de sextos" };
     }
     case "playoffs": {
       if (teamId?.trim()) {
-        return { path: `/playoffs?teamId=${encodeURIComponent(teamId)}`, label: "Ir a torneos (playoffs)" };
+        return { path: `/area-privada/playoffs?teamId=${encodeURIComponent(teamId)}`, label: "Ir a torneos (playoffs)" };
       }
-      return { path: "/playoffs", label: "Ir a torneos (playoffs)" };
+      return { path: "/area-privada/playoffs", label: "Ir a torneos (playoffs)" };
     }
     case "exercises":
-      return { path: "/exercises", label: "Ir a la biblioteca de ejercicios" };
+      return { path: "/area-privada/exercises", label: "Ir a la biblioteca de ejercicios" };
     case "settings":
-      return { path: "/settings", label: "Ir a ajustes" };
+      return { path: "/area-privada/settings", label: "Ir a ajustes" };
     case "cuaderno": {
       const err = needTeam(teamId);
       if (err) return { error: err };
-      return { path: `/teams/${teamId}/cuaderno`, label: "Ir al cuaderno del equipo" };
+      return { path: `/area-privada/teams/${teamId}/cuaderno`, label: "Ir al cuaderno del equipo" };
     }
     case "cuaderno_info": {
       const err = needTeam(teamId);
       if (err) return { error: err };
-      return { path: `/teams/${teamId}/cuaderno/info`, label: "Ir a información del cuaderno" };
+      return { path: `/area-privada/teams/${teamId}/cuaderno/info`, label: "Ir a información del cuaderno" };
     }
     case "cuaderno_pilares": {
       const err = needTeam(teamId);
       if (err) return { error: err };
-      return { path: `/teams/${teamId}/cuaderno/pilares`, label: "Ir a pilares" };
+      return { path: `/area-privada/teams/${teamId}/cuaderno/pilares`, label: "Ir a pilares" };
     }
     case "cuaderno_normas": {
       const err = needTeam(teamId);
       if (err) return { error: err };
-      return { path: `/teams/${teamId}/cuaderno/normas`, label: "Ir a normas" };
+      return { path: `/area-privada/teams/${teamId}/cuaderno/normas`, label: "Ir a normas" };
     }
     case "cuaderno_test_tiro": {
       const err = needTeam(teamId);
       if (err) return { error: err };
-      return { path: `/teams/${teamId}/cuaderno/test-tiro`, label: "Ir al test de tiro" };
+      return { path: `/area-privada/teams/${teamId}/cuaderno/test-tiro`, label: "Ir al test de tiro" };
     }
     case "cuaderno_jugadores": {
       const err = needTeam(teamId);
       if (err) return { error: err };
-      return { path: `/teams/${teamId}/cuaderno/jugadores`, label: "Ir a jugadores" };
+      return { path: `/area-privada/teams/${teamId}/cuaderno/jugadores`, label: "Ir a jugadores" };
     }
     case "cuaderno_notas": {
       const err = needTeam(teamId);
       if (err) return { error: err };
-      return { path: `/teams/${teamId}/cuaderno/notas`, label: "Ir a notas" };
+      return { path: `/area-privada/teams/${teamId}/cuaderno/notas`, label: "Ir a notas" };
     }
     case "cuaderno_informe_jugadores": {
       const err = needTeam(teamId);
       if (err) return { error: err };
-      return { path: `/teams/${teamId}/cuaderno/informe-jugadores`, label: "Ir a informes de jugadores" };
+      return { path: `/area-privada/teams/${teamId}/cuaderno/informe-jugadores`, label: "Ir a informes de jugadores" };
     }
     case "cuaderno_asistencia": {
       const err = needTeam(teamId);
       if (err) return { error: err };
-      return { path: `/teams/${teamId}/cuaderno/asistencia`, label: "Ir a asistencia" };
+      return { path: `/area-privada/teams/${teamId}/cuaderno/asistencia`, label: "Ir a asistencia" };
     }
     case "cuaderno_entrenamientos": {
       const err = needTeam(teamId);
       if (err) return { error: err };
-      return { path: `/teams/${teamId}/cuaderno/entrenamientos`, label: "Ir a entrenamientos (cuaderno)" };
+      return { path: `/area-privada/teams/${teamId}/cuaderno/entrenamientos`, label: "Ir a entrenamientos (cuaderno)" };
     }
     default:
       return { error: "Destino no soportado." };

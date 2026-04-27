@@ -117,7 +117,7 @@ export default function TrainingEditorScreen() {
             <BookOpen size={15} aria-hidden="true" /> Cargar de Biblioteca
           </button>
           <button
-            onClick={() => navigate('/exercises')}
+            onClick={() => navigate('/area-privada/exercises')}
             className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 transition"
           >
             <BookOpen size={15} aria-hidden="true" /> Biblioteca

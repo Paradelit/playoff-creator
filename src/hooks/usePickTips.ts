@@ -42,7 +42,7 @@ const NUDGES_BY_SCREEN: Record<string, (data?: Record<string, unknown>) => strin
   'training-editor': () => ['Veo que estás editando un entrenamiento. ¿Necesitas ejercicios específicos?'],
 };
 
-export function useCopilotTips(screenContext: ScreenContext, options: TipsOptions = {}) {
+export function usePickTips(screenContext: ScreenContext, options: TipsOptions = {}) {
   const mode = options.proactivityMode ?? 'suggestions';
   const [currentTip, setCurrentTip] = useState<string | null>(null);
   const [dismissedForKey, setDismissedForKey] = useState<string | null>(null);

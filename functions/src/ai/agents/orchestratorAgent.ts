@@ -1,7 +1,7 @@
 import { LLMProvider, GeminiMessage, GeminiPart } from "../llmProvider";
 import { ObservabilityService } from "../observability";
 import { ToolRegistry, ToolContext } from "../tools/registry";
-import { ContentBlock, CopilotAction, OrchestratorResponse, WriteProposal } from "../contentBlocks";
+import { ContentBlock, PickAction, OrchestratorResponse, WriteProposal } from "../contentBlocks";
 import { ScreenContextData, TraceContext, AgentExecutionOptions } from "../types";
 import { digestToPromptText, UserDigest } from "../userDigest";
 import { PromptManager } from "../promptManager";
@@ -125,7 +125,7 @@ export class OrchestratorAgent {
     _options: AgentExecutionOptions
   ): Promise<OrchestratorResponse> {
     const blocks: ContentBlock[] = [];
-    const actions: CopilotAction[] = [];
+    const actions: PickAction[] = [];
     const toolDecls = this.deps.toolRegistry.toGeminiDeclarations();
     const systemInstruction = await this.buildSystemPrompt(input.screenContext, input.userDigest);
     const traceId = (traceContext.trace as { id?: string })?.id || "";

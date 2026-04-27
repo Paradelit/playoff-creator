@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Copilot animations */
-@keyframes copilot-fade-in {
+/* Pick animations */
+@keyframes pick-fade-in {
   from {
     opacity: 0;
     transform: translateX(8px);
@@ -13,7 +13,7 @@
     transform: translateX(0);
   }
 }
-@keyframes copilot-panel-open {
+@keyframes pick-panel-open {
   from {
     opacity: 0;
     transform: translateY(16px) scale(0.95);
@@ -23,7 +23,7 @@
     transform: translateY(0) scale(1);
   }
 }
-@keyframes copilot-panel-close {
+@keyframes pick-panel-close {
   from {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -33,7 +33,7 @@
     transform: translateY(16px) scale(0.95);
   }
 }
-@keyframes copilot-collapse {
+@keyframes pick-collapse {
   from {
     opacity: 1;
     transform: scale(1);
@@ -44,15 +44,15 @@
   }
 }
 
-.animate-copilot-fade-in {
-  animation: copilot-fade-in 0.3s ease-out forwards;
+.animate-pick-fade-in {
+  animation: pick-fade-in 0.3s ease-out forwards;
 }
-.animate-copilot-panel-open {
-  animation: copilot-panel-open 0.3s ease-out forwards;
+.animate-pick-panel-open {
+  animation: pick-panel-open 0.3s ease-out forwards;
 }
-.animate-copilot-panel-close {
-  animation: copilot-panel-close 0.2s ease-in forwards;
+.animate-pick-panel-close {
+  animation: pick-panel-close 0.2s ease-in forwards;
 }
-.animate-copilot-collapse {
-  animation: copilot-collapse 0.2s ease-in forwards;
+.animate-pick-collapse {
+  animation: pick-collapse 0.2s ease-in forwards;
 }

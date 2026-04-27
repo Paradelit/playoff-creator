@@ -1,8 +1,8 @@
 /**
- * indexKnowledge.ts — offline script to embed the knowledge base and store it in Firestore.
+ * indexKnowledge.ts — offline script to embed the help articles and store them in Firestore.
  *
  * Run from the functions/ directory:
- *   npx ts-node --project tsconfig.json scripts/indexKnowledge.ts
+ *   npx tsx scripts/indexKnowledge.ts
  *
  * Prerequisites:
  *   1. Set GEMINI_API_KEY in your environment (or .env file).
@@ -11,17 +11,17 @@
  *   3. Set FIREBASE_PROJECT_ID to your Firebase project ID.
  *
  * What it does:
- *   - Reads all entries from KNOWLEDGE_BASE (src/ai/knowledge/index.ts)
- *   - Generates a text-embedding-004 vector for each entry
+ *   - Reads all entries from HELP_ARTICLES (src/content/helpArticles.ts at repo root)
+ *   - Generates a gemini-embedding-001 vector for each entry (title + summary + body)
  *   - Upserts each entry into Firestore at `knowledgeBase/{entry.id}`
- *   - Deletes any stale entries no longer present in the local knowledge base
+ *   - Deletes any stale entries no longer present in the local source
  *
- * Safe to re-run: uses upsert (set with merge), only re-embeds if content changed.
+ * Safe to re-run: uses upsert (set with merge), only re-embeds if body changed.
  */
 
-import { initializeApp, cert, getApps } from "firebase-admin/app";
+import { initializeApp, applicationDefault, cert, getApps } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import { KNOWLEDGE_BASE } from "../src/ai/knowledge/index";
+import { HELP_ARTICLES } from "../../src/content/helpArticles";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "";
@@ -38,10 +38,24 @@ if (!PROJECT_ID) {
 // Initialize Firebase Admin
 if (getApps().length === 0) {
   const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  // Detect credential type: service-account JSON has "type":"service_account",
+  // firebase-cli ADC has "type":"authorized_user". cert() only accepts the former.
+  let useCert = false;
   if (credPath) {
+    try {
+      const fs = require("node:fs");
+      const json = JSON.parse(fs.readFileSync(credPath, "utf8"));
+      useCert = json.type === "service_account";
+    } catch {
+      // fall through; applicationDefault() will surface a clearer error
+    }
+  }
+  if (credPath && useCert) {
     initializeApp({ credential: cert(credPath), projectId: PROJECT_ID });
+  } else if (credPath) {
+    // authorized_user creds — use applicationDefault (it picks up GOOGLE_APPLICATION_CREDENTIALS too).
+    initializeApp({ credential: applicationDefault(), projectId: PROJECT_ID });
   } else {
-    // Use Application Default Credentials (firebase login)
     initializeApp({ projectId: PROJECT_ID });
   }
 }
@@ -49,13 +63,13 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 async function embedText(text: string): Promise<number[]> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${GEMINI_API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${GEMINI_API_KEY}`;
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "models/text-embedding-004",
       content: { parts: [{ text }] },
+      outputDimensionality: 768,
     }),
   });
 
@@ -73,30 +87,37 @@ async function embedText(text: string): Promise<number[]> {
 }
 
 async function main() {
-  console.log(`\n🏀 CoachApp Knowledge Base Indexer`);
-  console.log(`📚 Indexing ${KNOWLEDGE_BASE.length} entries into Firestore...\n`);
+  console.log(`\n🏀 Pick&Coach Help Indexer`);
+  console.log(`📚 Indexing ${HELP_ARTICLES.length} entries into Firestore...\n`);
 
   const col = db.collection("knowledgeBase");
-  const knownIds = new Set(KNOWLEDGE_BASE.map((e) => e.id));
+  const knownIds = new Set(HELP_ARTICLES.map((e) => e.id));
+  const force = process.env.FORCE_REINDEX === "1";
 
-  // Fetch existing docs to check if content changed
+  // Fetch existing docs to check if body changed
   const existingSnap = await col.get();
   const existingMap = new Map<string, string>();
+  const existingDimMap = new Map<string, number>();
   for (const doc of existingSnap.docs) {
     const data = doc.data();
-    existingMap.set(doc.id, data.content as string || "");
+    // Backward compat: read either body (new) or content (old indexed records)
+    existingMap.set(doc.id, (data.body as string) || (data.content as string) || "");
+    const emb = data.embedding;
+    existingDimMap.set(doc.id, Array.isArray(emb) ? emb.length : 0);
   }
 
   let created = 0;
   let updated = 0;
   let skipped = 0;
+  const TARGET_EMBEDDING_DIMS = 768;
 
-  for (const entry of KNOWLEDGE_BASE) {
-    const textToEmbed = `${entry.title}\n\n${entry.content}`;
-    const existingContent = existingMap.get(entry.id);
+  for (const entry of HELP_ARTICLES) {
+    const textToEmbed = `${entry.title}\n\n${entry.summary}\n\n${entry.body}`;
+    const existingBody = existingMap.get(entry.id);
+    const existingDim = existingDimMap.get(entry.id);
 
-    // Skip if content hasn't changed
-    if (existingContent === entry.content) {
+    // Skip only if body unchanged AND embedding dim matches what we'd produce now AND not forced.
+    if (!force && existingBody === entry.body && existingDim === TARGET_EMBEDDING_DIMS) {
       console.log(`  ⏭️  Skipping "${entry.title}" (unchanged)`);
       skipped++;
       continue;
@@ -107,9 +128,12 @@ async function main() {
       const embedding = await embedText(textToEmbed);
       await col.doc(entry.id).set({
         id: entry.id,
+        slug: entry.slug,
         category: entry.category,
         title: entry.title,
-        content: entry.content,
+        summary: entry.summary,
+        body: entry.body,
+        tags: entry.tags || [],
         embedding,
         indexedAt: new Date().toISOString(),
       });
@@ -137,7 +161,7 @@ async function main() {
 
   console.log(`\n✨ Done!`);
   console.log(`   Created: ${created} | Updated: ${updated} | Skipped: ${skipped} | Deleted: ${deleted}`);
-  console.log(`   Total in Firestore: ${KNOWLEDGE_BASE.length - deleted + created} entries\n`);
+  console.log(`   Total in Firestore: ${HELP_ARTICLES.length - deleted + created} entries\n`);
 }
 
 main().catch((err) => {
