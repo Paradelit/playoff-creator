@@ -57,7 +57,7 @@ export default function PickPanel() {
   const placeholder = screenContext.screen === 'unknown' ? 'Escribe tu mensaje...' : `Pregunta sobre ${screenLabel}...`;
 
   return (
-    <div className="fixed bottom-20 right-4 z-50 w-[360px] max-w-[calc(100vw-32px)] max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col animate-pick-panel-open">
+    <div className="fixed bottom-20 right-4 z-50 w-[360px] max-w-[calc(100vw-32px)] max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col animate-pick-panel-open print:hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
         <div className="flex items-center gap-2">

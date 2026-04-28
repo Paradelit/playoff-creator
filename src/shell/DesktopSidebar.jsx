@@ -148,7 +148,7 @@ export default function DesktopSidebar() {
   return (
     <>
       <aside
-        className={`hidden md:flex fixed top-0 left-0 bottom-0 z-[100] ${widthClass} bg-blue-950 border-r border-blue-900 flex-col transition-[width] duration-200`}
+        className={`hidden md:flex fixed top-0 left-0 bottom-0 z-[100] ${widthClass} bg-blue-950 border-r border-blue-900 flex-col transition-[width] duration-200 print:hidden`}
       >
         <SidebarHeader collapsed={collapsed} toggle={toggle} ToggleIcon={ToggleIcon} />
 

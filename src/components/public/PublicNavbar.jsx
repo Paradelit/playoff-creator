@@ -64,7 +64,7 @@ export default function PublicNavbar() {
 
   return (
     <header
-      className="sticky top-0 z-40 transition-all duration-300"
+      className="sticky top-0 z-40 transition-all duration-300 print:hidden"
       style={{
         background: headerBg,
         backdropFilter: 'blur(16px)',

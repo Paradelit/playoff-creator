@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Print: imprimir documentos limpios (PDF "Guardar como…") ──
+ * Los componentes globales del shell ya llevan `print:hidden` en su clase.
+ * Aquí neutralizamos estilos inline que sobreviven a Tailwind y fijamos
+ * unos márgenes de página razonables.
+ */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
 /* Pick animations */
 @keyframes pick-fade-in {
   from {

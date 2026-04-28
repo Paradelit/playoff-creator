@@ -70,7 +70,7 @@ export default function PickColumn() {
   const screenLabel = SCREEN_LABELS[screenContext.screen] || screenContext.screen;
 
   return (
-    <div className="fixed top-0 right-0 bottom-0 w-[400px] bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col overflow-hidden animate-pick-panel-open">
+    <div className="fixed top-0 right-0 bottom-0 w-[400px] bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col overflow-hidden animate-pick-panel-open print:hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
         <div className="flex items-center gap-2">

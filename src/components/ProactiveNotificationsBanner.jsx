@@ -28,7 +28,7 @@ export default function ProactiveNotificationsBanner() {
     type === 'match-reminder' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700';
 
   return (
-    <div className="mx-3 mt-3 mb-1 rounded-xl border border-purple-200 bg-purple-50 shadow-sm overflow-hidden">
+    <div className="mx-3 mt-3 mb-1 rounded-xl border border-purple-200 bg-purple-50 shadow-sm overflow-hidden print:hidden">
       {/* Header row */}
       <button
         onClick={() => setExpanded((v) => !v)}

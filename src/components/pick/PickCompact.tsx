@@ -11,7 +11,9 @@ export default function PickCompact({ animating }: Props) {
   const { setMode, currentTip, dismissTip } = usePick();
 
   return (
-    <div className={`fixed bottom-20 right-4 z-50 flex items-end gap-2 ${animating ? 'animate-pick-collapse' : ''}`}>
+    <div
+      className={`fixed bottom-20 right-4 z-50 flex items-end gap-2 print:hidden ${animating ? 'animate-pick-collapse' : ''}`}
+    >
       {/* Speech bubble */}
       {currentTip && !animating && (
         <div className="animate-pick-fade-in flex items-center gap-2 bg-white shadow-lg rounded-xl px-3.5 py-2.5 max-w-[220px] border border-slate-200">

@@ -275,7 +275,7 @@ export default function CoachesNav() {
   return (
     <>
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-blue-950 border-t border-blue-900 flex items-stretch h-16"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-blue-950 border-t border-blue-900 flex items-stretch h-16 print:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         {LEFT_ITEMS.map((item) => (
