@@ -74,11 +74,18 @@ describe('sessionLabelForDate', () => {
   it('formats a Sunday as D-DD', () => {
     expect(sessionLabelForDate('2025-08-24')).toBe('D-24'); // Sunday
   });
+
+  it('returns null for falsy or invalid input', () => {
+    expect(sessionLabelForDate(null)).toBe(null);
+    expect(sessionLabelForDate('')).toBe(null);
+    expect(sessionLabelForDate('not-a-date')).toBe(null);
+  });
 });
 
 describe('fetchLogoAsDataUrl', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it('returns null for falsy input', async () => {

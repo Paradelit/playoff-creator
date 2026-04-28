@@ -45,7 +45,9 @@ export function monthKeyForExport(dateStr) {
 const DAY_LETTERS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
 
 export function sessionLabelForDate(dateStr) {
+  if (!dateStr) return null;
   const d = new Date(dateStr + 'T12:00:00');
+  if (Number.isNaN(d.getTime())) return null;
   return `${DAY_LETTERS[d.getDay()]}-${d.getDate()}`;
 }
 
