@@ -1,10 +1,24 @@
 import React, { useMemo } from 'react';
-import { ArrowLeft, Printer, RotateCcw, Plus, Minus, ChevronDown, ChevronUp, Info, CalendarDays } from 'lucide-react';
+import {
+  ArrowLeft,
+  Printer,
+  RotateCcw,
+  Plus,
+  Minus,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  CalendarDays,
+  FileSpreadsheet,
+} from 'lucide-react';
 import ClubLogo from '../../components/ClubLogo';
 import { teamDisplayName } from '../../utils/teamUtils';
 import { getTemporada } from '../../utils/dateUtils';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { useAttendance, MONTHS, monthKeyFromDate } from '../../hooks/useAttendance';
+import ExportMenu from '../../components/cuaderno/ExportMenu';
+import { useToast } from '../../contexts/ToastContext';
+import { exportAsistenciaToExcel } from '../../services/exporters/asistenciaExporter';
 
 /* ─── Helpers ──────────────────────────────────────────────────────────── */
 function codeColor(code) {
@@ -227,7 +241,26 @@ export default function AsistenciaScreen() {
     dayTotal,
   } = useAttendance();
 
+  const toast = useToast();
   const temporada = getTemporada();
+
+  async function handleExportExcel() {
+    try {
+      await exportAsistenciaToExcel({
+        team,
+        profile,
+        members,
+        attendance,
+        calSessions,
+        manualSessions,
+        temporada,
+      });
+      toast('Excel descargado', 'success');
+    } catch (err) {
+      console.error('[AsistenciaScreen] exportExcel:', err);
+      toast('No se pudo generar el Excel', 'error');
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-200 font-serif text-black print:bg-white print:p-0">
@@ -257,22 +290,29 @@ export default function AsistenciaScreen() {
           </div>
         )}
         <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold text-slate-400">
-            {saveStatus === 'saving' && 'Guardando...'}
-            {saveStatus === 'saved' && '✓ Guardado'}
-          </span>
           <button
             onClick={() => setShowResetConfirm(true)}
             className="flex items-center px-3 py-1 bg-white border border-gray-400 text-gray-700 text-sm hover:bg-gray-50 transition shadow-sm rounded"
           >
             <RotateCcw className="w-4 h-4 mr-1" aria-hidden="true" /> Limpiar
           </button>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
-          >
-            <Printer size={15} aria-hidden="true" /> Imprimir A4
-          </button>
+          <ExportMenu
+            status={saveStatus}
+            items={[
+              {
+                key: 'print',
+                label: 'Imprimir A4',
+                icon: <Printer size={15} aria-hidden="true" />,
+                onClick: () => window.print(),
+              },
+              {
+                key: 'excel',
+                label: 'Descargar Excel',
+                icon: <FileSpreadsheet size={15} aria-hidden="true" />,
+                onClick: handleExportExcel,
+              },
+            ]}
+          />
         </div>
       </div>
 
