@@ -105,3 +105,145 @@ export async function exportInformeToPdf(data) {
 
   doc.save(formatFilename('informe', data.teamName, data.temporada, 'pdf'));
 }
+
+export async function exportInformeToWord(data) {
+  const docx = await import('docx');
+  const {
+    Document,
+    Packer,
+    Paragraph,
+    Table,
+    TableRow,
+    TableCell,
+    TextRun,
+    HeadingLevel,
+    WidthType,
+    AlignmentType,
+    BorderStyle,
+    PageOrientation,
+    ImageRun,
+  } = docx;
+
+  const tableHeader = new TableRow({
+    tableHeader: true,
+    children: data.columns.map(
+      (col) =>
+        new TableCell({
+          shading: { fill: 'F2F2F2' },
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [new TextRun({ text: col.label, bold: true })],
+            }),
+          ],
+        }),
+    ),
+  });
+
+  const dataRows = data.rows.map(
+    (row) =>
+      new TableRow({
+        children: data.columns.map(
+          (col) =>
+            new TableCell({
+              children: (row[col.key] || '').split('\n').map(
+                (line) =>
+                  new Paragraph({
+                    children: [new TextRun({ text: line, size: 16 })],
+                  }),
+              ),
+            }),
+        ),
+      }),
+  );
+
+  const tableBorders = {
+    top: { style: BorderStyle.SINGLE, size: 4, color: '999999' },
+    bottom: { style: BorderStyle.SINGLE, size: 4, color: '999999' },
+    left: { style: BorderStyle.SINGLE, size: 4, color: '999999' },
+    right: { style: BorderStyle.SINGLE, size: 4, color: '999999' },
+    insideHorizontal: { style: BorderStyle.SINGLE, size: 4, color: '999999' },
+    insideVertical: { style: BorderStyle.SINGLE, size: 4, color: '999999' },
+  };
+
+  const headerChildren = [];
+  if (data.logoDataUrl) {
+    try {
+      const base64 = data.logoDataUrl.split(',')[1] || '';
+      const binary = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      headerChildren.push(
+        new Paragraph({
+          children: [new ImageRun({ data: binary, type: 'png', transformation: { width: 60, height: 60 } })],
+        }),
+      );
+    } catch {
+      // skip image
+    }
+  }
+
+  const doc = new Document({
+    sections: [
+      {
+        properties: {
+          page: { size: { orientation: PageOrientation.LANDSCAPE } },
+        },
+        children: [
+          ...headerChildren,
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            heading: HeadingLevel.HEADING_1,
+            children: [new TextRun({ text: data.title, bold: true })],
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: `Equipo - ${data.teamName}` })],
+          }),
+          new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            children: [
+              new TextRun({
+                text: `Temporada ${data.temporada}`,
+                italics: true,
+                size: 18,
+                color: '777777',
+              }),
+            ],
+          }),
+          new Paragraph(''),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: tableBorders,
+            rows: [tableHeader, ...dataRows],
+          }),
+          ...(data.observaciones && data.observaciones.trim()
+            ? [
+                new Paragraph(''),
+                new Paragraph({
+                  children: [new TextRun({ text: 'Observaciones –', bold: true })],
+                }),
+                ...data.observaciones
+                  .split('\n')
+                  .map((line) => new Paragraph({ children: [new TextRun({ text: line })] })),
+              ]
+            : []),
+        ],
+      },
+    ],
+  });
+
+  const blob = await Packer.toBlob(doc);
+  triggerDownload(blob, formatFilename('informe', data.teamName, data.temporada, 'docx'));
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 0);
+}
