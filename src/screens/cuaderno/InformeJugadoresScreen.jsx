@@ -121,6 +121,7 @@ export default function InformeJugadoresScreen() {
   const team = teams.find((t) => t.id === teamId) || null;
 
   const [rows, setRows] = useState([]);
+  const [observaciones, setObservaciones] = useState('');
   const [saveStatus, setSaveStatus] = useState('saved');
   const [showExplicacion, setShowExplicacion] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -146,32 +147,43 @@ export default function InformeJugadoresScreen() {
   /* ─── Cargar datos del informe ─── */
   useEffect(() => {
     if (!user || !db) return;
-    return subscribeToInformeJugadores(teamId, user.uid, db, appId, (data) => {
-      if (isFirstLoad.current) {
-        if (data.length > 0) {
-          setRows(data);
-        } else {
-          // Auto-poblar con los jugadores del equipo
-          const jugadores = membersRef.current;
-          if (jugadores.length > 0) {
-            setRows(jugadores.map((j, i) => emptyRow(i, j.nombre || '')));
+    return subscribeToInformeJugadores(
+      teamId,
+      user.uid,
+      db,
+      appId,
+      ({ rows: loadedRows, observaciones: loadedObs }) => {
+        if (isFirstLoad.current) {
+          if (loadedRows.length > 0) {
+            setRows(loadedRows);
           } else {
-            setRows(Array.from({ length: 12 }, (_, i) => emptyRow(i)));
+            // Auto-poblar con los jugadores del equipo
+            const jugadores = membersRef.current;
+            if (jugadores.length > 0) {
+              setRows(jugadores.map((j, i) => emptyRow(i, j.nombre || '')));
+            } else {
+              setRows(Array.from({ length: 12 }, (_, i) => emptyRow(i)));
+            }
           }
+          setObservaciones(loadedObs || '');
+          isFirstLoad.current = false;
         }
-        isFirstLoad.current = false;
-      }
-    });
+      },
+    );
   }, [user, db, appId, teamId]);
 
   /* ─── Auto-save con debounce ─── */
   const triggerSave = useCallback(
-    (newRows) => {
+    (newRows, newObservaciones) => {
       setSaveStatus('unsaved');
       clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(async () => {
         setSaveStatus('saving');
-        await saveInformeJugadores(teamId, newRows, { uid: user.uid, db, appId });
+        await saveInformeJugadores(
+          teamId,
+          { rows: newRows, observaciones: newObservaciones },
+          { uid: user.uid, db, appId },
+        );
         setSaveStatus('saved');
       }, 1500);
     },
@@ -181,7 +193,7 @@ export default function InformeJugadoresScreen() {
   function updateRow(id, field, value) {
     const updated = rows.map((r) => (r.id === id ? { ...r, [field]: value } : r));
     setRows(updated);
-    triggerSave(updated);
+    triggerSave(updated, observaciones);
   }
 
   function resetAll() {
@@ -196,7 +208,8 @@ export default function InformeJugadoresScreen() {
         ? jugadores.map((j, i) => emptyRow(i, j.nombre || ''))
         : Array.from({ length: 12 }, (_, i) => emptyRow(i));
     setRows(fresh);
-    triggerSave(fresh);
+    setObservaciones('');
+    triggerSave(fresh, '');
   }
 
   /* ─── Ordenar por ranking ─── */
@@ -207,7 +220,7 @@ export default function InformeJugadoresScreen() {
       return ra - rb;
     });
     setRows(sorted);
-    triggerSave(sorted);
+    triggerSave(sorted, observaciones);
   }
 
   /* ─── Drag & Drop (mouse) ─── */
@@ -244,7 +257,7 @@ export default function InformeJugadoresScreen() {
     const [moved] = updated.splice(dragIndex, 1);
     updated.splice(index, 0, moved);
     setRows(updated);
-    triggerSave(updated);
+    triggerSave(updated, observaciones);
     handleDragEnd();
   }
 
@@ -273,11 +286,16 @@ export default function InformeJugadoresScreen() {
       const [moved] = updated.splice(dragIndex, 1);
       updated.splice(overIndex, 0, moved);
       setRows(updated);
-      triggerSave(updated);
+      triggerSave(updated, observaciones);
     }
     setDragIndex(null);
     setOverIndex(null);
     touchStartY.current = null;
+  }
+
+  function updateObservaciones(value) {
+    setObservaciones(value);
+    triggerSave(rows, value);
   }
 
   const clubName = profile.nombreClub || 'Uros de Rivas';
@@ -442,6 +460,8 @@ export default function InformeJugadoresScreen() {
             <p className="font-bold text-sm mb-1">Observaciones.-</p>
             <div className="border-t border-gray-200 pt-2">
               <textarea
+                value={observaciones}
+                onChange={(e) => updateObservaciones(e.target.value)}
                 className="w-full min-h-[80px] resize-y focus:outline-none bg-transparent font-sans text-sm print:min-h-[40px]"
                 placeholder="Observaciones generales sobre el equipo..."
                 aria-label="Observaciones generales sobre el equipo"
