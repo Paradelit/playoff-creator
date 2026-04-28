@@ -324,10 +324,10 @@ export default function InformeJugadoresScreen() {
     try {
       const data = await buildInformeData({ team, profile, rows, observaciones, temporada });
       await exportInformeToPdf(data);
-      toast?.('PDF descargado', 'success');
+      toast('PDF descargado', 'success');
     } catch (err) {
-      console.error(err);
-      toast?.('No se pudo generar el PDF', 'error');
+      console.error('[InformeJugadoresScreen] exportPdf:', err);
+      toast('No se pudo generar el PDF', 'error');
     }
   }
 
@@ -335,10 +335,10 @@ export default function InformeJugadoresScreen() {
     try {
       const data = await buildInformeData({ team, profile, rows, observaciones, temporada });
       await exportInformeToWord(data);
-      toast?.('Word descargado', 'success');
+      toast('Word descargado', 'success');
     } catch (err) {
-      console.error(err);
-      toast?.('No se pudo generar el Word', 'error');
+      console.error('[InformeJugadoresScreen] exportWord:', err);
+      toast('No se pudo generar el Word', 'error');
     }
   }
 
