@@ -38,6 +38,8 @@ import {
   saveAsistencia,
   subscribeToTeamNotes,
   saveTeamNotes,
+  subscribeToInformeJugadores,
+  saveInformeJugadores,
 } from './teamsService';
 
 const ctx = { uid: 'u1', db: {}, appId: 'app1' };
@@ -183,5 +185,54 @@ describe('cuaderno saves', () => {
   it('saveTeamNotes writes texto', async () => {
     await saveTeamNotes('t1', 'notas actualizadas', ctx);
     expect(setDoc).toHaveBeenCalledWith('mock-doc-ref', { texto: 'notas actualizadas', updatedAt: 'SERVER_TS' });
+  });
+});
+
+describe('subscribeToInformeJugadores', () => {
+  it('reads new shape { rows, observaciones }', () => {
+    const cb = vi.fn();
+    onSnapshot.mockImplementation((_ref, callback) => {
+      callback({
+        exists: () => true,
+        data: () => ({ rows: [{ id: 0, nombre: 'A' }], observaciones: 'comentario' }),
+      });
+      return vi.fn();
+    });
+    subscribeToInformeJugadores('t1', 'u1', {}, 'app1', cb);
+    expect(cb).toHaveBeenCalledWith({ rows: [{ id: 0, nombre: 'A' }], observaciones: 'comentario' });
+  });
+
+  it('normalizes legacy array shape to { rows, observaciones: "" }', () => {
+    const cb = vi.fn();
+    onSnapshot.mockImplementation((_ref, callback) => {
+      callback({
+        exists: () => true,
+        data: () => ({ rows: [{ id: 0, nombre: 'A' }] }),
+      });
+      return vi.fn();
+    });
+    subscribeToInformeJugadores('t1', 'u1', {}, 'app1', cb);
+    expect(cb).toHaveBeenCalledWith({ rows: [{ id: 0, nombre: 'A' }], observaciones: '' });
+  });
+
+  it('returns empty rows + observaciones when doc does not exist', () => {
+    const cb = vi.fn();
+    onSnapshot.mockImplementation((_ref, callback) => {
+      callback({ exists: () => false });
+      return vi.fn();
+    });
+    subscribeToInformeJugadores('t1', 'u1', {}, 'app1', cb);
+    expect(cb).toHaveBeenCalledWith({ rows: [], observaciones: '' });
+  });
+});
+
+describe('saveInformeJugadores', () => {
+  it('writes { rows, observaciones, updatedAt }', async () => {
+    await saveInformeJugadores('t1', { rows: [{ id: 0 }], observaciones: 'x' }, ctx);
+    expect(setDoc).toHaveBeenCalledWith('mock-doc-ref', {
+      rows: [{ id: 0 }],
+      observaciones: 'x',
+      updatedAt: 'SERVER_TS',
+    });
   });
 });

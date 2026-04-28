@@ -97,12 +97,26 @@ function informeJugadoresDoc(teamId, uid, db, appId) {
 
 export function subscribeToInformeJugadores(teamId, uid, db, appId, callback) {
   return onSnapshot(informeJugadoresDoc(teamId, uid, db, appId), (snap) => {
-    callback(snap.exists() ? (snap.data().rows ?? []) : []);
+    if (!snap.exists()) {
+      callback({ rows: [], observaciones: '' });
+      return;
+    }
+    const data = snap.data();
+    callback({
+      rows: Array.isArray(data.rows) ? data.rows : [],
+      observaciones: typeof data.observaciones === 'string' ? data.observaciones : '',
+    });
   });
 }
 
-export async function saveInformeJugadores(teamId, rows, { uid, db, appId }) {
-  await setDoc(informeJugadoresDoc(teamId, uid, db, appId), { rows, updatedAt: serverTimestamp() });
+export async function saveInformeJugadores(teamId, payload, { uid, db, appId }) {
+  const rows = Array.isArray(payload?.rows) ? payload.rows : [];
+  const observaciones = typeof payload?.observaciones === 'string' ? payload.observaciones : '';
+  await setDoc(informeJugadoresDoc(teamId, uid, db, appId), {
+    rows,
+    observaciones,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 // ── Notas del cuaderno (por equipo) ─────────────────────────────────────────
