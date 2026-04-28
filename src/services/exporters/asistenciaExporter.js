@@ -5,6 +5,7 @@ import {
   formatFilename,
   fetchLogoAsDataUrl,
 } from './exportUtils';
+import { teamDisplayName } from '../../utils/teamUtils';
 
 const RESUMEN_MONTHS = EXPORT_MONTHS.filter((m) => m.key !== 'agosto');
 
@@ -103,8 +104,12 @@ export async function exportAsistenciaToExcel({
 }) {
   const ExcelJSMod = await import('exceljs');
   const ExcelJS = ExcelJSMod.default || ExcelJSMod;
-  const teamName = team?.nombre || 'Equipo';
-  const padded = paddedMembers(members || []);
+  const teamName = team ? teamDisplayName(team) : 'Equipo';
+  const realMembers = members || [];
+  if (realMembers.length > MAX_PLAYERS) {
+    console.warn(`[asistenciaExporter] ${realMembers.length} jugadores, truncando a ${MAX_PLAYERS}`);
+  }
+  const padded = paddedMembers(realMembers);
   const sessionsByMonth = groupSessionsByMonth(calSessions || [], manualSessions || {});
   const logoDataUrl = await fetchLogoAsDataUrl(profile?.logoClub);
 
@@ -209,7 +214,11 @@ function buildMonthSheet(wb, month, padded, sessions, attendance, teamName, logo
   ws.getCell('T4').font = { bold: true };
   ws.mergeCells('T4:V4');
 
-  const limited = (sessions || []).slice(0, MAX_SESSIONS);
+  const allSessions = sessions || [];
+  if (allSessions.length > MAX_SESSIONS) {
+    console.warn(`[asistenciaExporter] ${month.full}: ${allSessions.length} sesiones, truncando a ${MAX_SESSIONS}`);
+  }
+  const limited = allSessions.slice(0, MAX_SESSIONS);
   for (let i = 0; i < limited.length; i++) {
     const cell = ws.getCell(5, 3 + i);
     cell.value = limited[i].label || '';
