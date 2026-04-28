@@ -1,15 +1,28 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Printer, RotateCcw, GripVertical, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import {
+  ArrowLeft,
+  Printer,
+  RotateCcw,
+  GripVertical,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  FileText,
+  FileType,
+} from 'lucide-react';
 import ClubLogo from '../../components/ClubLogo';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import ExportMenu from '../../components/cuaderno/ExportMenu';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
+import { useToast } from '../../contexts/ToastContext';
+import { useProfile } from '../../hooks/useProfile';
+import { useTeams } from '../../hooks/useTeams';
+import { buildInformeData, exportInformeToPdf, exportInformeToWord } from '../../services/exporters/informeExporter';
 import { subscribeToMembers, subscribeToInformeJugadores, saveInformeJugadores } from '../../services/teamsService';
 import { teamDisplayName } from '../../utils/teamUtils';
-import { useTeams } from '../../hooks/useTeams';
-import { useProfile } from '../../hooks/useProfile';
 import { getTemporada } from '../../utils/dateUtils';
-import ConfirmDialog from '../../components/ConfirmDialog';
 
 /* ─── Columnas del informe ──────────────────────────────────────────────── */
 const COLUMNS = [
@@ -118,6 +131,7 @@ export default function InformeJugadoresScreen() {
 
   const { teams } = useTeams();
   const { profile } = useProfile();
+  const toast = useToast();
   const team = teams.find((t) => t.id === teamId) || null;
 
   const [rows, setRows] = useState([]);
@@ -306,6 +320,28 @@ export default function InformeJugadoresScreen() {
   const clubName = profile.nombreClub || 'Uros de Rivas';
   const temporada = getTemporada();
 
+  async function handleExportPdf() {
+    try {
+      const data = await buildInformeData({ team, profile, rows, observaciones, temporada });
+      await exportInformeToPdf(data);
+      toast?.('PDF descargado', 'success');
+    } catch (err) {
+      console.error(err);
+      toast?.('No se pudo generar el PDF', 'error');
+    }
+  }
+
+  async function handleExportWord() {
+    try {
+      const data = await buildInformeData({ team, profile, rows, observaciones, temporada });
+      await exportInformeToWord(data);
+      toast?.('Word descargado', 'success');
+    } catch (err) {
+      console.error(err);
+      toast?.('No se pudo generar el Word', 'error');
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-200 font-serif text-black print:bg-white print:p-0">
       {/* Toolbar */}
@@ -325,22 +361,35 @@ export default function InformeJugadoresScreen() {
           </button>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold text-slate-400">
-            {saveStatus === 'saving' && 'Guardando...'}
-            {saveStatus === 'saved' && '✓ Guardado'}
-          </span>
           <button
             onClick={resetAll}
             className="flex items-center px-3 py-1 bg-white border border-gray-400 text-gray-700 text-sm hover:bg-gray-50 transition shadow-sm rounded"
           >
             <RotateCcw className="w-4 h-4 mr-1" aria-hidden="true" /> Limpiar
           </button>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold transition"
-          >
-            <Printer size={15} aria-hidden="true" /> Imprimir A4
-          </button>
+          <ExportMenu
+            status={saveStatus}
+            items={[
+              {
+                key: 'print',
+                label: 'Imprimir A4',
+                icon: <Printer size={15} aria-hidden="true" />,
+                onClick: () => window.print(),
+              },
+              {
+                key: 'pdf',
+                label: 'Descargar PDF',
+                icon: <FileText size={15} aria-hidden="true" />,
+                onClick: handleExportPdf,
+              },
+              {
+                key: 'word',
+                label: 'Descargar Word',
+                icon: <FileType size={15} aria-hidden="true" />,
+                onClick: handleExportWord,
+              },
+            ]}
+          />
         </div>
       </div>
 
