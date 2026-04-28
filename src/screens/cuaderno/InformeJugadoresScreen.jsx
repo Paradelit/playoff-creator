@@ -127,6 +127,7 @@ export default function InformeJugadoresScreen() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const debounceRef = useRef(null);
   const isFirstLoad = useRef(true);
+  const rowsRef = useRef([]);
   const membersRef = useRef([]);
 
   /* ─── Drag state ─── */
@@ -143,6 +144,10 @@ export default function InformeJugadoresScreen() {
       membersRef.current = data.filter((m) => m.tipo === 'jugador');
     });
   }, [user, db, appId, teamId]);
+
+  useEffect(() => {
+    rowsRef.current = rows;
+  }, [rows]);
 
   /* ─── Cargar datos del informe ─── */
   useEffect(() => {
@@ -295,7 +300,7 @@ export default function InformeJugadoresScreen() {
 
   function updateObservaciones(value) {
     setObservaciones(value);
-    triggerSave(rows, value);
+    triggerSave(rowsRef.current, value);
   }
 
   const clubName = profile.nombreClub || 'Uros de Rivas';
