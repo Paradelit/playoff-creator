@@ -17,8 +17,8 @@ function ItemIcon({ type }) {
     );
   if (type === 'cumpleaños')
     return (
-      <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
-        <Cake size={18} className="text-violet-600" aria-hidden="true" />
+      <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+        <Cake size={18} className="text-rose-600" aria-hidden="true" />
       </div>
     );
   return (
