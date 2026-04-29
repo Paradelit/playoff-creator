@@ -54,7 +54,8 @@ export type ToolRenderAs =
   | "session_preview"
   | "score_update"
   | "note_preview"
-  | "team_list";
+  | "team_list"
+  | "convocatoria_preview";
 
 export interface ToolDefinition {
   name: string;
