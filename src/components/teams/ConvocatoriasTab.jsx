@@ -101,7 +101,7 @@ export default function ConvocatoriasTab({ team }) {
                 onClick={() => setForm((f) => ({ ...f, plantillaConvocatoria: DEFAULT_TEMPLATE }))}
                 className="text-xs text-slate-500 hover:text-slate-700"
               >
-                Restaurar default
+                Restaurar plantilla original
               </button>
             </div>
           </div>

@@ -102,7 +102,7 @@ export default function SessionFormModal({
         <FormField label="Equipo" htmlFor={teamId} error={sessionErrors.teamId}>
           {isPlayoffSession(editingSession) ? (
             <div className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 text-slate-700 font-medium">
-              {editingSession.teamName || '—'}
+              {editingSession.teamName || '–'}
             </div>
           ) : filterTeamId && filterTeam ? (
             <div className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 text-slate-700 font-medium">
@@ -133,7 +133,7 @@ export default function SessionFormModal({
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Rival">
               <div className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 text-slate-700 font-medium truncate">
-                {editingSession.rival || '—'}
+                {editingSession.rival || '–'}
               </div>
             </FormField>
             <FormField label="Campo">
@@ -311,7 +311,7 @@ export default function SessionFormModal({
           {editingSession.tipo === 'entrenamiento' && editingSession.id && (
             <FormField label="Nº sesión">
               <p className="px-3 py-2.5 text-sm text-slate-600 bg-slate-50 rounded-xl border border-slate-200">
-                {getTrainingNum(editingSession) || '—'}
+                {getTrainingNum(editingSession) || '–'}
                 <span className="text-xs text-slate-400 ml-2">(automático por fecha)</span>
               </p>
             </FormField>
