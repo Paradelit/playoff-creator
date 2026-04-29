@@ -14,7 +14,7 @@ import { teamDisplayName } from '../utils/teamUtils';
 import { buildPlayoffSessions } from '../utils/calendarUtils';
 import { isMinibasketSextos } from '../utils/minibasketUtils';
 import { toYMD } from '../utils/dateUtils';
-import { buildPendingActions, buildNewsItems, buildWeekStrip, pickNextAction } from '../utils/homeUtils';
+import { buildAllPendientes, buildNewsItems, buildWeekStrip, pickNextAction } from '../utils/homeUtils';
 import { useReminders } from './useReminders';
 import { mergeBracketsWithPrevious, useSharedBracketSubscriptions } from './useSharedBrackets';
 
@@ -228,8 +228,8 @@ export function useHomeDashboard() {
   );
 
   const pendingActions = useMemo(
-    () => buildPendingActions(allSessions, todayYMD, { limit: 6 }),
-    [allSessions, todayYMD],
+    () => buildAllPendientes({ sessions: allSessions, teams, todayYMD, now: today, limit: 10 }),
+    [allSessions, teams, todayYMD, today],
   );
 
   const newsItems = useMemo(

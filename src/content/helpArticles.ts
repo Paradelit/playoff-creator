@@ -587,4 +587,53 @@ El entrenador debe planificar la carga de trabajo para que el equipo llegue en s
     tags: ['temporada', 'planificacion', 'pretemporada', 'playoffs'],
     updatedAt: '2026-04-25',
   },
+  {
+    id: 'app-convocatorias-partido',
+    slug: 'convocatorias-de-partido',
+    category: 'app-usage',
+    title: 'Convocatorias de partido',
+    summary:
+      'Genera, personaliza y manda por WhatsApp la convocatoria de cada partido. Plantilla editable, encabezado automático y recordatorios integrados.',
+    body: `## Generar la convocatoria
+
+Desde el detalle de un partido (toca el partido en el calendario) pulsa **Mandar convocatoria**. Se abre un modal con el mensaje renderizado a partir de los datos del partido y la plantilla del equipo.
+
+Antes de copiar puedes editar el texto directamente, añadir una **nota extra** (ej. "llevar ambas equipaciones") o cambiar la **hora de cita** solo para este partido.
+
+## Envío por WhatsApp
+
+El modal tiene dos botones:
+
+- **Copiar**: copia el mensaje al portapapeles. Pégalo en el chat o lista de difusión que prefieras.
+- **Compartir por WhatsApp**: abre WhatsApp con el texto pre-rellenado. Eliges chat y pulsas enviar.
+
+Pick&Coach no guarda contactos ni envía automáticamente.
+
+## Plantilla del equipo
+
+En **Equipo - Convocatorias** está la plantilla del equipo. Variables disponibles: saludo (hora del día), ENCABEZADO (liga/fase/vuelta, playoff o amistoso), rival, horaInicio, horaCita, lugar, lugarUrlSiVisitante (solo visitante), citaSiVisitante, notaExtra, fechaRelativa, fechaRelativaNosVemos.
+
+Si una variable no tiene valor, su línea se elide automáticamente.
+
+## Encabezado automático
+
+- Liga: muestra nombre de competición, fase, y vuelta (1ª/2ª si el número de jornadas es par). Ejemplo: Liga Cadete A — Fase 1 (2ª vuelta) / Jornada 15 vs Movistar.
+- Playoffs: muestra la ronda y el número de partido. Ejemplo: Playoffs 1/8 / Jornada 1 vs Rival.
+- Amistoso: muestra solo vs Rival.
+
+## Recordatorios
+
+Si falta mandar la convocatoria de un partido próximo, aparece como **Pendiente** en el home. La ventana es configurable por equipo (por defecto 72 h). A menos de 24 h aparece marcada en rojo.
+
+## Competiciones del equipo
+
+Crea las ligas del equipo en **Equipo - Competiciones**. Cada competición tiene fases con su número de jornadas. Al crear un partido marcado como Liga, elige competición y fase, y la jornada se asigna automáticamente por orden de fecha.
+
+## Pabellones recurrentes
+
+Guarda los pabellones que más uses en el equipo. Al crear un partido local podrás elegirlos del desplegable.`,
+    tags: ['convocatoria', 'whatsapp', 'partido', 'plantilla', 'pendientes'],
+    order: 10,
+    updatedAt: '2026-04-29',
+  },
 ];

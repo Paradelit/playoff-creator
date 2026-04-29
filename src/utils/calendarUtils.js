@@ -88,3 +88,8 @@ export function buildPlayoffSessions(brackets, teams) {
   }
   return result;
 }
+
+export function readJugadoresConvocados(session) {
+  if (!session) return '';
+  return session.jugadoresConvocados ?? session.convocatoria ?? '';
+}

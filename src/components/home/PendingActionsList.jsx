@@ -1,15 +1,26 @@
 import React from 'react';
-import { AlertCircle, ClipboardList, Trophy, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, ClipboardList, Trophy, ArrowRight, CheckCircle2, Send, Cake } from 'lucide-react';
 import { MONTHS } from './HomeComponents';
 
 function ItemIcon({ type }) {
-  if (type === 'result') {
+  if (type === 'result')
     return (
       <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
         <Trophy size={18} className="text-amber-600" aria-hidden="true" />
       </div>
     );
-  }
+  if (type === 'convocatoria')
+    return (
+      <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center shrink-0">
+        <Send size={18} className="text-teal-600" aria-hidden="true" />
+      </div>
+    );
+  if (type === 'cumpleaños')
+    return (
+      <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+        <Cake size={18} className="text-violet-600" aria-hidden="true" />
+      </div>
+    );
   return (
     <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
       <ClipboardList size={18} className="text-blue-600" aria-hidden="true" />
@@ -52,12 +63,12 @@ export default function PendingActionsList({ items, onAction, creatingId }) {
         <ul className="divide-y divide-slate-100">
           {items.map((item) => (
             <li key={item.id} className="flex items-center gap-3 px-4 py-3">
-              <DateChip session={item.session} severity={item.severity} />
+              {item.session && <DateChip session={item.session} severity={item.severity} />}
               <ItemIcon type={item.type} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-800 truncate">{item.label}</p>
                 <p className="text-xs text-slate-500 truncate">
-                  {item.session?.teamName || ''}
+                  {item.session?.teamName || item.team?.teamName || ''}
                   {item.session?.horaInicio ? ` · ${item.session.horaInicio}` : ''}
                 </p>
               </div>

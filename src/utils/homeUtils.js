@@ -1,4 +1,5 @@
 import { toYMD } from './dateUtils';
+import { buildConvocatoriaPendientes, buildCumpleañosDelDia } from './convocatoriaPendientes';
 
 function toMillis(raw) {
   if (!raw) return 0;
@@ -134,6 +135,22 @@ export function buildPendingActions(allSessions, todayYMD, { limit = 6 } = {}) {
   }
   items.sort((a, b) => (b.session.fecha || '').localeCompare(a.session.fecha || ''));
   return items.slice(0, limit);
+}
+
+export function buildAllPendientes({ sessions, teams, members, todayYMD, now = new Date(), limit = 10 } = {}) {
+  const baseItems = buildPendingActions(sessions || [], todayYMD || toYMD(now), { limit: 50 });
+  const convocItems = buildConvocatoriaPendientes(sessions || [], teams || [], now);
+  const cumpleItems = members ? buildCumpleañosDelDia(members, teams || [], now) : [];
+  const combined = [...baseItems, ...convocItems, ...cumpleItems];
+  // sort: high severity first, then by date
+  combined.sort((a, b) => {
+    if (a.severity === 'high' && b.severity !== 'high') return -1;
+    if (b.severity === 'high' && a.severity !== 'high') return 1;
+    const dateA = a.session?.fecha || '';
+    const dateB = b.session?.fecha || '';
+    return dateA.localeCompare(dateB);
+  });
+  return combined.slice(0, limit);
 }
 
 function trainingsToNews(trainings) {

@@ -1,8 +1,11 @@
-import React, { useId } from 'react';
+import React, { useId, useState } from 'react';
 import { X, ClipboardList, Trophy, MapPin, ArrowRight } from 'lucide-react';
 import { teamDisplayName } from '../../utils/teamUtils';
+import { readJugadoresConvocados } from '../../utils/calendarUtils';
 import { FormField } from './CalendarHelpers';
 import Dialog from '../Dialog';
+import { useCompetitions } from '../../hooks/useCompetitions';
+import { resolveMapsUrlClient } from '../../services/locationsService';
 
 const isPlayoffSession = (s) => s?.tipo === 'playoff';
 
@@ -27,6 +30,12 @@ export default function SessionFormModal({
   const horaInicioId = useId();
   const horaFinId = useId();
   const lugarId = useId();
+  const lugarMapsUrlId = useId();
+
+  const [resolvingMaps, setResolvingMaps] = useState(false);
+
+  const sessionTeamId = editingSession.teamId || filterTeamId || '';
+  const { competitions } = useCompetitions(sessionTeamId);
 
   const dialogTitle = isPlayoffSession(editingSession)
     ? 'Editar horario del cruce'
@@ -167,12 +176,117 @@ export default function SessionFormModal({
                 </button>
               </div>
             </FormField>
-            <FormField label="Convocatoria (opcional)" htmlFor={convocatoriaId}>
+
+            {/* Liga / Amistoso */}
+            <FormField label="Tipo de partido" asFieldset>
+              <div className="flex gap-2" role="group" aria-label="Tipo de partido">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setEditingSession((s) => ({
+                      ...s,
+                      competitionId: s.competitionId || competitions[0]?.id || null,
+                      faseId: null,
+                      jornadaNumero: null,
+                      jornadaNumeroManual: false,
+                    }))
+                  }
+                  aria-pressed={!!editingSession.competitionId}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition ${editingSession.competitionId ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                >
+                  Liga
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setEditingSession((s) => ({
+                      ...s,
+                      competitionId: null,
+                      faseId: null,
+                      jornadaNumero: null,
+                      jornadaNumeroManual: false,
+                    }))
+                  }
+                  aria-pressed={!editingSession.competitionId}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition ${!editingSession.competitionId ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                >
+                  Amistoso
+                </button>
+              </div>
+            </FormField>
+
+            {editingSession.competitionId && competitions.length === 0 && (
+              <p className="text-xs text-slate-500 italic">
+                Sin competiciones del equipo. Crea una en la pestaña Competiciones del equipo.
+              </p>
+            )}
+
+            {editingSession.competitionId && competitions.length > 0 && (
+              <>
+                <FormField label="Competición">
+                  <select
+                    value={editingSession.competitionId || ''}
+                    onChange={(e) => setEditingSession((s) => ({ ...s, competitionId: e.target.value, faseId: null }))}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    {competitions.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </FormField>
+                <FormField label="Fase">
+                  <select
+                    value={editingSession.faseId || ''}
+                    onChange={(e) => setEditingSession((s) => ({ ...s, faseId: e.target.value }))}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="">Selecciona fase</option>
+                    {(competitions.find((c) => c.id === editingSession.competitionId)?.fases || []).map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.nombre} ({f.jornadas}j)
+                      </option>
+                    ))}
+                  </select>
+                </FormField>
+                <FormField label="Jornada (auto si vacío)">
+                  <input
+                    type="number"
+                    min="1"
+                    value={editingSession.jornadaNumero ?? ''}
+                    placeholder="Auto al guardar"
+                    onChange={(e) =>
+                      setEditingSession((s) => ({
+                        ...s,
+                        jornadaNumero: e.target.value === '' ? null : Number(e.target.value),
+                        jornadaNumeroManual: e.target.value !== '',
+                      }))
+                    }
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </FormField>
+              </>
+            )}
+
+            <FormField label="Jugadores convocados (opcional)" htmlFor={convocatoriaId}>
               <textarea
                 id={convocatoriaId}
                 placeholder="Nombres de los jugadores convocados..."
-                value={editingSession.convocatoria || ''}
-                onChange={(e) => setEditingSession((s) => ({ ...s, convocatoria: e.target.value }))}
+                value={readJugadoresConvocados(editingSession)}
+                onChange={(e) =>
+                  setEditingSession((s) => ({ ...s, jugadoresConvocados: e.target.value, convocatoria: undefined }))
+                }
+                rows={2}
+                className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
+              />
+            </FormField>
+
+            <FormField label="Nota extra para la convocatoria (opcional)">
+              <textarea
+                placeholder="Algo extra que avisar al grupo (ej. llevar ambas equipaciones)..."
+                value={editingSession.notaExtra || ''}
+                onChange={(e) => setEditingSession((s) => ({ ...s, notaExtra: e.target.value }))}
                 rows={2}
                 className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
               />
@@ -203,6 +317,7 @@ export default function SessionFormModal({
             </FormField>
           )}
         </div>
+
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Hora inicio" htmlFor={horaInicioId}>
             <input
@@ -213,28 +328,67 @@ export default function SessionFormModal({
               className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </FormField>
-          <FormField label="Hora fin" htmlFor={horaFinId} error={sessionErrors.horaFin}>
-            <input
-              id={horaFinId}
-              type="time"
-              value={editingSession.horaFin}
-              onChange={(e) => {
-                setEditingSession((s) => ({ ...s, horaFin: e.target.value }));
-                if (sessionErrors.horaFin) setSessionErrors((prev) => ({ ...prev, horaFin: undefined }));
-              }}
-              className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${sessionErrors.horaFin ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-blue-400'}`}
-            />
-          </FormField>
+          {(editingSession.tipo === 'entrenamiento' ||
+            editingSession.tipo === 'playoff' ||
+            editingSession.horaFinExpanded) && (
+            <FormField label="Hora fin" htmlFor={horaFinId} error={sessionErrors.horaFin}>
+              <input
+                id={horaFinId}
+                type="time"
+                value={editingSession.horaFin}
+                onChange={(e) => {
+                  setEditingSession((s) => ({ ...s, horaFin: e.target.value }));
+                  if (sessionErrors.horaFin) setSessionErrors((prev) => ({ ...prev, horaFin: undefined }));
+                }}
+                className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${sessionErrors.horaFin ? 'border-red-400 focus:ring-red-300' : 'border-slate-300 focus:ring-blue-400'}`}
+              />
+            </FormField>
+          )}
         </div>
+        {editingSession.tipo === 'partido' && !editingSession.horaFinExpanded && (
+          <button
+            type="button"
+            onClick={() => setEditingSession((s) => ({ ...s, horaFinExpanded: true }))}
+            className="text-xs text-slate-500 hover:text-slate-700 self-start"
+          >
+            Duración estimada por categoría · Ajustar
+          </button>
+        )}
+
         <FormField label="Lugar" htmlFor={lugarId}>
           <input
             id={lugarId}
             type="text"
             placeholder="Pabellón, pista..."
-            value={editingSession.lugar}
+            value={editingSession.lugar || ''}
             onChange={(e) => setEditingSession((s) => ({ ...s, lugar: e.target.value }))}
             className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
+        </FormField>
+
+        <FormField label="URL de Google Maps (opcional)" htmlFor={lugarMapsUrlId}>
+          <input
+            id={lugarMapsUrlId}
+            type="url"
+            placeholder="https://maps.app.goo.gl/..."
+            value={editingSession.lugarMapsUrl || ''}
+            onChange={(e) => setEditingSession((s) => ({ ...s, lugarMapsUrl: e.target.value }))}
+            onBlur={async (e) => {
+              const url = e.target.value.trim();
+              if (!url || editingSession.lugar) return;
+              setResolvingMaps(true);
+              try {
+                const { placeName } = await resolveMapsUrlClient(url);
+                if (placeName) setEditingSession((s) => ({ ...s, lugar: s.lugar || placeName }));
+              } catch {
+                // silent failure: user can type lugar manually
+              } finally {
+                setResolvingMaps(false);
+              }
+            }}
+            className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          {resolvingMaps && <p className="text-xs text-slate-500 mt-1">Resolviendo dirección…</p>}
         </FormField>
 
         <div className="flex gap-3 pt-1">
@@ -250,7 +404,7 @@ export default function SessionFormModal({
             disabled={savingSession}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
           >
-            {savingSession ? 'Guardando...' : 'Guardar'}
+            {savingSession ? 'Guardando...' : editingSession.id ? 'Guardar cambios' : 'Crear sesión'}
           </button>
         </div>
       </form>
