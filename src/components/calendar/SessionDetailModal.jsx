@@ -134,85 +134,143 @@ export default function SessionDetailModal({
         )}
       </div>
       <div className="px-5 pb-5 flex flex-col gap-2">
-        {session.tipo === 'playoff' && (
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              navigate(`/playoffs?teamId=${session.teamId}`);
-            }}
-            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2"
-          >
-            <Trophy size={16} aria-hidden="true" /> Ver cuadro del torneo <ArrowRight size={15} aria-hidden="true" />
-          </button>
-        )}
-        {session.tipo === 'entrenamiento' && (
-          <button
-            type="button"
-            onClick={() => {
-              if (session.trainingId) {
-                navigate(`/teams/${session.teamId}/trainings/${session.trainingId}`);
-              } else {
-                onCreateTraining(session);
-              }
-            }}
-            disabled={creatingTraining || !session.teamId}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
-          >
-            <ClipboardList size={16} aria-hidden="true" />
-            {creatingTraining ? 'Abriendo...' : 'Abrir entrenamiento'}
-            <ArrowRight size={15} aria-hidden="true" />
-          </button>
-        )}
-        {(session.tipo === 'partido' || session.tipo === 'playoff') && (
-          <>
-            {isMinibasketSextos(teams.find((t) => t.id === session.teamId)) && (
-              <button
-                type="button"
-                onClick={() => {
-                  const navState = session.tipo === 'playoff' ? { state: { playoffSession: session } } : undefined;
+        {(() => {
+          const todayYMD = new Date().toISOString().slice(0, 10);
+          const isPast = session.fecha && session.fecha < todayYMD;
+          const isMatch = session.tipo === 'partido' || session.tipo === 'playoff';
+          const isMinibasket = isMinibasketSextos(teams.find((t) => t.id === session.teamId));
+          const navStateFor = () => (session.tipo === 'playoff' ? { state: { playoffSession: session } } : undefined);
+
+          // Primary action: one per session type / state. Blue for in-app utility,
+          // amber for the trophy reservation. No other accent colors.
+          let primary = null;
+          if (session.tipo === 'entrenamiento') {
+            primary = {
+              key: 'training',
+              icon: ClipboardList,
+              label: creatingTraining ? 'Abriendo...' : 'Abrir entrenamiento',
+              tone: 'blue',
+              disabled: creatingTraining || !session.teamId,
+              onClick: () => {
+                if (session.trainingId) {
+                  navigate(`/teams/${session.teamId}/trainings/${session.trainingId}`);
+                } else {
+                  onCreateTraining(session);
+                }
+              },
+            };
+          } else if (session.tipo === 'playoff') {
+            primary = {
+              key: 'cuadro',
+              icon: Trophy,
+              label: 'Ver cuadro del torneo',
+              tone: 'amber',
+              onClick: () => {
+                onClose();
+                navigate(`/playoffs?teamId=${session.teamId}`);
+              },
+            };
+          } else if (session.tipo === 'partido' && isPast) {
+            primary = {
+              key: 'analysis',
+              icon: BarChart3,
+              label: 'Análisis post-partido',
+              tone: 'blue',
+              onClick: () => {
+                onClose();
+                navigate(`/calendar/${session.id}/analysis`);
+              },
+            };
+          } else if (session.tipo === 'partido') {
+            primary = {
+              key: 'convocatoria',
+              icon: Send,
+              label: session.convocatoriaSentAt ? 'Convocatoria enviada · Reenviar' : 'Mandar convocatoria',
+              tone: 'blue',
+              onClick: () => setShowConvocatoria(true),
+            };
+          }
+
+          // Secondary actions: compact slate buttons. Built per session type, primary excluded.
+          const secondary = [];
+          if (isMatch) {
+            if (primary?.key !== 'convocatoria') {
+              secondary.push({
+                key: 'convocatoria',
+                icon: Send,
+                label: session.convocatoriaSentAt ? 'Reenviar convocatoria' : 'Mandar convocatoria',
+                onClick: () => setShowConvocatoria(true),
+              });
+            }
+            secondary.push({
+              key: 'scouting',
+              icon: Search,
+              label: 'Scouting rival',
+              onClick: () => {
+                onClose();
+                navigate(`/calendar/${session.id}/scouting`, navStateFor());
+              },
+            });
+            if (primary?.key !== 'analysis') {
+              secondary.push({
+                key: 'analysis',
+                icon: BarChart3,
+                label: 'Análisis post-partido',
+                onClick: () => {
                   onClose();
-                  navigate(`/calendar/${session.id}/planilla`, navState);
-                }}
-                className="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2"
-              >
-                <ClipboardList size={16} aria-hidden="true" /> Planilla de Sextos{' '}
-                <ArrowRight size={15} aria-hidden="true" />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setShowConvocatoria(true)}
-              className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2"
-            >
-              <Send size={16} aria-hidden="true" />
-              {session.convocatoriaSentAt ? 'Convocatoria enviada · Reenviar' : 'Mandar convocatoria'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const navState = session.tipo === 'playoff' ? { state: { playoffSession: session } } : undefined;
-                onClose();
-                navigate(`/calendar/${session.id}/scouting`, navState);
-              }}
-              className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
-            >
-              <Search size={16} aria-hidden="true" /> Scouting rival <ArrowRight size={15} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const navState = session.tipo === 'playoff' ? { state: { playoffSession: session } } : undefined;
-                onClose();
-                navigate(`/calendar/${session.id}/analysis`, navState);
-              }}
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
-            >
-              <BarChart3 size={16} aria-hidden="true" /> Análisis post-partido{' '}
-              <ArrowRight size={15} aria-hidden="true" />
-            </button>
-          </>
-        )}
+                  navigate(`/calendar/${session.id}/analysis`, navStateFor());
+                },
+              });
+            }
+            if (isMinibasket) {
+              secondary.push({
+                key: 'planilla',
+                icon: ClipboardList,
+                label: 'Planilla de Sextos',
+                onClick: () => {
+                  onClose();
+                  navigate(`/calendar/${session.id}/planilla`, navStateFor());
+                },
+              });
+            }
+          }
+
+          const primaryClass =
+            primary?.tone === 'amber'
+              ? 'bg-amber-500 hover:bg-amber-600 focus-visible:ring-amber-400'
+              : 'bg-blue-600 hover:bg-blue-700 focus-visible:ring-blue-400';
+
+          return (
+            <>
+              {primary && (
+                <button
+                  type="button"
+                  onClick={primary.onClick}
+                  disabled={primary.disabled}
+                  className={`w-full ${primaryClass} text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2`}
+                >
+                  <primary.icon size={16} aria-hidden="true" />
+                  {primary.label}
+                  {!primary.disabled && <ArrowRight size={15} aria-hidden="true" />}
+                </button>
+              )}
+              {secondary.length > 0 && (
+                <div className="grid grid-cols-2 gap-2">
+                  {secondary.map((a) => (
+                    <button
+                      key={a.key}
+                      type="button"
+                      onClick={a.onClick}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 rounded-xl flex items-center justify-center gap-1.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+                    >
+                      <a.icon size={14} aria-hidden="true" /> {a.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          );
+        })()}
         <div className="flex gap-2">
           <button
             type="button"
