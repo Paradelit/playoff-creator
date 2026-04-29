@@ -4,6 +4,7 @@ import { onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { saveTraining, subscribeToExercises } from '../services/trainingsService';
+import { subscribeToAllMembers } from '../services/teamsService';
 import { useTeams } from './useTeams';
 import { useAllTrainings } from './useAllTrainings';
 import { useExerciseInsights } from './useExerciseInsights';
@@ -59,6 +60,7 @@ export function useHomeDashboard() {
   const [sessions, setSessions] = useState([]);
   const [brackets, setBrackets] = useState([]);
   const [exercises, setExercises] = useState([]);
+  const [allMembers, setAllMembers] = useState([]);
   const [creatingTraining, setCreatingTraining] = useState(null);
 
   const today = useMemo(() => new Date(), []);
@@ -98,6 +100,14 @@ export function useHomeDashboard() {
     if (!user || !db) return undefined;
     return subscribeToExercises(user.uid, db, appId, setExercises);
   }, [user, db, appId]);
+
+  useEffect(() => {
+    if (!user || !db || teams.length === 0) {
+      setAllMembers([]);
+      return undefined;
+    }
+    return subscribeToAllMembers(teams, user.uid, db, appId, setAllMembers);
+  }, [user, db, appId, teams]);
 
   const recentExercises = useMemo(() => {
     const timeOf = (ex) => {
@@ -228,8 +238,29 @@ export function useHomeDashboard() {
   );
 
   const pendingActions = useMemo(
-    () => buildAllPendientes({ sessions: allSessions, teams, todayYMD, now: today, limit: 10 }),
-    [allSessions, teams, todayYMD, today],
+    () =>
+      buildAllPendientes({
+        sessions: allSessions,
+        teams,
+        members: allMembers,
+        todayYMD,
+        now: today,
+        limit: 10,
+      }),
+    [allSessions, teams, allMembers, todayYMD, today],
+  );
+
+  const pendingActionsTotal = useMemo(
+    () =>
+      buildAllPendientes({
+        sessions: allSessions,
+        teams,
+        members: allMembers,
+        todayYMD,
+        now: today,
+        limit: 9999,
+      }).length,
+    [allSessions, teams, allMembers, todayYMD, today],
   );
 
   const newsItems = useMemo(
@@ -326,6 +357,8 @@ export function useHomeDashboard() {
     handleEventAction,
     nextActionEvent,
     pendingActions,
+    pendingActionsTotal,
+    allMembers,
     newsItems,
     weekStrip,
   };

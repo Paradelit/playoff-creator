@@ -262,6 +262,7 @@ export default function HomeScreen() {
     handleEventAction,
     nextActionEvent,
     pendingActions,
+    pendingActionsTotal,
     newsItems,
     weekStrip,
   } = useHomeDashboard();
@@ -420,7 +421,12 @@ export default function HomeScreen() {
 
           {/* Side column (right on desktop) */}
           <aside className="lg:col-span-1 flex flex-col gap-4">
-            <PendingActionsList items={pendingActions} onAction={handlePendingAction} creatingId={creatingTraining} />
+            <PendingActionsList
+              items={pendingActions}
+              total={pendingActionsTotal}
+              onAction={handlePendingAction}
+              creatingId={creatingTraining}
+            />
             <WeekStrip days={weekStrip} navigate={navigate} />
             <WeeklySummaryChip weeklySummary={weeklySummary} />
             {activePlayoffs.length > 0 && (

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { AlertCircle, ClipboardList, Trophy, ArrowRight, CheckCircle2, Send, Cake } from 'lucide-react';
 import { MONTHS } from './HomeComponents';
 
@@ -44,14 +45,21 @@ function DateChip({ session, severity }) {
   );
 }
 
-export default function PendingActionsList({ items, onAction, creatingId }) {
+export default function PendingActionsList({
+  items,
+  total,
+  onAction,
+  creatingId,
+  overflowHref = '/area-privada/pendientes',
+}) {
+  const overflow = Math.max(0, (total ?? items.length) - items.length);
   return (
     <section aria-label="Acciones pendientes" className="bg-white rounded-2xl border border-slate-200 shadow-sm">
       <header className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
         <AlertCircle size={15} className="text-amber-500" aria-hidden="true" />
         <h3 className="text-xs font-bold text-slate-700 uppercase tracking-widest">Pendientes</h3>
         <span className="ml-auto text-[11px] font-bold text-slate-400">
-          {items.length > 0 ? `${items.length}` : ''}
+          {(total ?? items.length) > 0 ? `${total ?? items.length}` : ''}
         </span>
       </header>
       {items.length === 0 ? (
@@ -88,6 +96,17 @@ export default function PendingActionsList({ items, onAction, creatingId }) {
               </button>
             </li>
           ))}
+          {overflow > 0 && (
+            <li className="px-4 py-2 text-center">
+              <Link
+                to={overflowHref}
+                className="text-sm font-bold text-blue-600 hover:text-blue-800 inline-flex items-center gap-1"
+              >
+                +{overflow} más
+                <ArrowRight size={12} aria-hidden="true" />
+              </Link>
+            </li>
+          )}
         </ul>
       )}
     </section>
