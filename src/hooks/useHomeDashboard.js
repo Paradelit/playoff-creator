@@ -101,13 +101,21 @@ export function useHomeDashboard() {
     return subscribeToExercises(user.uid, db, appId, setExercises);
   }, [user, db, appId]);
 
+  // Subscribe only when the SET of team IDs changes — not on every teams ref
+  // change. useTeams returns a new array ref each render, which without this
+  // would re-subscribe on every render and (with synchronous mock callbacks
+  // in tests) loop indefinitely.
+  const teamIdsKey = teams.map((t) => t.id).join(',');
   useEffect(() => {
-    if (!user || !db || teams.length === 0) {
+    if (!user || !db || !teamIdsKey) {
       setAllMembers([]);
       return undefined;
     }
     return subscribeToAllMembers(teams, user.uid, db, appId, setAllMembers);
-  }, [user, db, appId, teams]);
+    // teams is intentionally captured by closure — re-running on every ref
+    // change would not give us new data.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, db, appId, teamIdsKey]);
 
   const recentExercises = useMemo(() => {
     const timeOf = (ex) => {
