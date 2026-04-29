@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Maximize2, Plus, Loader2, MapPin } from 'lucide-react';
+import { X, Send, Maximize2, Plus, MapPin } from 'lucide-react';
 import { usePick } from '../../contexts/PickProvider';
 import { useScreenContext } from '../../contexts/ScreenContextProvider';
 import ActionButton from './ActionButton';
@@ -141,8 +141,25 @@ export default function PickPanel() {
         })}
         {isProcessing && (
           <div className="flex justify-start">
-            <div className="bg-slate-100 rounded-2xl rounded-bl-md px-3.5 py-2.5">
-              <Loader2 size={16} className="text-slate-400 animate-spin" />
+            <div
+              aria-label="Pick está pensando"
+              className="bg-slate-100 rounded-2xl rounded-bl-md px-3.5 py-2.5 inline-flex items-center gap-1"
+            >
+              <span
+                aria-hidden="true"
+                className="inline-block h-1.5 w-1.5 rounded-full bg-slate-400"
+                style={{ animation: 'pc-dot 1.2s infinite 0s' }}
+              />
+              <span
+                aria-hidden="true"
+                className="inline-block h-1.5 w-1.5 rounded-full bg-slate-400"
+                style={{ animation: 'pc-dot 1.2s infinite 0.16s' }}
+              />
+              <span
+                aria-hidden="true"
+                className="inline-block h-1.5 w-1.5 rounded-full bg-slate-400"
+                style={{ animation: 'pc-dot 1.2s infinite 0.32s' }}
+              />
             </div>
           </div>
         )}

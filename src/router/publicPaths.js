@@ -4,6 +4,7 @@
  */
 export function isPublicPath(pathname) {
   if (pathname === '/') return true;
+  if (pathname === '/v2') return true;
   if (pathname === '/login') return true;
   if (pathname === '/ayuda') return true;
   if (pathname.startsWith('/ayuda/')) return true;

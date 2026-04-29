@@ -16,8 +16,8 @@ describe('ContextoReal', () => {
   it('shows the ordered SSR fallback with all synthetic sessions', () => {
     renderContextoReal();
 
-    expect(screen.getByText(/tu fin de semana en 5 segundos/i)).toBeInTheDocument();
-    expect(screen.getByText(/47 sesiones\. 10 equipos\. 3 pistas\./i)).toBeInTheDocument();
-    expect(screen.getAllByTestId('contexto-session-chip')).toHaveLength(47);
+    expect(screen.getByText(/tu fin de semana, ordenado en 5 segundos/i)).toBeInTheDocument();
+    expect(screen.getByText(/dos partidos, un entreno de tiro y un playoff/i)).toBeInTheDocument();
+    expect(screen.getAllByTestId('contexto-session-chip')).toHaveLength(4);
   });
 });

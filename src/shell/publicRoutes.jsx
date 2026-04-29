@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Public routes for F1.4 (landing) and F1.5 (help center).
 // Defined here (not in AppRouter) so the prerender entry can mount the same components without
@@ -49,6 +49,11 @@ export const PUBLIC_ROUTE_DEFS = [
         <HelpArticleScreen />
       </PublicLayout>
     ),
+  },
+  {
+    // Legacy preview path. Redirect to root so any bookmarked /v2 keeps working.
+    path: '/v2',
+    element: <Navigate to="/" replace />,
   },
 ];
 

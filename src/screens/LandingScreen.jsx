@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import HeroSection from '../components/landing/HeroSection';
+import Hero from '../components/landing/v2/Hero';
+import CursorTour from '../components/landing/v2/CursorTour';
 import FeaturesGrid from '../components/landing/FeaturesGrid';
 import ContextoReal from '../components/landing/ContextoReal';
 import PlayoffScrollTelling from '../components/landing/PlayoffScrollTelling';
@@ -48,13 +49,16 @@ export default function LandingScreen() {
         <script type="application/ld+json">{JSON.stringify(JSON_LD)}</script>
       </Helmet>
 
-      <HeroSection />
-      <FeaturesGrid />
-      <ContextoReal />
-      <PlayoffScrollTelling />
-      <HowItWorks />
-      <FeaturedHelp />
-      <FinalCTA />
+      <main>
+        <Hero />
+        <CursorTour />
+        <FeaturesGrid />
+        <PlayoffScrollTelling />
+        <ContextoReal />
+        <HowItWorks />
+        <FeaturedHelp />
+        <FinalCTA />
+      </main>
       <LandingFooter />
     </>
   );
