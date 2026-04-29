@@ -219,7 +219,7 @@ describe('OrchestratorAgent smoke tests', () => {
     expect(res.actions).toBeDefined();
     expect(res.actions?.[0]).toMatchObject({
       type: 'navigate',
-      path: '/calendar',
+      path: '/area-privada/calendar',
     });
   });
 
