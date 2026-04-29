@@ -31,6 +31,7 @@ const ScoutingScreen = lazy(() => import('../screens/ScoutingScreen'));
 const AnalysisScreen = lazy(() => import('../screens/AnalysisScreen'));
 const EntrenamientosScreen = lazy(() => import('../screens/cuaderno/EntrenamientosScreen'));
 const SharedExerciseScreen = lazy(() => import('../screens/SharedExerciseScreen'));
+const PendientesScreen = lazy(() => import('../screens/PendientesScreen'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -327,6 +328,14 @@ export default function AppRouter() {
           element={
             <Guarded name="Ajustes">
               <SettingsScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/pendientes"
+          element={
+            <Guarded name="Pendientes">
+              <PendientesScreen />
             </Guarded>
           }
         />

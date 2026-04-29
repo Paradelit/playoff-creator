@@ -94,7 +94,7 @@ export default function SessionDetailModal({
           value={
             session.horaInicio && session.horaFin
               ? `${session.horaInicio} – ${session.horaFin}`
-              : session.horaInicio || '—'
+              : session.horaInicio || '–'
           }
         />
         {session.lugar && <DetailRow label="Lugar" value={session.lugar} />}
@@ -186,7 +186,7 @@ export default function SessionDetailModal({
               className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2"
             >
               <Send size={16} aria-hidden="true" />
-              {session.convocatoriaSentAt ? 'Convocatoria enviada — reenviar' : 'Mandar convocatoria'}
+              {session.convocatoriaSentAt ? 'Convocatoria enviada · Reenviar' : 'Mandar convocatoria'}
             </button>
             <button
               type="button"

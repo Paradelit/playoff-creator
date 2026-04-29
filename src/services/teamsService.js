@@ -28,6 +28,37 @@ export function subscribeToMembers(teamId, uid, db, appId, callback) {
   });
 }
 
+/**
+ * Subscribe to members across many teams in one call. Each member is tagged
+ * with `teamId` so consumers can join back. Calls `callback` with the merged
+ * array whenever any team's roster changes.
+ */
+export function subscribeToAllMembers(teams, uid, db, appId, callback) {
+  if (!Array.isArray(teams) || teams.length === 0) {
+    callback([]);
+    return () => undefined;
+  }
+  const byTeam = new Map();
+  function emit() {
+    const all = [];
+    for (const [teamId, list] of byTeam.entries()) {
+      for (const m of list) all.push({ ...m, teamId });
+    }
+    callback(all);
+  }
+  const unsubs = teams.map((t) => {
+    const q = query(membersCol(t.id, uid, db, appId), orderBy('createdAt', 'asc'));
+    return onSnapshot(q, (snap) => {
+      byTeam.set(
+        t.id,
+        snap.docs.map((d) => ({ ...d.data(), id: d.id })),
+      );
+      emit();
+    });
+  });
+  return () => unsubs.forEach((u) => u());
+}
+
 export async function saveMember(member, teamId, { uid, db, appId }) {
   const ref = doc(membersCol(teamId, uid, db, appId), member.id);
   await setDoc(

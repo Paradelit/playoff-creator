@@ -124,7 +124,7 @@ export default function ConvocatoriaModal({ session, team, competition, onClose 
           <input
             type="time"
             value={horaCitaOverride}
-            placeholder="Hora cita override"
+            placeholder="Cambiar hora de cita"
             onChange={(e) => {
               setHoraCitaOverride(e.target.value);
               setEditedMessage(null);

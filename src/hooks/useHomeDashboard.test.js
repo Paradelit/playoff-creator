@@ -82,6 +82,13 @@ vi.mock('../services/trainingsService', () => ({
   }),
 }));
 
+vi.mock('../services/teamsService', () => ({
+  subscribeToAllMembers: vi.fn((_teams, _uid, _db, _appId, callback) => {
+    callback([]);
+    return vi.fn();
+  }),
+}));
+
 import { useHomeDashboard } from './useHomeDashboard';
 
 beforeEach(() => {

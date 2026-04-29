@@ -101,7 +101,7 @@ export default function ConvocatoriasTab({ team }) {
                 onClick={() => setForm((f) => ({ ...f, plantillaConvocatoria: DEFAULT_TEMPLATE }))}
                 className="text-xs text-slate-500 hover:text-slate-700"
               >
-                Restaurar default
+                Restaurar plantilla original
               </button>
             </div>
           </div>
@@ -167,7 +167,7 @@ export default function ConvocatoriasTab({ team }) {
             onClick={addPabellon}
             className="text-blue-600 hover:text-blue-800 text-sm font-bold flex items-center gap-1"
           >
-            <Plus size={14} aria-hidden="true" /> Añadir pabón
+            <Plus size={14} aria-hidden="true" /> Añadir pabellón
           </button>
         </div>
         {form.pabellones.length === 0 ? (
@@ -193,7 +193,7 @@ export default function ConvocatoriasTab({ team }) {
                 <button
                   type="button"
                   onClick={() => removePabellon(idx)}
-                  aria-label="Eliminar pabón"
+                  aria-label="Eliminar pabellón"
                   className="text-red-400 hover:text-red-600 p-1 rounded"
                 >
                   <Trash2 size={14} aria-hidden="true" />

@@ -18,6 +18,7 @@ import BibliotecaPreview from '../components/home/BibliotecaPreview';
 import NextActionHero from '../components/home/NextActionHero';
 import PendingActionsList from '../components/home/PendingActionsList';
 import ConvocatoriaModal from '../components/calendar/ConvocatoriaModal';
+import CumpleañosModal from '../components/home/CumpleañosModal';
 import { useCompetitions } from '../hooks/useCompetitions';
 import NewsFeed from '../components/home/NewsFeed';
 import WeekStrip from '../components/home/WeekStrip';
@@ -261,6 +262,7 @@ export default function HomeScreen() {
     handleEventAction,
     nextActionEvent,
     pendingActions,
+    pendingActionsTotal,
     newsItems,
     weekStrip,
   } = useHomeDashboard();
@@ -291,11 +293,16 @@ export default function HomeScreen() {
   }, [teams]);
 
   const [convocatoriaSession, setConvocatoriaSession] = useState(null);
+  const [cumpleañosItem, setCumpleañosItem] = useState(null);
 
   const handlePendingAction = useCallback(
     (item) => {
       if (item?.type === 'convocatoria' && item.session) {
         setConvocatoriaSession(item.session);
+        return;
+      }
+      if (item?.type === 'cumpleaños') {
+        setCumpleañosItem(item);
         return;
       }
       if (!item?.session) return;
@@ -414,7 +421,12 @@ export default function HomeScreen() {
 
           {/* Side column (right on desktop) */}
           <aside className="lg:col-span-1 flex flex-col gap-4">
-            <PendingActionsList items={pendingActions} onAction={handlePendingAction} creatingId={creatingTraining} />
+            <PendingActionsList
+              items={pendingActions}
+              total={pendingActionsTotal}
+              onAction={handlePendingAction}
+              creatingId={creatingTraining}
+            />
             <WeekStrip days={weekStrip} navigate={navigate} />
             <WeeklySummaryChip weeklySummary={weeklySummary} />
             {activePlayoffs.length > 0 && (
@@ -443,6 +455,7 @@ export default function HomeScreen() {
           onClose={() => setConvocatoriaSession(null)}
         />
       )}
+      {cumpleañosItem && <CumpleañosModal item={cumpleañosItem} onClose={() => setCumpleañosItem(null)} />}
     </div>
   );
 }
