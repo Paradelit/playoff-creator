@@ -31,17 +31,7 @@
         "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
       }
     ],
-    "rewrites": [
-      { "source": "/area-privada/**", "destination": "/index.html" },
-      { "source": "/login", "destination": "/index.html" },
-      { "source": "/s/**", "destination": "/index.html" },
-      { "source": "/exercise/**", "destination": "/index.html" },
-      { "source": "/teams/**", "destination": "/index.html" },
-      { "source": "/playoffs", "destination": "/index.html" },
-      { "source": "/calendar/**", "destination": "/index.html" },
-      { "source": "/settings", "destination": "/index.html" },
-      { "source": "/exercises/**", "destination": "/index.html" }
-    ]
+    "rewrites": [{ "source": "**", "destination": "/index.html" }]
   },
   "emulators": {
     "functions": { "port": 5001 },
