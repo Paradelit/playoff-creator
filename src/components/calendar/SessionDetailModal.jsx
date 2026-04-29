@@ -1,6 +1,6 @@
-import React, { useId } from 'react';
+import React, { useId, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, ClipboardList, ArrowRight, Trophy, Search, BarChart3, Pencil, Trash2, Repeat } from 'lucide-react';
+import { X, ClipboardList, ArrowRight, Trophy, Search, BarChart3, Pencil, Trash2, Repeat, Send } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
 import { saveCalendarSession } from '../../services/calendarService';
@@ -10,6 +10,8 @@ import { formatDateDisplay } from '../../utils/dateUtils';
 import { readJugadoresConvocados } from '../../utils/calendarUtils';
 import { DetailRow, QuickResultado } from './CalendarHelpers';
 import Dialog from '../Dialog';
+import ConvocatoriaModal from './ConvocatoriaModal';
+import { useCompetitions } from '../../hooks/useCompetitions';
 
 export default function SessionDetailModal({
   session,
@@ -25,6 +27,10 @@ export default function SessionDetailModal({
   const { user } = useAuth();
   const { db, appId } = useFirebase();
   const titleId = useId();
+  const [showConvocatoria, setShowConvocatoria] = useState(false);
+  const { competitions } = useCompetitions(session.teamId);
+  const sessionTeam = teams.find((t) => t.id === session.teamId) || null;
+  const competition = (competitions || []).find((c) => c.id === session.competitionId) || null;
 
   const headerIcon =
     session.tipo === 'playoff' ? (
@@ -176,6 +182,14 @@ export default function SessionDetailModal({
             )}
             <button
               type="button"
+              onClick={() => setShowConvocatoria(true)}
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2"
+            >
+              <Send size={16} aria-hidden="true" />
+              {session.convocatoriaSentAt ? 'Convocatoria enviada — reenviar' : 'Mandar convocatoria'}
+            </button>
+            <button
+              type="button"
               onClick={() => {
                 const navState = session.tipo === 'playoff' ? { state: { playoffSession: session } } : undefined;
                 onClose();
@@ -216,6 +230,14 @@ export default function SessionDetailModal({
           </button>
         </div>
       </div>
+      {showConvocatoria && (
+        <ConvocatoriaModal
+          session={session}
+          team={sessionTeam}
+          competition={competition}
+          onClose={() => setShowConvocatoria(false)}
+        />
+      )}
     </Dialog>
   );
 }
