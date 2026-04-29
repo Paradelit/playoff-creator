@@ -110,18 +110,12 @@ function FeatureCard({ f, delay, reduced, theme }) {
   return (
     <div
       ref={ref}
-      className="fg-card group relative cursor-default rounded-2xl p-6 transition-transform duration-300 hover:scale-[1.02] lg:p-7"
+      className="fg-card group relative cursor-default rounded-2xl p-6 hover:scale-[1.02] lg:p-7"
       style={{
         background: cardBackground,
         border: baseBorder,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.border = '1px solid ' + f.accent + '55';
-        e.currentTarget.style.boxShadow = '0 0 32px 0 ' + f.accent + '22';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.border = baseBorder;
-        e.currentTarget.style.boxShadow = 'none';
+        '--fg-accent-border': f.accent + '55',
+        '--fg-accent-glow': f.accent + '22',
       }}
     >
       {f.featured && (

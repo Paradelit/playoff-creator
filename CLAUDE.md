@@ -74,3 +74,20 @@ Security: user docs private (`request.auth.uid == uid`), shared docs require aut
 - Firestore helpers: `userDocRef(db, appId, uid, collection, docId)` and `userColRef(db, appId, uid, collection)` abstract the nested path.
 - `isMinibasketSextos(team)` gates minibasket-specific features (Planilla de Sextos).
 - Multiple brackets can link to the same team via `bracket.teamId` — this is how multiple tournaments per team works.
+
+## Design Context
+
+Strategic + visual context lives in **`PRODUCT.md`** (and **`DESIGN.md`** once generated) at the project root. Read PRODUCT.md before any UI work. Quick map:
+
+- **Register**: `product` (the private app under `/area-privada` is the default; `/` and `/ayuda` are brand-register surfaces).
+- **AI persona**: the copilot is named **Pick**. Voice: tutea, baloncesto-nativo, *"Tú entrenas. Pick trabaja."*
+- **Vibe**: sports-broadcast energy. Anti-references: generic SaaS templates, legacy coaching tools (FastModel-era), consumer fitness/social apps, plain AI chat shells.
+- **Five design principles** (full text in PRODUCT.md):
+  1. Pick es un compañero, no una pestaña.
+  2. Lenguaje del baloncesto antes que el de software.
+  3. La ayuda pública es el cerebro de Pick.
+  4. Aguanta los tres arquetipos sin elegir uno (formativo / coordinador / senior).
+  5. Movimiento que cuenta una jugada.
+- **A11y target**: funcional, sin auditoría WCAG formal. Respetar `prefers-reduced-motion`, mantener landmarks y `aria-label` en botones-icono.
+
+The impeccable plugin (`/impeccable …`) reads PRODUCT.md / DESIGN.md before doing design work. Do not synthesize new visual rules without consulting both files first.

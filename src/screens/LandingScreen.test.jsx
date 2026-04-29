@@ -19,11 +19,11 @@ describe('LandingScreen', () => {
       </HelmetProvider>,
     );
 
-    expect(screen.getByRole('heading', { level: 1, name: /entrena/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: /tu pizarra/i })).toBeInTheDocument();
     expect(screen.getByText(/pick, tu copiloto ia/i)).toBeInTheDocument();
-    expect(screen.getByText(/tu fin de semana en 5 segundos/i)).toBeInTheDocument();
-    expect(screen.getByText(/un pdf\. un cuadro perfecto\./i)).toBeInTheDocument();
-    expect(screen.getByText(/empieza en 3 pasos/i)).toBeInTheDocument();
+    expect(screen.getByText(/tu fin de semana, ordenado en 5 segundos/i)).toBeInTheDocument();
+    expect(screen.getByText(/un pdf\. un playoff listo\./i)).toBeInTheDocument();
+    expect(screen.getByText(/tres movimientos\. y entrenas\./i)).toBeInTheDocument();
     expect(screen.getAllByText(/centro de ayuda/i).length).toBeGreaterThan(0);
   });
 });

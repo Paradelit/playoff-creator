@@ -24,9 +24,10 @@ describe('PlayoffScrollTelling', () => {
     renderPlayoffStory();
 
     expect(screen.getByText(/cb demo aro · torneo de reyes 2026/i)).toBeInTheDocument();
-    expect(screen.getAllByText('Cadete A').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Mini Mixto').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Sénior').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('CB Demo Aro').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Estudiantes').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Real Madrid').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('CB Pozuelo').length).toBeGreaterThan(0);
     expect(screen.getAllByTestId('playoff-bracket-cell')).toHaveLength(7);
   });
 

@@ -1,0 +1,277 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-04-29T00:00:00.000Z",
+  "title": "Design System: Pick&Coach",
+  "extensions": {
+    "colorMeta": {
+      "court-orange": {
+        "role": "primary",
+        "displayName": "Court Orange",
+        "canonical": "#f97316",
+        "tonalRamp": ["#7c2d12", "#9a3412", "#c2410c", "#ea580c", "#f97316", "#fb923c", "#fdba74", "#ffedd5"]
+      },
+      "court-orange-deep": {
+        "role": "primary",
+        "displayName": "Court Orange Deep",
+        "canonical": "#ea580c",
+        "tonalRamp": ["#7c2d12", "#9a3412", "#c2410c", "#ea580c", "#f97316", "#fb923c", "#fdba74", "#ffedd5"]
+      },
+      "club-orange": {
+        "role": "primary",
+        "displayName": "Club Orange (legacy override)",
+        "canonical": "#FF8300",
+        "tonalRamp": ["#3D1C00", "#7A3700", "#B85300", "#E06A00", "#FF8300", "#FF9520", "#FFAD40", "#FFC980"]
+      },
+      "score-clock-blue": {
+        "role": "secondary",
+        "displayName": "Score-Clock Cyan",
+        "canonical": "#1A6FD4",
+        "tonalRamp": ["#0A0E27", "#0C1440", "#0F1E6B", "#1535A8", "#1A6FD4", "#0AC4E8", "#48F5FF", "#90F8FF"]
+      },
+      "score-clock-blue-deep": {
+        "role": "secondary",
+        "displayName": "Score-Clock Cyan Deep",
+        "canonical": "#1535A8",
+        "tonalRamp": ["#0A0E27", "#0C1440", "#0F1E6B", "#1535A8", "#1A6FD4", "#0AC4E8", "#48F5FF", "#90F8FF"]
+      },
+      "electric-line-cyan": {
+        "role": "secondary",
+        "displayName": "Electric Line Cyan",
+        "canonical": "#00F0FF",
+        "tonalRamp": ["#0F1E6B", "#1535A8", "#1A6FD4", "#0AC4E8", "#00F0FF", "#48F5FF", "#90F8FF", "#C8FCFF"]
+      },
+      "midnight-electric": {
+        "role": "secondary",
+        "displayName": "Midnight Electric",
+        "canonical": "#0A0E27",
+        "tonalRamp": ["#0A0E27", "#0C1440", "#0F1E6B", "#1535A8", "#1A6FD4", "#0AC4E8", "#48F5FF", "#90F8FF"]
+      },
+      "trophy-amber": {
+        "role": "tertiary",
+        "displayName": "Trophy Amber",
+        "canonical": "#EFBF04",
+        "tonalRamp": ["#2A2000", "#4D3A00", "#7A5E00", "#A67F00", "#CC9F00", "#EFBF04", "#F7D530", "#FFEA80"]
+      },
+      "trophy-amber-deep": {
+        "role": "tertiary",
+        "displayName": "Trophy Amber Deep",
+        "canonical": "#CC9F00",
+        "tonalRamp": ["#2A2000", "#4D3A00", "#7A5E00", "#A67F00", "#CC9F00", "#EFBF04", "#F7D530", "#FFEA80"]
+      },
+      "pick-purple": {
+        "role": "tertiary",
+        "displayName": "Pick Purple",
+        "canonical": "#8B5CF6",
+        "tonalRamp": ["#4C1D95", "#5B21B6", "#6D28D9", "#7C3AED", "#8B5CF6", "#A78BFA", "#C4B5FD", "#DDD6FE"]
+      },
+      "alert-red": {
+        "role": "semantic",
+        "displayName": "Alert Red",
+        "canonical": "#DC2626",
+        "tonalRamp": ["#7F1D1D", "#991B1B", "#B91C1C", "#DC2626", "#EF4444", "#F87171", "#FCA5A5", "#FECACA"]
+      },
+      "success-green": {
+        "role": "semantic",
+        "displayName": "Success Green",
+        "canonical": "#10B981",
+        "tonalRamp": ["#064E3B", "#065F46", "#047857", "#059669", "#10B981", "#34D399", "#6EE7B7", "#A7F3D0"]
+      },
+      "ink-900": {
+        "role": "neutral",
+        "displayName": "Ink 900 (Primary Text)",
+        "canonical": "#0F172A",
+        "tonalRamp": ["#0F172A", "#1E293B", "#334155", "#475569", "#64748B", "#94A3B8", "#CBD5E1", "#E2E8F0"]
+      },
+      "ink-700": {
+        "role": "neutral",
+        "displayName": "Ink 700 (Body Text)",
+        "canonical": "#334155",
+        "tonalRamp": ["#0F172A", "#1E293B", "#334155", "#475569", "#64748B", "#94A3B8", "#CBD5E1", "#E2E8F0"]
+      },
+      "ink-500": {
+        "role": "neutral",
+        "displayName": "Ink 500 (Caption Text)",
+        "canonical": "#64748B",
+        "tonalRamp": ["#0F172A", "#1E293B", "#334155", "#475569", "#64748B", "#94A3B8", "#CBD5E1", "#E2E8F0"]
+      },
+      "ink-400": {
+        "role": "neutral",
+        "displayName": "Ink 400 (Placeholder)",
+        "canonical": "#94A3B8",
+        "tonalRamp": ["#0F172A", "#1E293B", "#334155", "#475569", "#64748B", "#94A3B8", "#CBD5E1", "#E2E8F0"]
+      },
+      "ash-200": {
+        "role": "neutral",
+        "displayName": "Ash 200 (Border)",
+        "canonical": "#E2E8F0",
+        "tonalRamp": ["#0F172A", "#1E293B", "#334155", "#475569", "#64748B", "#94A3B8", "#CBD5E1", "#E2E8F0"]
+      },
+      "ash-100": {
+        "role": "neutral",
+        "displayName": "Ash 100 (Subtle BG)",
+        "canonical": "#F1F5F9",
+        "tonalRamp": ["#0F172A", "#1E293B", "#334155", "#475569", "#64748B", "#94A3B8", "#CBD5E1", "#E2E8F0"]
+      },
+      "ash-50": {
+        "role": "neutral",
+        "displayName": "Ash 50 (Page BG)",
+        "canonical": "#F8FAFC",
+        "tonalRamp": ["#0F172A", "#1E293B", "#334155", "#475569", "#64748B", "#94A3B8", "#CBD5E1", "#E2E8F0"]
+      },
+      "surface-white": {
+        "role": "neutral",
+        "displayName": "Surface White (Cards / Modals)",
+        "canonical": "#FFFFFF",
+        "tonalRamp": ["#FFFFFF", "#F8FAFC", "#F1F5F9", "#E2E8F0", "#CBD5E1", "#94A3B8", "#64748B", "#0F172A"]
+      },
+      "surface-night": {
+        "role": "neutral",
+        "displayName": "Surface Night (Landing Dark)",
+        "canonical": "#06060F",
+        "tonalRamp": ["#06060F", "#0a0a18", "#0d0d1f", "#0F1E6B", "#1535A8", "#1A6FD4", "#0AC4E8", "#90F8FF"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Landing H1, hero headlines, milestone heads. Always font-extrabold + tracking-tight." },
+      "headline": { "displayName": "Headline", "purpose": "Section titles inside long pages and screens." },
+      "title": { "displayName": "Title", "purpose": "Card titles, modal heads, team names on TeamCard." },
+      "body": { "displayName": "Body", "purpose": "Paragraph copy, descriptions. Cap line length at 65–75ch on landing prose." },
+      "label": { "displayName": "Label", "purpose": "Eyebrow tags, MatchCard round headers, category labels. UPPERCASE + 0.1em letter-spacing." },
+      "mono": { "displayName": "Mono", "purpose": "Chat-window chrome label ('Pick&Coach · copiloto IA'), debug strings only." }
+    },
+    "shadows": [
+      { "name": "resting-card", "value": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)", "purpose": "Default MatchCard, secondary cards. Tailwind shadow-md." },
+      { "name": "lifted-card", "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)", "purpose": "Hovered cards, dropdowns. Tailwind shadow-lg." },
+      { "name": "modal", "value": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)", "purpose": "Modal panels, dialog children. Tailwind shadow-xl." },
+      { "name": "team-card-heavy", "value": "0 25px 50px -12px rgb(0 0 0 / 0.25)", "purpose": "Gradient TeamCard on HomeScreen. Tailwind shadow-2xl." },
+      { "name": "final-match-amber", "value": "0 10px 15px -3px rgb(239 191 4 / 0.5), 0 4px 6px -4px rgb(239 191 4 / 0.5)", "purpose": "The bracket's final match. Amber-tinted lift signals 'this is where it ends'." },
+      { "name": "pick-glow-rest", "value": "0 0 24px 0 rgba(249, 115, 22, 0.15)", "purpose": "Pick chat box at rest. Animated; pulses to pick-glow-pulse." },
+      { "name": "pick-glow-pulse", "value": "0 0 48px 8px rgba(249, 115, 22, 0.35)", "purpose": "Pick chat box at the peak of its 3s glow loop. Reserved for the landing demo." }
+    ],
+    "motion": [
+      { "name": "ease-out-snap", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Default exponential ease-out for state transitions and reveals. Snappy at the start, settles softly. No bounce, no elastic." },
+      { "name": "duration-fast", "value": "150ms", "purpose": "Hover state transitions on buttons, focus rings, color shifts." },
+      { "name": "duration-base", "value": "250ms", "purpose": "Modal entrance (slide-up), card hover lifts, panel reveals." },
+      { "name": "duration-slow", "value": "350ms", "purpose": "Landing micro-scenes (fm-bubble-in, fm-fan-out, fm-tick-pop), step-in reveals." },
+      { "name": "duration-loop-pick-thinking", "value": "1200ms", "purpose": "Pick 'thinking' typing-dots loop. Each dot offset 160ms from the previous." },
+      { "name": "duration-loop-pick-glow", "value": "3000ms", "purpose": "Pick chat box heartbeat loop. Reserved for the landing hero." },
+      { "name": "reduce-motion", "value": "@media (prefers-reduced-motion: reduce)", "purpose": "ALL decorative motion disables under this query (already enforced in src/index.css). Functional state transitions on focus/hover are still allowed; choreographed reveals must collapse to a no-op." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px", "purpose": "Phones in landscape, MatchCard switches to fixed 460px width." },
+      { "name": "md", "value": "768px", "purpose": "Tablets. PublicNavbar shows full nav, mobile menu button hides. HomeScreen team carousel switches to grid." },
+      { "name": "lg", "value": "1024px", "purpose": "Laptops. Landing hero switches from stacked to two-column, padding scales up." },
+      { "name": "xl", "value": "1280px", "purpose": "Desktops. Max content width (max-w-7xl)." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Landing CTA",
+      "kind": "button",
+      "refersTo": "button-cta-landing",
+      "description": "The Court Orange gradient call-to-action used on the landing hero, navbar, and final CTA section. Recruits users INTO the product.",
+      "html": "<a class=\"ds-cta-landing\" href=\"#\"><span>Empezar gratis</span><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14M13 5l7 7-7 7\"/></svg></a>",
+      "css": ".ds-cta-landing { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px; border-radius: 12px; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 700; color: #ffffff; background: linear-gradient(135deg, #f97316, #ea580c); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1); text-decoration: none; cursor: pointer; transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-cta-landing:hover { transform: scale(1.02); } .ds-cta-landing:active { transform: scale(1); } .ds-cta-landing:focus-visible { outline: 2px solid #1A6FD4; outline-offset: 2px; }"
+    },
+    {
+      "name": "App Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary-app",
+      "description": "The in-app primary action (ToolbarButton variant=primary). Used inside /area-privada toolbars where 'orange' would over-pop. Score-Clock Cyan, the in-app workhorse.",
+      "html": "<button class=\"ds-btn-primary\" type=\"button\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z\"/><path d=\"M17 21v-8H7v8M7 3v5h8\"/></svg><span>Guardar</span></button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: #1A6FD4; color: #ffffff; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 700; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); cursor: pointer; transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-primary:hover { background: #1535A8; } .ds-btn-primary:focus-visible { outline: 2px solid #1A6FD4; outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Quiet alternative for secondary actions inside modals (Cancelar) and inline tool rows. Sits on Ash-100, hovers to Ash-200.",
+      "html": "<button class=\"ds-btn-ghost\" type=\"button\">Cancelar</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; border: 0; border-radius: 8px; background: #F1F5F9; color: #334155; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-ghost:hover { background: #E2E8F0; } .ds-btn-ghost:focus-visible { outline: 2px solid #1A6FD4; outline-offset: 2px; }"
+    },
+    {
+      "name": "Pick Avatar",
+      "kind": "custom",
+      "refersTo": "pick-avatar",
+      "description": "The 28px round badge that marks Pick speaking. Court Orange gradient, white 'P', font-extrabold. Reappears anywhere Pick has authored content.",
+      "html": "<span class=\"ds-pick-avatar\" aria-hidden=\"true\">P</span>",
+      "css": ".ds-pick-avatar { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; background: linear-gradient(135deg, #f97316, #ea580c); color: #ffffff; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 800; box-shadow: 0 0 24px 0 rgba(249, 115, 22, 0.15); }"
+    },
+    {
+      "name": "Match Card",
+      "kind": "card",
+      "refersTo": "card-match",
+      "description": "The signature bracket card. White panel with slate borders, internal row dividers, score inputs flush-right. Final match swaps to amber border + amber header bar.",
+      "html": "<article class=\"ds-card-match ds-card-match--final\"><header class=\"ds-card-match__header\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 17a5 5 0 005-5V3H7v9a5 5 0 005 5zM8 21h8M12 17v4\"/></svg><span>Final</span><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 17a5 5 0 005-5V3H7v9a5 5 0 005 5zM8 21h8M12 17v4\"/></svg></header><div class=\"ds-card-match__meta\"><span class=\"ds-card-match__format\">BO3</span><div class=\"ds-card-match__dates\"><span>12 may</span><span>15 may</span><span>—</span></div></div><div class=\"ds-card-match__row ds-card-match__row--winner\"><div class=\"ds-card-match__team\"><span class=\"ds-card-match__name\">Uros de Rivas</span><span class=\"ds-card-match__origin\">Ganador R2-M0</span></div><div class=\"ds-card-match__scores\"><input class=\"ds-input-score\" type=\"number\" value=\"78\" readonly /><input class=\"ds-input-score\" type=\"number\" value=\"82\" readonly /><input class=\"ds-input-score\" type=\"number\" placeholder=\"-\" disabled /></div></div><div class=\"ds-card-match__row ds-card-match__row--loser\"><div class=\"ds-card-match__team\"><span class=\"ds-card-match__name\">Estudiantes</span><span class=\"ds-card-match__origin\">Ganador R2-M1</span></div><div class=\"ds-card-match__scores\"><input class=\"ds-input-score\" type=\"number\" value=\"71\" readonly /><input class=\"ds-input-score\" type=\"number\" value=\"79\" readonly /><input class=\"ds-input-score\" type=\"number\" placeholder=\"-\" disabled /></div></div></article>",
+      "css": ".ds-card-match { display: flex; flex-direction: column; width: 100%; min-width: 0; max-width: 460px; background: #ffffff; border: 1px solid #CBD5E1; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); overflow: hidden; font-family: ui-sans-serif, system-ui, sans-serif; transition: box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-card-match:hover { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); } .ds-card-match--final { border-color: #EFBF04; box-shadow: 0 10px 15px -3px rgb(239 191 4 / 0.5), 0 4px 6px -4px rgb(239 191 4 / 0.5); } .ds-card-match__header { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 8px; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; background: #EFBF04; color: #ffffff; } .ds-card-match__meta { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px; background: #F8FAFC; border-bottom: 1px solid #E2E8F0; } .ds-card-match__format { display: inline-flex; align-items: center; gap: 4px; font-size: 0.5625rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748B; } .ds-card-match__dates { display: flex; gap: 4px; } .ds-card-match__dates span { display: inline-block; width: 72px; text-align: center; font-size: 0.625rem; font-weight: 700; color: #64748B; } .ds-card-match__row { display: flex; align-items: center; justify-content: space-between; padding: 8px; border-bottom: 1px solid #F1F5F9; } .ds-card-match__row:last-child { border-bottom: 0; } .ds-card-match__row--winner { background: #DCFCE7; color: #166534; font-weight: 700; } .ds-card-match__row--loser { background: #FEF2F2; color: #B91C1C; opacity: 0.8; } .ds-card-match__team { display: flex; flex-direction: column; min-width: 0; padding-right: 12px; } .ds-card-match__name { font-size: 0.875rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-card-match__origin { margin-top: 2px; font-size: 0.625rem; color: #64748B; } .ds-card-match__scores { display: flex; gap: 4px; flex-shrink: 0; }"
+    },
+    {
+      "name": "Score Input",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "Compact bracket score input. Number-pad-friendly, no spinners, fixed 72px width. Disabled state when a game is skipped by series goes opaque slate.",
+      "html": "<input class=\"ds-input-score\" type=\"number\" value=\"78\" />",
+      "css": ".ds-input-score { width: 72px; height: 32px; text-align: center; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 600; color: #0F172A; background: #ffffff; border: 1px solid #CBD5E1; border-radius: 6px; appearance: textfield; -moz-appearance: textfield; transition: box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-input-score::-webkit-outer-spin-button, .ds-input-score::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; } .ds-input-score:focus { outline: none; border-color: #1A6FD4; box-shadow: 0 0 0 2px rgba(26, 111, 212, 0.4); } .ds-input-score:disabled { background: #F1F5F9; color: transparent; border-color: transparent; opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Team Card (Gradient)",
+      "kind": "card",
+      "refersTo": "card-team-gradient",
+      "description": "The signature HomeScreen card. Full Score-Clock Cyan gradient, white text, embedded translucent quick-action circles. Each team feels like a brand object, not a row in a list.",
+      "html": "<article class=\"ds-card-team\"><div class=\"ds-card-team__head\"><div class=\"ds-card-team__heading\"><p class=\"ds-card-team__eyebrow\">MINIBASKET · MIXTO</p><h2 class=\"ds-card-team__title\">Uros de Rivas</h2></div><svg class=\"ds-card-team__shield\" viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z\"/></svg></div><p class=\"ds-card-team__subline\">Próx. partido: vs Estudiantes, 12 may</p><p class=\"ds-card-team__playoff\">Torneo: vs Real Madrid (1-0)</p><div class=\"ds-card-team__divider\"></div><nav class=\"ds-card-team__actions\"><button class=\"ds-card-team__quick\" type=\"button\"><span class=\"ds-card-team__quick-icon\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2M16 3.13a4 4 0 010 7.75M21 21v-2a4 4 0 00-3-3.85\"/></svg></span><span>Plantilla</span></button><button class=\"ds-card-team__quick\" type=\"button\"><span class=\"ds-card-team__quick-icon\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"M16 2v4M8 2v4M3 10h18\"/></svg></span><span>Calendario</span></button><button class=\"ds-card-team__quick\" type=\"button\"><span class=\"ds-card-team__quick-icon\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 17a5 5 0 005-5V3H7v9a5 5 0 005 5zM8 21h8M12 17v4\"/></svg></span><span>Torneos</span></button></nav></article>",
+      "css": ".ds-card-team { width: 100%; max-width: 22rem; padding: 20px; border-radius: 16px; background: linear-gradient(135deg, #0C1440, #0F1E6B 60%, #1535A8); color: #ffffff; box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4); font-family: ui-sans-serif, system-ui, sans-serif; } .ds-card-team__head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px; gap: 8px; } .ds-card-team__heading { min-width: 0; } .ds-card-team__eyebrow { margin: 0; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; color: #90F8FF; opacity: 0.75; } .ds-card-team__title { margin: 2px 0 0 0; font-size: 1.25rem; font-weight: 700; line-height: 1.2; } .ds-card-team__shield { color: rgba(255, 255, 255, 0.4); flex-shrink: 0; margin-top: 2px; } .ds-card-team__subline { margin: 8px 0 0 0; font-size: 0.75rem; color: rgba(200, 252, 255, 0.85); } .ds-card-team__playoff { margin: 2px 0 0 0; font-size: 0.75rem; color: rgba(247, 213, 48, 0.9); } .ds-card-team__divider { width: 48px; height: 2px; margin: 16px 0; background: rgba(255, 255, 255, 0.2); border-radius: 9999px; } .ds-card-team__actions { display: flex; gap: 20px; } .ds-card-team__quick { display: flex; flex-direction: column; align-items: center; gap: 6px; background: transparent; border: 0; color: inherit; cursor: pointer; font-family: inherit; padding: 0; } .ds-card-team__quick-icon { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 9999px; background: rgba(255, 255, 255, 0.15); transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-card-team__quick:hover .ds-card-team__quick-icon { background: rgba(255, 255, 255, 0.25); } .ds-card-team__quick:active .ds-card-team__quick-icon { background: rgba(255, 255, 255, 0.3); } .ds-card-team__quick:focus-visible .ds-card-team__quick-icon { outline: 2px solid #ffffff; outline-offset: 2px; } .ds-card-team__quick > span:last-child { font-size: 0.75rem; font-weight: 500; color: rgba(200, 252, 255, 0.95); white-space: nowrap; }"
+    },
+    {
+      "name": "Modal Panel",
+      "kind": "card",
+      "refersTo": "modal-panel",
+      "description": "The default Dialog panel. White, rounded-xl, shadow-xl, slide-up entrance. Backdrop is slate-900/60 with a small blur. Used by Dialog/ConfirmDialog/PromptDialog and every modal in the app.",
+      "html": "<div class=\"ds-modal-backdrop\"><div class=\"ds-modal-panel\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"modal-title\"><div class=\"ds-modal-panel__head\"><span class=\"ds-modal-panel__icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10.29 3.86 1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z\"/><path d=\"M12 9v4M12 17h.01\"/></svg></span><div><h2 class=\"ds-modal-panel__title\" id=\"modal-title\">¿Eliminar bracket?</h2><p class=\"ds-modal-panel__body\">Esta acción no se puede deshacer. Perderás el cuadro y todos sus resultados.</p></div></div><div class=\"ds-modal-panel__actions\"><button class=\"ds-btn-ghost\" type=\"button\">Cancelar</button><button class=\"ds-btn-danger\" type=\"button\">Eliminar</button></div></div></div>",
+      "css": ".ds-modal-backdrop { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px 16px 80px 16px; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 110; } .ds-modal-panel { width: 100%; max-width: 24rem; padding: 24px; background: #ffffff; border-radius: 12px; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); font-family: ui-sans-serif, system-ui, sans-serif; animation: ds-slide-up 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards; } .ds-modal-panel__head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; } .ds-modal-panel__icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 9999px; background: #FEE2E2; color: #DC2626; } .ds-modal-panel__title { margin: 0; font-size: 1.125rem; font-weight: 600; color: #0F172A; } .ds-modal-panel__body { margin: 4px 0 0 0; font-size: 0.875rem; line-height: 1.5; color: #334155; } .ds-modal-panel__actions { display: flex; justify-content: flex-end; gap: 12px; } .ds-btn-danger { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; border: 0; border-radius: 8px; background: #DC2626; color: #ffffff; font-family: inherit; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-danger:hover { background: #B91C1C; } .ds-btn-danger:focus-visible { outline: 2px solid #F87171; outline-offset: 2px; } @keyframes ds-slide-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } } @media (prefers-reduced-motion: reduce) { .ds-modal-panel { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Bench Beside Pick",
+    "overview": "Pick&Coach is a basketball coaching workspace where Pick, an AI assistant, is already sat next to the coach on the bench. The interface enacts that relationship literally: orange CTAs that open like a teammate calling a play, electric-cyan controls that snap like a 24-second clock, amber that arrives when the trophy does, and motion that always narrates a basketball moment (the shot going up, the PDF resolving into a bracket, Pick thinking before responding). The atmosphere is court-side, alive, intentional. Sports-broadcast energy held together by craft. Every gradient, every shadow, every keyframe is doing a job. Decoration without narrative is the absolute failure mode. The system explicitly rejects generic SaaS templates, legacy coaching software, consumer fitness aesthetics, and plain AI chat shells.",
+    "keyCharacteristics": [
+      "Two intentional accents: Court Orange for brand and Pick affordances, Score-Clock Cyan for in-app utility actions. Never collapsed into one.",
+      "Motion narrates. Every keyframe should be describable in a sentence.",
+      "Color does wayfinding: amber means trophy / your-team, purple means Pick, red means destructive.",
+      "Light by default in the private app; light-or-dark on public surfaces.",
+      "System fonts only. The voice carries the brand."
+    ],
+    "rules": [
+      { "name": "The Two-Accent Rule", "section": "colors", "body": "Court Orange and Score-Clock Cyan are not interchangeable. Orange = brand and Pick. Cyan = in-app utility. Never use orange for an in-app save button. Never use cyan as the landing CTA. The day they collapse into one, the system loses its narrative." },
+      { "name": "The Trophy-Amber Reservation", "section": "colors", "body": "Amber is for the trophy and what leads to it. If you are tempted to use amber as a generic warm accent, use Court Orange instead. Polluting amber kills its punch in brackets." },
+      { "name": "The Pick-Purple Reservation", "section": "colors", "body": "Purple is Pick. Don't use it for users, calendars, scouting, or any non-AI surface. A future reader should be able to point at any purple in the product and say 'that is where Pick is talking.'" },
+      { "name": "The All-Caps-For-Eyebrows-Only Rule", "section": "typography", "body": "UPPERCASE plus tracking-widest is reserved for eyebrows and labels. Never set body, button, or heading text in caps. Caps stop being a signal if they are everywhere." },
+      { "name": "The Heading-Pair Rule", "section": "typography", "body": "A pair of font-extrabold tracking-tight headings followed by a font-normal text-slate-600 body is the canonical block. If a screen has neither, it is drifting toward 'admin panel'." },
+      { "name": "The Shadow-Means-State Rule", "section": "elevation", "body": "Shadows are not decoration. A resting card uses shadow-md; on hover it goes shadow-lg. A modal is shadow-xl. If a shadow doesn't change between states or doesn't justify the lift, remove it." },
+      { "name": "The Glow-Is-Pick's-Heartbeat Rule", "section": "elevation", "body": "The animated orange glow on the hero chat box is reserved for that specific surface. Don't replicate it on other cards or buttons. If everything glows, nothing does." },
+      { "name": "The Two-Button Rule", "section": "components", "body": "Inside /area-privada, never use the orange gradient as a primary action. On the landing or help, never use blue as a primary CTA. Cross the line and the narrative ('orange = Pick / brand, blue = utility') falls apart." },
+      { "name": "The No-Nested-Cards Rule", "section": "components", "body": "A MatchCard does not contain a sub-card. A TeamCard does not contain a sub-card. Nested cards are always wrong. If you need grouping inside a card, use spacing and dividers." }
+    ],
+    "dos": [
+      "Do keep Court Orange and Score-Clock Cyan in their lanes (orange for brand and Pick, cyan for in-app utility).",
+      "Do treat amber as a reservation. It appears with the trophy, the final, and 'your team's path', never as decoration.",
+      "Do make every animation describable as a sentence. If you cannot narrate it, delete it.",
+      "Do respect prefers-reduced-motion: reduce from the first commit, the way src/index.css already does.",
+      "Do use system fonts. The voice carries the brand. Adding a custom typeface is a strategic decision, not a styling tweak.",
+      "Do keep Pick Purple as the AI-only color so future users can spot Pick by hue alone.",
+      "Do use Score-Clock Cyan focus rings (focus-visible:ring-blue-400) consistently. The blue focus ring is the system focus ring."
+    ],
+    "donts": [
+      "Don't ship hero-metric templates (big number plus small label plus supporting stats plus gradient accent). That's the SaaS cliché PRODUCT.md explicitly rejects.",
+      "Don't make grids of identical icon-heading-text cards. Pick&Coach already has visually distinct card families (MatchCard, TeamCard, the playoff scrolltelling). Use them.",
+      "Don't use glassmorphism as a default surface treatment. The PublicNavbar uses one targeted backdrop-blur. That is the budget.",
+      "Don't rebuild Pick as a plain chat shell. The conversation is a layer over the workspace, not the workspace itself.",
+      "Don't use side-stripe borders (border-l-4 colored stripes) as a decorative accent on cards or rows.",
+      "Don't use gradient text (background-clip: text over a gradient) as a headline treatment.",
+      "Don't mix the two oranges in the same screen. Pick one and stay consistent until the drift is resolved.",
+      "Don't add em dashes in copy. The system uses commas, colons, semicolons, periods, and parentheses.",
+      "Don't introduce a new accent color. Every additional color halves the meaning of the existing four.",
+      "Don't invent new shadow values. The vocabulary is shadow-md, shadow-lg, shadow-xl, shadow-2xl, plus the amber-tinted final-match shadow and the Pick glow.",
+      "Don't use the orange CTA gradient on a private-app surface. If a private screen 'needs' it for emphasis, the screen has a layout problem, not a color problem."
+    ]
+  }
+}
