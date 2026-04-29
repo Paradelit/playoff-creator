@@ -291,9 +291,15 @@ export class OrchestratorAgent {
     // Safety: ensure al menos texto o tarjetas ricas no queden "mudas"
     if (!blocks.some((b) => b.type === "text" || b.type === "confirm_write")) {
       const hasRichCard = blocks.some((b) =>
-        ["team_list", "training_preview", "bracket_preview", "session_preview", "score_update", "exercise_preview"].includes(
-          b.type
-        )
+        [
+          "team_list",
+          "training_preview",
+          "bracket_preview",
+          "session_preview",
+          "score_update",
+          "exercise_preview",
+          "convocatoria_preview",
+        ].includes(b.type)
       );
       if (actions.length > 0 && !hasRichCard) {
         blocks.push({ type: "text", markdown: "He dejado un acceso directo abajo." });
@@ -399,6 +405,14 @@ export class OrchestratorAgent {
       }
       case "session_preview":
         return { type: "session_preview", session: data };
+      case "convocatoria_preview": {
+        const convocatoria = (data.convocatoria as Record<string, unknown>) || data;
+        if (!convocatoria || typeof convocatoria !== "object") return null;
+        return {
+          type: "convocatoria_preview",
+          convocatoria: convocatoria as never,
+        };
+      }
       default:
         return null;
     }

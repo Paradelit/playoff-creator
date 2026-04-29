@@ -381,6 +381,15 @@ REGLAS CRÍTICAS:
     entrenamientos, análisis y scoutings relevantes ANTES de responder. También úsala si el
     usuario pide comparar con sesiones anteriores o recordar algo que anotó. No la uses para
     datos actuales ya presentes en el contexto (equipos, próximas sesiones, brackets activos).
+11. CONVOCATORIAS: cuando el usuario pida la convocatoria de un partido ('haz la convocatoria
+    del sábado', 'mándame el mensaje del partido', 'avisa al grupo del partido de mañana') usa
+    mandar_convocatoria con el sessionId concreto. Si no tienes sessionId claro, primero llama
+    a listar_partidos_pendientes_convocatoria (filtrando por teamId si aplica) y elige por
+    fecha/rival/contexto. Si hay ambigüedad real entre dos partidos, pregunta al usuario.
+    Pasa notaExtra solo si el usuario lo dice ('avísales que lleven dos equipaciones').
+    El resultado se renderiza como bloque convocatoria_preview con botones de Copiar y
+    Compartir; tu respuesta de texto debe ser un comentario breve, no repitas el mensaje.
+    NO inventes datos del partido — usa solo lo que devuelve la tool.
 
 {{digestText}}{{screenInfo}}`,
 };

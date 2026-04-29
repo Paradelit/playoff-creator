@@ -17,6 +17,7 @@ export default function ConvocatoriaModal({ session, team, competition, onClose 
   const [editedMessage, setEditedMessage] = useState(null);
   const [usingSnapshot, setUsingSnapshot] = useState(!!session.mensajeConvocatoria);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
   const rendered = useMemo(() => {
     const sessionForRender = { ...session, notaExtra, horaCita: horaCitaOverride || undefined };
@@ -59,10 +60,21 @@ export default function ConvocatoriaModal({ session, team, competition, onClose 
 
   async function handleCopy() {
     setSubmitting(true);
+    setError(null);
     try {
       await navigator.clipboard.writeText(messageToShow);
+    } catch (e) {
+      console.warn('clipboard write failed', e);
+      setError('No pude copiar al portapapeles. Selecciona el texto y cópialo a mano.');
+      setSubmitting(false);
+      return;
+    }
+    try {
       await persistSent(messageToShow);
       onClose();
+    } catch (e) {
+      console.warn('persist after copy failed', e);
+      setError('Copiado, pero no pude marcarla como enviada. Vuelve a intentarlo en un momento.');
     } finally {
       setSubmitting(false);
     }
@@ -70,19 +82,28 @@ export default function ConvocatoriaModal({ session, team, competition, onClose 
 
   async function handleShare() {
     setSubmitting(true);
+    setError(null);
     try {
       const url = 'whatsapp://send?text=' + encodeURIComponent(messageToShow);
+      let opened = false;
       if (typeof navigator.share === 'function') {
         try {
           await navigator.share({ text: messageToShow });
+          opened = true;
         } catch {
-          window.location.href = url;
+          // user cancelled or share unavailable: fall through to whatsapp scheme
         }
-      } else {
+      }
+      if (!opened) {
         window.location.href = url;
       }
-      await persistSent(messageToShow);
-      onClose();
+      try {
+        await persistSent(messageToShow);
+        onClose();
+      } catch (e) {
+        console.warn('persist after share failed', e);
+        setError('Compartido, pero no pude marcarla como enviada. Vuelve a intentarlo en un momento.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -148,23 +169,26 @@ export default function ConvocatoriaModal({ session, team, competition, onClose 
           </button>
         )}
       </div>
-      <div className="px-5 pb-5 flex gap-2">
-        <button
-          type="button"
-          onClick={handleCopy}
-          disabled={submitting}
-          className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-60"
-        >
-          <Copy size={15} aria-hidden="true" /> Copiar
-        </button>
-        <button
-          type="button"
-          onClick={handleShare}
-          disabled={submitting}
-          className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-60"
-        >
-          <Send size={15} aria-hidden="true" /> Compartir por WhatsApp
-        </button>
+      <div className="px-5 pb-5 flex flex-col gap-2">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handleCopy}
+            disabled={submitting}
+            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            <Copy size={15} aria-hidden="true" /> Copiar
+          </button>
+          <button
+            type="button"
+            onClick={handleShare}
+            disabled={submitting}
+            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            <Send size={15} aria-hidden="true" /> Compartir por WhatsApp
+          </button>
+        </div>
+        {error && <p className="text-xs text-rose-600">{error}</p>}
       </div>
     </Dialog>
   );

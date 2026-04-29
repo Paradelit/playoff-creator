@@ -1,7 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 
-const SHORT_HOSTS = new Set(['maps.app.goo.gl', 'goo.gl']);
-
 export function isMapsShortUrl(s: string): boolean {
   if (typeof s !== 'string' || !s) return false;
   try {

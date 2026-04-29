@@ -92,6 +92,7 @@ export type ContentBlock =
   | { type: "session_preview"; session: CalendarSessionRecord | Record<string, unknown> }
   | { type: "score_update"; updates: ScoreUpdateEntry[] }
   | { type: "exercise_preview"; exercises: ExercisePreviewData[] }
+  | { type: "convocatoria_preview"; convocatoria: ConvocatoriaPreviewData }
   | { type: "confirm_write"; proposal: WriteProposal };
 
 export interface ExercisePreviewData {
@@ -102,6 +103,24 @@ export interface ExercisePreviewData {
   duracion?: number;
   nivel?: string;
   tipoPista?: string;
+}
+
+export interface ConvocatoriaPreviewData {
+  sessionId: string;
+  tipo: "partido" | "playoff";
+  fecha?: string;
+  horaInicio?: string;
+  rival?: string;
+  lugar?: string;
+  teamId?: string;
+  /** Set when tipo === 'playoff'. Used to persist to playoffConvocatorias collection. */
+  bracketId?: string;
+  bracketMatchId?: string;
+  gameIndex?: number;
+  /** Rendered message ready to copy/share. */
+  mensaje: string;
+  /** Header line (Liga / Playoff / Amistoso). Useful for chat summaries. */
+  encabezado: string;
 }
 
 /** Acción ejecutable en el cliente (p. ej. navegación SPA). */

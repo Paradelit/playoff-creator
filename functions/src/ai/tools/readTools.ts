@@ -1,5 +1,6 @@
 import { ToolDefinition, ToolContext } from "./registry";
 import { formatTeamDisplayName } from "../../shared/teamDomain";
+import { renderConvocatoria, SessionShape, TeamShape, CompetitionShape } from "../../shared/convocatoriaTemplate";
 
 function userCol(ctx: ToolContext, collectionName: string) {
   return ctx.db
@@ -523,6 +524,206 @@ export function createReadTools(): ToolDefinition[] {
         if (!snap.exists) return { empty: true };
         return { id: sessionId, ...snap.data() };
       }
+    },
+
+    {
+      name: "mandar_convocatoria",
+      description:
+        "Genera el mensaje de convocatoria de un partido próximo del usuario. Devuelve el texto listo para que el entrenador lo copie o lo comparta por WhatsApp. NO envía nada — solo prepara el mensaje y se renderiza como bloque rico convocatoria_preview en el chat. sessionId puede ser un id de calendarSessions o uno virtual de playoff con prefijo 'playoff-'.",
+      parameters: {
+        type: "object",
+        properties: {
+          sessionId: {
+            type: "string",
+            description: "ID de la sesión (calendarSession o virtual de playoff)",
+          },
+          notaExtra: {
+            type: "string",
+            description: "Nota extra opcional para inyectar en la plantilla (ej. 'llevar dos equipaciones')",
+          },
+          horaCitaOverride: {
+            type: "string",
+            description: "Hora de cita HH:mm que sobreescribe el offset por defecto del equipo (opcional)",
+          },
+        },
+        required: ["sessionId"],
+      },
+      renderAs: "convocatoria_preview",
+      handler: async (args, ctx) => {
+        const sessionId = String(args.sessionId || "");
+        if (!sessionId) return { error: "Falta sessionId." };
+
+        const notaExtra = typeof args.notaExtra === "string" ? args.notaExtra : "";
+        const horaCitaOverride = typeof args.horaCitaOverride === "string" ? args.horaCitaOverride : "";
+
+        let session: SessionShape & {
+          id: string;
+          teamId?: string;
+          bracketId?: string;
+          bracketMatchId?: string;
+        };
+
+        if (sessionId.startsWith("playoff-")) {
+          // Virtual playoff session: walk brackets to reconstruct.
+          const bracketsSnap = await userCol(ctx, "brackets").get();
+          let found: typeof session | null = null;
+          for (const bDoc of bracketsSnap.docs) {
+            const bracket = bDoc.data();
+            const state = (bracket.bracketData as { state?: Record<string, Record<string, unknown>> } | undefined)?.state || {};
+            for (const match of Object.values(state)) {
+              const dates = (match.dates as string[]) || [];
+              for (let gi = 0; gi < dates.length; gi++) {
+                const candidateId = `playoff-${bDoc.id}-${match.id as string}-${gi}`;
+                if (candidateId !== sessionId) continue;
+                const isMyTeamTeam1 = match.team1 === bracket.myTeam;
+                const rival = isMyTeamTeam1 ? (match.team2 as string) : (match.team1 as string);
+                found = {
+                  id: sessionId,
+                  tipo: "playoff",
+                  fecha: dates[gi],
+                  horaInicio: ((match.times as string[]) || [])[gi],
+                  rival,
+                  lugar: ((match.places as string[]) || [])[gi],
+                  esLocal: isMyTeamTeam1,
+                  matchTitle: match.title as string,
+                  gameIndex: gi,
+                  notaExtra,
+                  horaCita: horaCitaOverride || undefined,
+                  teamId: (bracket.teamId as string) || undefined,
+                  bracketId: bDoc.id,
+                  bracketMatchId: match.id as string,
+                };
+              }
+            }
+          }
+          if (!found) return { error: `No encontré la sesión de playoff ${sessionId}.` };
+          session = found;
+        } else {
+          const snap = await ctx.db
+            .doc(`artifacts/${ctx.appId}/users/${ctx.userId}/calendarSessions/${sessionId}`)
+            .get();
+          if (!snap.exists) return { error: `No encontré la sesión ${sessionId}.` };
+          const data = snap.data() || {};
+          session = {
+            id: sessionId,
+            tipo: (data.tipo as "partido" | "playoff") || "partido",
+            fecha: data.fecha as string | undefined,
+            horaInicio: data.horaInicio as string | undefined,
+            horaCita: horaCitaOverride || (data.horaCita as string | undefined),
+            rival: data.rival as string | undefined,
+            lugar: data.lugar as string | undefined,
+            lugarMapsUrl: data.lugarMapsUrl as string | undefined,
+            esLocal: !!data.esLocal,
+            competitionId: (data.competitionId as string | undefined) || null,
+            faseId: (data.faseId as string | undefined) || null,
+            jornadaNumero: (data.jornadaNumero as number | undefined) ?? null,
+            notaExtra: notaExtra || (data.notaExtra as string | undefined) || "",
+            teamId: data.teamId as string | undefined,
+          };
+        }
+
+        if (!session.teamId) return { error: "La sesión no tiene equipo asociado." };
+
+        const teamSnap = await ctx.db
+          .doc(`artifacts/${ctx.appId}/users/${ctx.userId}/teams/${session.teamId}`)
+          .get();
+        const team: TeamShape | null = teamSnap.exists
+          ? ({ id: teamSnap.id, ...teamSnap.data() } as TeamShape)
+          : null;
+
+        let competition: CompetitionShape | null = null;
+        if (session.competitionId && session.teamId) {
+          const cSnap = await ctx.db
+            .doc(
+              `artifacts/${ctx.appId}/users/${ctx.userId}/teams/${session.teamId}/competitions/${session.competitionId}`,
+            )
+            .get();
+          if (cSnap.exists) competition = { id: cSnap.id, ...cSnap.data() } as CompetitionShape;
+        }
+
+        const { mensaje, encabezado } = renderConvocatoria({ session, team, competition });
+
+        return {
+          convocatoria: {
+            sessionId: session.id,
+            tipo: session.tipo,
+            fecha: session.fecha,
+            horaInicio: session.horaInicio,
+            rival: session.rival,
+            lugar: session.lugar,
+            teamId: session.teamId,
+            bracketId: session.bracketId,
+            bracketMatchId: session.bracketMatchId,
+            gameIndex: typeof session.gameIndex === "number" ? session.gameIndex : undefined,
+            mensaje,
+            encabezado,
+          },
+        };
+      },
+    },
+
+    {
+      name: "listar_partidos_pendientes_convocatoria",
+      description:
+        "Lista los partidos próximos del usuario que aún no tienen convocatoria enviada, dentro de la ventana de aviso configurada del equipo. Útil cuando el entrenador pregunta '¿qué convocatorias tengo pendientes?' o pide listarle lo que falta esta semana.",
+      parameters: {
+        type: "object",
+        properties: {
+          teamId: { type: "string", description: "Filtrar por equipo (opcional)" },
+          limit: { type: "integer", description: "Máximo de items (default 10)" },
+        },
+        required: [],
+      },
+      handler: async (args, ctx) => {
+        const teamId = typeof args.teamId === "string" && args.teamId ? args.teamId : null;
+        const limit = Math.min(Number(args.limit) || 10, 50);
+        const now = Date.now();
+        const todayYmd = new Date(now).toISOString().slice(0, 10);
+
+        const sessionsSnap = await userCol(ctx, "calendarSessions")
+          .where("fecha", ">=", todayYmd)
+          .orderBy("fecha", "asc")
+          .limit(50)
+          .get();
+
+        const teamsSnap = await userCol(ctx, "teams").get();
+        const teamsById = new Map<string, Record<string, unknown>>();
+        teamsSnap.docs.forEach((d) => teamsById.set(d.id, { id: d.id, ...d.data() }));
+
+        const items: Array<{
+          sessionId: string;
+          fecha: string;
+          horaInicio: string;
+          rival: string;
+          severity: "high" | "normal";
+          teamName: string;
+        }> = [];
+
+        for (const d of sessionsSnap.docs) {
+          const s = { id: d.id, ...d.data() } as Record<string, unknown> & { id: string };
+          if (s.tipo !== "partido" && s.tipo !== "playoff") continue;
+          if (s.convocatoriaSentAt) continue;
+          if (teamId && s.teamId !== teamId) continue;
+          if (typeof s.fecha !== "string") continue;
+          const team = teamsById.get(s.teamId as string);
+          const ventanaH = (team?.convocatoriaReminderHours as number | undefined) ?? 72;
+          const [h, m] = ((s.horaInicio as string) || "00:00").split(":").map(Number);
+          const [Y, M, D] = s.fecha.split("-").map(Number);
+          const startMs = new Date(Y, M - 1, D, h || 0, m || 0).getTime();
+          const horas = (startMs - now) / 3600000;
+          if (horas <= 0 || horas > ventanaH) continue;
+          items.push({
+            sessionId: s.id,
+            fecha: s.fecha,
+            horaInicio: (s.horaInicio as string) || "",
+            rival: (s.rival as string) || "Rival",
+            severity: horas < 24 ? "high" : "normal",
+            teamName: team ? formatTeamDisplayName(team) : "",
+          });
+          if (items.length >= limit) break;
+        }
+        return { items };
+      },
     }
   ];
 }
