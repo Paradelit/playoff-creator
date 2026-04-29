@@ -27,3 +27,4 @@ dist-ssr
 .firebase/
 .vitest-cache/
 .claude/
+.worktrees/
