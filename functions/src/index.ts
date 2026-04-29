@@ -365,3 +365,4 @@ export const proactiveDailyBriefing = onSchedule(
     }
   }
 );
+\nexport { resolveMapsUrl } from "./locations/resolveMapsUrl";
