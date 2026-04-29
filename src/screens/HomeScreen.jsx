@@ -17,6 +17,8 @@ import { EmptyTeamCard, ActionEventRow, MONTHS } from '../components/home/HomeCo
 import BibliotecaPreview from '../components/home/BibliotecaPreview';
 import NextActionHero from '../components/home/NextActionHero';
 import PendingActionsList from '../components/home/PendingActionsList';
+import ConvocatoriaModal from '../components/calendar/ConvocatoriaModal';
+import { useCompetitions } from '../hooks/useCompetitions';
 import NewsFeed from '../components/home/NewsFeed';
 import WeekStrip from '../components/home/WeekStrip';
 
@@ -288,8 +290,14 @@ export default function HomeScreen() {
     return () => observers.forEach((obs) => obs.disconnect());
   }, [teams]);
 
+  const [convocatoriaSession, setConvocatoriaSession] = useState(null);
+
   const handlePendingAction = useCallback(
     (item) => {
+      if (item?.type === 'convocatoria' && item.session) {
+        setConvocatoriaSession(item.session);
+        return;
+      }
       if (!item?.session) return;
       if (item.type === 'result' && item.session.tipo === 'playoff') {
         navigate(`/playoffs?teamId=${item.session.teamId}`);
@@ -428,6 +436,20 @@ export default function HomeScreen() {
           </aside>
         </div>
       </div>
+      {convocatoriaSession && (
+        <ConvocatoriaModalWrapper
+          session={convocatoriaSession}
+          teams={teams}
+          onClose={() => setConvocatoriaSession(null)}
+        />
+      )}
     </div>
   );
+}
+
+function ConvocatoriaModalWrapper({ session, teams, onClose }) {
+  const { competitions } = useCompetitions(session.teamId);
+  const team = (teams || []).find((t) => t.id === session.teamId) || null;
+  const competition = (competitions || []).find((c) => c.id === session.competitionId) || null;
+  return <ConvocatoriaModal session={session} team={team} competition={competition} onClose={onClose} />;
 }
