@@ -9,9 +9,7 @@ export const CONTEXTO_REAL_TEAMS = [
   { id: 'infantil-a', name: 'Infantil A', categoria: 'Infantil', genero: 'Femenino' },
 ];
 
-export const CONTEXTO_REAL_COURTS = [
-  { id: 'court-1', label: 'Pista 1 Central' },
-];
+export const CONTEXTO_REAL_COURTS = [{ id: 'court-1', label: 'Pista 1 Central' }];
 
 /**
  * Estado ordenado: lo que la app deja al final, sin solapes y con huecos visibles.

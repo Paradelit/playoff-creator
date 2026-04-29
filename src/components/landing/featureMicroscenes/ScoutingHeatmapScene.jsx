@@ -42,7 +42,11 @@ export default function ScoutingHeatmapScene({ reduced = false }) {
           const animationDelay = reduced ? '0ms' : `${idx * 70}ms`;
           if (shot.made) {
             return (
-              <g key={idx} className="ds-scout-shot-made" style={{ transformOrigin: `${shot.x}px ${shot.y}px`, transformBox: 'fill-box' }}>
+              <g
+                key={idx}
+                className="ds-scout-shot-made"
+                style={{ transformOrigin: `${shot.x}px ${shot.y}px`, transformBox: 'fill-box' }}
+              >
                 <circle
                   cx={shot.x}
                   cy={shot.y}

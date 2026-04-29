@@ -59,7 +59,8 @@ function Step({ s, delay, reduced }) {
 
   return (
     <div ref={ref} className="hi-step relative flex flex-col items-stretch text-center">
-      <div className="mx-auto mb-5 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-lg font-black"
+      <div
+        className="mx-auto mb-5 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-lg font-black"
         style={{ background: `${s.color}20`, border: `1px solid ${s.color}40`, color: s.color }}
       >
         {s.n}
@@ -96,7 +97,9 @@ export default function HowItWorks() {
       <div className="mx-auto max-w-6xl px-6 lg:px-8">
         <div className="mb-14 text-center">
           <p className="mb-3 text-xs font-bold uppercase tracking-widest text-orange-400">Cómo funciona</p>
-          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white lg:text-4xl">Tres movimientos. Y entrenas.</h2>
+          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white lg:text-4xl">
+            Tres movimientos. Y entrenas.
+          </h2>
           <p className="mx-auto mt-3 max-w-xl text-slate-600 dark:text-slate-400">
             De cero a la primera sesión generada por Pick en menos de cinco minutos.
           </p>
@@ -197,9 +200,7 @@ function SceneImport({ reduced }) {
           const colored = idx === 5 ? '#F43F5E' : idx === 4 ? '#1A6FD4' : idx === 1 || idx === 3 ? '#1A6FD4' : null;
           return (
             <div key={dayLabel} className="flex flex-col items-center gap-0.5">
-              <span className="text-[8px] font-semibold uppercase text-slate-500 dark:text-slate-400">
-                {dayLabel}
-              </span>
+              <span className="text-[8px] font-semibold uppercase text-slate-500 dark:text-slate-400">{dayLabel}</span>
               <span
                 className="h-3 w-full rounded"
                 style={{ background: colored || 'rgba(148,163,184,0.18)' }}

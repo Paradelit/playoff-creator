@@ -67,10 +67,7 @@ export default function ExerciseLibraryScene({ reduced = false }) {
             transition: reduced ? 'none' : 'transform 0.4s cubic-bezier(0.16,1,0.3,1)',
           }}
         >
-          <div
-            className="px-1 py-1.5"
-            style={{ background: tokens.ash50, borderBottom: `1px solid ${tokens.ash100}` }}
-          >
+          <div className="px-1 py-1.5" style={{ background: tokens.ash50, borderBottom: `1px solid ${tokens.ash100}` }}>
             <CourtMini accent={exercise.tagColor} />
           </div>
           <div className="px-1.5 py-1">

@@ -12,16 +12,8 @@ export default function PickChatScene({ reduced = false }) {
   const dotAnim = (delay) => (reduced ? 'none' : `pc-dot 1.2s infinite ${delay}`);
 
   return (
-    <div
-      className="fm-scene"
-      data-reduced={reduced ? 'true' : 'false'}
-      data-testid="scene-pick"
-      aria-hidden="true"
-    >
-      <div
-        className="flex items-center justify-between gap-1.5 border-b pb-1.5"
-        style={{ borderColor: tokens.ash100 }}
-      >
+    <div className="fm-scene" data-reduced={reduced ? 'true' : 'false'} data-testid="scene-pick" aria-hidden="true">
+      <div className="flex items-center justify-between gap-1.5 border-b pb-1.5" style={{ borderColor: tokens.ash100 }}>
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] font-extrabold leading-none" style={{ color: tokens.ink900 }}>
             Pick

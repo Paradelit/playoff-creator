@@ -104,10 +104,7 @@ function MiniFinalCard({ champion, rival }) {
         <p className="m-0 text-[9px] font-bold leading-tight" style={{ color: '#92400E' }}>
           {champion}
         </p>
-        <p
-          className="m-0 mt-0.5 text-[8.5px] italic leading-tight"
-          style={{ color: tokens.ink400 }}
-        >
+        <p className="m-0 mt-0.5 text-[8.5px] italic leading-tight" style={{ color: tokens.ink400 }}>
           {rival}
         </p>
       </div>
@@ -117,12 +114,7 @@ function MiniFinalCard({ champion, rival }) {
 
 function Connectors() {
   return (
-    <svg
-      viewBox="0 0 18 60"
-      preserveAspectRatio="none"
-      className="h-full w-full"
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 18 60" preserveAspectRatio="none" className="h-full w-full" aria-hidden="true">
       <path
         className="ds-bracket-amber-path"
         d="M 0 14 H 9 V 30 H 18"
@@ -130,12 +122,7 @@ function Connectors() {
         stroke={tokens.trophyAmberDeep}
         strokeWidth="1.5"
       />
-      <path
-        d="M 0 46 H 9 V 30 H 18"
-        fill="none"
-        stroke={tokens.ash200}
-        strokeWidth="1.5"
-      />
+      <path d="M 0 46 H 9 V 30 H 18" fill="none" stroke={tokens.ash200} strokeWidth="1.5" />
     </svg>
   );
 }

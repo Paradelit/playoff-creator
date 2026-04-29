@@ -37,10 +37,7 @@ const TONE_LABEL: Record<Tone, string> = {
 
 const FALLBACK_MAIN_ICONS = ['🎯', '⚡', '🏃', '💪', '🔄'];
 
-function normalizeBlock(
-  raw: unknown,
-  fallbackKind: string,
-): { kind: string; detail: string; duration: number } {
+function normalizeBlock(raw: unknown, fallbackKind: string): { kind: string; detail: string; duration: number } {
   if (typeof raw === 'string') {
     return { kind: fallbackKind, detail: raw, duration: 0 };
   }
@@ -178,15 +175,11 @@ export default function TrainingPreviewBlock({ training }: { training: TrainingP
                   {item.kind}
                 </span>
                 {item.detail ? (
-                  <span className="mt-0.5 block truncate text-[11.5px] text-slate-500">
-                    {item.detail}
-                  </span>
+                  <span className="mt-0.5 block truncate text-[11.5px] text-slate-500">{item.detail}</span>
                 ) : null}
               </span>
               {item.duration > 0 ? (
-                <span className="shrink-0 font-mono text-[10px] font-bold text-slate-600">
-                  {item.duration}'
-                </span>
+                <span className="shrink-0 font-mono text-[10px] font-bold text-slate-600">{item.duration}'</span>
               ) : null}
             </li>
           ))}

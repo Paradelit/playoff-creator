@@ -193,7 +193,8 @@ export default function ContextoReal() {
               Tu fin de semana, ordenado en 5 segundos
             </h2>
             <p className="mb-5 text-lg leading-relaxed text-slate-600 dark:text-slate-400">
-              Dos partidos, un entreno de tiro y un playoff. Empiezas con dos partidos a la misma hora en la misma pista. Pick lo detecta, te avisa y reordena el calendario sin solapes.
+              Dos partidos, un entreno de tiro y un playoff. Empiezas con dos partidos a la misma hora en la misma
+              pista. Pick lo detecta, te avisa y reordena el calendario sin solapes.
             </p>
             <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
               <li className="flex items-start gap-2">
@@ -226,9 +227,7 @@ export default function ContextoReal() {
                     Calendario · Vista semana
                   </span>
                 </div>
-                <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">
-                  5 – 11 mayo 2026
-                </span>
+                <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">5 – 11 mayo 2026</span>
               </div>
 
               <div
@@ -261,8 +260,7 @@ export default function ContextoReal() {
                       key={day.key}
                       className="relative flex h-full flex-col"
                       style={{
-                        borderRight:
-                          idx < DAYS.length - 1 ? `1px solid ${dayDividerColor}` : 'none',
+                        borderRight: idx < DAYS.length - 1 ? `1px solid ${dayDividerColor}` : 'none',
                       }}
                     >
                       <div
@@ -443,9 +441,7 @@ export default function ContextoReal() {
               </span>
               <div className="text-[11px] leading-tight">
                 <p className="m-0 font-extrabold">Solape detectado</p>
-                <p className="m-0 font-medium opacity-80">
-                  2 partidos · Pista 1 · sáb 11:00
-                </p>
+                <p className="m-0 font-medium opacity-80">2 partidos · Pista 1 · sáb 11:00</p>
               </div>
             </div>
 
@@ -472,9 +468,7 @@ export default function ContextoReal() {
               </span>
               <div className="text-[11px] leading-tight">
                 <p className="m-0 font-extrabold">Sin solapes</p>
-                <p className="m-0 font-medium opacity-80">
-                  {sessionsCount} sesiones · 2 días · 1 pista
-                </p>
+                <p className="m-0 font-medium opacity-80">{sessionsCount} sesiones · 2 días · 1 pista</p>
               </div>
             </div>
           </div>

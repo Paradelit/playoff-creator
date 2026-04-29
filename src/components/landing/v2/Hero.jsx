@@ -143,10 +143,7 @@ export default function Hero() {
     if (reduced) return undefined;
     const element = sectionRef.current;
     if (!element || typeof IntersectionObserver === 'undefined') return undefined;
-    const observer = new IntersectionObserver(
-      ([entry]) => setOffscreen(!entry.isIntersecting),
-      { threshold: 0.1 },
-    );
+    const observer = new IntersectionObserver(([entry]) => setOffscreen(!entry.isIntersecting), { threshold: 0.1 });
     observer.observe(element);
     return () => observer.disconnect();
   }, [reduced]);
@@ -361,10 +358,7 @@ function PickChatPanel({
           boxShadow: panelGlow,
         }}
       >
-        <div
-          className="flex items-center justify-between border-b px-4 py-3"
-          style={{ borderColor: '#F1F5F9' }}
-        >
+        <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: '#F1F5F9' }}>
           <div className="flex items-center gap-2">
             <h2 className="m-0 text-sm font-extrabold text-slate-900">Pick</h2>
             <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-[11px] text-slate-500">
@@ -456,10 +450,7 @@ function PickChatPanel({
                     className="rounded-xl border bg-white p-3 shadow-[0_4px_12px_-4px_rgba(15,23,42,0.08)]"
                     style={{ borderColor: '#E2E8F0' }}
                   >
-                    <div
-                      className="mb-1 flex items-center gap-2 border-b pb-2"
-                      style={{ borderColor: '#F1F5F9' }}
-                    >
+                    <div className="mb-1 flex items-center gap-2 border-b pb-2" style={{ borderColor: '#F1F5F9' }}>
                       <span
                         aria-hidden="true"
                         className="inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px]"
@@ -489,15 +480,10 @@ function PickChatPanel({
                             border: `1px solid ${block.highlight ? TONE_BORDER[block.tone] : '#F1F5F9'}`,
                           }}
                         >
-                          <span
-                            aria-hidden="true"
-                            className="text-[15px] leading-none shrink-0"
-                          >
+                          <span aria-hidden="true" className="text-[15px] leading-none shrink-0">
                             {block.icon}
                           </span>
-                          <span className="font-mono text-[10px] font-bold w-7 text-slate-500">
-                            {block.time}
-                          </span>
+                          <span className="font-mono text-[10px] font-bold w-7 text-slate-500">{block.time}</span>
                           <span className="flex-1 min-w-0">
                             <span
                               className="block text-[12.5px] font-semibold"
@@ -505,13 +491,9 @@ function PickChatPanel({
                             >
                               {block.kind}
                             </span>
-                            <span className="block text-[11.5px] text-slate-500 mt-0.5 truncate">
-                              {block.detail}
-                            </span>
+                            <span className="block text-[11.5px] text-slate-500 mt-0.5 truncate">{block.detail}</span>
                           </span>
-                          <span className="font-mono text-[10px] font-bold text-slate-600 shrink-0">
-                            {block.dur}
-                          </span>
+                          <span className="font-mono text-[10px] font-bold text-slate-600 shrink-0">{block.dur}</span>
                         </li>
                       ))}
                     </ul>
@@ -548,10 +530,7 @@ function PickChatPanel({
           ) : null}
         </div>
 
-        <div
-          className="flex items-center gap-1.5 border-t bg-white px-3 py-2.5"
-          style={{ borderColor: '#F1F5F9' }}
-        >
+        <div className="flex items-center gap-1.5 border-t bg-white px-3 py-2.5" style={{ borderColor: '#F1F5F9' }}>
           <input
             type="text"
             disabled

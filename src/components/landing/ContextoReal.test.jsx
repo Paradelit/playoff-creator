@@ -17,9 +17,7 @@ describe('ContextoReal', () => {
     renderContextoReal();
 
     expect(screen.getByText(/tu fin de semana, ordenado en 5 segundos/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/dos partidos, un entreno de tiro y un playoff/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/dos partidos, un entreno de tiro y un playoff/i)).toBeInTheDocument();
     expect(screen.getAllByTestId('contexto-session-chip')).toHaveLength(4);
   });
 });

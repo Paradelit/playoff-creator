@@ -21,7 +21,15 @@ const PROMPT = 'Pick, prepara entreno mañana 18h. 60 min. Bloqueo directo y tra
 
 const RESPONSE_BLOCKS = [
   { time: "00'", dur: "8'", kind: 'Calentamiento', detail: 'Activación + manejo balones', tone: 'cyan', icon: '🔥' },
-  { time: "08'", dur: "20'", kind: 'Bloqueo directo', detail: 'P&R 2×2 progresivo', tone: 'orange', icon: '⚡', highlight: true },
+  {
+    time: "08'",
+    dur: "20'",
+    kind: 'Bloqueo directo',
+    detail: 'P&R 2×2 progresivo',
+    tone: 'orange',
+    icon: '⚡',
+    highlight: true,
+  },
   { time: "28'", dur: "20'", kind: 'Transición', detail: '5×0 → 5×5 finalización', tone: 'orange', icon: '🏃' },
   { time: "48'", dur: "12'", kind: 'Aplicación', detail: 'Partido condicionado', tone: 'green', icon: '🏀' },
 ];
@@ -118,10 +126,7 @@ export default function CursorTour() {
     if (reduced) return undefined;
     const element = sectionRef.current;
     if (!element || typeof IntersectionObserver === 'undefined') return undefined;
-    const observer = new IntersectionObserver(
-      ([entry]) => setOffscreen(!entry.isIntersecting),
-      { threshold: 0.15 },
-    );
+    const observer = new IntersectionObserver(([entry]) => setOffscreen(!entry.isIntersecting), { threshold: 0.15 });
     observer.observe(element);
     return () => observer.disconnect();
   }, [reduced]);
@@ -165,7 +170,8 @@ export default function CursorTour() {
             Mira a Pick crear el entreno de mañana.
           </h2>
           <p className="text-slate-600 dark:text-slate-400">
-            Tres clics: abrir el calendario, encontrar el hueco del martes y pedir a Pick que lo prepare. Esto lo haces cada semana.
+            Tres clics: abrir el calendario, encontrar el hueco del martes y pedir a Pick que lo prepare. Esto lo haces
+            cada semana.
           </p>
         </div>
 
@@ -199,9 +205,7 @@ export default function CursorTour() {
               blocksShown={blocksShown}
             />
 
-            {!reduced ? (
-              <Cursor x={cursorTarget.cursorX} y={cursorTarget.cursorY} label={cursorTarget.label} />
-            ) : null}
+            {!reduced ? <Cursor x={cursorTarget.cursorX} y={cursorTarget.cursorY} label={cursorTarget.label} /> : null}
           </div>
         </div>
 
@@ -392,7 +396,10 @@ function SurfaceCalendar({ darkTheme, visible }) {
       <div className="absolute inset-0 flex flex-col px-6 py-6">
         <header className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="m-0 text-base font-extrabold tracking-tight" style={{ color: darkTheme ? tokens.surfaceWhite : tokens.ink900 }}>
+            <h3
+              className="m-0 text-base font-extrabold tracking-tight"
+              style={{ color: darkTheme ? tokens.surfaceWhite : tokens.ink900 }}
+            >
               Calendario · Cadete A
             </h3>
             <p className="mt-0.5 text-xs" style={{ color: darkTheme ? '#94a3b8' : tokens.ink500 }}>
@@ -427,7 +434,9 @@ function SurfaceCalendar({ darkTheme, visible }) {
                 <div
                   key={day.date}
                   className="flex flex-col"
-                  style={{ borderRight: isLast ? 'none' : `1px solid ${darkTheme ? 'rgba(255,255,255,0.05)' : tokens.ash100}` }}
+                  style={{
+                    borderRight: isLast ? 'none' : `1px solid ${darkTheme ? 'rgba(255,255,255,0.05)' : tokens.ash100}`,
+                  }}
                 >
                   <div
                     className="flex flex-col items-center gap-1 py-2"
@@ -443,11 +452,7 @@ function SurfaceCalendar({ darkTheme, visible }) {
                       className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold leading-none"
                       style={{
                         background: day.today ? tokens.trophyAmber : 'transparent',
-                        color: day.today
-                          ? tokens.surfaceWhite
-                          : darkTheme
-                            ? tokens.surfaceWhite
-                            : tokens.ink700,
+                        color: day.today ? tokens.surfaceWhite : darkTheme ? tokens.surfaceWhite : tokens.ink700,
                       }}
                     >
                       {day.date}
@@ -500,10 +505,7 @@ function SurfacePick({ darkTheme, visible, pickPhase, typed, blocksShown }) {
         background: darkTheme ? 'rgba(15,23,42,0.65)' : tokens.ash100,
       }}
     >
-      <div
-        className="pointer-events-none absolute inset-0 px-6 py-6 opacity-50"
-        aria-hidden="true"
-      >
+      <div className="pointer-events-none absolute inset-0 px-6 py-6 opacity-50" aria-hidden="true">
         <SurfaceCalendar darkTheme={darkTheme} visible />
       </div>
 
@@ -626,10 +628,7 @@ function SurfacePick({ darkTheme, visible, pickPhase, typed, blocksShown }) {
                       <span aria-hidden="true" className="text-[12px] leading-none">
                         {block.icon}
                       </span>
-                      <span
-                        className="font-mono text-[8.5px] font-bold w-5 shrink-0"
-                        style={{ color: tokens.ink500 }}
-                      >
+                      <span className="font-mono text-[8.5px] font-bold w-5 shrink-0" style={{ color: tokens.ink500 }}>
                         {block.time}
                       </span>
                       <span className="min-w-0 flex-1">
@@ -640,10 +639,7 @@ function SurfacePick({ darkTheme, visible, pickPhase, typed, blocksShown }) {
                           {block.kind}
                         </span>
                       </span>
-                      <span
-                        className="font-mono text-[8.5px] font-bold shrink-0"
-                        style={{ color: tokens.ink600 }}
-                      >
+                      <span className="font-mono text-[8.5px] font-bold shrink-0" style={{ color: tokens.ink600 }}>
                         {block.dur}
                       </span>
                     </li>
@@ -663,7 +659,11 @@ function SurfacePick({ darkTheme, visible, pickPhase, typed, blocksShown }) {
                     </span>
                     <span
                       className="rounded px-2 py-1 text-[10px] font-semibold"
-                      style={{ background: tokens.surfaceWhite, color: tokens.ink600, border: `1px solid ${tokens.ash200}` }}
+                      style={{
+                        background: tokens.surfaceWhite,
+                        color: tokens.ink600,
+                        border: `1px solid ${tokens.ash200}`,
+                      }}
                     >
                       Editar
                     </span>
@@ -674,10 +674,7 @@ function SurfacePick({ darkTheme, visible, pickPhase, typed, blocksShown }) {
           ) : null}
         </div>
 
-        <div
-          className="flex items-center gap-1.5 border-t bg-white px-2.5 py-2"
-          style={{ borderColor: tokens.ash100 }}
-        >
+        <div className="flex items-center gap-1.5 border-t bg-white px-2.5 py-2" style={{ borderColor: tokens.ash100 }}>
           <input
             type="text"
             disabled

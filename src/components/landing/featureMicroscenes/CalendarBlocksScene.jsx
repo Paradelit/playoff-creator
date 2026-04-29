@@ -38,12 +38,7 @@ const DAYS = [
 
 export default function CalendarBlocksScene({ reduced = false }) {
   return (
-    <div
-      className="fm-scene"
-      data-reduced={reduced ? 'true' : 'false'}
-      data-testid="scene-calendar"
-      aria-hidden="true"
-    >
+    <div className="fm-scene" data-reduced={reduced ? 'true' : 'false'} data-testid="scene-calendar" aria-hidden="true">
       <div
         className="overflow-hidden rounded-md"
         style={{ background: tokens.surfaceWhite, border: `1px solid ${tokens.ash200}` }}

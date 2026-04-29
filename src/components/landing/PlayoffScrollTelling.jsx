@@ -346,7 +346,9 @@ function PdfDocument({ darkTheme, scanProgress, highlightedIndex }) {
         <div className="flex items-center justify-between px-4 pb-2 pt-3" style={{ borderBottom: '1px solid #E5E7EB' }}>
           <div className="flex items-center gap-1.5">
             <FileText size={11} className="text-rose-600" aria-hidden="true" />
-            <span className="font-mono text-[8px] font-bold uppercase tracking-[0.18em] text-slate-500">PDF · 2 págs.</span>
+            <span className="font-mono text-[8px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              PDF · 2 págs.
+            </span>
           </div>
           <span className="font-mono text-[8px] tabular-nums text-slate-400">2026·04</span>
         </div>
@@ -355,9 +357,7 @@ function PdfDocument({ darkTheme, scanProgress, highlightedIndex }) {
           <p className="m-0 font-mono text-[8px] font-bold uppercase tracking-[0.16em] text-slate-400">
             Bases · Federación Madrid
           </p>
-          <h3 className="mb-0 mt-1 text-[14px] font-extrabold leading-tight text-slate-900">
-            Torneo de Reyes 2026
-          </h3>
+          <h3 className="mb-0 mt-1 text-[14px] font-extrabold leading-tight text-slate-900">Torneo de Reyes 2026</h3>
           <p className="m-0 mt-0.5 text-[10px] font-semibold text-slate-700">Cadete Masculino · Federado</p>
           <p className="m-0 text-[10px] text-slate-500">8 equipos · cuartos BO1 · final BO3</p>
         </div>
@@ -554,11 +554,7 @@ export default function PlayoffScrollTelling() {
               transition: 'opacity 200ms ease, transform 200ms ease',
             }}
           >
-            <PdfDocument
-              darkTheme={darkTheme}
-              scanProgress={scanProgress}
-              highlightedIndex={highlightedIndex}
-            />
+            <PdfDocument darkTheme={darkTheme} scanProgress={scanProgress} highlightedIndex={highlightedIndex} />
           </div>
 
           <div className="relative flex-1 max-w-md">
