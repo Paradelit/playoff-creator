@@ -8,6 +8,7 @@ import { saveTeam, subscribeToMembers, saveMember, deleteMember } from '../servi
 import { TeamFormFields } from '../components/teams/TeamFormFields';
 import { useHomeDashboard } from '../hooks/useHomeDashboard';
 import TeamDashboard from '../components/teams/TeamDashboard';
+import CompetitionsTab from '../components/teams/CompetitionsTab';
 
 const ROLES_STAFF = ['Entrenador', 'Entrenador asistente', 'Fisioterapeuta', 'Delegado', 'Médico', 'Otro'];
 const POSICIONES = ['Base', 'Escolta', 'Alero', 'Ala-Pívot', 'Pívot'];
@@ -46,6 +47,7 @@ export default function TeamDetailScreen() {
   const [editingTeam, setEditingTeam] = useState(false);
   const [teamForm, setTeamForm] = useState(null);
   const [savingTeam, setSavingTeam] = useState(false);
+  const [activeTab, setActiveTab] = useState('plantilla');
 
   useEffect(() => {
     if (!user || !db) return;
@@ -160,71 +162,97 @@ export default function TeamDetailScreen() {
           />
         </div>
 
-        {/* Sección Staff */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
-              Staff técnico
-              <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-0.5 rounded-full normal-case tracking-normal">
-                {staff.length}
-              </span>
-            </h2>
+        {/* Tabs */}
+        <div className="mb-6 border-b border-slate-200 flex gap-4">
+          {['plantilla', 'competiciones'].map((tab) => (
             <button
-              onClick={() => setEditingMember(emptyMember('staff'))}
-              className="text-blue-600 font-bold hover:text-blue-800 flex items-center gap-1 text-sm transition"
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`pb-3 text-sm font-bold transition border-b-2 capitalize ${activeTab === tab ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
             >
-              <Plus size={16} aria-hidden="true" /> Añadir
+              {tab === 'plantilla' ? 'Plantilla' : 'Competiciones'}
             </button>
-          </div>
-          <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-            {staff.length === 0 ? (
-              <EmptySection text="Sin miembros de staff" />
-            ) : (
-              staff.map((m) => (
-                <MemberRow
-                  key={m.id}
-                  primary={m.nombre}
-                  secondary={m.rol || '—'}
-                  onEdit={() => setEditingMember({ ...m })}
-                  onDelete={() => setDeletingMemberId(m.id)}
-                />
-              ))
-            )}
-          </div>
+          ))}
         </div>
 
-        {/* Sección Jugadores */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
-              Jugadores
-              <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-0.5 rounded-full normal-case tracking-normal">
-                {jugadores.length}
-              </span>
-            </h2>
-            <button
-              onClick={() => setEditingMember(emptyMember('jugador'))}
-              className="text-blue-600 font-bold hover:text-blue-800 flex items-center gap-1 text-sm transition"
-            >
-              <Plus size={16} aria-hidden="true" /> Añadir
-            </button>
+        {activeTab === 'competiciones' && (
+          <div className="mb-6">
+            <CompetitionsTab teamId={teamId} />
           </div>
-          <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-            {jugadores.length === 0 ? (
-              <EmptySection text="Sin jugadores" />
-            ) : (
-              jugadores.map((m) => (
-                <MemberRow
-                  key={m.id}
-                  primary={m.nombre}
-                  secondary={[m.dorsal != null ? `#${m.dorsal}` : null, m.posicion].filter(Boolean).join(' · ') || '—'}
-                  onEdit={() => setEditingMember({ ...m })}
-                  onDelete={() => setDeletingMemberId(m.id)}
-                />
-              ))
-            )}
-          </div>
-        </div>
+        )}
+
+        {activeTab === 'plantilla' && (
+          <>
+            {/* Sección Staff */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                  Staff técnico
+                  <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-0.5 rounded-full normal-case tracking-normal">
+                    {staff.length}
+                  </span>
+                </h2>
+                <button
+                  onClick={() => setEditingMember(emptyMember('staff'))}
+                  className="text-blue-600 font-bold hover:text-blue-800 flex items-center gap-1 text-sm transition"
+                >
+                  <Plus size={16} aria-hidden="true" /> Añadir
+                </button>
+              </div>
+              <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+                {staff.length === 0 ? (
+                  <EmptySection text="Sin miembros de staff" />
+                ) : (
+                  staff.map((m) => (
+                    <MemberRow
+                      key={m.id}
+                      primary={m.nombre}
+                      secondary={m.rol || '—'}
+                      onEdit={() => setEditingMember({ ...m })}
+                      onDelete={() => setDeletingMemberId(m.id)}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Sección Jugadores */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2">
+                  Jugadores
+                  <span className="bg-slate-200 text-slate-600 text-xs font-bold px-2 py-0.5 rounded-full normal-case tracking-normal">
+                    {jugadores.length}
+                  </span>
+                </h2>
+                <button
+                  onClick={() => setEditingMember(emptyMember('jugador'))}
+                  className="text-blue-600 font-bold hover:text-blue-800 flex items-center gap-1 text-sm transition"
+                >
+                  <Plus size={16} aria-hidden="true" /> Añadir
+                </button>
+              </div>
+              <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+                {jugadores.length === 0 ? (
+                  <EmptySection text="Sin jugadores" />
+                ) : (
+                  jugadores.map((m) => (
+                    <MemberRow
+                      key={m.id}
+                      primary={m.nombre}
+                      secondary={
+                        [m.dorsal != null ? `#${m.dorsal}` : null, m.posicion].filter(Boolean).join(' · ') || '—'
+                      }
+                      onEdit={() => setEditingMember({ ...m })}
+                      onDelete={() => setDeletingMemberId(m.id)}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Modal miembro */}
