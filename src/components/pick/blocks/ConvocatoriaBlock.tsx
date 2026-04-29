@@ -62,12 +62,12 @@ export default function ConvocatoriaBlock({ convocatoria }: { convocatoria: Conv
         setPersisted(true);
       } catch (e) {
         setError('Copiado, pero no pude marcarla como enviada. Inténtalo desde el calendario.');
-         
+
         console.warn('persist after copy failed', e);
       }
     } catch (e) {
       setError('No pude copiar al portapapeles.');
-       
+
       console.warn('clipboard write failed', e);
     } finally {
       setSubmitting(false);
@@ -96,7 +96,7 @@ export default function ConvocatoriaBlock({ convocatoria }: { convocatoria: Conv
         setPersisted(true);
       } catch (e) {
         setError('Compartido, pero no pude marcarla como enviada. Inténtalo desde el calendario.');
-         
+
         console.warn('persist after share failed', e);
       }
     } finally {

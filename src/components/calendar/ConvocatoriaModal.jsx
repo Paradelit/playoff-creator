@@ -64,7 +64,6 @@ export default function ConvocatoriaModal({ session, team, competition, onClose 
     try {
       await navigator.clipboard.writeText(messageToShow);
     } catch (e) {
-       
       console.warn('clipboard write failed', e);
       setError('No pude copiar al portapapeles. Selecciona el texto y cópialo a mano.');
       setSubmitting(false);
@@ -74,7 +73,6 @@ export default function ConvocatoriaModal({ session, team, competition, onClose 
       await persistSent(messageToShow);
       onClose();
     } catch (e) {
-       
       console.warn('persist after copy failed', e);
       setError('Copiado, pero no pude marcarla como enviada. Vuelve a intentarlo en un momento.');
     } finally {
@@ -103,7 +101,6 @@ export default function ConvocatoriaModal({ session, team, competition, onClose 
         await persistSent(messageToShow);
         onClose();
       } catch (e) {
-         
         console.warn('persist after share failed', e);
         setError('Compartido, pero no pude marcarla como enviada. Vuelve a intentarlo en un momento.');
       }
