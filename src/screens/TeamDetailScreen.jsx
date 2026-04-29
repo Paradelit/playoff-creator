@@ -9,6 +9,7 @@ import { TeamFormFields } from '../components/teams/TeamFormFields';
 import { useHomeDashboard } from '../hooks/useHomeDashboard';
 import TeamDashboard from '../components/teams/TeamDashboard';
 import CompetitionsTab from '../components/teams/CompetitionsTab';
+import ConvocatoriasTab from '../components/teams/ConvocatoriasTab';
 
 const ROLES_STAFF = ['Entrenador', 'Entrenador asistente', 'Fisioterapeuta', 'Delegado', 'Médico', 'Otro'];
 const POSICIONES = ['Base', 'Escolta', 'Alero', 'Ala-Pívot', 'Pívot'];
@@ -164,14 +165,14 @@ export default function TeamDetailScreen() {
 
         {/* Tabs */}
         <div className="mb-6 border-b border-slate-200 flex gap-4">
-          {['plantilla', 'competiciones'].map((tab) => (
+          {['plantilla', 'competiciones', 'convocatorias'].map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
               className={`pb-3 text-sm font-bold transition border-b-2 capitalize ${activeTab === tab ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
             >
-              {tab === 'plantilla' ? 'Plantilla' : 'Competiciones'}
+              {tab === 'plantilla' ? 'Plantilla' : tab === 'competiciones' ? 'Competiciones' : 'Convocatorias'}
             </button>
           ))}
         </div>
@@ -179,6 +180,12 @@ export default function TeamDetailScreen() {
         {activeTab === 'competiciones' && (
           <div className="mb-6">
             <CompetitionsTab teamId={teamId} />
+          </div>
+        )}
+
+        {activeTab === 'convocatorias' && team && (
+          <div className="mb-6">
+            <ConvocatoriasTab team={team} />
           </div>
         )}
 
