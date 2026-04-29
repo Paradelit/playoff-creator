@@ -137,3 +137,23 @@ describe('buildPlayoffSessions', () => {
     expect(buildPlayoffSessions(brackets, teams)).toEqual([]);
   });
 });
+
+import { readJugadoresConvocados } from './calendarUtils';
+
+describe('readJugadoresConvocados', () => {
+  it('returns jugadoresConvocados when present', () => {
+    expect(readJugadoresConvocados({ jugadoresConvocados: 'Pablo, Sergio' })).toBe('Pablo, Sergio');
+  });
+  it('falls back to legacy convocatoria field', () => {
+    expect(readJugadoresConvocados({ convocatoria: 'Pablo' })).toBe('Pablo');
+  });
+  it('prefers new field over legacy', () => {
+    expect(readJugadoresConvocados({ jugadoresConvocados: 'New', convocatoria: 'Old' })).toBe('New');
+  });
+  it('returns empty string for missing both', () => {
+    expect(readJugadoresConvocados({})).toBe('');
+  });
+  it('returns empty string for null session', () => {
+    expect(readJugadoresConvocados(null)).toBe('');
+  });
+});
