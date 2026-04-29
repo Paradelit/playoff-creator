@@ -1,6 +1,7 @@
 import React, { useId } from 'react';
 import { X, ClipboardList, Trophy, MapPin, ArrowRight } from 'lucide-react';
 import { teamDisplayName } from '../../utils/teamUtils';
+import { readJugadoresConvocados } from '../../utils/calendarUtils';
 import { FormField } from './CalendarHelpers';
 import Dialog from '../Dialog';
 
@@ -167,12 +168,14 @@ export default function SessionFormModal({
                 </button>
               </div>
             </FormField>
-            <FormField label="Convocatoria (opcional)" htmlFor={convocatoriaId}>
+            <FormField label="Jugadores convocados (opcional)" htmlFor={convocatoriaId}>
               <textarea
                 id={convocatoriaId}
                 placeholder="Nombres de los jugadores convocados..."
-                value={editingSession.convocatoria || ''}
-                onChange={(e) => setEditingSession((s) => ({ ...s, convocatoria: e.target.value }))}
+                value={readJugadoresConvocados(editingSession)}
+                onChange={(e) =>
+                  setEditingSession((s) => ({ ...s, jugadoresConvocados: e.target.value, convocatoria: undefined }))
+                }
                 rows={2}
                 className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
               />

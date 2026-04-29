@@ -7,6 +7,7 @@ import { saveCalendarSession } from '../../services/calendarService';
 import { updatePlayoffMatchScoreFromSession, readPlayoffGameResult } from '../../services/bracketCalendarSyncService';
 import { isMinibasketSextos } from '../../utils/minibasketUtils';
 import { formatDateDisplay } from '../../utils/dateUtils';
+import { readJugadoresConvocados } from '../../utils/calendarUtils';
 import { DetailRow, QuickResultado } from './CalendarHelpers';
 import Dialog from '../Dialog';
 
@@ -104,10 +105,10 @@ export default function SessionDetailModal({
           <>
             {session.rival && <DetailRow label="Rival" value={session.rival} />}
             <DetailRow label="Campo" value={session.esLocal ? 'Local' : 'Visitante'} />
-            {session.convocatoria && (
+            {readJugadoresConvocados(session) && (
               <div className="mt-1">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Convocatoria</span>
-                <p className="text-sm text-slate-700 whitespace-pre-line mt-0.5">{session.convocatoria}</p>
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Convocados</span>
+                <p className="text-sm text-slate-700 whitespace-pre-line mt-0.5">{readJugadoresConvocados(session)}</p>
               </div>
             )}
             {session.tipo === 'partido' && (
