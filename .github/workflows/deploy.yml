@@ -79,8 +79,25 @@ jobs:
 
       - name: Deploy Cloud Functions
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        # Soft-fail: the FIREBASE_SERVICE_ACCOUNT secret was provisioned for
+        # Hosting deploys (Firebase Hosting Admin role only). To make this
+        # step succeed, grant the service account these GCP roles in the
+        # Console (IAM & Admin → IAM):
+        #   - Cloud Functions Developer
+        #   - Service Account User
+        #   - Service Usage Consumer
+        # Once those are granted, the step will go from yellow warning to
+        # green and functions will redeploy on every push to main. Until
+        # then, the step warns loudly but doesn't block the Hosting deploy
+        # (which has its own narrower scope and works today).
+        continue-on-error: true
         run: |
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/sa-key.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa-key.json"
           firebase deploy --only functions --project playoff-creator --force --non-interactive
+          STATUS=$?
           rm -f "$RUNNER_TEMP/sa-key.json"
+          if [ $STATUS -ne 0 ]; then
+            echo "::warning::Cloud Functions deploy failed (exit $STATUS). If this is a permissions error, grant the service account Cloud Functions Developer + Service Account User + Service Usage Consumer roles. Hosting deploy is unaffected."
+          fi
+          exit $STATUS
