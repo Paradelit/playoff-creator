@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
@@ -16,6 +16,7 @@ import {
   Loader2,
   Undo2,
   Redo2,
+  Edit2,
 } from 'lucide-react';
 import { teamDisplayName } from '../utils/teamUtils';
 import { doc, setDoc } from 'firebase/firestore';
@@ -28,6 +29,7 @@ import BracketShareModal from '../components/bracket/BracketShareModal';
 import BracketMobileTools from '../components/bracket/BracketMobileTools';
 import ToolbarButton from '../components/bracket/ToolbarButton';
 import ToolbarOverflowMenu from '../components/bracket/ToolbarOverflowMenu';
+import BulkEditTeamsModal from '../components/bracket/BulkEditTeamsModal';
 
 export default function BracketScreen() {
   const {
@@ -88,6 +90,75 @@ export default function BracketScreen() {
 
   const navigate = useNavigate();
   const [showLinkDropdown, setShowLinkDropdown] = useState(false);
+  const [showBulkEditTeams, setShowBulkEditTeams] = useState(false);
+
+  // Fit-to-screen: compute the zoom that makes the rendered bracket fit the
+  // viewport width (with a 32px margin). Touchpoint for the user is clicking
+  // the percentage label between zoom-out and zoom-in.
+  const handleFitToScreen = useCallback(() => {
+    const main = mainRef.current;
+    const target = bracketExportRef.current;
+    if (!main || !target) return;
+    // Target's bounding rect reflects current scaling, so divide by current zoom
+    // to get the natural (zoom=1) width.
+    const naturalWidth = target.getBoundingClientRect().width / (zoom || 1);
+    if (naturalWidth <= 0) return;
+    const available = main.clientWidth - 32;
+    const next = Math.max(0.4, Math.min(1.5, available / naturalWidth));
+    setZoom(Number(next.toFixed(2)));
+    // Snap scroll back to top after re-fitting so the coach sees the final.
+    requestAnimationFrame(() => {
+      main.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
+    });
+  }, [mainRef, bracketExportRef, zoom, setZoom]);
+
+  // Drag-to-pan on the bracket container. Touch already works natively (touch
+  // scroll), this adds mouse drag for desktop and tablets with mouse.
+  useEffect(() => {
+    const main = mainRef.current;
+    if (!main) return;
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startScrollLeft = 0;
+    let startScrollTop = 0;
+
+    const onMouseDown = (e) => {
+      // Only the main container itself should arm drag — not clicks on cards,
+      // inputs, buttons. Bail if the target lives inside an interactive element.
+      if (e.button !== 0) return;
+      if (e.target.closest('button, input, select, textarea, a, [role="dialog"]')) return;
+      dragging = true;
+      startX = e.pageX;
+      startY = e.pageY;
+      startScrollLeft = main.scrollLeft;
+      startScrollTop = main.scrollTop;
+      main.style.cursor = 'grabbing';
+      main.style.userSelect = 'none';
+    };
+    const onMouseMove = (e) => {
+      if (!dragging) return;
+      main.scrollLeft = startScrollLeft - (e.pageX - startX);
+      main.scrollTop = startScrollTop - (e.pageY - startY);
+    };
+    const stop = () => {
+      if (!dragging) return;
+      dragging = false;
+      main.style.cursor = '';
+      main.style.userSelect = '';
+    };
+
+    main.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', stop);
+    main.addEventListener('mouseleave', stop);
+    return () => {
+      main.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', stop);
+      main.removeEventListener('mouseleave', stop);
+    };
+  }, [mainRef]);
 
   const handleDateClick = activeBracket?.teamId
     ? (isoDate) => navigate(`/calendar?date=${isoDate}&teamId=${activeBracket.teamId}`)
@@ -161,8 +232,15 @@ export default function BracketScreen() {
           setShowMobileTools={setShowMobileTools}
           fileInputResults={fileInputResults}
           coachTeams={coachTeams}
+          handleFitToScreen={handleFitToScreen}
         />
       )}
+
+      <BulkEditTeamsModal
+        open={showBulkEditTeams && canEdit}
+        onClose={() => setShowBulkEditTeams(false)}
+        bracketData={activeBracket?.bracketData}
+      />
 
       <BracketShareModal
         sharingBracket={sharingBracket}
@@ -314,9 +392,14 @@ export default function BracketScreen() {
             >
               <ZoomOut size={15} aria-hidden="true" />
             </button>
-            <div className="px-2 text-xs border-x border-blue-700 w-12 flex items-center justify-center">
+            <button
+              onClick={handleFitToScreen}
+              title="Ajustar a la pantalla"
+              aria-label="Ajustar a la pantalla"
+              className="px-2 text-xs border-x border-blue-700 w-14 flex items-center justify-center hover:bg-blue-700 transition-colors"
+            >
               {Math.round(zoom * 100)}%
-            </div>
+            </button>
             <button
               onClick={() => setZoom((z) => Math.min(1.5, z + 0.1))}
               aria-label="Aumentar zoom"
@@ -360,6 +443,11 @@ export default function BracketScreen() {
           )}
           <ToolbarOverflowMenu
             items={[
+              canEdit && {
+                icon: Edit2,
+                label: 'Editar nombres de equipos',
+                onClick: () => setShowBulkEditTeams(true),
+              },
               {
                 icon: ImageDown,
                 label: isExportingImage ? 'Generando...' : 'Descargar imagen',
@@ -381,7 +469,7 @@ export default function BracketScreen() {
         ref={mainRef}
         role="region"
         aria-label="Cuadro de eliminatorias"
-        className="flex-1 overflow-auto relative p-4 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]"
+        className="flex-1 overflow-auto relative p-4 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px] cursor-grab"
       >
         <div
           className="absolute min-w-max p-12 transition-transform origin-top-center w-full flex justify-center pb-32"

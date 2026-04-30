@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React, { useId, useState, useEffect } from 'react';
 import { AlertTriangle, Check } from 'lucide-react';
 import Dialog from '../Dialog';
 
@@ -55,6 +55,17 @@ export function ImportPreviewModal({ importPreview, setImportPreview, importing,
 export function DeleteDataModal({ setShowDeleteDataModal, deletingData, handleDeleteData }) {
   const titleId = useId();
   const descId = useId();
+  const confirmId = useId();
+  const [confirmText, setConfirmText] = useState('');
+
+  // Reset the gate every time the modal mounts so a previous attempt can't
+  // pre-arm a destructive click.
+  useEffect(() => {
+    setConfirmText('');
+  }, []);
+
+  const armed = confirmText.trim().toUpperCase() === 'BORRAR';
+
   return (
     <Dialog
       open
@@ -78,6 +89,19 @@ export function DeleteDataModal({ setShowDeleteDataModal, deletingData, handleDe
         calendario.
         <span className="font-semibold text-red-600"> Esta acción no se puede deshacer.</span>
       </p>
+      <label htmlFor={confirmId} className="block text-xs font-bold text-slate-500 mb-2">
+        Escribe <span className="text-red-600 font-black">BORRAR</span> para confirmar:
+      </label>
+      <input
+        id={confirmId}
+        type="text"
+        value={confirmText}
+        onChange={(e) => setConfirmText(e.target.value)}
+        placeholder="BORRAR"
+        autoComplete="off"
+        autoFocus
+        className="w-full border-2 border-slate-300 focus:border-red-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none mb-4 font-bold tracking-wide"
+      />
       <div className="flex gap-3">
         <button
           type="button"
@@ -89,7 +113,7 @@ export function DeleteDataModal({ setShowDeleteDataModal, deletingData, handleDe
         <button
           type="button"
           onClick={handleDeleteData}
-          disabled={deletingData}
+          disabled={!armed || deletingData}
           className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-40 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2"
         >
           {deletingData ? 'Eliminando...' : 'Borrar todo'}

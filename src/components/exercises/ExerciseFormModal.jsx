@@ -1,5 +1,5 @@
 import React, { useState, useId } from 'react';
-import { X, BookOpen, Plus, Maximize2, Trash2, Undo } from 'lucide-react';
+import { X, BookOpen, Plus, Maximize2, Trash2, Undo, ChevronDown, ChevronUp } from 'lucide-react';
 import CourtCanvas, { COURT_TOOLS } from '../CourtCanvas';
 import TagInput from '../TagInput';
 import CategoryChipPicker from './form/CategoryChipPicker';
@@ -19,6 +19,19 @@ export default function ExerciseFormModal({
   const [showPlaybook, setShowPlaybook] = useState(false);
   const [activeTool, setActiveTool] = useState('O');
   const [currentStep, setCurrentStep] = useState(0);
+  // Progressive disclosure: keep meta fields (dificultad, jugadores, material,
+  // fase, tipo de pista, etiquetas extra) collapsed by default so the modal
+  // doesn't overwhelm a Formativo coach who just wants name + categorías + canvas.
+  // Auto-expand if the exercise being edited already has any of those values set.
+  const hasMeta =
+    !!editingExercise.dificultad ||
+    !!editingExercise.fase ||
+    !!editingExercise.material ||
+    !!editingExercise.jugadoresMin ||
+    !!editingExercise.jugadoresMax ||
+    (editingExercise.tags || []).length > 0 ||
+    editingExercise.tipoPista === 'entera';
+  const [showMore, setShowMore] = useState(hasMeta);
 
   const titleId = useId();
   const nombreId = useId();
@@ -136,15 +149,6 @@ export default function ExerciseFormModal({
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Otras etiquetas</label>
-            <TagInput
-              tags={editingExercise.tags || []}
-              onChange={(tags) => setEditingExercise((ex) => ({ ...ex, tags }))}
-              suggestions={allTags}
-              placeholder="Añade etiquetas propias..."
-            />
-          </div>
-          <div>
             <label htmlFor={descripcionId} className="block text-xs font-semibold text-slate-600 mb-1.5">
               Descripción
             </label>
@@ -157,27 +161,55 @@ export default function ExerciseFormModal({
               className="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
             />
           </div>
-          <ExerciseMetaFields exercise={editingExercise} onChange={(next) => setEditingExercise(next)} />
-          <fieldset>
-            <legend className="block text-xs font-semibold text-slate-600 mb-2">Tipo de pista</legend>
-            <div className="flex gap-2" role="radiogroup" aria-label="Tipo de pista">
-              {[
-                ['media', 'Media pista'],
-                ['entera', 'Pista entera'],
-              ].map(([val, label]) => (
-                <button
-                  key={val}
-                  type="button"
-                  role="radio"
-                  aria-checked={editingExercise.tipoPista === val}
-                  onClick={() => setEditingExercise((ex) => ({ ...ex, tipoPista: val }))}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 ${editingExercise.tipoPista === val ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          {/* Progressive disclosure: meta fields hidden by default. Auto-expanded
+              when editing an exercise that already has any meta value. */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowMore((v) => !v)}
+              aria-expanded={showMore}
+              className="w-full flex items-center justify-between gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition py-2 border-y border-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 rounded"
+            >
+              <span className="uppercase tracking-wide">Más opciones</span>
+              <span className="text-slate-400 normal-case">
+                {showMore ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
+              </span>
+            </button>
+            {showMore && (
+              <div className="flex flex-col gap-4 pt-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Otras etiquetas</label>
+                  <TagInput
+                    tags={editingExercise.tags || []}
+                    onChange={(tags) => setEditingExercise((ex) => ({ ...ex, tags }))}
+                    suggestions={allTags}
+                    placeholder="Añade etiquetas propias..."
+                  />
+                </div>
+                <ExerciseMetaFields exercise={editingExercise} onChange={(next) => setEditingExercise(next)} />
+                <fieldset>
+                  <legend className="block text-xs font-semibold text-slate-600 mb-2">Tipo de pista</legend>
+                  <div className="flex gap-2" role="radiogroup" aria-label="Tipo de pista">
+                    {[
+                      ['media', 'Media pista'],
+                      ['entera', 'Pista entera'],
+                    ].map(([val, label]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        role="radio"
+                        aria-checked={editingExercise.tipoPista === val}
+                        onClick={() => setEditingExercise((ex) => ({ ...ex, tipoPista: val }))}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 ${editingExercise.tipoPista === val ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              </div>
+            )}
+          </div>
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-xs font-semibold text-slate-600">

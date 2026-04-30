@@ -356,6 +356,11 @@ export function useBracketEditor({
 
   const handleScoreChange = useCallback(
     (matchId, teamIndex, gameIndex, value) => {
+      // Capture context for the post-update celebration toast (only fires when
+      // the coach's team is the one that just advanced).
+      const myTeam = activeBracket?.myTeam || null;
+      let celebration = null;
+
       updateActiveBracketData((prevData) => {
         const nextState = { ...prevData.state };
         const match = { ...nextState[matchId] };
@@ -376,12 +381,32 @@ export function useBracketEditor({
               const slot = match.slot;
               nextState[nextId] = { ...nextState[nextId], [slot]: newWinner };
             }
+            // Coach's team just advanced (or won the trophy). Buffer a toast to
+            // fire after the state update settles.
+            if (myTeam && newWinner === myTeam && oldWinner !== myTeam) {
+              if (!match.nextId) {
+                celebration = '🏆 ¡Has ganado el torneo!';
+              } else {
+                const nextMatch = nextState[match.nextId];
+                const otherSlot = match.slot === 'team1' ? 'team2' : 'team1';
+                const futureOpponent = nextMatch?.[otherSlot];
+                const nextLabel = nextMatch?.title || 'la siguiente ronda';
+                celebration = futureOpponent
+                  ? `¡Pasas a ${nextLabel}! Te enfrentas a ${futureOpponent}.`
+                  : `¡Pasas a ${nextLabel}!`;
+              }
+            }
           }
         }
         return { ...prevData, state: nextState };
       });
+
+      if (celebration) {
+        // Defer one tick so the row repaint visibly happens before the toast.
+        setTimeout(() => toast(celebration, 'success', 4500), 50);
+      }
     },
-    [updateActiveBracketData],
+    [updateActiveBracketData, activeBracket, toast],
   );
 
   const confirmReset = () => {

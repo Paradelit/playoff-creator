@@ -252,8 +252,10 @@ export default function PlanillaSextosScreen() {
             </div>
           )}
 
-          {/* Table */}
-          <div className="flex-1 w-full mb-8 overflow-x-auto">
+          {/* Table — desktop / print. The 7-column grid is unreadable below
+              640px, so we hide the table on mobile and render a card layout
+              instead. Keep the table for print and tablets+. */}
+          <div className="flex-1 w-full mb-8 overflow-x-auto hidden sm:block print:block">
             <table className="w-full border-collapse border-2 border-black">
               <thead>
                 <tr className="bg-gray-100 print:bg-transparent">
@@ -312,6 +314,64 @@ export default function PlanillaSextosScreen() {
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile: card-per-player with sexto toggle chips. The 6th sexto is
+              the "free" period (highlighted blue both in table and here). */}
+          <div className="flex-1 w-full mb-8 sm:hidden flex flex-col gap-2 print:hidden">
+            {validated.map((jugador, pIdx) => {
+              const hasMarks = jugador.sextos.some(Boolean);
+              const isInvalid = hasMarks && !jugador.valid;
+              return (
+                <div
+                  key={pIdx}
+                  className={`rounded-xl border-2 px-3 py-2.5 transition-colors ${
+                    isInvalid ? 'border-red-300 bg-red-50' : 'border-black bg-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-sm font-bold ${isInvalid ? 'text-red-700' : 'text-slate-900'}`}>
+                      {jugador.dorsal ? `${jugador.dorsal} · ` : ''}
+                      {jugador.nombre || '—'}
+                    </span>
+                    {isInvalid && (
+                      <span className="text-[11px] text-red-600 font-bold whitespace-nowrap">
+                        {jugador.countFirst5}/5 (debe ser 2-3)
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-6 gap-1.5">
+                    {jugador.sextos.map((active, sIdx) => {
+                      const isFree = sIdx === 5;
+                      const baseClass =
+                        'h-11 rounded-lg text-sm font-bold transition-colors flex flex-col items-center justify-center';
+                      const stateClass = active
+                        ? isInvalid && sIdx < 5
+                          ? 'bg-red-600 text-white'
+                          : 'bg-blue-600 text-white'
+                        : isFree
+                          ? 'bg-blue-50 border-2 border-blue-200 text-blue-600'
+                          : 'bg-slate-100 border-2 border-slate-200 text-slate-400';
+                      return (
+                        <button
+                          key={sIdx}
+                          type="button"
+                          onClick={() => toggleSexto(pIdx, sIdx)}
+                          aria-pressed={active}
+                          aria-label={`${SEXTO_LABELS[sIdx]} ${active ? 'marcado' : 'sin marcar'}`}
+                          className={`${baseClass} ${stateClass}`}
+                        >
+                          <span className="text-[9px] font-bold uppercase opacity-80 leading-none">
+                            {SEXTO_LABELS[sIdx]}
+                          </span>
+                          <span className="text-base leading-none mt-0.5">{active ? '✕' : ''}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Footer */}

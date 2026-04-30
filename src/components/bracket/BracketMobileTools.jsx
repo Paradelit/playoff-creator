@@ -37,6 +37,7 @@ export default function BracketMobileTools({
   setShowMobileTools,
   fileInputResults,
   coachTeams,
+  handleFitToScreen,
 }) {
   const [showLinkDropdown, setShowLinkDropdown] = useState(false);
 
@@ -178,9 +179,18 @@ export default function BracketMobileTools({
             >
               <ZoomOut size={18} aria-hidden="true" />
             </button>
-            <div className="px-3 text-sm border-x border-blue-700 flex items-center justify-center w-16">
+            <button
+              onClick={() => {
+                handleFitToScreen?.();
+                setShowMobileTools(false);
+              }}
+              type="button"
+              title="Ajustar a la pantalla"
+              aria-label="Ajustar a la pantalla"
+              className="px-3 text-sm border-x border-blue-700 flex items-center justify-center w-16 hover:bg-blue-700 transition-colors"
+            >
               {Math.round(zoom * 100)}%
-            </div>
+            </button>
             <button
               onClick={() => setZoom((z) => Math.min(1.5, z + 0.1))}
               aria-label="Aumentar zoom"

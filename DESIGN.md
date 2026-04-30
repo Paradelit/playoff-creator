@@ -2,125 +2,128 @@
 name: Pick&Coach
 description: Sports-broadcast workspace for basketball coaches with Pick, an AI assistant always on the bench beside you.
 colors:
-  court-orange: "#f97316"
-  court-orange-deep: "#ea580c"
-  club-orange: "#FF8300"
-  score-clock-blue: "#1A6FD4"
-  score-clock-blue-deep: "#1535A8"
-  electric-line-cyan: "#00F0FF"
-  midnight-electric: "#0A0E27"
-  trophy-amber: "#EFBF04"
-  trophy-amber-deep: "#CC9F00"
-  pick-purple: "#8B5CF6"
-  alert-red: "#DC2626"
-  success-green: "#10B981"
-  ink-900: "#0F172A"
-  ink-700: "#334155"
-  ink-500: "#64748B"
-  ink-400: "#94A3B8"
-  ash-200: "#E2E8F0"
-  ash-100: "#F1F5F9"
-  ash-50: "#F8FAFC"
-  surface-white: "#FFFFFF"
-  surface-night: "#06060F"
+  court-orange: '#f97316'
+  court-orange-deep: '#ea580c'
+  club-orange: '#FF8300'
+  score-clock-blue: '#1A6FD4'
+  score-clock-blue-deep: '#1535A8'
+  electric-line-cyan: '#00F0FF'
+  midnight-electric: '#0A0E27'
+  trophy-amber: '#EFBF04'
+  trophy-amber-deep: '#CC9F00'
+  pick-purple: '#8B5CF6'
+  alert-red: '#DC2626'
+  success-green: '#10B981'
+  event-partido: '#F43F5E'
+  event-entreno: '#1A6FD4'
+  event-playoff: '#EFBF04'
+  ink-900: '#0F172A'
+  ink-700: '#334155'
+  ink-500: '#64748B'
+  ink-400: '#94A3B8'
+  ash-200: '#E2E8F0'
+  ash-100: '#F1F5F9'
+  ash-50: '#F8FAFC'
+  surface-white: '#FFFFFF'
+  surface-night: '#06060F'
 typography:
   display:
     fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "clamp(2.25rem, 5.5vw, 3.75rem)"
+    fontSize: 'clamp(2.25rem, 5.5vw, 3.75rem)'
     fontWeight: 800
     lineHeight: 1.08
-    letterSpacing: "-0.02em"
+    letterSpacing: '-0.02em'
   headline:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
-    fontSize: "clamp(1.5rem, 3vw, 2.25rem)"
+    fontFamily: 'ui-sans-serif, system-ui, sans-serif'
+    fontSize: 'clamp(1.5rem, 3vw, 2.25rem)'
     fontWeight: 800
     lineHeight: 1.15
-    letterSpacing: "-0.015em"
+    letterSpacing: '-0.015em'
   title:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.125rem"
+    fontFamily: 'ui-sans-serif, system-ui, sans-serif'
+    fontSize: '1.125rem'
     fontWeight: 700
     lineHeight: 1.3
   body:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1rem"
+    fontFamily: 'ui-sans-serif, system-ui, sans-serif'
+    fontSize: '1rem'
     fontWeight: 400
     lineHeight: 1.5
   label:
-    fontFamily: "ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.75rem"
+    fontFamily: 'ui-sans-serif, system-ui, sans-serif'
+    fontSize: '0.75rem'
     fontWeight: 700
-    letterSpacing: "0.1em"
+    letterSpacing: '0.1em'
   mono:
     fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace"
-    fontSize: "0.75rem"
+    fontSize: '0.75rem'
     fontWeight: 400
 rounded:
-  sm: "6px"
-  md: "8px"
-  lg: "12px"
-  xl: "16px"
-  full: "9999px"
+  sm: '6px'
+  md: '8px'
+  lg: '12px'
+  xl: '16px'
+  full: '9999px'
 spacing:
-  xs: "4px"
-  sm: "8px"
-  md: "16px"
-  lg: "24px"
-  xl: "32px"
-  "2xl": "48px"
-  "3xl": "80px"
+  xs: '4px'
+  sm: '8px'
+  md: '16px'
+  lg: '24px'
+  xl: '32px'
+  '2xl': '48px'
+  '3xl': '80px'
 components:
   button-cta-landing:
-    backgroundColor: "{colors.court-orange}"
-    textColor: "{colors.surface-white}"
-    rounded: "{rounded.lg}"
-    padding: "14px 28px"
+    backgroundColor: '{colors.court-orange}'
+    textColor: '{colors.surface-white}'
+    rounded: '{rounded.lg}'
+    padding: '14px 28px'
   button-cta-landing-hover:
-    backgroundColor: "{colors.court-orange-deep}"
+    backgroundColor: '{colors.court-orange-deep}'
   button-primary-app:
-    backgroundColor: "{colors.score-clock-blue}"
-    textColor: "{colors.surface-white}"
-    rounded: "{rounded.md}"
-    padding: "8px 12px"
+    backgroundColor: '{colors.score-clock-blue}'
+    textColor: '{colors.surface-white}'
+    rounded: '{rounded.md}'
+    padding: '8px 12px'
   button-primary-app-hover:
-    backgroundColor: "{colors.score-clock-blue-deep}"
+    backgroundColor: '{colors.score-clock-blue-deep}'
   button-ghost:
-    backgroundColor: "{colors.ash-100}"
-    textColor: "{colors.ink-700}"
-    rounded: "{rounded.md}"
-    padding: "8px 16px"
+    backgroundColor: '{colors.ash-100}'
+    textColor: '{colors.ink-700}'
+    rounded: '{rounded.md}'
+    padding: '8px 16px'
   button-ghost-hover:
-    backgroundColor: "{colors.ash-200}"
+    backgroundColor: '{colors.ash-200}'
   button-danger:
-    backgroundColor: "{colors.alert-red}"
-    textColor: "{colors.surface-white}"
-    rounded: "{rounded.md}"
-    padding: "8px 16px"
+    backgroundColor: '{colors.alert-red}'
+    textColor: '{colors.surface-white}'
+    rounded: '{rounded.md}'
+    padding: '8px 16px'
   card-match:
-    backgroundColor: "{colors.surface-white}"
-    textColor: "{colors.ink-900}"
-    rounded: "{rounded.lg}"
-    padding: "0px"
+    backgroundColor: '{colors.surface-white}'
+    textColor: '{colors.ink-900}'
+    rounded: '{rounded.lg}'
+    padding: '0px'
   card-team-gradient:
-    backgroundColor: "{colors.score-clock-blue-deep}"
-    textColor: "{colors.surface-white}"
-    rounded: "{rounded.xl}"
-    padding: "20px"
+    backgroundColor: '{colors.score-clock-blue-deep}'
+    textColor: '{colors.surface-white}'
+    rounded: '{rounded.xl}'
+    padding: '20px'
   input-text:
-    backgroundColor: "{colors.surface-white}"
-    textColor: "{colors.ink-900}"
-    rounded: "{rounded.sm}"
-    padding: "8px 12px"
+    backgroundColor: '{colors.surface-white}'
+    textColor: '{colors.ink-900}'
+    rounded: '{rounded.sm}'
+    padding: '8px 12px'
   modal-panel:
-    backgroundColor: "{colors.surface-white}"
-    textColor: "{colors.ink-900}"
-    rounded: "{rounded.lg}"
-    padding: "24px"
+    backgroundColor: '{colors.surface-white}'
+    textColor: '{colors.ink-900}'
+    rounded: '{rounded.lg}'
+    padding: '24px'
   pick-avatar:
-    backgroundColor: "{colors.court-orange}"
-    textColor: "{colors.surface-white}"
-    rounded: "{rounded.full}"
-    size: "28px"
+    backgroundColor: '{colors.court-orange}'
+    textColor: '{colors.surface-white}'
+    rounded: '{rounded.full}'
+    size: '28px'
 ---
 
 # Design System: Pick&Coach
@@ -183,14 +186,24 @@ The palette uses four named accents, each with a single defended job, anchored b
 
 ### Semantic
 
-- **Alert Red** (`#DC2626`, with surrounds `#FEE2E2` / `#7F1D1D`): destructive confirmations, danger buttons, "loser" badge in bracket rows.
-- **Success Green** (`#10B981`, Tailwind emerald-500): completion ticks, success bullets in landing copy ("100% gratuito" dot), winner badge in bracket rows.
+- **Alert Red** (`#DC2626`, with surrounds `#FEE2E2` / `#7F1D1D`): destructive confirmations, danger buttons, "loser" badge in bracket rows. Soft variants `bg-rose-50` / `text-rose-500` on `MatchCard` loser rows.
+- **Success Green** (`#10B981`, Tailwind emerald-500): completion ticks, success bullets in landing copy ("100% gratuito" dot), generic winner row in `MatchCard` (`bg-emerald-100` / `text-emerald-800`).
+
+### Event palette (Calendar / WeekStrip / dots)
+
+Events have three categories that need to be spotted at a glance across the calendar grid, week strip, and home dots. The palette is canonical:
+
+- **Partido** → `bg-rose-500` (`#F43F5E`). Tailwind rose, also used as the event chip background in `MonthGrid` and `WeekView`. Soft tint `bg-rose-100` / `text-rose-600` on home weekly summary chip.
+- **Entrenamiento** → team color from `TEAM_COLORS` array (per-team identity). Default in dot rows: `bg-blue-500`.
+- **Playoff** → `bg-amber-500`. This is the **one allowed leak** of Trophy Amber outside the strict reservation: a playoff event IS the path to the trophy, so the visual link is intentional. Trophy Amber stays reserved everywhere else.
+
+The "today" indicator on `MonthGrid`, `WeekView` and home `WeekStrip` uses `bg-amber-400` + `text-slate-900` + `font-bold` — defended pair (passes WCAG AA, distinct from event dots which are `amber-500`).
 
 ### Named Rules
 
 **The Two-Accent Rule.** Court Orange and Score-Clock Cyan are not interchangeable. **Orange = brand and Pick.** **Cyan = in-app utility.** Never use orange for an in-app save button. Never use cyan as the landing CTA. The day they collapse into one, the system loses its narrative.
 
-**The Trophy-Amber Reservation.** Amber is for the trophy and what leads to it. If you're tempted to use amber as a generic warm accent, use Court Orange instead. Polluting amber kills its punch in brackets.
+**The Trophy-Amber Reservation.** Amber is for the trophy and what leads to it: trophy icon, final-match header, "your team's path" connector lines in `BracketNode`, "today" indicator on calendar/week-strip (the day is the spotlight, not a trophy — so use `amber-400` not `amber-500` to keep it visually separate), the playoff event chip, and the playoff badge on `WeeklySummaryChip`. Anywhere else it dilutes the bracket's signal. If you're tempted to use amber as a generic warm accent, use Court Orange instead. **The known exception**: the analog Cuaderno wraparound — paper-feel, deliberately warm — is allowed to use amber tints (`bg-amber-50/100` on the Cuaderno quick-action card, paper portada accents) because the whole surface is intentionally evoking a coach's physical notebook.
 
 **The Pick-Purple Reservation.** Purple is Pick. Don't use it for users, calendars, scouting, or any non-AI surface. A future reader should be able to point at any purple in the product and say "that's where Pick is talking."
 
@@ -247,12 +260,12 @@ Two parallel button systems, each with a defended role.
   - **Shape:** `rounded-xl` (12px), padding `14px 28px`, `font-bold` 700 white text.
   - **Background:** `linear-gradient(135deg, #f97316, #ea580c)`.
   - **Hover:** `transform: scale(1.02)`. A subtle lift, no color change.
-  - **Where:** hero CTA, navbar primary CTA, final-CTA section. Anywhere the user is being recruited *into* the product.
+  - **Where:** hero CTA, navbar primary CTA, final-CTA section. Anywhere the user is being recruited _into_ the product.
 
 - **App primary (Score-Clock Cyan)**, exposed as `ToolbarButton variant="primary"`.
   - **Shape:** `rounded-lg` (8px), `h-9 px-3` desktop, `w-full px-4 py-3` mobile, `font-bold`.
   - **Background:** `bg-blue-600` resting → `bg-blue-700` hover (resolves to `#1A6FD4` → `#1535A8` per the Tailwind config override).
-  - **Where:** bracket toolbar, in-app primary actions, save buttons. Anywhere the user is *operating* the product.
+  - **Where:** bracket toolbar, in-app primary actions, save buttons. Anywhere the user is _operating_ the product.
 
 - **App accent gradient**, `ToolbarButton variant="accent"`.
   - `bg-gradient-to-r from-blue-700 to-blue-500`. Reserved for "primary among primaries", the most important action on a screen.
