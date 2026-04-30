@@ -11,6 +11,7 @@ import ExerciseFormModal from '../components/exercises/ExerciseFormModal';
 import ExercisePreviewModal from '../components/exercises/ExercisePreviewModal';
 import { ExportModal, ImportModal, ShareModal } from '../components/exercises/ExerciseListModals';
 import LibraryHeader from '../components/exercises/library/LibraryHeader';
+import PickHintBanner from '../components/pick/PickHintBanner';
 import StickyFilterBar from '../components/exercises/library/StickyFilterBar';
 import FilterSidebar from '../components/exercises/library/FilterSidebar';
 import FilterSheet from '../components/exercises/library/FilterSheet';
@@ -154,6 +155,18 @@ export default function ExerciseLibraryScreen() {
           showExport={lib.exercises.length > 0}
         />
 
+        <div className="mt-5">
+          <PickHintBanner
+            message={
+              isFirstRun
+                ? 'Pick puede crear tus primeros ejercicios. Dile qué quieres trabajar y los añade a tu biblioteca.'
+                : '¿Necesitas un ejercicio nuevo? Dile a Pick qué quieres trabajar (bote, tiro, transición…) y lo añade.'
+            }
+            prompt="Sugiéreme un ejercicio nuevo para añadir a la biblioteca"
+            cta="Pídeselo a Pick"
+          />
+        </div>
+
         {isFirstRun ? (
           <div className="mt-10 bg-white border-2 border-dashed border-slate-300 rounded-2xl p-12 sm:p-16 text-center shadow-sm">
             <FolderOpen size={56} className="mx-auto text-slate-300 mb-4" aria-hidden="true" />
@@ -227,7 +240,7 @@ export default function ExerciseLibraryScreen() {
                               lastUsedAt={usage?.lastUsedMs}
                             />
                             {hasVariants && expanded && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 ml-4 pl-4 border-l-2 border-indigo-200">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 ml-4 pl-4 relative before:content-[''] before:absolute before:left-0 before:top-2 before:bottom-2 before:w-px before:bg-slate-300">
                                 {variants.map((v) => (
                                   <ExerciseCard key={v.id} ex={v} isVariant {...cardHandlers} />
                                 ))}
@@ -304,7 +317,7 @@ export default function ExerciseLibraryScreen() {
                               onToggleExpand={hasVariants ? () => toggleGroup(ex.id) : undefined}
                             />
                             {hasVariants && expanded && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 ml-4 pl-4 border-l-2 border-indigo-200">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 ml-4 pl-4 relative before:content-[''] before:absolute before:left-0 before:top-2 before:bottom-2 before:w-px before:bg-slate-300">
                                 {variants.map((v) => (
                                   <ExerciseCard key={v.id} ex={v} isVariant {...cardHandlers} />
                                 ))}

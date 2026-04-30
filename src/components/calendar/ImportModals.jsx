@@ -67,7 +67,7 @@ export function ImportSetupModal({ importSetup, setImportSetup, fileInputRef }) 
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={!importSetup.startDate || !importSetup.endDate}
-          className="w-full bg-gradient-to-r from-orange-500 to-blue-700 hover:from-orange-600 hover:to-blue-800 disabled:opacity-50 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition text-sm mt-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition text-sm mt-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
         >
           <Upload size={16} aria-hidden="true" /> Seleccionar archivo Excel
         </button>
@@ -161,7 +161,7 @@ export function ImportPreviewModal({
             type="button"
             onClick={onRequestImport}
             disabled={bulkSaving}
-            className="flex-1 bg-gradient-to-r from-orange-500 to-blue-700 hover:from-orange-600 hover:to-blue-800 text-white font-bold py-3 rounded-xl transition disabled:opacity-60 text-sm flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-60 text-sm flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
           >
             {bulkSaving ? (
               'Creando eventos...'

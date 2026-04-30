@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { MessageCircle, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { usePick } from '../../contexts/PickProvider';
 
 interface Props {
@@ -16,7 +16,7 @@ export default function PickCompact({ animating }: Props) {
     >
       {/* Speech bubble */}
       {currentTip && !animating && (
-        <div className="animate-pick-fade-in flex items-center gap-2 bg-white shadow-lg rounded-xl px-3.5 py-2.5 max-w-[220px] border border-slate-200">
+        <div className="animate-pick-fade-in flex items-center gap-2 bg-white shadow-lg rounded-xl px-3.5 py-2.5 max-w-[220px] border border-orange-200">
           <button
             onClick={() => setMode('panel')}
             className="text-sm text-slate-700 font-medium text-left flex-1 leading-snug"
@@ -26,7 +26,7 @@ export default function PickCompact({ animating }: Props) {
                 p: ({ children }) => (
                   <p className="text-sm text-slate-700 font-medium text-left flex-1 leading-snug">{children}</p>
                 ),
-                strong: ({ children }) => <strong className="font-bold text-blue-700">{children}</strong>,
+                strong: ({ children }) => <strong className="font-bold text-orange-700">{children}</strong>,
               }}
             >
               {currentTip}
@@ -42,18 +42,23 @@ export default function PickCompact({ animating }: Props) {
           >
             <X size={14} />
           </button>
-          {/* Triangle pointing right to the button */}
-          <div className="absolute -right-1.5 bottom-3.5 w-3 h-3 bg-white border-r border-b border-slate-200 rotate-[-45deg]" />
+          {/* Triangle pointing right to Pick's avatar button */}
+          <div className="absolute -right-1.5 bottom-3.5 w-3 h-3 bg-white border-r border-b border-orange-200 rotate-[-45deg]" />
         </div>
       )}
 
-      {/* Floating button */}
+      {/* Pick avatar — Court Orange gradient + "P" per DESIGN.md spec */}
       <button
         onClick={() => setMode('panel')}
-        className="w-12 h-12 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-full shadow-lg flex items-center justify-center transition-colors shrink-0"
+        className="w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
+        style={{
+          background: 'linear-gradient(135deg, #f97316, #ea580c)',
+        }}
         aria-label="Abrir Pick"
       >
-        <MessageCircle size={22} className="text-white" />
+        <span className="text-white font-extrabold text-lg leading-none tracking-tight" aria-hidden="true">
+          P
+        </span>
       </button>
     </div>
   );

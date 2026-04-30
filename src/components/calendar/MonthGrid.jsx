@@ -61,7 +61,7 @@ export default function MonthGrid({ calendarDays, todayYMD, loading, onSelectSes
               >
                 <div className="mb-1">
                   <span
-                    className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-amber-400 text-white' : 'text-slate-600'}`}
+                    className={`text-xs w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-amber-400 text-slate-900 font-bold' : 'text-slate-600 font-semibold'}`}
                   >
                     {date.getDate()}
                   </span>

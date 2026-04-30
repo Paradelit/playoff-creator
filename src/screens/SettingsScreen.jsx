@@ -26,7 +26,7 @@ export default function SettingsScreen() {
           <ArrowLeft size={16} aria-hidden="true" /> Inicio
         </button>
         <h1 className="text-white text-2xl font-bold">Ajustes</h1>
-        <p className="text-blue-400 text-sm mt-0.5">Perfil, club y configuración de la cuenta</p>
+        <p className="text-blue-200 text-sm mt-0.5">Perfil, club y configuración de la cuenta</p>
       </div>
 
       <div className="max-w-lg mx-auto px-4 pt-6 flex flex-col gap-6">

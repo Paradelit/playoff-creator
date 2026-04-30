@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
 import { saveTeam } from '../../services/teamsService';
 import { DEFAULT_TEMPLATE, VARIABLE_LABELS, renderConvocatoria } from '../../utils/convocatoriaTemplate';
+import PickHintBanner from '../pick/PickHintBanner';
 
 const PREVIEW_SESSION = {
   tipo: 'partido',
@@ -84,6 +85,12 @@ export default function ConvocatoriasTab({ team }) {
 
   return (
     <div className="flex flex-col gap-6">
+      <PickHintBanner
+        message="¿No quieres tocar el código del mensaje? Pick redacta y manda la convocatoria del próximo partido por ti."
+        prompt={`Genera la convocatoria del próximo partido del equipo ${team?.id || ''}`}
+        cta="Que la haga Pick"
+      />
+
       <section>
         <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-2">Plantilla del mensaje</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

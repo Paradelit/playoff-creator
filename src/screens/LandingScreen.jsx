@@ -11,7 +11,7 @@ import FinalCTA from '../components/landing/FinalCTA';
 import LandingFooter from '../components/landing/LandingFooter';
 import { SITE_URL, OG_IMAGE } from '../siteConfig';
 
-const TITLE = 'Pick&Coach — Copiloto IA para entrenadores de baloncesto';
+const TITLE = 'Pick&Coach · Copiloto IA para entrenadores de baloncesto';
 const DESCRIPTION =
   'Playoffs, entrenamientos, calendario y scouting. Todo en un sitio, con un copiloto IA que hace el trabajo contigo.';
 

@@ -38,7 +38,7 @@ export function useReminders(sessions) {
                 : `Entrenamiento`;
 
           const diffMin = Math.round(diffMs / 60000);
-          const body = `${s.teamName || ''} — En ${diffMin} min${s.lugar ? ` · ${s.lugar}` : ''}`;
+          const body = `${s.teamName || ''} · En ${diffMin} min${s.lugar ? ` · ${s.lugar}` : ''}`;
 
           new Notification(title, { body, icon: '/favicon.ico', tag: s.id });
         }

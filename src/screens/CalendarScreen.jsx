@@ -122,16 +122,16 @@ export default function CalendarScreen() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <CalendarDays className="text-amber-500" size={36} aria-hidden="true" /> Calendario
+              <CalendarDays className="text-blue-600" size={36} aria-hidden="true" /> Calendario
             </h1>
             <p className="text-slate-500 mt-1 text-sm">Entrenamientos y partidos de tus equipos.</p>
           </div>
           <div className="flex gap-3 flex-wrap">
             <button
               onClick={importer.openImportSetup}
-              className="bg-gradient-to-r from-orange-500 to-blue-700 hover:from-orange-600 hover:to-blue-800 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition text-sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-md transition text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
             >
-              <Sparkles size={16} aria-hidden="true" /> Importar con IA
+              <Sparkles size={16} className="text-orange-300" aria-hidden="true" /> Importar con IA
             </button>
             <input
               ref={importer.fileInputRef}
@@ -155,9 +155,10 @@ export default function CalendarScreen() {
           </div>
         </div>
 
-        {/* Navigation bar */}
-        <div className="flex items-center justify-between gap-3 mb-4 bg-white rounded-xl shadow-sm border border-slate-200 px-4 py-3 flex-wrap gap-y-2">
-          <div className="flex items-center gap-2">
+        {/* Navigation bar — stacks to two rows on mobile (date nav on top,
+            filter+view-toggle below) so 6+ controls don't crowd a single row at 375px */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 mb-4 bg-white rounded-xl shadow-sm border border-slate-200 px-4 py-3">
+          <div className="flex items-center justify-center sm:justify-start gap-2">
             <button
               onClick={goBack}
               aria-label="Período anterior"
@@ -165,7 +166,9 @@ export default function CalendarScreen() {
             >
               <ChevronLeft size={20} aria-hidden="true" />
             </button>
-            <h2 className="text-base font-bold text-slate-800 min-w-[170px] text-center">{getNavLabel()}</h2>
+            <h2 className="text-base font-bold text-slate-800 min-w-[140px] sm:min-w-[170px] text-center">
+              {getNavLabel()}
+            </h2>
             <button
               onClick={goForward}
               aria-label="Período siguiente"
@@ -174,19 +177,22 @@ export default function CalendarScreen() {
               <ChevronRight size={20} aria-hidden="true" />
             </button>
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <select
-              value={filterTeamId ?? ''}
-              onChange={(e) => setFilterTeamId(e.target.value || null)}
-              className="border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-            >
-              <option value="">Todos los equipos</option>
-              {teams.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {teamDisplayName(t)}
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center justify-center sm:justify-end gap-2 flex-wrap">
+            <div className="relative">
+              <select
+                value={filterTeamId ?? ''}
+                onChange={(e) => setFilterTeamId(e.target.value || null)}
+                aria-label="Filtrar por equipo"
+                className={`border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors ${filterTeamId ? 'border-blue-400 bg-blue-50 text-blue-800 font-semibold' : 'border-slate-300 bg-white'}`}
+              >
+                <option value="">Todos los equipos</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {teamDisplayName(t)}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="flex rounded-xl overflow-hidden border border-slate-200">
               {[
                 ['month', 'Mes'],
@@ -204,6 +210,41 @@ export default function CalendarScreen() {
             </div>
           </div>
         </div>
+
+        {/* Empty-state hint for month view: when there are zero sessions in the
+            visible month and we're not loading, point the coach to the two ways
+            to fill it. Render BEFORE the grid so it doesn't disturb cell layout. */}
+        {viewMode === 'month' &&
+          !loading &&
+          calendarDays.every((d) => !d.isCurrentMonth || d.sessions.length === 0) && (
+            <div className="mb-4 bg-white rounded-xl border border-dashed border-slate-300 px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 text-sm">
+              <div className="flex items-center gap-2 text-slate-700">
+                <CalendarDays size={18} className="text-blue-600 shrink-0" aria-hidden="true" />
+                <span className="font-semibold">No hay sesiones este mes.</span>
+                <span className="text-slate-500 hidden sm:inline">Empieza por aquí:</span>
+              </div>
+              <div className="flex gap-2 sm:ml-auto flex-wrap">
+                <button
+                  onClick={() => {
+                    editor.setSessionErrors({});
+                    editor.setEditingSession({
+                      ...EMPTY_SESSION(teams),
+                      ...(filterTeamId ? { teamId: filterTeamId } : {}),
+                    });
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5"
+                >
+                  <Plus size={14} aria-hidden="true" /> Crear primera sesión
+                </button>
+                <button
+                  onClick={importer.openImportSetup}
+                  className="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5"
+                >
+                  <Sparkles size={14} className="text-orange-500" aria-hidden="true" /> Importar Excel
+                </button>
+              </div>
+            </div>
+          )}
 
         {/* Calendar views */}
         {viewMode === 'month' && (

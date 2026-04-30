@@ -31,7 +31,7 @@ function NavItem({ to, label, Icon, end }) {
       end={end}
       className={({ isActive }) =>
         `flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-xs font-medium transition-colors ${
-          isActive ? 'text-amber-400' : 'text-blue-400 hover:text-blue-200'
+          isActive ? 'text-white font-bold' : 'text-blue-400 hover:text-blue-200'
         }`
       }
     >

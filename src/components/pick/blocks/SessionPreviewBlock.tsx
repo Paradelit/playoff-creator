@@ -10,10 +10,10 @@ export default function SessionPreviewBlock({ session }: { session: Record<strin
   const teamName = session.teamName as string | undefined;
 
   return (
-    <div className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white overflow-hidden">
-      <div className="px-3 py-2 bg-indigo-100/60 border-b border-indigo-200 flex items-center gap-2">
-        <Calendar size={14} className="text-indigo-600" />
-        <p className="text-sm font-semibold text-indigo-900 truncate flex-1">{title}</p>
+    <div className="rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white overflow-hidden">
+      <div className="px-3 py-2 bg-blue-100/60 border-b border-blue-200 flex items-center gap-2">
+        <Calendar size={14} className="text-blue-600" />
+        <p className="text-sm font-semibold text-blue-900 truncate flex-1">{title}</p>
       </div>
       <div className="px-3 py-2 space-y-1 text-xs text-slate-700">
         {date && (
@@ -23,7 +23,7 @@ export default function SessionPreviewBlock({ session }: { session: Record<strin
         )}
         {(start || end) && (
           <p className="flex items-center gap-1">
-            <Clock size={10} className="text-indigo-500" />
+            <Clock size={10} className="text-blue-500" />
             {start}
             {end ? ` – ${end}` : ''}
           </p>

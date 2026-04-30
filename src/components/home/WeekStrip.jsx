@@ -47,7 +47,7 @@ export default function WeekStrip({ days, navigate }) {
             </span>
             <span
               className={`mt-0.5 text-sm font-black w-7 h-7 rounded-full flex items-center justify-center ${
-                d.isToday ? 'bg-amber-400 text-white' : d.isPast ? 'text-slate-400' : 'text-slate-700'
+                d.isToday ? 'bg-amber-400 text-slate-900' : d.isPast ? 'text-slate-400' : 'text-slate-700'
               }`}
             >
               {d.dayNum}

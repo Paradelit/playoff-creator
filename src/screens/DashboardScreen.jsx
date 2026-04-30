@@ -296,7 +296,7 @@ export default function DashboardScreen() {
             return (
               <div className="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-16 text-center shadow-sm">
                 <FolderOpen size={64} className="mx-auto text-slate-300 mb-4" aria-hidden="true" />
-                <h3 className="text-xl font-bold text-slate-700 mb-2">Aún no tienes torneos creados</h3>
+                <h2 className="text-xl font-bold text-slate-700 mb-2">Aún no tienes torneos creados</h2>
                 <p className="text-slate-500 mb-6">Sube las bases de la FBM y tu clasificación para empezar.</p>
                 <button onClick={() => setAppMode('upload')} className="text-blue-600 font-bold hover:underline">
                   Analizar competición ahora
@@ -318,17 +318,17 @@ export default function DashboardScreen() {
               {filteredSorted.map((b) => (
                 <div
                   key={`bracket-card-${b.id}`}
-                  className={`bg-white rounded-xl shadow-md border p-6 flex flex-col hover:shadow-xl transition-shadow ${b.isShared ? 'border-purple-200' : 'border-slate-200'}`}
+                  className={`bg-white rounded-xl shadow-md border p-6 flex flex-col hover:shadow-xl transition-shadow ${b.isShared ? 'border-blue-200' : 'border-slate-200'}`}
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="text-xl font-bold text-slate-800 truncate">{b.name}</h3>
+                    <h2 className="text-xl font-bold text-slate-800 truncate">{b.name}</h2>
                     {b.isShared && (
-                      <span className="shrink-0 flex items-center gap-1 bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full">
+                      <span className="shrink-0 flex items-center gap-1 bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
                         <Users size={11} aria-hidden="true" /> Compartido
                       </span>
                     )}
                   </div>
-                  <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-1 truncate">
+                  <p className="text-xs font-semibold text-blue-500 uppercase tracking-wide mb-1 truncate">
                     {b.tournamentNameDetected || 'Competición'}
                   </p>
                   {b.teamName ? (
@@ -394,7 +394,7 @@ export default function DashboardScreen() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleShare(b)}
-                        className="text-slate-400 hover:text-purple-600 p-2 hover:bg-purple-50 rounded-lg transition-colors"
+                        className="text-slate-500 hover:text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition-colors"
                         aria-label="Compartir cuadro"
                         title="Compartir cuadro"
                       >

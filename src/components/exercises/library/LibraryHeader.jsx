@@ -6,7 +6,7 @@ export default function LibraryHeader({ exerciseCount, importRef, onImport, onEx
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div className="min-w-0">
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-3">
-          <BookOpen className="text-amber-500 shrink-0" size={30} aria-hidden="true" /> Biblioteca
+          <BookOpen className="text-blue-600 shrink-0" size={30} aria-hidden="true" /> Biblioteca
         </h1>
         <p className="text-slate-500 mt-1 text-sm">
           {exerciseCount > 0

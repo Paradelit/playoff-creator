@@ -110,7 +110,7 @@ export default function UploadScreen({ pendingTeamName }) {
             <>
               <div className="grid sm:grid-cols-2 gap-4 mb-6">
                 <div
-                  className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${basesFile ? 'border-indigo-500 bg-indigo-50' : 'border-slate-300 hover:border-indigo-400'}`}
+                  className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${basesFile ? 'border-orange-500 bg-orange-50' : 'border-slate-300 hover:border-orange-400'}`}
                   onClick={() => !isProcessing && fileInputBases.current?.click()}
                 >
                   <input
@@ -122,7 +122,7 @@ export default function UploadScreen({ pendingTeamName }) {
                   />
                   {basesFile ? (
                     <div className="flex flex-col items-center">
-                      <CheckCircle size={32} className="text-indigo-600" aria-hidden="true" />{' '}
+                      <CheckCircle size={32} className="text-orange-600" aria-hidden="true" />{' '}
                       <span className="text-xs mt-1 truncate w-full px-2">{basesFile.name}</span>
                     </div>
                   ) : (
@@ -132,7 +132,7 @@ export default function UploadScreen({ pendingTeamName }) {
                   )}
                 </div>
                 <div
-                  className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${clasifFile ? 'border-indigo-500 bg-indigo-50' : 'border-slate-300 hover:border-indigo-400'}`}
+                  className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${clasifFile ? 'border-orange-500 bg-orange-50' : 'border-slate-300 hover:border-orange-400'}`}
                   onClick={() => !isProcessing && fileInputClasif.current?.click()}
                 >
                   <input
@@ -144,7 +144,7 @@ export default function UploadScreen({ pendingTeamName }) {
                   />
                   {clasifFile ? (
                     <div className="flex flex-col items-center">
-                      <CheckCircle size={32} className="text-indigo-600" aria-hidden="true" />{' '}
+                      <CheckCircle size={32} className="text-orange-600" aria-hidden="true" />{' '}
                       <span className="text-xs mt-1 truncate w-full px-2">{clasifFile.name}</span>
                     </div>
                   ) : (
@@ -175,9 +175,9 @@ export default function UploadScreen({ pendingTeamName }) {
               </div>
 
               {isProcessing ? (
-                <div className="mt-6 flex flex-col items-center p-4 bg-indigo-50 rounded-xl">
-                  <Loader2 size={32} className="text-indigo-600 animate-spin mb-3" aria-hidden="true" />
-                  <span className="text-indigo-800 text-sm font-medium">{processStatus}</span>
+                <div className="mt-6 flex flex-col items-center p-4 bg-orange-50 rounded-xl">
+                  <Loader2 size={32} className="text-orange-600 animate-spin mb-3" aria-hidden="true" />
+                  <span className="text-orange-800 text-sm font-medium">{processStatus}</span>
                 </div>
               ) : (
                 <button
@@ -245,7 +245,7 @@ export default function UploadScreen({ pendingTeamName }) {
             <>
               <input type="file" className="hidden" ref={fileInputImport} accept=".json" onChange={handleImport} />
               <div
-                className="border-2 border-dashed border-slate-300 hover:border-indigo-400 rounded-xl p-10 text-center cursor-pointer transition-colors"
+                className="border-2 border-dashed border-slate-300 hover:border-orange-400 rounded-xl p-10 text-center cursor-pointer transition-colors"
                 onClick={() => fileInputImport.current?.click()}
               >
                 <Upload size={36} className="mx-auto text-slate-400 mb-3" aria-hidden="true" />

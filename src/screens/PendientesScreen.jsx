@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useHomeDashboard } from '../hooks/useHomeDashboard';
 import { useCompetitions } from '../hooks/useCompetitions';
 import PendingActionsList from '../components/home/PendingActionsList';
@@ -83,28 +83,36 @@ export default function PendientesScreen() {
             : `${allItems.length} ${allItems.length === 1 ? 'tarea' : 'tareas'} en cola.`}
         </p>
 
-        <div className="flex flex-wrap gap-2 mb-4">
-          {FILTERS.map(([v, label]) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setFilterType(v)}
-              aria-pressed={filterType === v}
-              className={`text-xs font-bold px-3 py-1.5 rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 ${
-                filterType === v
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+        {/* Filter row: type chips on top (always horizontal), team filter on its own
+            row on mobile so labels don't overlap the dropdown */}
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-2">
+            {FILTERS.map(([v, label]) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setFilterType(v)}
+                aria-pressed={filterType === v}
+                className={`text-xs font-bold px-3 py-1.5 rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 ${
+                  filterType === v
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           {teams.length > 1 && (
             <select
               value={filterTeam}
               onChange={(e) => setFilterTeam(e.target.value)}
               aria-label="Filtrar por equipo"
-              className="text-xs font-bold px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+              className={`text-xs font-bold px-3 py-1.5 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 transition-colors ${
+                filterTeam === 'all'
+                  ? 'bg-white border border-slate-200 text-slate-600'
+                  : 'bg-blue-50 border border-blue-300 text-blue-700'
+              }`}
             >
               <option value="all">Todos los equipos</option>
               {teams.map((t) => (
@@ -116,13 +124,32 @@ export default function PendientesScreen() {
           )}
         </div>
 
-        <PendingActionsList
-          items={filtered}
-          total={filtered.length}
-          onAction={handleAction}
-          creatingId={creatingTraining}
-          overflowHref={null}
-        />
+        {allItems.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 px-6 py-10 text-center flex flex-col items-center gap-3">
+            <CheckCircle2 size={36} className="text-emerald-500" aria-hidden="true" />
+            <div>
+              <p className="text-base font-bold text-slate-700">Cancha despejada</p>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Cuando tengas convocatorias, resultados o cumpleaños por gestionar, aparecerán aquí.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/area-privada/calendar')}
+              className="text-sm font-bold text-blue-600 hover:text-blue-800 transition"
+            >
+              Ver calendario →
+            </button>
+          </div>
+        ) : (
+          <PendingActionsList
+            items={filtered}
+            total={filtered.length}
+            onAction={handleAction}
+            creatingId={creatingTraining}
+            overflowHref={null}
+          />
+        )}
       </div>
 
       {convocatoriaSession && (

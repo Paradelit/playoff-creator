@@ -73,7 +73,7 @@ export default function TeamTrainingsScreen() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-6">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <ClipboardList className="text-amber-500" size={36} aria-hidden="true" /> Entrenamientos
+              <ClipboardList className="text-blue-600" size={36} aria-hidden="true" /> Entrenamientos
             </h1>
             {team && (
               <p className="text-slate-500 mt-1 flex items-center gap-1.5">

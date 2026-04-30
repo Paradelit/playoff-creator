@@ -181,7 +181,7 @@ export function ProfileSection({ s }) {
 
 export function ClubSection({ s }) {
   return (
-    <Section icon={Building2} title="Club" iconColor="text-violet-600" iconBg="bg-violet-50">
+    <Section icon={Building2} title="Club" iconColor="text-slate-700" iconBg="bg-slate-100">
       <Field label="Nombre del club">
         <input
           type="text"
@@ -215,7 +215,7 @@ export function ClubSection({ s }) {
             type="button"
             onClick={() => s.logoInputRef.current?.click()}
             disabled={s.uploadingLogo}
-            className="text-sm font-bold text-violet-600 hover:text-violet-800 transition disabled:opacity-50"
+            className="text-sm font-bold text-blue-600 hover:text-blue-800 transition disabled:opacity-50"
           >
             {s.uploadingLogo ? 'Subiendo...' : s.form.logoClub ? 'Cambiar logo' : 'Subir logo'}
           </button>
@@ -227,7 +227,7 @@ export function ClubSection({ s }) {
         type="button"
         onClick={s.handleSaveClubName}
         disabled={s.savingProfile}
-        className="mt-3 w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-2.5 rounded-xl transition disabled:opacity-60 text-sm"
+        className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition disabled:opacity-60 text-sm"
       >
         {s.savingProfile ? 'Guardando...' : 'Guardar nombre'}
       </button>
@@ -304,7 +304,7 @@ export function PickSection({ s }) {
   return (
     <Section icon={Sparkles} title="Pick (asistente IA)" iconColor="text-purple-600" iconBg="bg-purple-50">
       <p className="text-xs text-slate-500 mb-4">
-        Controla cuánto puede hablarte Pick sin que tú se lo pidas. Siempre responderá cuando le preguntes — esto solo
+        Controla cuánto puede hablarte Pick sin que tú se lo pidas. Siempre responderá cuando le preguntes; esto solo
         afecta a sugerencias espontáneas.
       </p>
       <div className="flex flex-col gap-2" role="radiogroup" aria-label="Modo de proactividad de Pick">

@@ -96,13 +96,13 @@ export default function SharedExerciseScreen() {
                 {(exercise.tags || []).map((tag, i) => (
                   <span
                     key={i}
-                    className="inline-block bg-indigo-100 text-indigo-600 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                    className="inline-block bg-blue-100 text-blue-700 text-[10px] font-semibold px-2 py-0.5 rounded-full"
                   >
                     {tag}
                   </span>
                 ))}
                 {!exercise.tags?.length && exercise.contenido && (
-                  <span className="text-xs font-semibold text-indigo-500 uppercase tracking-wide">
+                  <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
                     {exercise.contenido}
                   </span>
                 )}

@@ -330,7 +330,7 @@ function PlaybookSubDialog({
     <Dialog
       open
       onClose={onClose}
-      ariaLabel={`Editor de pizarra — Paso ${stepIdx + 1} de ${pasos.length}`}
+      ariaLabel={`Editor de pizarra · Paso ${stepIdx + 1} de ${pasos.length}`}
       backdropClassName="fixed inset-0 z-[120] bg-gray-900/90 flex flex-col items-center justify-center p-4 touch-none"
       panelClassName="bg-white w-full max-w-5xl h-[85vh] rounded-lg shadow-2xl flex flex-col overflow-hidden outline-none"
     >

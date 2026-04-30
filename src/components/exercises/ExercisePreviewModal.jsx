@@ -44,13 +44,13 @@ export default function ExercisePreviewModal({ exercise, sharing, onClose, onEdi
               {(exercise.tags || []).map((tag, i) => (
                 <span
                   key={i}
-                  className="inline-block bg-indigo-100 text-indigo-600 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                  className="inline-block bg-blue-100 text-blue-700 text-[10px] font-semibold px-2 py-0.5 rounded-full"
                 >
                   {tag}
                 </span>
               ))}
               {!exercise.tags?.length && exercise.contenido && (
-                <span className="text-xs font-semibold text-indigo-500 uppercase tracking-wide">
+                <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
                   {exercise.contenido}
                 </span>
               )}
@@ -75,7 +75,7 @@ export default function ExercisePreviewModal({ exercise, sharing, onClose, onEdi
               {exercise.tags.map((tag, i) => (
                 <span
                   key={i}
-                  className="inline-block bg-indigo-100 text-indigo-600 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                  className="inline-block bg-blue-100 text-blue-700 text-[10px] font-semibold px-2 py-0.5 rounded-full"
                 >
                   {tag}
                 </span>
@@ -95,7 +95,7 @@ export default function ExercisePreviewModal({ exercise, sharing, onClose, onEdi
                   {steps.length > 1 && (
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
                       Paso {i + 1}
-                      {paso.titulo ? ` — ${paso.titulo}` : ''}
+                      {paso.titulo ? ` · ${paso.titulo}` : ''}
                     </p>
                   )}
                   <div className="bg-gray-50 rounded-xl border border-slate-200 flex items-center justify-center p-4">
@@ -157,7 +157,7 @@ export default function ExercisePreviewModal({ exercise, sharing, onClose, onEdi
               onCreateVariant(exercise);
               onClose();
             }}
-            className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 border border-indigo-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
+            className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 border border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
           >
             <GitBranch size={16} aria-hidden="true" /> Variante
           </button>

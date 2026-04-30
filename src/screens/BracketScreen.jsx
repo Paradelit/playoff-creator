@@ -97,7 +97,7 @@ export default function BracketScreen() {
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 animate-in fade-in duration-700">
       {isProcessingResults && (
         <div className="fixed inset-0 bg-slate-900/80 z-[60] flex flex-col items-center justify-center p-4 backdrop-blur-sm">
-          <Loader2 size={48} className="text-indigo-400 animate-spin mb-4" aria-hidden="true" />
+          <Loader2 size={48} className="text-blue-400 animate-spin mb-4" aria-hidden="true" />
           <h3 className="text-2xl font-bold text-white mb-2">Autocompletando...</h3>
         </div>
       )}
@@ -235,7 +235,7 @@ export default function BracketScreen() {
                   {activeBracket.tournamentNameDetected || 'Estructura Dinámica'}
                 </p>
                 {activeBracket.isShared && (
-                  <span className="hidden sm:inline-flex items-center gap-1 bg-purple-500/30 text-purple-200 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  <span className="hidden sm:inline-flex items-center gap-1 bg-blue-500/30 text-blue-100 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                     <Users size={9} aria-hidden="true" /> Compartido
                   </span>
                 )}

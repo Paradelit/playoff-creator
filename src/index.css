@@ -761,4 +761,28 @@
   .hi-step {
     opacity: 1 !important;
   }
+  .ds-exercise-card {
+    transition: none !important;
+  }
+}
+
+/* Reduced motion: blanket override for app-level Tailwind animation utilities and
+ * Pick keyframes. Landing keyframes are handled above with finer granularity.
+ * Coaches with vestibular issues should not see entrance/loop motion inside the
+ * private app either. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin,
+  .animate-pulse,
+  .animate-slide-up,
+  .animate-pick-fade-in,
+  .animate-pick-panel-open,
+  .animate-pick-panel-close,
+  .animate-pick-collapse,
+  [class*='animate-in'],
+  [class*='zoom-in'],
+  [class*='fade-in'],
+  [class*='slide-in'] {
+    animation: none !important;
+    transition: none !important;
+  }
 }

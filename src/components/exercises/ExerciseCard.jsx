@@ -48,7 +48,7 @@ export default function ExerciseCard({
       : '200px';
   return (
     <div
-      className={`bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden ${isVariant ? 'border-indigo-100' : ''}`}
+      className={`bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden ${isVariant ? 'border-blue-100' : ''}`}
     >
       {hasVisual && (
         <div
@@ -59,7 +59,7 @@ export default function ExerciseCard({
             <CourtCanvas tipo={ex.tipoPista || 'media'} elementos={firstStepElements} readOnly={true} />
           </div>
           {steps.length > 1 && (
-            <span className="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="absolute top-2 left-2 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
               {steps.length} pasos
             </span>
           )}
@@ -74,9 +74,7 @@ export default function ExerciseCard({
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
             {isVariant && ex.variantName && (
-              <p className="text-[10px] font-semibold text-indigo-500 uppercase tracking-wide mb-0.5">
-                {ex.variantName}
-              </p>
+              <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-wide mb-0.5">{ex.variantName}</p>
             )}
             <p className="font-bold text-slate-800 truncate">{ex.nombre}</p>
           </div>
@@ -89,8 +87,8 @@ export default function ExerciseCard({
               className="text-slate-400 hover:text-slate-600 p-1 flex items-center gap-1 text-xs font-semibold shrink-0"
               title={expanded ? 'Contraer variantes' : 'Expandir variantes'}
             >
-              <GitBranch size={13} className="text-indigo-500" aria-hidden="true" />
-              <span className="text-indigo-500">{variantCount}</span>
+              <GitBranch size={13} className="text-blue-600" aria-hidden="true" />
+              <span className="text-blue-600">{variantCount}</span>
               {expanded ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronRight size={14} aria-hidden="true" />}
             </button>
           )}
@@ -105,13 +103,13 @@ export default function ExerciseCard({
             {(ex.tags || []).map((tag, i) => (
               <span
                 key={i}
-                className="inline-block bg-indigo-100 text-indigo-600 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                className="inline-block bg-blue-100 text-blue-700 text-[10px] font-semibold px-2 py-0.5 rounded-full"
               >
                 {tag}
               </span>
             ))}
             {!ex.tags?.length && ex.contenido && (
-              <span className="text-xs font-semibold text-indigo-500 uppercase tracking-wide">{ex.contenido}</span>
+              <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">{ex.contenido}</span>
             )}
           </div>
         )}
@@ -126,7 +124,7 @@ export default function ExerciseCard({
           </button>
           <button
             onClick={() => onCreateVariant(ex)}
-            className="text-slate-400 hover:text-indigo-600 p-2 hover:bg-indigo-50 rounded-lg transition-colors"
+            className="text-slate-400 hover:text-blue-700 p-2 hover:bg-blue-50 rounded-lg transition-colors"
             title="Crear variante"
           >
             <GitBranch size={15} aria-hidden="true" />

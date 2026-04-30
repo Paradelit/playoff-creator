@@ -22,7 +22,7 @@ export default function WeekView({ weekDays, todayYMD, loading, onSelectSession,
               <div className={`text-center py-2 border-b border-slate-200 ${isToday ? 'bg-amber-50' : ''}`}>
                 <p className="text-xs font-semibold text-slate-500">{DAY_NAMES_SHORT[dow]}</p>
                 <span
-                  className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mx-auto mt-0.5 ${isToday ? 'bg-amber-400 text-white' : 'text-slate-700'}`}
+                  className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mx-auto mt-0.5 ${isToday ? 'bg-amber-400 text-slate-900' : 'text-slate-700'}`}
                 >
                   {date.getDate()}
                 </span>

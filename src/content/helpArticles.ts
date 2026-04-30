@@ -256,7 +256,7 @@ Puedes revocar el acceso en cualquier momento desde la configuración de compart
     title: 'Formato liga (todos contra todos)',
     summary:
       'En una liga, cada equipo juega una o dos veces contra todos los demás. Los puntos por resultado y los criterios de desempate los fija cada competición.',
-    body: `> El formato exacto de tu competición puede variar — consulta siempre las bases oficiales.
+    body: `> El formato exacto de tu competición puede variar; consulta siempre las bases oficiales.
 
 La liga o formato round-robin es un formato habitual en competiciones regulares de baloncesto.
 
@@ -280,7 +280,7 @@ Muchas competiciones usan una fase de liga regular seguida de una fase de playof
     title: 'Formato eliminatoria directa (copa)',
     summary:
       'En la eliminatoria directa, perder significa quedar eliminado. El seeding determina los emparejamientos y los BYEs aparecen cuando el número de equipos no es potencia de 2.',
-    body: `> El formato exacto de tu competición puede variar — consulta siempre las bases oficiales.
+    body: `> El formato exacto de tu competición puede variar; consulta siempre las bases oficiales.
 
 En la eliminatoria directa o formato copa, el equipo que pierde queda eliminado inmediatamente.
 
@@ -290,7 +290,7 @@ La ventaja es que requiere menos partidos totales que una liga.
 
 El seeding (cabezas de serie) determina los emparejamientos: un ejemplo habitual sería que el 1º de un grupo juegue contra el 2º de otro grupo. Los emparejamientos exactos dependen de las bases del torneo.
 
-Las posibles BYE rounds ocurren cuando el número de equipos no es potencia de 2 — los equipos con BYE avanzan directamente a la siguiente ronda sin jugar.`,
+Las posibles BYE rounds ocurren cuando el número de equipos no es potencia de 2: los equipos con BYE avanzan directamente a la siguiente ronda sin jugar.`,
     tags: ['eliminatoria', 'copa', 'seeding', 'bye'],
     updatedAt: '2026-04-25',
   },
@@ -302,7 +302,7 @@ Las posibles BYE rounds ocurren cuando el número de equipos no es potencia de 2
     title: 'Formatos de serie: BO1, BO2, BO3, BO5',
     summary:
       'Las eliminatorias pueden jugarse en partido único (BO1) o en series de 2, 3, 5 o 7 partidos. El formato concreto lo determinan las bases de cada competición.',
-    body: `> El formato exacto de tu competición puede variar — consulta siempre las bases oficiales.
+    body: `> El formato exacto de tu competición puede variar; consulta siempre las bases oficiales.
 
 Las eliminatorias de playoffs suelen jugarse en series en lugar de partido único:
 
@@ -324,7 +324,7 @@ El equipo con mejor clasificación suele tener ventaja de campo (juega más part
     title: 'Categorías del baloncesto español',
     summary:
       'El baloncesto federado español se organiza por tramos de edad: minibasket, alevín, infantil, cadete, júnior y sénior, cada una con su balón, canasta y reglamento específico.',
-    body: `> El formato exacto de tu competición puede variar — consulta siempre las bases oficiales.
+    body: `> El formato exacto de tu competición puede variar; consulta siempre las bases oficiales.
 
 Las categorías del baloncesto español por tramo de edad (los años de nacimiento concretos varían cada temporada y los publica cada federación):
 
@@ -347,7 +347,7 @@ En competición federada, los jugadores pueden jugar en categorías superiores (
     title: 'Fase de grupos + playoffs',
     summary:
       'Muchas competiciones combinan una fase de grupos (liga interna) con una fase de playoffs eliminatoria. El seeding cruza grupos para evitar repetir rivales hasta la final.',
-    body: `> El formato exacto de tu competición puede variar — consulta siempre las bases oficiales.
+    body: `> El formato exacto de tu competición puede variar; consulta siempre las bases oficiales.
 
 Muchas competiciones combinan una fase de grupos (liga) con una fase de playoffs:
 
@@ -617,7 +617,7 @@ Si una variable no tiene valor, su línea se elide automáticamente.
 
 ## Encabezado automático
 
-- Liga: muestra nombre de competición, fase, y vuelta (1ª/2ª si el número de jornadas es par). Ejemplo: Liga Cadete A — Fase 1 (2ª vuelta) / Jornada 15 vs Movistar.
+- Liga: muestra nombre de competición, fase, y vuelta (1ª/2ª si el número de jornadas es par). Ejemplo: Liga Cadete A · Fase 1 (2ª vuelta) / Jornada 15 vs Movistar.
 - Playoffs: muestra la ronda y el número de partido. Ejemplo: Playoffs 1/8 / Jornada 1 vs Rival.
 - Amistoso: muestra solo vs Rival.
 

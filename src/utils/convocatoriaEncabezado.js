@@ -22,5 +22,5 @@ export function generarEncabezado({ session, competition }) {
   if (!fase) return `*${competition.nombre}*\n_vs ${rival}_`;
 
   const vuelta = vueltaSuffix(fase, session.jornadaNumero);
-  return `*${competition.nombre} — ${fase.nombre}${vuelta}*\n_Jornada ${session.jornadaNumero} vs ${rival}_`;
+  return `*${competition.nombre} · ${fase.nombre}${vuelta}*\n_Jornada ${session.jornadaNumero} vs ${rival}_`;
 }

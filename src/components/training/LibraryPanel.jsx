@@ -56,7 +56,7 @@ export default function LibraryPanel({
                         active ? prev.filter((t) => t.toLowerCase() !== tag.toLowerCase()) : [...prev, tag],
                       )
                     }
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${active ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                   >
                     {tag}
                   </button>
@@ -97,13 +97,13 @@ export default function LibraryPanel({
                       {(ex.tags || []).map((tag, i) => (
                         <span
                           key={i}
-                          className="text-[9px] bg-indigo-100 text-indigo-600 font-semibold px-1.5 py-0.5 rounded-full"
+                          className="text-[9px] bg-blue-100 text-blue-700 font-semibold px-1.5 py-0.5 rounded-full"
                         >
                           {tag}
                         </span>
                       ))}
                       {!ex.tags?.length && ex.contenido && (
-                        <span className="text-xs text-indigo-500 font-semibold">{ex.contenido}</span>
+                        <span className="text-xs text-blue-600 font-semibold">{ex.contenido}</span>
                       )}
                     </div>
                   )}

@@ -42,7 +42,7 @@ export default function HelpArticleScreen() {
 
   const categoryLabel = HELP_CATEGORIES[article.category]?.label || article.category;
   const articleUrl = `${SITE_URL}/ayuda/${article.slug}`;
-  const pageTitle = `${article.title} — Ayuda de Pick&Coach`;
+  const pageTitle = `${article.title} · Ayuda de Pick&Coach`;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -123,7 +123,7 @@ export default function HelpArticleScreen() {
         <section className="mt-12 p-6 lg:p-8 bg-white border border-blue-100 rounded-2xl shadow-sm">
           <h2 className="text-xl font-semibold text-slate-900 mb-2">¿Aún tienes preguntas?</h2>
           <p className="text-slate-600 mb-4">
-            Pregúntale a Pick desde tu cuenta — responde con tu contexto y puede ejecutar acciones por ti.
+            Pregúntale a Pick desde tu cuenta: responde con tu contexto y puede ejecutar acciones por ti.
           </p>
           <Link
             to={user ? '/area-privada' : '/login'}

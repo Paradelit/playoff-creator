@@ -101,7 +101,7 @@ export default function TrainingEditorScreen() {
 
         <div className="flex items-center gap-3">
           <span
-            className={`text-xs font-medium transition-colors ${saveStatus === 'saving' ? 'text-amber-500' : 'text-emerald-600'}`}
+            className={`text-xs font-medium transition-colors ${saveStatus === 'saving' ? 'text-blue-600' : 'text-emerald-600'}`}
           >
             {saveStatus === 'saving' ? 'Guardando...' : '✓ Guardado'}
           </span>
@@ -112,7 +112,7 @@ export default function TrainingEditorScreen() {
               setLibrarySearch('');
               setLibraryFilterTags([]);
             }}
-            className="flex items-center gap-1.5 text-sm font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition border border-indigo-200"
+            className="flex items-center gap-1.5 text-sm font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition border border-blue-200"
           >
             <BookOpen size={15} aria-hidden="true" /> Cargar de Biblioteca
           </button>
@@ -246,7 +246,7 @@ export default function TrainingEditorScreen() {
             {ejercicios.map((ej) => (
               <div
                 key={ej.id}
-                className={`group relative flex border-b border-black last:border-b-0 min-h-[100px] transition-colors ${libraryPanel.open && libraryPanel.targetId === ej.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}`}
+                className={`group relative flex border-b border-black last:border-b-0 min-h-[100px] transition-colors ${libraryPanel.open && libraryPanel.targetId === ej.id ? 'bg-blue-50 ring-2 ring-inset ring-blue-400' : ''}`}
               >
                 <div className="w-14 border-r border-black p-1">
                   <input
@@ -263,7 +263,7 @@ export default function TrainingEditorScreen() {
                       className="absolute top-1 right-1 print:hidden"
                       title={`Enlazado: ${ej.libExerciseName || 'Biblioteca'}`}
                     >
-                      <BookOpen size={9} className="text-amber-500" aria-hidden="true" />
+                      <BookOpen size={9} className="text-blue-500" aria-hidden="true" />
                     </span>
                   )}
                   <textarea
@@ -302,7 +302,7 @@ export default function TrainingEditorScreen() {
                         setLibrarySearch('');
                         setLibraryFilterTags([]);
                       }}
-                      className="text-indigo-500 hover:text-indigo-700"
+                      className="text-blue-600 hover:text-blue-800"
                       title="Cargar de biblioteca"
                     >
                       <BookOpen size={11} aria-hidden="true" />

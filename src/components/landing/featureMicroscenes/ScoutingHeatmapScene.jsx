@@ -89,7 +89,7 @@ export default function ScoutingHeatmapScene({ reduced = false }) {
 
         <g fontFamily="ui-sans-serif, system-ui, sans-serif" fill={tokens.ink500}>
           <text x="6" y="78" fontSize="4.5" fontWeight="700" letterSpacing="0.06em">
-            6/9 — eFG 67%
+            6/9 · eFG 67%
           </text>
         </g>
 

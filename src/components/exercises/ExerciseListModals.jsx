@@ -64,13 +64,13 @@ export function ExportModal({ exercises, exportSelected, setShowExport, toggleEx
                       {(ex.tags || []).map((tag, i) => (
                         <span
                           key={i}
-                          className="text-[10px] bg-indigo-100 text-indigo-600 font-semibold px-1.5 py-0.5 rounded-full"
+                          className="text-[10px] bg-blue-100 text-blue-700 font-semibold px-1.5 py-0.5 rounded-full"
                         >
                           {tag}
                         </span>
                       ))}
                       {!ex.tags?.length && ex.contenido && (
-                        <span className="text-xs text-indigo-500 font-semibold">{ex.contenido}</span>
+                        <span className="text-xs text-blue-600 font-semibold">{ex.contenido}</span>
                       )}
                     </div>
                   )}
@@ -135,7 +135,7 @@ export function ImportModal({ importPreview, setImportPreview, importing, doImpo
         {importPreview.map((ex, i) => (
           <li key={i} className="py-3 border-b border-slate-100 last:border-0">
             <p className="font-semibold text-slate-800 text-sm">{ex.nombre || '(sin nombre)'}</p>
-            {ex.contenido && <p className="text-xs text-indigo-500 font-semibold mt-0.5">{ex.contenido}</p>}
+            {ex.contenido && <p className="text-xs text-blue-600 font-semibold mt-0.5">{ex.contenido}</p>}
             {ex.descripcion && <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{ex.descripcion}</p>}
           </li>
         ))}

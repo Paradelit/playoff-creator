@@ -66,48 +66,57 @@ export default function TeamDashboard({
   onEditTeam,
   onDeleteTeam,
   compact = false,
+  hideTitle = false,
 }) {
   const todayYMD = toYMD(new Date());
   const nextAny = nextFor(sessions, team.id, todayYMD, null);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <ShieldHalf size={22} className="text-blue-600 shrink-0" aria-hidden="true" />
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold text-indigo-500 uppercase tracking-wide">
-              {team.categoria}
-              {team.genero ? ` · ${team.genero}` : ''}
-            </p>
-            <h3 className="text-lg font-bold text-slate-800 truncate">{teamDisplayName(team)}</h3>
+      {!hideTitle && (
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <ShieldHalf size={22} className="text-blue-600 shrink-0" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold text-blue-500 uppercase tracking-wide">
+                {team.categoria}
+                {team.genero ? ` · ${team.genero}` : ''}
+              </p>
+              <h3 className="text-lg font-bold text-slate-800 truncate">{teamDisplayName(team)}</h3>
+              {memberCounts && (memberCounts.jugadores > 0 || memberCounts.staff > 0) && (
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {memberCounts.jugadores} jugador{memberCounts.jugadores === 1 ? '' : 'es'}
+                  {memberCounts.staff > 0 ? ` · ${memberCounts.staff} staff` : ''}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            {onEditTeam && (
+              <button
+                type="button"
+                onClick={onEditTeam}
+                title="Editar equipo"
+                aria-label="Editar equipo"
+                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition"
+              >
+                <Pencil size={14} aria-hidden="true" />
+              </button>
+            )}
+            {onDeleteTeam && (
+              <button
+                type="button"
+                onClick={onDeleteTeam}
+                title="Eliminar equipo"
+                aria-label="Eliminar equipo"
+                className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition"
+              >
+                <Trash2 size={14} aria-hidden="true" />
+              </button>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {onEditTeam && (
-            <button
-              type="button"
-              onClick={onEditTeam}
-              title="Editar equipo"
-              aria-label="Editar equipo"
-              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition"
-            >
-              <Pencil size={14} aria-hidden="true" />
-            </button>
-          )}
-          {onDeleteTeam && (
-            <button
-              type="button"
-              onClick={onDeleteTeam}
-              title="Eliminar equipo"
-              aria-label="Eliminar equipo"
-              className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition"
-            >
-              <Trash2 size={14} aria-hidden="true" />
-            </button>
-          )}
-        </div>
-      </div>
+      )}
 
       {nextAny ? (
         <NextEventCard session={nextAny} todayYMD={todayYMD} navigate={navigate} />
@@ -144,7 +153,7 @@ export default function TeamDashboard({
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <button
           type="button"
           onClick={() => navigate(`/teams/${team.id}`)}
@@ -172,9 +181,9 @@ export default function TeamDashboard({
         <button
           type="button"
           onClick={() => navigate(`/calendar?teamId=${team.id}`)}
-          className="bg-emerald-50 hover:bg-emerald-100 rounded-xl p-3 text-left transition"
+          className="bg-slate-100 hover:bg-slate-200 rounded-xl p-3 text-left transition"
         >
-          <div className="flex items-center gap-1.5 text-emerald-700">
+          <div className="flex items-center gap-1.5 text-slate-700">
             <CalendarDays size={15} aria-hidden="true" />
             <span className="text-xs font-bold">Calendario</span>
           </div>
@@ -195,7 +204,7 @@ export default function TeamDashboard({
             <p className="text-xs text-slate-500">Torneo activo</p>
             <p className="font-bold text-slate-800 text-sm truncate">{activePlayoff.name}</p>
             {activePlayoff.match && activePlayoff.rival ? (
-              <p className="text-xs font-bold text-indigo-600 truncate">
+              <p className="text-xs font-bold text-blue-700 truncate">
                 vs {activePlayoff.rival}
                 {activePlayoff.series ? ` (${activePlayoff.series.wins}-${activePlayoff.series.losses})` : ''}
               </p>

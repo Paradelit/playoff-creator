@@ -90,6 +90,19 @@ export function useBracketCreation({
         );
       }
 
+      // bracketEngine requires a power-of-2 number of initial matches. Catch this
+      // before calling buildDynamicBracket so the coach gets an actionable hint
+      // instead of a malformed tree.
+      const matchCount = aiData.initialMatches.length;
+      const isPowerOfTwo = matchCount > 0 && (matchCount & (matchCount - 1)) === 0;
+      if (!isPowerOfTwo) {
+        const teamCount = matchCount * 2;
+        const nextPower = Math.pow(2, Math.ceil(Math.log2(teamCount)));
+        throw new Error(
+          `Encontré ${teamCount} equipos en ${matchCount} cruces, pero un cuadro válido necesita una potencia de 2 (4, 8, 16, 32). Sugerencia: pídeme que añada ${nextPower - teamCount} equipo(s) ficticios o que recorte a los ${Math.pow(2, Math.floor(Math.log2(teamCount)))} mejor clasificados, y vuelve a intentarlo en el campo "Contexto Adicional".`,
+        );
+      }
+
       setProcessStatus('Generando Bracket Dinámico...');
       const bracketDynamicTree = buildDynamicBracket(aiData.initialMatches, aiData.rounds);
 

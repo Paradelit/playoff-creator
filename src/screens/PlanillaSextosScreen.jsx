@@ -280,7 +280,7 @@ export default function PlanillaSextosScreen() {
                       <td className={`border border-black px-3 font-medium text-sm ${isInvalid ? 'text-red-700' : ''}`}>
                         <div className="flex items-center justify-between">
                           <span>
-                            {jugador.dorsal ? `${jugador.dorsal} — ` : ''}
+                            {jugador.dorsal ? `${jugador.dorsal} · ` : ''}
                             {jugador.nombre || '—'}
                           </span>
                           {isInvalid && (

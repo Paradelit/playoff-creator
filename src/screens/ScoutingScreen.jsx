@@ -12,6 +12,7 @@ import { useTeams } from '../hooks/useTeams';
 import { teamDisplayName } from '../utils/teamUtils';
 import { getTemporada, formatDateDisplay } from '../utils/dateUtils';
 import ConfirmDialog from '../components/ConfirmDialog';
+import PickHintBanner from '../components/pick/PickHintBanner';
 
 function emptyScoutingData(session) {
   return {
@@ -161,6 +162,18 @@ export default function ScoutingScreen() {
           </button>
         </div>
       </div>
+
+      {/* Pick hint — appears only when there's a rival to scout, fades into the
+          chrome above the analog A4 paper so it doesn't disturb the print look. */}
+      {data.rival && (
+        <div className="max-w-[800px] mx-auto px-4 pt-4 print:hidden">
+          <PickHintBanner
+            message={`Pick puede preparar las claves de scouting de ${data.rival} a partir de partidos anteriores y notas tuyas.`}
+            prompt={`Prepara el scouting del rival ${data.rival} para el partido del ${data.fecha || 'próximo'}`}
+            cta="Que lo prepare Pick"
+          />
+        </div>
+      )}
 
       {/* Documento */}
       <div className="py-8 px-4 print:p-0 pb-24">

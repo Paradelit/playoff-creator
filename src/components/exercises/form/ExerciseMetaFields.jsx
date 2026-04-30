@@ -82,7 +82,7 @@ export default function ExerciseMetaFields({ exercise, onChange, defaultOpen = f
                       aria-label={`Dificultad ${lvl}`}
                       className={`w-8 h-9 rounded-lg text-xs font-bold transition-colors ${
                         active
-                          ? 'bg-indigo-600 text-white'
+                          ? 'bg-blue-600 text-white'
                           : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-100'
                       }`}
                     >
@@ -141,7 +141,7 @@ export default function ExerciseMetaFields({ exercise, onChange, defaultOpen = f
                     aria-pressed={active}
                     className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-colors ${
                       active
-                        ? 'bg-indigo-600 text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'bg-white border border-slate-300 text-slate-600 hover:bg-slate-100'
                     }`}
                   >

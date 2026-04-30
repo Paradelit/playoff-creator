@@ -57,7 +57,7 @@ export default function TagInput({ tags = [], onChange, suggestions = [], placeh
         {tags.map((tag, i) => (
           <span
             key={i}
-            className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full"
+            className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-full"
           >
             {tag}
             <button
@@ -66,7 +66,7 @@ export default function TagInput({ tags = [], onChange, suggestions = [], placeh
                 e.stopPropagation();
                 removeTag(i);
               }}
-              className="text-indigo-400 hover:text-indigo-700 transition-colors"
+              className="text-blue-400 hover:text-blue-700 transition-colors"
             >
               <X size={12} aria-hidden="true" />
             </button>

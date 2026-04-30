@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useHomeDashboard } from '../hooks/useHomeDashboard';
 import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
-import { teamDisplayName } from '../utils/teamUtils';
+import { teamDisplayName, teamGradient } from '../utils/teamUtils';
 import { EmptyTeamCard, ActionEventRow, MONTHS } from '../components/home/HomeComponents';
 import BibliotecaPreview from '../components/home/BibliotecaPreview';
 import NextActionHero from '../components/home/NextActionHero';
@@ -23,14 +23,9 @@ import { useCompetitions } from '../hooks/useCompetitions';
 import NewsFeed from '../components/home/NewsFeed';
 import WeekStrip from '../components/home/WeekStrip';
 
-const CARD_GRADIENTS = [
-  'from-blue-900 via-blue-800 to-blue-700',
-  'from-blue-800 via-blue-700 to-blue-600',
-  'from-orange-700 via-orange-600 to-orange-500',
-  'from-slate-800 via-slate-700 to-slate-600',
-  'from-amber-700 via-amber-600 to-amber-500',
-  'from-blue-950 via-blue-900 to-blue-800',
-];
+// Team gradient is sourced from teamUtils.teamGradient(teamId) for deterministic
+// continuity between HomeScreen TeamCard, TeamDetail header, and any other
+// surface that should "feel like the same team".
 
 function QuickAction({ icon: Icon, label, onClick }) {
   return (
@@ -43,11 +38,9 @@ function QuickAction({ icon: Icon, label, onClick }) {
   );
 }
 
-function TeamCard({ team, idx, nextMatch, activePlayoff, navigate }) {
+function TeamCard({ team, nextMatch, activePlayoff, navigate }) {
   return (
-    <div
-      className={`flex-shrink-0 bg-gradient-to-br ${CARD_GRADIENTS[idx % CARD_GRADIENTS.length]} rounded-2xl p-5 text-white shadow-2xl`}
-    >
+    <div className={`flex-shrink-0 bg-gradient-to-br ${teamGradient(team.id)} rounded-2xl p-5 text-white shadow-2xl`}>
       <div className="flex items-start justify-between mb-1">
         <div className="min-w-0">
           <p className="text-blue-300 text-xs font-semibold uppercase tracking-widest truncate">
@@ -60,7 +53,7 @@ function TeamCard({ team, idx, nextMatch, activePlayoff, navigate }) {
       </div>
       {nextMatch && (
         <p className="text-xs text-blue-200/80 mt-2 truncate">
-          Próx. partido: vs {nextMatch.rival || 'Rival'} —{' '}
+          Próx. partido: vs {nextMatch.rival || 'Rival'} ·{' '}
           {(() => {
             const f = nextMatch.fecha;
             return `${parseInt(f.split('-')[2])} ${MONTHS[parseInt(f.split('-')[1]) - 1]}`;
@@ -111,7 +104,6 @@ function TeamsSection({
           >
             <TeamCard
               team={team}
-              idx={idx}
               nextMatch={nextMatchByTeam[team.id]}
               activePlayoff={activePlayoffs.find((p) => p.teamId === team.id && p.rival)}
               navigate={navigate}
@@ -130,11 +122,10 @@ function TeamsSection({
         </div>
       )}
       <div className="hidden md:grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {teams.map((team, idx) => (
+        {teams.map((team) => (
           <TeamCard
             key={team.id}
             team={team}
-            idx={idx}
             nextMatch={nextMatchByTeam[team.id]}
             activePlayoff={activePlayoffs.find((p) => p.teamId === team.id && p.rival)}
             navigate={navigate}
@@ -227,7 +218,7 @@ function TournamentRow({ p, navigate }) {
           {p.title ? ` · ${p.title}` : ''}
         </p>
         {p.match && p.rival ? (
-          <p className="text-xs font-bold text-indigo-600 mt-0.5">
+          <p className="text-xs font-bold text-blue-600 mt-0.5">
             vs {p.rival}
             {p.series ? ` (${p.series.wins}-${p.series.losses})` : ''}
           </p>
@@ -389,6 +380,18 @@ export default function HomeScreen() {
           )}
         </div>
 
+        {/* Mobile-only: Pendientes lifted just below Hero so the formativo coach
+            opening the app at 23h sees their queue immediately, before the team
+            carousel. Desktop keeps Pendientes in the aside (right column). */}
+        <div className="lg:hidden mb-4">
+          <PendingActionsList
+            items={pendingActions}
+            total={pendingActionsTotal}
+            onAction={handlePendingAction}
+            creatingId={creatingTraining}
+          />
+        </div>
+
         {/* Two-column grid on desktop, single column on mobile */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Main column (left on desktop) */}
@@ -421,12 +424,14 @@ export default function HomeScreen() {
 
           {/* Side column (right on desktop) */}
           <aside className="lg:col-span-1 flex flex-col gap-4">
-            <PendingActionsList
-              items={pendingActions}
-              total={pendingActionsTotal}
-              onAction={handlePendingAction}
-              creatingId={creatingTraining}
-            />
+            <div className="hidden lg:block">
+              <PendingActionsList
+                items={pendingActions}
+                total={pendingActionsTotal}
+                onAction={handlePendingAction}
+                creatingId={creatingTraining}
+              />
+            </div>
             <WeekStrip days={weekStrip} navigate={navigate} />
             <WeeklySummaryChip weeklySummary={weeklySummary} />
             {activePlayoffs.length > 0 && (

@@ -19,18 +19,21 @@ const MatchCard = React.memo(
         .filter(Boolean);
     };
 
+    // Wayfinding via full-row tint (no side-stripes — DESIGN.md ban). myTeam rows
+    // wear amber so the "your team's path" reads at a glance even alongside generic
+    // winner/loser rows in the same bracket.
     const getRowStyle = (teamName, isWinner, isLoser) => {
       let style = 'flex items-center justify-between px-2 py-2 transition-colors border-b border-slate-100 ';
       if (!teamName && match.team1Options.length === 0 && match.team2Options.length === 0) {
         return style + 'bg-slate-50 text-slate-400';
       }
       if (teamName && teamName === myTeam) {
-        if (isWinner) style += 'bg-amber-200 text-amber-900 font-bold border-l-4 border-l-amber-600 ';
-        else if (isLoser) style += 'bg-amber-50 text-amber-600/80 opacity-80 border-l-4 border-l-amber-300 ';
-        else style += 'bg-amber-100 text-amber-800 font-semibold border-l-4 border-l-amber-500 ';
+        if (isWinner) style += 'bg-amber-200 text-amber-900 font-bold ';
+        else if (isLoser) style += 'bg-amber-50 text-amber-700/80 opacity-80 ';
+        else style += 'bg-amber-100 text-amber-800 font-semibold ';
       } else {
-        if (isWinner) style += 'bg-green-100 text-green-800 font-bold border-l-4 border-l-green-500 ';
-        else if (isLoser) style += 'bg-red-50 text-red-400/80 opacity-70 ';
+        if (isWinner) style += 'bg-emerald-100 text-emerald-800 font-bold ';
+        else if (isLoser) style += 'bg-rose-50 text-rose-500/80 opacity-70 ';
         else style += 'hover:bg-blue-50 text-slate-800 ';
       }
       return style;
@@ -40,6 +43,30 @@ const MatchCard = React.memo(
       if (!isReady) return true;
       return isGameSkippedBySeries(match, gIdx);
     };
+
+    // For BO2 / BO3 series, surface the running score so a coach scanning a
+    // bracket mid-tournament sees "Cadete A 2-0" without re-reading every input.
+    const seriesState = (() => {
+      if (!isReady || !match.gamesCount || match.gamesCount < 2) return null;
+      let team1Wins = 0;
+      let team2Wins = 0;
+      let played = 0;
+      (match.scores || []).forEach((s) => {
+        const a = parseInt(s.s1);
+        const b = parseInt(s.s2);
+        if (Number.isFinite(a) && Number.isFinite(b)) {
+          played += 1;
+          if (a > b) team1Wins += 1;
+          else if (b > a) team2Wins += 1;
+        }
+      });
+      if (played === 0) return null;
+      const target = Math.ceil(match.gamesCount / 2);
+      const matchPoint =
+        (team1Wins === target - 1 && team2Wins < target) || (team2Wins === target - 1 && team1Wins < target);
+      const decided = team1Wins >= target || team2Wins >= target;
+      return { team1Wins, team2Wins, matchPoint: matchPoint && !decided, decided };
+    })();
 
     const renderTeamRow = (team, origin, options, scores, teamIndex) => {
       const isWinner = match.winner === team && match.winner;
@@ -149,6 +176,14 @@ const MatchCard = React.memo(
         <div className="flex justify-between items-center bg-slate-50 border-b border-slate-200 px-2 py-1.5">
           <div className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider flex items-center gap-1">
             <Calendar size={10} aria-hidden="true" /> {match.format}
+            {seriesState && !seriesState.decided && (
+              <span
+                className={`ml-1.5 normal-case tracking-normal font-bold px-1.5 py-0.5 rounded-full ${seriesState.matchPoint ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-700'}`}
+              >
+                {seriesState.team1Wins}-{seriesState.team2Wins}
+                {seriesState.matchPoint ? ' · Match point' : ''}
+              </span>
+            )}
           </div>
           <div className="flex gap-1 justify-end pr-0.5">
             {match.scores.map((_, i) => {

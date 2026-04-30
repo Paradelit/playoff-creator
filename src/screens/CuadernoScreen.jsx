@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer } from 'lucide-react';
 import ClubLogo from '../components/ClubLogo';
@@ -26,6 +26,20 @@ export default function CuadernoScreen() {
   const { teams } = useTeams();
   const { profile } = useProfile();
   const team = teams.find((t) => t.id === teamId) || null;
+  const [printing, setPrinting] = useState(false);
+
+  // Print state feedback: disable the print button while the browser dialog is
+  // open so accidental double clicks don't reopen it.
+  useEffect(() => {
+    const handleBefore = () => setPrinting(true);
+    const handleAfter = () => setPrinting(false);
+    window.addEventListener('beforeprint', handleBefore);
+    window.addEventListener('afterprint', handleAfter);
+    return () => {
+      window.removeEventListener('beforeprint', handleBefore);
+      window.removeEventListener('afterprint', handleAfter);
+    };
+  }, []);
 
   function handleOpen(section) {
     if (section.external) {
@@ -50,9 +64,11 @@ export default function CuadernoScreen() {
         </button>
         <button
           onClick={() => window.print()}
-          className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold font-sans transition"
+          disabled={printing}
+          aria-busy={printing}
+          className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-bold font-sans transition disabled:opacity-60 disabled:cursor-wait"
         >
-          <Printer size={15} aria-hidden="true" /> Imprimir
+          <Printer size={15} aria-hidden="true" /> {printing ? 'Imprimiendo…' : 'Imprimir'}
         </button>
       </div>
 

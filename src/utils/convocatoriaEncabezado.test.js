@@ -14,19 +14,19 @@ describe('generarEncabezado', () => {
   it('liga par + 1ª vuelta (jornada 1-11 of 22)', () => {
     const session = { tipo: 'partido', competitionId: 'c1', faseId: 'f1', jornadaNumero: 5, rival: 'Movistar' };
     const out = generarEncabezado({ session, competition });
-    expect(out).toBe('*Liga Cadete A — Fase 1 (1ª vuelta)*\n_Jornada 5 vs Movistar_');
+    expect(out).toBe('*Liga Cadete A · Fase 1 (1ª vuelta)*\n_Jornada 5 vs Movistar_');
   });
 
   it('liga par + 2ª vuelta (jornada 12-22 of 22)', () => {
     const session = { tipo: 'partido', competitionId: 'c1', faseId: 'f1', jornadaNumero: 15, rival: 'Movistar' };
     const out = generarEncabezado({ session, competition });
-    expect(out).toBe('*Liga Cadete A — Fase 1 (2ª vuelta)*\n_Jornada 15 vs Movistar_');
+    expect(out).toBe('*Liga Cadete A · Fase 1 (2ª vuelta)*\n_Jornada 15 vs Movistar_');
   });
 
   it('liga impar (no vuelta) — jornadas=7', () => {
     const session = { tipo: 'partido', competitionId: 'c1', faseId: 'f2', jornadaNumero: 3, rival: 'Movistar' };
     const out = generarEncabezado({ session, competition });
-    expect(out).toBe('*Liga Cadete A — Permanencia*\n_Jornada 3 vs Movistar_');
+    expect(out).toBe('*Liga Cadete A · Permanencia*\n_Jornada 3 vs Movistar_');
   });
 
   it('amistoso (no competition)', () => {

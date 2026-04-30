@@ -74,7 +74,7 @@ export default function PublicNavbar() {
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="flex items-center justify-between" style={{ height: '3.75rem' }}>
-          <Link to="/" className="flex items-center gap-2 shrink-0" aria-label="Pick&Coach — Inicio">
+          <Link to="/" className="flex items-center gap-2 shrink-0" aria-label="Pick&Coach · Inicio">
             <Trophy size={22} className="text-orange-400" aria-hidden="true" />
             <span className={`text-base font-extrabold tracking-tight ${brandTextClass}`}>Pick&amp;Coach</span>
           </Link>

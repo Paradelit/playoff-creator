@@ -13,7 +13,7 @@ function SidebarItem({ to, label, Icon, end, collapsed }) {
       title={collapsed ? label : undefined}
       className={({ isActive }) =>
         `flex items-center gap-3 ${collapsed ? 'justify-center px-2' : 'px-4'} py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-          isActive ? 'bg-blue-900 text-amber-400' : 'text-blue-200 hover:bg-blue-900 hover:text-white'
+          isActive ? 'bg-blue-900 text-white font-bold' : 'text-blue-200 hover:bg-blue-900 hover:text-white'
         }`
       }
     >
@@ -123,7 +123,7 @@ function SidebarHeader({ collapsed, toggle, ToggleIcon }) {
         aria-label="Colapsar panel lateral"
         className="text-blue-300 hover:text-white p-1 rounded-lg hover:bg-blue-900 transition-colors"
       >
-        <ToggleIcon size={16} />
+        <ToggleIcon size={16} aria-hidden="true" />
       </button>
     </div>
   );

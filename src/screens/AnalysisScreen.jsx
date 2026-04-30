@@ -13,6 +13,7 @@ import { useTeams } from '../hooks/useTeams';
 import { teamDisplayName } from '../utils/teamUtils';
 import { getTemporada, formatDateDisplay } from '../utils/dateUtils';
 import ConfirmDialog from '../components/ConfirmDialog';
+import PickHintBanner from '../components/pick/PickHintBanner';
 
 function getPlayoffResultado(session) {
   if (session?.tipo !== 'playoff' || !Array.isArray(session?.scores)) return { local: '', visitante: '' };
@@ -247,6 +248,18 @@ export default function AnalysisScreen() {
         </div>
       </div>
 
+      {/* Pick hint — appears once a rival is set, surfaces Pick's ability to
+          summarize the match from session data + scouting + previous notes. */}
+      {data.rival && (
+        <div className="max-w-[800px] mx-auto px-4 pt-4 print:hidden">
+          <PickHintBanner
+            message={`Pick puede redactar el análisis del partido contra ${data.rival} a partir de scouting, datos del partido y notas previas.`}
+            prompt={`Resume cómo fue el partido contra ${data.rival} y proponme un plan para el próximo entreno`}
+            cta="Que lo redacte Pick"
+          />
+        </div>
+      )}
+
       {/* Documento */}
       <div className="py-8 px-4 print:p-0 pb-24">
         <div className="max-w-[800px] mx-auto bg-white border border-gray-400 pt-10 pb-10 px-12 shadow-xl print:shadow-none print:border-none print:m-0 print:p-8">
@@ -428,7 +441,7 @@ export default function AnalysisScreen() {
               placeholder="Aspectos a trabajar basados en el análisis del partido..."
               aria-label="Plan para próximo entrenamiento"
               rows={3}
-              className="w-full border border-amber-200 bg-amber-50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+              className="w-full border border-slate-300 bg-slate-50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
             />
           </Section>
         </div>

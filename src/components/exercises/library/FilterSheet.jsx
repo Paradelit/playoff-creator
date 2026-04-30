@@ -72,8 +72,8 @@ export default function FilterSheet({
                 type="button"
                 onClick={() => onSetFilter('phase', active ? null : p.id)}
                 aria-pressed={active}
-                className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 ${
-                  active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
+                className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 ${
+                  active ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'
                 }`}
               >
                 {p.label}
@@ -97,8 +97,8 @@ export default function FilterSheet({
                 onClick={() => onSetFilter('difficulty', active ? null : lvl)}
                 aria-pressed={active}
                 aria-label={`Dificultad ${lvl}`}
-                className={`w-11 h-11 rounded-xl text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 ${
-                  active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
+                className={`w-11 h-11 rounded-xl text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 ${
+                  active ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
                 }`}
               >
                 {lvl}
@@ -118,7 +118,7 @@ export default function FilterSheet({
             type="checkbox"
             checked={!!filters.favoritesOnly}
             onChange={(e) => onSetFilter('favoritesOnly', e.target.checked)}
-            className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-400"
+            className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-400"
           />
           <Star size={16} className="text-amber-500" fill="currentColor" aria-hidden="true" />
           <span className="font-semibold text-sm">Solo favoritos</span>
@@ -138,7 +138,7 @@ export default function FilterSheet({
         <button
           type="button"
           onClick={onClose}
-          className="flex-1 py-3 rounded-xl font-bold text-sm bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
+          className="flex-1 py-3 rounded-xl font-bold text-sm bg-blue-600 text-white hover:bg-blue-700 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
         >
           Aplicar
         </button>

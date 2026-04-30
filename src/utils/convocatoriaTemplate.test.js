@@ -30,7 +30,7 @@ describe('renderConvocatoria — liga visitante', () => {
     const now = new Date('2026-04-29T22:00:00');
     const { mensaje } = renderConvocatoria({ session, team, competition, now });
     expect(mensaje).toContain('Buenas noches');
-    expect(mensaje).toContain('*Liga Cadete A — Fase 1 (2ª vuelta)*');
+    expect(mensaje).toContain('*Liga Cadete A · Fase 1 (2ª vuelta)*');
     expect(mensaje).toContain('_Jornada 15 vs Movistar Estudiantes_');
     expect(mensaje).toContain('mañana a las 09:30');
     expect(mensaje).toContain('Pabellón Ramiro de Maeztu');

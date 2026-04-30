@@ -57,7 +57,7 @@ export default function FilterSidebar({
                   onClick={() => onSetFilter('phase', active ? null : p.id)}
                   aria-pressed={active}
                   className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${
-                    active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    active ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   {p.label}
@@ -78,7 +78,7 @@ export default function FilterSidebar({
                   aria-pressed={active}
                   aria-label={`Dificultad ${lvl}`}
                   className={`w-8 h-8 rounded-lg text-xs font-bold transition-colors ${
-                    active ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    active ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   {lvl}
@@ -94,7 +94,7 @@ export default function FilterSidebar({
               type="checkbox"
               checked={!!filters.favoritesOnly}
               onChange={(e) => onSetFilter('favoritesOnly', e.target.checked)}
-              className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-400"
+              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-400"
             />
             <Star size={14} className="text-amber-500" fill="currentColor" aria-hidden="true" />
             Solo favoritos

@@ -24,7 +24,7 @@ export function buildConvocatoriaPendientes(sessions, teams, now = new Date()) {
       type: 'convocatoria',
       session: s,
       team,
-      label: `Mandar convocatoria — vs ${s.rival || 'rival'}`,
+      label: `Mandar convocatoria · vs ${s.rival || 'rival'}`,
       severity: horas < 24 ? 'high' : 'normal',
     });
   }

@@ -10,6 +10,7 @@ import { useHomeDashboard } from '../hooks/useHomeDashboard';
 import TeamDashboard from '../components/teams/TeamDashboard';
 import CompetitionsTab from '../components/teams/CompetitionsTab';
 import ConvocatoriasTab from '../components/teams/ConvocatoriasTab';
+import { teamDisplayName, teamGradient } from '../utils/teamUtils';
 
 const ROLES_STAFF = ['Entrenador', 'Entrenador asistente', 'Fisioterapeuta', 'Delegado', 'Médico', 'Otro'];
 const POSICIONES = ['Base', 'Escolta', 'Alero', 'Ala-Pívot', 'Pívot'];
@@ -131,15 +132,51 @@ export default function TeamDetailScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 p-6 sm:p-8 font-sans pb-24">
-      <div className="max-w-2xl lg:max-w-4xl mx-auto">
-        <button
-          onClick={() => navigate('/area-privada/teams')}
-          className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700 text-sm font-medium transition mb-4"
-        >
-          <ArrowLeft size={16} aria-hidden="true" /> Equipos
-        </button>
+    <div className="min-h-screen bg-slate-100 font-sans pb-24">
+      {/* Team identity band — same gradient as the HomeScreen TeamCard so the
+          coordinador switching between teams keeps a clear "you're in Cadete A's
+          universe" anchor instead of landing on a flat slate background. */}
+      <div className={`bg-gradient-to-br ${teamGradient(team.id)} pt-6 pb-10 px-6 sm:px-8 print:hidden`}>
+        <div className="max-w-2xl lg:max-w-4xl mx-auto">
+          <button
+            onClick={() => navigate('/area-privada/teams')}
+            className="flex items-center gap-1.5 text-blue-100 hover:text-white text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-900 rounded"
+          >
+            <ArrowLeft size={16} aria-hidden="true" /> Equipos
+          </button>
+          <div className="flex items-start justify-between gap-3 mt-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-white/70">
+                {team.categoria}
+                {team.genero ? ` · ${team.genero}` : ''}
+              </p>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight mt-0.5 truncate">
+                {teamDisplayName(team)}
+              </h1>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setTeamForm({
+                  categoria: team.categoria,
+                  año: team.año || '1º',
+                  letra: team.letra || '',
+                  genero: team.genero,
+                  division: team.division || '',
+                });
+                setEditingTeam(true);
+              }}
+              title="Editar equipo"
+              aria-label="Editar equipo"
+              className="p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition shrink-0"
+            >
+              <Pencil size={16} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      </div>
 
+      <div className="max-w-2xl lg:max-w-4xl mx-auto px-6 sm:px-8 -mt-6">
         <div className="mb-6">
           <TeamDashboard
             team={team}
@@ -150,16 +187,7 @@ export default function TeamDetailScreen() {
               staff: members.filter((m) => m.tipo === 'staff').length,
             }}
             navigate={navigate}
-            onEditTeam={() => {
-              setTeamForm({
-                categoria: team.categoria,
-                año: team.año || '1º',
-                letra: team.letra || '',
-                genero: team.genero,
-                division: team.division || '',
-              });
-              setEditingTeam(true);
-            }}
+            hideTitle
           />
         </div>
 

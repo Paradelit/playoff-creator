@@ -22,6 +22,30 @@ const SCREEN_LABELS: Record<string, string> = {
   analysis: 'Análisis',
 };
 
+// Contextual prompt suggestions per screen for the empty conversation state.
+// Each chip is a one-tap entry into a Pick capability — the goal is to make
+// "what can Pick do" obvious without forcing the coach to invent a question.
+const SUGGESTIONS: Record<string, string[]> = {
+  home: ['Resume mi semana', 'Prepara el entreno de hoy', '¿Qué tengo pendiente?'],
+  calendar: ['Importa el Excel de la federación', 'Crea un entreno semanal', 'Resume esta semana'],
+  bracket: ['Explícame este cuadro', '¿Quién juega contra mi equipo?', 'Marca a Estudiantes como mi equipo'],
+  'team-detail': [
+    'Genera la convocatoria del próximo partido',
+    '¿Quién falta esta semana?',
+    'Crea un entreno para mañana',
+  ],
+  'team-trainings': ['Genera un entreno de tiro', 'Resume el último entreno', 'Sugiéreme un calentamiento'],
+  'training-editor': ['Sugiéreme un calentamiento', 'Añade un ejercicio de tiro', 'Resume este entreno'],
+  cuaderno: ['Resume las notas del último entreno', '¿Qué jugadores faltaron?', 'Repaso de pilares'],
+  teams: ['Resume mis equipos', 'Compara plantillas', 'Sugiéreme un entreno común'],
+  exercises: ['Sugiéreme un ejercicio de bote', 'Crea variante de este ejercicio', '¿Qué he usado más?'],
+  scouting: ['Prepara scouting del rival', 'Resume jugadas clave', 'Compara con partido anterior'],
+  analysis: ['Resume cómo fue el partido', '¿Qué funcionó?', 'Plan para el próximo entreno'],
+  settings: ['¿Qué puede hacer Pick?', 'Cuéntame de proactividad', '¿Cómo cambio recordatorios?'],
+};
+
+const FALLBACK_SUGGESTIONS = ['Resume mi semana', 'Prepara el entreno de hoy', '¿Qué tengo pendiente?'];
+
 export default function PickPanel() {
   const {
     messages,
@@ -96,9 +120,30 @@ export default function PickPanel() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[200px]">
         {messages.length === 0 && (
-          <div className="text-center text-slate-400 text-sm py-8">
-            <p className="font-medium">¡Hola! Soy Pick.</p>
-            <p className="mt-1 text-xs">Pregúntame lo que necesites sobre la app.</p>
+          <div className="py-6">
+            <div className="text-center mb-4">
+              <div
+                className="w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center shadow-sm"
+                style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}
+                aria-hidden="true"
+              >
+                <span className="text-white font-extrabold text-base leading-none">P</span>
+              </div>
+              <p className="font-semibold text-slate-700 text-sm">¡Hola! Soy Pick.</p>
+              <p className="mt-0.5 text-xs text-slate-500">Prueba con una de estas:</p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {(SUGGESTIONS[screenContext.screen] || FALLBACK_SUGGESTIONS).map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => sendMessage(suggestion)}
+                  className="text-left text-sm text-slate-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-xl px-3 py-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-1"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {messages.map((msg) => {
