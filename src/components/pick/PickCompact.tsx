@@ -18,7 +18,7 @@ export default function PickCompact({ animating }: Props) {
       {currentTip && !animating && (
         <div className="animate-pick-fade-in flex items-center gap-2 bg-white shadow-lg rounded-xl px-3.5 py-2.5 max-w-[220px] border border-orange-200">
           <button
-            onClick={() => setMode('panel')}
+            onClick={() => setMode('column')}
             className="text-sm text-slate-700 font-medium text-left flex-1 leading-snug"
           >
             <ReactMarkdown
@@ -49,7 +49,7 @@ export default function PickCompact({ animating }: Props) {
 
       {/* Pick avatar — Court Orange gradient + "P" per DESIGN.md spec */}
       <button
-        onClick={() => setMode('panel')}
+        onClick={() => setMode('column')}
         className="w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
         style={{
           background: 'linear-gradient(135deg, #f97316, #ea580c)',
