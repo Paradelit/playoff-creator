@@ -12,8 +12,8 @@ function ItemIcon({ type }) {
     );
   if (type === 'convocatoria')
     return (
-      <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center shrink-0">
-        <Send size={18} className="text-teal-600" aria-hidden="true" />
+      <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+        <Send size={18} className="text-blue-700" aria-hidden="true" />
       </div>
     );
   if (type === 'cumpleaños')

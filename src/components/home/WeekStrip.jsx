@@ -20,7 +20,7 @@ function DotRow({ counts }) {
 
 export default function WeekStrip({ days, navigate }) {
   return (
-    <section aria-label="Resumen semanal" className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+    <section aria-label="Resumen semanal" className="bg-slate-50 rounded-2xl border border-slate-200/70 shadow-sm">
       <header className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
         <CalendarDays size={15} className="text-slate-400" aria-hidden="true" />
         <h3 className="text-xs font-bold text-slate-700 uppercase tracking-widest">Esta semana</h3>

@@ -12,7 +12,7 @@ const KIND_STYLES = {
 export default function NewsFeed({ items, navigate, now }) {
   const nowRef = now || new Date();
   return (
-    <section aria-label="Novedades" className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+    <section aria-label="Novedades" className="bg-slate-50 rounded-2xl border border-slate-200/70 shadow-sm">
       <header className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
         <Sparkles size={15} className="text-slate-400" aria-hidden="true" />
         <h3 className="text-xs font-bold text-slate-700 uppercase tracking-widest">Novedades</h3>

@@ -180,7 +180,7 @@ function TodaySection({ todayEvents, teams, trainingNumbers, handleEventAction, 
 function WeeklySummaryChip({ weeklySummary }) {
   if (!weeklySummary || weeklySummary.total === 0) return null;
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex items-center flex-wrap gap-2 text-xs text-slate-600 font-medium">
+    <div className="bg-slate-50 rounded-xl border border-slate-200/70 shadow-sm px-4 py-2.5 flex items-center flex-wrap gap-2 text-xs text-slate-600 font-medium">
       <CalendarDays size={14} className="text-slate-400 shrink-0" aria-hidden="true" />
       <span>Resumen:</span>
       {weeklySummary.entrenamientos > 0 && (
