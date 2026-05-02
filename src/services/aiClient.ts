@@ -31,6 +31,7 @@ export interface ScreenContextPayload {
 export async function aiChatV2(request: {
   message: string;
   appId: string;
+  wsId: string;
   screenContext?: ScreenContextPayload;
   conversationHistory?: Array<{ role: string; content: string }>;
   clientDate?: string;

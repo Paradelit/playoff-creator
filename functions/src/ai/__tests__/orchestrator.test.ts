@@ -89,6 +89,7 @@ function makeOrchestrator(
 const EMPTY_TOOL_CTX = {
   db: {} as unknown as FirebaseFirestore.Firestore,
   userId: 'u1',
+  wsId: 'ws1',
   appId: 'app1',
 };
 

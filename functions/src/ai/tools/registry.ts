@@ -12,6 +12,8 @@ export interface AgentsMap {
 export interface ToolContext {
   db: Firestore;
   userId: string;
+  /** Active workspace id, validated server-side before context creation. */
+  wsId: string;
   appId: string;
   /** IDs inferred from the current screen — tools can use these as fallbacks
    *  when the LLM doesn't provide an explicit arg. */

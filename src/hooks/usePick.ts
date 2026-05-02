@@ -123,6 +123,10 @@ export function usePickInternal(): PickAPI {
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || isProcessing) return;
+      if (!activeWsId) {
+        // No workspace active — UI should already be gated, but guard anyway.
+        return;
+      }
 
       // Ensure conversation exists
       let convId = persistence.conversationId;
@@ -153,6 +157,7 @@ export function usePickInternal(): PickAPI {
         const response: OrchestratorResponse = await aiChatV2({
           message: text,
           appId,
+          wsId: activeWsId,
           screenContext: {
             screen: screenContext.screen,
             route: screenContext.route,
@@ -228,7 +233,7 @@ export function usePickInternal(): PickAPI {
         setIsProcessing(false);
       }
     },
-    [isProcessing, messages, persistence, screenContext, isDesktop, mode, appId],
+    [isProcessing, messages, persistence, screenContext, isDesktop, mode, appId, activeWsId],
   );
 
   const confirmProposal = useCallback(
