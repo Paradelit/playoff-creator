@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { saveTraining, subscribeToExercises } from '../services/trainingsService';
 import { subscribeToAllMembers } from '../services/teamsService';
 import { useTeams } from './useTeams';
@@ -10,7 +11,7 @@ import { useAllTrainings } from './useAllTrainings';
 import { useExerciseInsights } from './useExerciseInsights';
 import { useTrainingNumbers } from './useTrainingNumbers';
 import { subscribeToCalendarSessions, linkTrainingToSession } from '../services/calendarService';
-import { userColRef } from '../services/firestoreHelpers';
+import { workspaceColRef } from '../services/firestoreHelpers';
 import { teamDisplayName } from '../utils/teamUtils';
 import { buildPlayoffSessions } from '../utils/calendarUtils';
 import { isMinibasketSextos } from '../utils/minibasketUtils';
@@ -52,6 +53,7 @@ function getSeriesScore(match, myTeam) {
 export function useHomeDashboard() {
   const { user, handleLogout } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
   const navigate = useNavigate();
   const { teams, loading: loadingTeams } = useTeams();
   const trainingNumbers = useTrainingNumbers();
@@ -81,25 +83,25 @@ export function useHomeDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!user || !db) return undefined;
-    return subscribeToCalendarSessions(user.uid, db, appId, startStr, endStr, setSessions);
-  }, [user, db, appId, startStr, endStr]);
+    if (!user || !db || !activeWsId) return undefined;
+    return subscribeToCalendarSessions(activeWsId, db, appId, startStr, endStr, setSessions);
+  }, [user, db, appId, activeWsId, startStr, endStr]);
 
   useEffect(() => {
-    if (!user || !db) return undefined;
-    return onSnapshot(userColRef(db, appId, user.uid, 'brackets'), (snap) => {
+    if (!user || !db || !activeWsId) return undefined;
+    return onSnapshot(workspaceColRef(db, appId, activeWsId, 'brackets'), (snap) => {
       const fetched = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
       setBrackets((prev) => mergeBracketSnapshot(fetched, prev));
     });
-  }, [appId, db, mergeBracketSnapshot, user]);
+  }, [appId, db, mergeBracketSnapshot, user, activeWsId]);
 
   const shareCodes = useMemo(() => brackets.filter((b) => b.shareCode).map((b) => b.shareCode), [brackets]);
   useSharedBracketSubscriptions({ db, appId, shareCodes, onSharedSnapshot: handleSharedSnapshot });
 
   useEffect(() => {
-    if (!user || !db) return undefined;
-    return subscribeToExercises(user.uid, db, appId, setExercises);
-  }, [user, db, appId]);
+    if (!user || !db || !activeWsId) return undefined;
+    return subscribeToExercises(activeWsId, db, appId, setExercises);
+  }, [user, db, appId, activeWsId]);
 
   // Subscribe only when the SET of team IDs changes — not on every teams ref
   // change. useTeams returns a new array ref each render, which without this
@@ -107,15 +109,15 @@ export function useHomeDashboard() {
   // in tests) loop indefinitely.
   const teamIdsKey = teams.map((t) => t.id).join(',');
   useEffect(() => {
-    if (!user || !db || !teamIdsKey) {
+    if (!user || !db || !activeWsId || !teamIdsKey) {
       setAllMembers([]);
       return undefined;
     }
-    return subscribeToAllMembers(teams, user.uid, db, appId, setAllMembers);
+    return subscribeToAllMembers(teams, activeWsId, db, appId, setAllMembers);
     // teams is intentionally captured by closure — re-running on every ref
     // change would not give us new data.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, db, appId, teamIdsKey]);
+  }, [user, db, appId, activeWsId, teamIdsKey]);
 
   const recentExercises = useMemo(() => {
     const timeOf = (ex) => {
@@ -280,6 +282,7 @@ export function useHomeDashboard() {
 
   const handleCreateTraining = useCallback(
     async (session) => {
+      if (!activeWsId) return;
       setCreatingTraining(session.id);
       try {
         const trainingId = crypto.randomUUID();
@@ -301,15 +304,15 @@ export function useHomeDashboard() {
             cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
           },
           session.teamId,
-          { uid: user.uid, db, appId },
+          { wsId: activeWsId, db, appId },
         );
-        await linkTrainingToSession(session.id, trainingId, { uid: user.uid, db, appId });
+        await linkTrainingToSession(session.id, trainingId, { wsId: activeWsId, db, appId });
         navigate(`/teams/${session.teamId}/trainings/${trainingId}`);
       } finally {
         setCreatingTraining(null);
       }
     },
-    [user, db, appId, navigate, trainingNumbers],
+    [activeWsId, db, appId, navigate, trainingNumbers],
   );
 
   const handleEventAction = useCallback(

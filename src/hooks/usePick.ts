@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useScreenContext } from '../contexts/ScreenContextProvider';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { runAgent, aiChatV2, submitFeedback } from '../services/aiClient';
 import { usePickTips, type ProactivityMode } from './usePickTips';
 import { useProfile } from './useProfile';
@@ -57,6 +58,7 @@ export function usePickInternal(): PickAPI {
   const { screenContext } = useScreenContext();
   const { user } = useAuth() as { user: { uid: string } | null };
   const { db, appId } = useFirebase() as { db: import('firebase/firestore').Firestore; appId: string };
+  const { activeWsId } = useWorkspace() as { activeWsId: string | null };
 
   const [mode, setModeRaw] = useState<PickMode>('compact');
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -232,9 +234,10 @@ export function usePickInternal(): PickAPI {
   const confirmProposal = useCallback(
     async (proposal: WriteProposal) => {
       if (!user) throw new Error('Debes iniciar sesión');
-      await executeProposal({ db, appId, uid: user.uid }, proposal);
+      if (!activeWsId) throw new Error('Workspace no disponible');
+      await executeProposal({ db, appId, wsId: activeWsId }, proposal);
     },
-    [db, appId, user],
+    [db, appId, user, activeWsId],
   );
 
   const executeAction = useCallback(

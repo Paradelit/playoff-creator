@@ -17,6 +17,10 @@ vi.mock('../contexts/FirebaseContext', () => ({
   useFirebase: () => ({ db: mockDb, appId: 'app1' }),
 }));
 
+vi.mock('../contexts/WorkspaceContext', () => ({
+  useWorkspace: () => ({ activeWsId: 'ws1', memberships: [], isLoading: false }),
+}));
+
 vi.mock('./useTeams', () => ({
   useTeams: () => ({
     teams: [{ id: 't1', categoria: 'Infantil' }],
@@ -29,7 +33,7 @@ vi.mock('./useTrainingNumbers', () => ({
 }));
 
 vi.mock('../services/calendarService', () => ({
-  subscribeToCalendarSessions: vi.fn((_uid, _db, _appId, _start, _end, callback) => {
+  subscribeToCalendarSessions: vi.fn((_wsId, _db, _appId, _start, _end, callback) => {
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -52,7 +56,7 @@ vi.mock('../services/calendarService', () => ({
 }));
 
 vi.mock('../services/firestoreHelpers', () => ({
-  userColRef: vi.fn(() => 'mock-col-ref'),
+  workspaceColRef: vi.fn(() => 'mock-ws-col-ref'),
 }));
 
 vi.mock('firebase/firestore', () => ({
@@ -72,18 +76,18 @@ vi.mock('./useReminders', () => ({
 
 vi.mock('../services/trainingsService', () => ({
   saveTraining: vi.fn(() => Promise.resolve()),
-  subscribeToExercises: vi.fn((_uid, _db, _appId, callback) => {
+  subscribeToExercises: vi.fn((_wsId, _db, _appId, callback) => {
     callback([]);
     return vi.fn();
   }),
-  subscribeToTrainings: vi.fn((_teamId, _uid, _db, _appId, callback) => {
+  subscribeToTrainings: vi.fn((_teamId, _wsId, _db, _appId, callback) => {
     callback([]);
     return vi.fn();
   }),
 }));
 
 vi.mock('../services/teamsService', () => ({
-  subscribeToAllMembers: vi.fn((_teams, _uid, _db, _appId, callback) => {
+  subscribeToAllMembers: vi.fn((_teams, _wsId, _db, _appId, callback) => {
     callback([]);
     return vi.fn();
   }),

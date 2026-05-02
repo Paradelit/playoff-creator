@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 import { Plus, Trophy, Pencil, Trash2 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 import { useCompetitions } from '../../hooks/useCompetitions';
 import { saveCompetition, deleteCompetition } from '../../services/competitionsService';
 import CompetitionFormModal from './CompetitionFormModal';
 import ConfirmDialog from '../ConfirmDialog';
 
 export default function CompetitionsTab({ teamId }) {
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
   const { competitions, loading } = useCompetitions(teamId);
   const [editing, setEditing] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
   async function handleSave(competition) {
     await saveCompetition({ ...competition, id: competition.id || crypto.randomUUID() }, teamId, {
-      uid: user.uid,
+      wsId: activeWsId,
       db,
       appId,
     });
@@ -25,7 +25,7 @@ export default function CompetitionsTab({ teamId }) {
 
   async function handleDelete() {
     if (!deletingId) return;
-    await deleteCompetition(deletingId, teamId, { uid: user.uid, db, appId });
+    await deleteCompetition(deletingId, teamId, { wsId: activeWsId, db, appId });
     setDeletingId(null);
   }
 

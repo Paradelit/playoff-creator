@@ -8,13 +8,13 @@ vi.mock('firebase/firestore', () => ({
 }));
 
 vi.mock('./firestoreHelpers', () => ({
-  userDocRef: vi.fn((_db, appId, uid, collectionName, docId) => ({
-    kind: 'user-doc',
-    path: `artifacts/${appId}/users/${uid}/${collectionName}/${docId}`,
+  workspaceDocRef: vi.fn((_db, appId, wsId, ...pathSegments) => ({
+    kind: 'ws-doc',
+    path: `artifacts/${appId}/workspaces/${wsId}/${pathSegments.join('/')}`,
   })),
-  userColRef: vi.fn((_db, appId, uid, collectionName) => ({
-    kind: 'user-col',
-    path: `artifacts/${appId}/users/${uid}/${collectionName}`,
+  workspaceColRef: vi.fn((_db, appId, wsId, ...pathSegments) => ({
+    kind: 'ws-col',
+    path: `artifacts/${appId}/workspaces/${wsId}/${pathSegments.join('/')}`,
   })),
 }));
 
@@ -38,7 +38,7 @@ import type { ExecuteContext } from './proposalExecutor';
 const ctx = {
   db: {},
   appId: 'app1',
-  uid: 'u1',
+  wsId: 'ws1',
 } as unknown as ExecuteContext;
 
 beforeEach(() => {
@@ -86,7 +86,7 @@ describe('executeProposal', () => {
     });
 
     expect(setDoc).toHaveBeenCalledWith(
-      expect.objectContaining({ path: 'artifacts/app1/users/u1/brackets/b1' }),
+      expect.objectContaining({ path: 'artifacts/app1/workspaces/ws1/brackets/b1' }),
       expect.objectContaining({
         bracketData: {
           state: expect.objectContaining({

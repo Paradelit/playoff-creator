@@ -13,13 +13,13 @@ vi.mock('firebase/firestore', () => ({
 }));
 
 vi.mock('./firestoreHelpers', () => ({
-  userColRef: vi.fn(() => 'mock-user-col-ref'),
-  saveUserDoc: vi.fn(() => Promise.resolve()),
-  deleteUserDoc: vi.fn(() => Promise.resolve()),
+  workspaceColRef: vi.fn(() => 'mock-ws-col-ref'),
+  saveWorkspaceDoc: vi.fn(() => Promise.resolve()),
+  deleteWorkspaceDoc: vi.fn(() => Promise.resolve()),
 }));
 
 import { setDoc, deleteDoc, onSnapshot, getDocs } from 'firebase/firestore';
-import { saveUserDoc, deleteUserDoc } from './firestoreHelpers';
+import { saveWorkspaceDoc, deleteWorkspaceDoc } from './firestoreHelpers';
 import {
   subscribeToTrainings,
   saveTraining,
@@ -30,7 +30,7 @@ import {
   propagateExerciseUpdate,
 } from './trainingsService';
 
-const ctx = { uid: 'u1', db: {}, appId: 'app1' };
+const ctx = { wsId: 'ws1', db: {}, appId: 'app1' };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -42,7 +42,7 @@ describe('subscribeToTrainings', () => {
     onSnapshot.mockReturnValue(unsub);
     const cb = vi.fn();
 
-    const result = subscribeToTrainings('team-1', 'u1', {}, 'app1', cb);
+    const result = subscribeToTrainings('team-1', 'ws1', {}, 'app1', cb);
     expect(onSnapshot).toHaveBeenCalled();
     expect(result).toBe(unsub);
   });
@@ -56,7 +56,7 @@ describe('subscribeToTrainings', () => {
       return vi.fn();
     });
 
-    subscribeToTrainings('team-1', 'u1', {}, 'app1', cb);
+    subscribeToTrainings('team-1', 'ws1', {}, 'app1', cb);
     expect(cb).toHaveBeenCalledWith([{ id: 't1', nombre: 'Training 1' }]);
   });
 });
@@ -94,7 +94,7 @@ describe('subscribeToExercises', () => {
       return vi.fn();
     });
 
-    subscribeToExercises('u1', {}, 'app1', cb);
+    subscribeToExercises('ws1', {}, 'app1', cb);
     expect(cb).toHaveBeenCalledWith([
       expect.objectContaining({
         id: 'e1',
@@ -113,7 +113,7 @@ describe('subscribeToExercises', () => {
       return vi.fn();
     });
 
-    subscribeToExercises('u1', {}, 'app1', cb);
+    subscribeToExercises('ws1', {}, 'app1', cb);
     expect(cb).toHaveBeenCalledWith([expect.objectContaining({ tags: ['pase', 'tiro'] })]);
   });
 });
@@ -121,21 +121,20 @@ describe('subscribeToExercises', () => {
 describe('saveExercise', () => {
   it('converts tags array to contenido string', async () => {
     await saveExercise({ id: 'e1', tags: ['pase', 'tiro'] }, ctx);
-    expect(saveUserDoc).toHaveBeenCalledWith(
+    expect(saveWorkspaceDoc).toHaveBeenCalledWith(
       {},
       'app1',
-      'u1',
-      'exercises',
-      'e1',
+      'ws1',
+      ['exercises', 'e1'],
       expect.objectContaining({ contenido: 'pase, tiro' }),
     );
   });
 });
 
 describe('deleteExercise', () => {
-  it('calls deleteUserDoc', async () => {
+  it('calls deleteWorkspaceDoc', async () => {
     await deleteExercise('e1', ctx);
-    expect(deleteUserDoc).toHaveBeenCalledWith({}, 'app1', 'u1', 'exercises', 'e1');
+    expect(deleteWorkspaceDoc).toHaveBeenCalledWith({}, 'app1', 'ws1', ['exercises', 'e1']);
   });
 });
 

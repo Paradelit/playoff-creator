@@ -2,8 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Minus, Printer } from 'lucide-react';
 import ClubLogo from '../../components/ClubLogo';
-import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 import { subscribeToTeamJugadores, saveTeamJugadores } from '../../services/teamsService';
 import { teamDisplayName } from '../../utils/teamUtils';
 import { useTeams } from '../../hooks/useTeams';
@@ -21,8 +21,8 @@ function emptyGrid() {
 export default function JugadoresScreen() {
   const { teamId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const { teams } = useTeams();
   const { profile } = useProfile();
@@ -33,21 +33,21 @@ export default function JugadoresScreen() {
   const isFirstLoad = useRef(true);
 
   useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToTeamJugadores(teamId, user.uid, db, appId, (data) => {
+    if (!db || !activeWsId) return;
+    return subscribeToTeamJugadores(teamId, activeWsId, db, appId, (data) => {
       if (isFirstLoad.current) {
         setJugadores(data.length > 0 ? data : emptyGrid());
         isFirstLoad.current = false;
       }
     });
-  }, [user, db, appId, teamId]);
+  }, [db, appId, activeWsId, teamId]);
 
   function triggerSave(lista) {
     setSaveStatus('unsaved');
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setSaveStatus('saving');
-      await saveTeamJugadores(teamId, lista, { uid: user.uid, db, appId });
+      await saveTeamJugadores(teamId, lista, { wsId: activeWsId, db, appId });
       setSaveStatus('saved');
     }, 1500);
   }

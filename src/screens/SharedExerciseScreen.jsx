@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { BookOpen, Download, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useToast } from '../contexts/ToastContext';
 import { getSharedExercise } from '../services/exerciseSharingService';
 import { saveExercise } from '../services/trainingsService';
@@ -13,6 +14,7 @@ export default function SharedExerciseScreen() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
   const toast = useToast();
 
   const [exercise, setExercise] = useState(null);
@@ -34,6 +36,10 @@ export default function SharedExerciseScreen() {
       toast('Inicia sesión para añadir a tu biblioteca', 'error');
       return;
     }
+    if (!activeWsId) {
+      toast('Workspace no disponible', 'error');
+      return;
+    }
     setSaving(true);
     try {
       await saveExercise(
@@ -46,7 +52,7 @@ export default function SharedExerciseScreen() {
           tipoPista: exercise.tipoPista || 'media',
           elementos: exercise.elementos || [],
         },
-        { uid: user.uid, db, appId },
+        { wsId: activeWsId, db, appId },
       );
       toast('Ejercicio añadido a tu biblioteca', 'success');
     } catch {

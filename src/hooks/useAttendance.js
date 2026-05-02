@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { subscribeToMembers, subscribeToAsistencia, saveAsistencia } from '../services/teamsService';
 import { subscribeToTeamSessions } from '../services/calendarService';
 import { subscribeToTrainings, saveTraining } from '../services/trainingsService';
@@ -68,6 +69,7 @@ export function useAttendance() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const { teams } = useTeams();
   const { profile } = useProfile();
@@ -90,33 +92,33 @@ export function useAttendance() {
   const trainingsRef = useRef([]);
 
   useEffect(() => {
-    if (!user || !db) return undefined;
-    return subscribeToMembers(teamId, user.uid, db, appId, (data) => {
+    if (!user || !db || !activeWsId) return undefined;
+    return subscribeToMembers(teamId, activeWsId, db, appId, (data) => {
       const jugadores = data.filter((m) => m.tipo === 'jugador');
       membersRef.current = jugadores;
       setMembers(jugadores);
     });
-  }, [user, db, appId, teamId]);
+  }, [user, db, appId, activeWsId, teamId]);
 
   useEffect(() => {
-    if (!user || !db) return undefined;
-    return subscribeToTeamSessions(user.uid, db, appId, teamId, 'entrenamiento', (data) => {
+    if (!user || !db || !activeWsId) return undefined;
+    return subscribeToTeamSessions(activeWsId, db, appId, teamId, 'entrenamiento', (data) => {
       calSessionsRef.current = data;
       setCalSessions(data);
     });
-  }, [user, db, appId, teamId]);
+  }, [user, db, appId, activeWsId, teamId]);
 
   useEffect(() => {
-    if (!user || !db) return undefined;
-    return subscribeToTrainings(teamId, user.uid, db, appId, (data) => {
+    if (!user || !db || !activeWsId) return undefined;
+    return subscribeToTrainings(teamId, activeWsId, db, appId, (data) => {
       trainingsRef.current = data;
       setTrainings(data);
     });
-  }, [user, db, appId, teamId]);
+  }, [user, db, appId, activeWsId, teamId]);
 
   useEffect(() => {
-    if (!user || !db) return undefined;
-    return subscribeToAsistencia(teamId, user.uid, db, appId, (data) => {
+    if (!user || !db || !activeWsId) return undefined;
+    return subscribeToAsistencia(teamId, activeWsId, db, appId, (data) => {
       if (isFirstLoad.current) {
         const base = data.attendance || {};
         const merged = mergeFromTrainings(base, membersRef.current, calSessionsRef.current, trainingsRef.current);
@@ -125,7 +127,7 @@ export function useAttendance() {
         isFirstLoad.current = false;
       }
     });
-  }, [user, db, appId, teamId]);
+  }, [user, db, appId, activeWsId, teamId]);
 
   const triggerSave = useCallback(
     (newAttendance, newManual) => {
@@ -136,12 +138,12 @@ export function useAttendance() {
         await saveAsistencia(
           teamId,
           { attendance: newAttendance, manualSessions: newManual ?? manualSessions },
-          { uid: user.uid, db, appId },
+          { wsId: activeWsId, db, appId },
         );
         setSaveStatus('saved');
       }, 1500);
     },
-    [teamId, user, db, appId, manualSessions],
+    [teamId, activeWsId, db, appId, manualSessions],
   );
 
   const syncToTraining = useCallback(
@@ -169,10 +171,10 @@ export function useAttendance() {
         newCierre.faltas !== (training.cierre?.faltas || '') ||
         newCierre.retrasos !== (training.cierre?.retrasos || '')
       ) {
-        saveTraining({ ...training, cierre: newCierre }, teamId, { uid: user.uid, db, appId });
+        saveTraining({ ...training, cierre: newCierre }, teamId, { wsId: activeWsId, db, appId });
       }
     },
-    [calSessions, trainings, members, teamId, user, db, appId],
+    [calSessions, trainings, members, teamId, activeWsId, db, appId],
   );
 
   function updateCell(sessionId, memberId, code) {

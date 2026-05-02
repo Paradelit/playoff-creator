@@ -5,8 +5,9 @@ import { ArrowLeft, Printer, RotateCcw, Plus, Trash2, Search, Shield } from 'luc
 import ClubLogo from '../components/ClubLogo';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { subscribeToScouting, saveScouting } from '../services/scoutingService';
-import { userDocRef } from '../services/firestoreHelpers';
+import { workspaceDocRef } from '../services/firestoreHelpers';
 import { useProfile } from '../hooks/useProfile';
 import { useTeams } from '../hooks/useTeams';
 import { teamDisplayName } from '../utils/teamUtils';
@@ -35,6 +36,7 @@ export default function ScoutingScreen() {
   const location = useLocation();
   const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const [session, setSession] = useState(null);
   const { teams } = useTeams();
@@ -51,8 +53,8 @@ export default function ScoutingScreen() {
 
   // Load session (from Firestore or from route state for virtual playoff sessions)
   useEffect(() => {
-    if (!user || !db || !sessionId) return;
-    const ref = userDocRef(db, appId, user.uid, 'calendarSessions', sessionId);
+    if (!user || !db || !sessionId || !activeWsId) return;
+    const ref = workspaceDocRef(db, appId, activeWsId, 'calendarSessions', sessionId);
     getDoc(ref).then((snap) => {
       if (snap.exists()) {
         setSession({ ...snap.data(), id: snap.id });
@@ -60,25 +62,25 @@ export default function ScoutingScreen() {
         setSession({ ...location.state.playoffSession, id: sessionId });
       }
     });
-  }, [user, db, appId, sessionId, location.state]);
+  }, [user, db, appId, activeWsId, sessionId, location.state]);
 
   // Load or create scouting
   useEffect(() => {
-    if (!user || !db || !sessionId || !session) return;
-    return subscribeToScouting(sessionId, { uid: user.uid, db, appId }, (scouting) => {
+    if (!user || !db || !sessionId || !session || !activeWsId) return;
+    return subscribeToScouting(sessionId, { wsId: activeWsId, db, appId }, (scouting) => {
       if (initializedRef.current) return;
       setData(scouting || emptyScoutingData(session));
       initializedRef.current = true;
       setLoading(false);
     });
-  }, [user, db, appId, sessionId, session]);
+  }, [user, db, appId, activeWsId, sessionId, session]);
 
   function triggerSave(newData) {
     setSaveStatus('unsaved');
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setSaveStatus('saving');
-      await saveScouting(newData, sessionId, { uid: user.uid, db, appId });
+      await saveScouting(newData, sessionId, { wsId: activeWsId, db, appId });
       setSaveStatus('saved');
     }, 1500);
   }

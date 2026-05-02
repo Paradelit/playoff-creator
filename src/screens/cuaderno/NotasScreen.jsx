@@ -2,8 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer } from 'lucide-react';
 import ClubLogo from '../../components/ClubLogo';
-import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 import { subscribeToTeamNotes, saveTeamNotes } from '../../services/teamsService';
 import { teamDisplayName } from '../../utils/teamUtils';
 import { useTeams } from '../../hooks/useTeams';
@@ -13,8 +13,8 @@ import { getTemporada } from '../../utils/dateUtils';
 export default function NotasScreen() {
   const { teamId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const { teams } = useTeams();
   const { profile } = useProfile();
@@ -25,14 +25,14 @@ export default function NotasScreen() {
   const isFirstLoad = useRef(true);
 
   useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToTeamNotes(teamId, user.uid, db, appId, (data) => {
+    if (!db || !activeWsId) return;
+    return subscribeToTeamNotes(teamId, activeWsId, db, appId, (data) => {
       if (isFirstLoad.current) {
         setTexto(data);
         isFirstLoad.current = false;
       }
     });
-  }, [user, db, appId, teamId]);
+  }, [db, appId, activeWsId, teamId]);
 
   function handleChange(val) {
     setTexto(val);
@@ -40,7 +40,7 @@ export default function NotasScreen() {
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setSaveStatus('saving');
-      await saveTeamNotes(teamId, val, { uid: user.uid, db, appId });
+      await saveTeamNotes(teamId, val, { wsId: activeWsId, db, appId });
       setSaveStatus('saved');
     }, 1500);
   }

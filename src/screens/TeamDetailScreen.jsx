@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Pencil, Trash2, X, User, Users } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
 import { saveTeam, subscribeToMembers, saveMember, deleteMember } from '../services/teamsService';
 import { TeamFormFields } from '../components/teams/TeamFormFields';
@@ -29,8 +29,8 @@ function emptyMember(tipo) {
 export default function TeamDetailScreen() {
   const { teamId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const { teams, loadingTeams: loadingTeam, allSessions, activePlayoffs } = useHomeDashboard();
   const team = teams.find((t) => t.id === teamId) || null;
@@ -52,10 +52,10 @@ export default function TeamDetailScreen() {
   const [activeTab, setActiveTab] = useState('plantilla');
 
   useEffect(() => {
-    if (!user || !db) return;
-    const unsub = subscribeToMembers(teamId, user.uid, db, appId, setMembers);
+    if (!db || !activeWsId) return;
+    const unsub = subscribeToMembers(teamId, activeWsId, db, appId, setMembers);
     return unsub;
-  }, [user, db, appId, teamId]);
+  }, [db, appId, activeWsId, teamId]);
 
   const [memberErrors, setMemberErrors] = useState({});
 
@@ -85,7 +85,7 @@ export default function TeamDetailScreen() {
         dorsal: editingMember.dorsal !== '' && editingMember.dorsal != null ? Number(editingMember.dorsal) : null,
         altura: editingMember.altura !== '' && editingMember.altura != null ? Number(editingMember.altura) : null,
       };
-      await saveMember(member, teamId, { uid: user.uid, db, appId });
+      await saveMember(member, teamId, { wsId: activeWsId, db, appId });
       setEditingMember(null);
       setMemberErrors({});
     } finally {
@@ -94,7 +94,7 @@ export default function TeamDetailScreen() {
   }
 
   async function handleDeleteMember(memberId) {
-    await deleteMember(memberId, teamId, { uid: user.uid, db, appId });
+    await deleteMember(memberId, teamId, { wsId: activeWsId, db, appId });
     setDeletingMemberId(null);
   }
 
@@ -102,7 +102,7 @@ export default function TeamDetailScreen() {
     e.preventDefault();
     setSavingTeam(true);
     try {
-      await saveTeam({ ...team, ...teamForm }, { uid: user.uid, db, appId });
+      await saveTeam({ ...team, ...teamForm }, { wsId: activeWsId, db, appId });
       setEditingTeam(false);
     } finally {
       setSavingTeam(false);

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { subscribeToMembers } from '../services/teamsService';
 import { subscribeToTrainings, saveTraining, subscribeToExercises, saveExercise } from '../services/trainingsService';
 import { useTeams } from './useTeams';
@@ -33,6 +34,7 @@ export function useTrainingEditor() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const { teams } = useTeams();
   const { profile } = useProfile();
@@ -53,18 +55,18 @@ export function useTrainingEditor() {
   const isFirstLoad = useRef(true);
 
   useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToMembers(teamId, user.uid, db, appId, setMembers);
-  }, [user, db, appId, teamId]);
+    if (!user || !db || !activeWsId) return;
+    return subscribeToMembers(teamId, activeWsId, db, appId, setMembers);
+  }, [user, db, appId, activeWsId, teamId]);
 
   useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToExercises(user.uid, db, appId, setExercises);
-  }, [user, db, appId]);
+    if (!user || !db || !activeWsId) return;
+    return subscribeToExercises(activeWsId, db, appId, setExercises);
+  }, [user, db, appId, activeWsId]);
 
   useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToTrainings(teamId, user.uid, db, appId, (data) => {
+    if (!user || !db || !activeWsId) return;
+    return subscribeToTrainings(teamId, activeWsId, db, appId, (data) => {
       const found = data.find((t) => t.id === trainingId);
       if (isFirstLoad.current) {
         setTraining(
@@ -76,7 +78,7 @@ export function useTrainingEditor() {
       }
       setLoading(false);
     });
-  }, [user, db, appId, teamId, trainingId]);
+  }, [user, db, appId, activeWsId, teamId, trainingId]);
 
   const triggerSave = useCallback(
     (t) => {
@@ -84,14 +86,14 @@ export function useTrainingEditor() {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(async () => {
         try {
-          await saveTraining(t, teamId, { uid: user.uid, db, appId });
+          await saveTraining(t, teamId, { wsId: activeWsId, db, appId });
           setSaveStatus('saved');
         } catch {
           setSaveStatus('saved');
         }
       }, 1500);
     },
-    [teamId, user, db, appId],
+    [teamId, activeWsId, db, appId],
   );
 
   useEffect(() => {
@@ -177,7 +179,7 @@ export function useTrainingEditor() {
   async function handleLibrarySave(nombre) {
     const ejercicio = libraryPrompt;
     setLibraryPrompt(null);
-    if (!ejercicio) return;
+    if (!ejercicio || !activeWsId) return;
     await saveExercise(
       {
         id: crypto.randomUUID(),
@@ -187,7 +189,7 @@ export function useTrainingEditor() {
         tipoPista: ejercicio.tipoPista,
         elementos: ejercicio.elementos || [],
       },
-      { uid: user.uid, db, appId },
+      { wsId: activeWsId, db, appId },
     );
   }
 

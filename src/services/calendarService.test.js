@@ -24,7 +24,7 @@ import {
   batchUpdateCalendarSessions,
 } from './calendarService';
 
-const ctx = { uid: 'u1', db: {}, appId: 'app1' };
+const ctx = { wsId: 'ws1', db: {}, appId: 'app1' };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -36,9 +36,9 @@ describe('subscribeToCalendarSessions', () => {
     const unsub = vi.fn();
     onSnapshot.mockReturnValue(unsub);
 
-    const result = subscribeToCalendarSessions('u1', {}, 'app1', '2025-01-01', '2025-06-30', cb);
+    const result = subscribeToCalendarSessions('ws1', {}, 'app1', '2025-01-01', '2025-06-30', cb);
 
-    expect(collection).toHaveBeenCalledWith({}, 'artifacts', 'app1', 'users', 'u1', 'calendarSessions');
+    expect(collection).toHaveBeenCalledWith({}, 'artifacts', 'app1', 'workspaces', 'ws1', 'calendarSessions');
     expect(where).toHaveBeenCalledWith('fecha', '>=', '2025-01-01');
     expect(where).toHaveBeenCalledWith('fecha', '<=', '2025-06-30');
     expect(orderBy).toHaveBeenCalledWith('fecha', 'asc');
@@ -58,7 +58,7 @@ describe('subscribeToCalendarSessions', () => {
       return vi.fn();
     });
 
-    subscribeToCalendarSessions('u1', {}, 'app1', '2025-03-01', '2025-03-31', cb);
+    subscribeToCalendarSessions('ws1', {}, 'app1', '2025-03-01', '2025-03-31', cb);
 
     expect(cb).toHaveBeenCalledWith([
       { id: 's1', fecha: '2025-03-01', tipo: 'entrenamiento' },
@@ -119,7 +119,7 @@ describe('getCalendarSessionsInRange', () => {
       docs: [{ id: 's1', data: () => ({ fecha: '2025-03-01' }) }],
     });
 
-    const result = await getCalendarSessionsInRange('u1', {}, 'app1', '2025-03-01', '2025-03-31');
+    const result = await getCalendarSessionsInRange('ws1', {}, 'app1', '2025-03-01', '2025-03-31');
     expect(result).toEqual([{ id: 's1', fecha: '2025-03-01' }]);
   });
 });

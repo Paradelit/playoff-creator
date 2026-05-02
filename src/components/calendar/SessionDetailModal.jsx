@@ -1,8 +1,8 @@
 import React, { useId, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, ClipboardList, ArrowRight, Trophy, Search, BarChart3, Pencil, Trash2, Repeat, Send } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 import { saveCalendarSession } from '../../services/calendarService';
 import { updatePlayoffMatchScoreFromSession, readPlayoffGameResult } from '../../services/bracketCalendarSyncService';
 import { isMinibasketSextos } from '../../utils/minibasketUtils';
@@ -24,8 +24,8 @@ export default function SessionDetailModal({
   onCreateTraining,
 }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
   const titleId = useId();
   const [showConvocatoria, setShowConvocatoria] = useState(false);
   const { competitions } = useCompetitions(session.teamId);
@@ -122,13 +122,13 @@ export default function SessionDetailModal({
                 session={session}
                 onSave={async (resultado) => {
                   const updated = { ...session, resultado };
-                  await saveCalendarSession(updated, { uid: user.uid, db, appId });
+                  await saveCalendarSession(updated, { wsId: activeWsId, db, appId });
                   onClose();
                 }}
               />
             )}
             {session.tipo === 'playoff' && (
-              <PlayoffResultado session={session} db={db} appId={appId} user={user} onClose={onClose} />
+              <PlayoffResultado session={session} db={db} appId={appId} wsId={activeWsId} onClose={onClose} />
             )}
           </>
         )}
@@ -300,7 +300,7 @@ export default function SessionDetailModal({
   );
 }
 
-function PlayoffResultado({ session, db, appId, user, onClose }) {
+function PlayoffResultado({ session, db, appId, wsId, onClose }) {
   const resultado = readPlayoffGameResult(session);
 
   return (
@@ -312,7 +312,7 @@ function PlayoffResultado({ session, db, appId, user, onClose }) {
         await updatePlayoffMatchScoreFromSession(
           { bracketId, bracketMatchId, gameIndex: gameIndex || 0, isMyTeamTeam1 },
           { local: res.local, visitante: res.visitante },
-          { uid: user.uid, db, appId },
+          { wsId, db, appId },
         );
         onClose();
       }}

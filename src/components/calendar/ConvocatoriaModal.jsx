@@ -1,16 +1,16 @@
 import React, { useId, useState, useMemo } from 'react';
 import { X, Copy, Send, RotateCcw } from 'lucide-react';
 import Dialog from '../Dialog';
-import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 import { saveCalendarSession } from '../../services/calendarService';
 import { savePlayoffConvocatoria } from '../../services/playoffConvocatoriasService';
 import { renderConvocatoria } from '../../utils/convocatoriaTemplate';
 
 export default function ConvocatoriaModal({ session, team, competition, onClose }) {
   const titleId = useId();
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const [notaExtra, setNotaExtra] = useState(session.notaExtra || '');
   const [horaCitaOverride, setHoraCitaOverride] = useState(session.horaCita || '');
@@ -42,7 +42,7 @@ export default function ConvocatoriaModal({ session, team, competition, onClose 
           notaExtra,
           horaCita: horaCitaOverride || null,
         },
-        { uid: user.uid, db, appId },
+        { wsId: activeWsId, db, appId },
       );
     } else {
       await saveCalendarSession(
@@ -53,7 +53,7 @@ export default function ConvocatoriaModal({ session, team, competition, onClose 
           notaExtra,
           horaCita: horaCitaOverride || null,
         },
-        { uid: user.uid, db, appId },
+        { wsId: activeWsId, db, appId },
       );
     }
   }

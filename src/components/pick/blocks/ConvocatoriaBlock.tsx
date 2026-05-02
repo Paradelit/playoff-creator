@@ -3,6 +3,7 @@ import { Send, Copy, Check } from 'lucide-react';
 import type { ConvocatoriaPreviewData } from '../../../services/contentBlocks';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useFirebase } from '../../../contexts/FirebaseContext';
+import { useWorkspace } from '../../../contexts/WorkspaceContext';
 import { saveCalendarSession } from '../../../services/calendarService';
 import { savePlayoffConvocatoria } from '../../../services/playoffConvocatoriasService';
 
@@ -18,6 +19,7 @@ function formatFecha(fecha?: string) {
 export default function ConvocatoriaBlock({ convocatoria }: { convocatoria: ConvocatoriaPreviewData }) {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace() as { activeWsId: string | null };
   const [text, setText] = useState(convocatoria.mensaje);
   const [submitting, setSubmitting] = useState(false);
   const [persisted, setPersisted] = useState(false);
@@ -26,7 +28,7 @@ export default function ConvocatoriaBlock({ convocatoria }: { convocatoria: Conv
   const isPlayoff = convocatoria.tipo === 'playoff';
 
   async function persist(finalMessage: string) {
-    if (!user) return;
+    if (!user || !activeWsId) return;
     if (isPlayoff) {
       if (!convocatoria.bracketId || !convocatoria.bracketMatchId || convocatoria.gameIndex == null) return;
       await savePlayoffConvocatoria(
@@ -38,7 +40,7 @@ export default function ConvocatoriaBlock({ convocatoria }: { convocatoria: Conv
           mensajeConvocatoria: finalMessage,
           convocatoriaSentAt: new Date(),
         },
-        { uid: user.uid, db, appId },
+        { wsId: activeWsId, db, appId },
       );
     } else {
       await saveCalendarSession(
@@ -47,7 +49,7 @@ export default function ConvocatoriaBlock({ convocatoria }: { convocatoria: Conv
           mensajeConvocatoria: finalMessage,
           convocatoriaSentAt: new Date(),
         },
-        { uid: user.uid, db, appId },
+        { wsId: activeWsId, db, appId },
       );
     }
   }

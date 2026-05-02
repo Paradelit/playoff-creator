@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import {
   subscribeToProfile,
   saveProfile,
@@ -32,6 +33,7 @@ export function useSettings() {
   const navigate = useNavigate();
   const { user, handleLogout, handleLinkGoogle, handleDeleteAuthAccount } = useAuth();
   const { db, appId, storage } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const [form, setForm] = useState(EMPTY_PROFILE);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -110,9 +112,10 @@ export function useSettings() {
   }
 
   async function handleExport() {
+    if (!activeWsId) return;
     setExporting(true);
     try {
-      const data = await exportUserData(user.uid, db, appId);
+      const data = await exportUserData(user.uid, activeWsId, db, appId);
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -141,10 +144,10 @@ export function useSettings() {
   }
 
   async function handleConfirmImport() {
-    if (!importPreview) return;
+    if (!importPreview || !activeWsId) return;
     setImporting(true);
     try {
-      await importUserData(importPreview, { uid: user.uid, db, appId });
+      await importUserData(importPreview, { uid: user.uid, wsId: activeWsId, db, appId });
       setImportPreview(null);
     } finally {
       setImporting(false);

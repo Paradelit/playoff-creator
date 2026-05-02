@@ -19,7 +19,9 @@ import {
   Edit2,
 } from 'lucide-react';
 import { teamDisplayName } from '../utils/teamUtils';
-import { doc, setDoc } from 'firebase/firestore';
+import { setDoc } from 'firebase/firestore';
+import { workspaceDocRef } from '../services/firestoreHelpers';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import logger from '../utils/logger';
 import BracketNode from '../components/BracketNode';
 import TeamSearchableSelect from '../components/TeamSearchableSelect';
@@ -85,6 +87,7 @@ export default function BracketScreen() {
     handleLinkTeam,
     handleUnlinkTeam,
   } = useBracket();
+  const { activeWsId } = useWorkspace();
 
   useRegisterScreenContext({ bracketName: activeBracket?.name, myTeam: activeBracket?.myTeam });
 
@@ -281,9 +284,9 @@ export default function BracketScreen() {
                     if (trimmed && trimmed !== activeBracket.name) {
                       const updated = { ...activeBracket, name: trimmed };
                       setBrackets((prev) => prev.map((b) => (b.id === activeBracket.id ? updated : b)));
-                      if (user && db) {
+                      if (user && db && activeWsId) {
                         setDoc(
-                          doc(db, 'artifacts', appId, 'users', user.uid, 'brackets', activeBracket.id),
+                          workspaceDocRef(db, appId, activeWsId, 'brackets', activeBracket.id),
                           { name: trimmed },
                           { merge: true },
                         ).catch((e) => logger.warn('Error guardando nombre de bracket', e));

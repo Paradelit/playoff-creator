@@ -5,9 +5,10 @@ import { ArrowLeft, Printer, RotateCcw, Plus, Trash2 } from 'lucide-react';
 import ClubLogo from '../components/ClubLogo';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { subscribeToAnalysis, saveAnalysis } from '../services/analysisService';
 import { updatePlayoffMatchScoreFromSession } from '../services/bracketCalendarSyncService';
-import { userDocRef } from '../services/firestoreHelpers';
+import { workspaceDocRef } from '../services/firestoreHelpers';
 import { useProfile } from '../hooks/useProfile';
 import { useTeams } from '../hooks/useTeams';
 import { teamDisplayName } from '../utils/teamUtils';
@@ -52,6 +53,7 @@ export default function AnalysisScreen() {
   const location = useLocation();
   const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const [session, setSession] = useState(null);
   const { teams } = useTeams();
@@ -70,8 +72,8 @@ export default function AnalysisScreen() {
   // Load session (from Firestore or from route state for virtual playoff sessions).
   // For playoff sessions, subscribe to the bracket so scores/dates stay in sync live.
   useEffect(() => {
-    if (!user || !db || !sessionId) return;
-    const ref = userDocRef(db, appId, user.uid, 'calendarSessions', sessionId);
+    if (!user || !db || !sessionId || !activeWsId) return;
+    const ref = workspaceDocRef(db, appId, activeWsId, 'calendarSessions', sessionId);
     let unsubBracket = null;
     getDoc(ref).then((snap) => {
       if (snap.exists()) {
@@ -82,10 +84,10 @@ export default function AnalysisScreen() {
       if (!virtual) return;
       setSession({ ...virtual, id: sessionId });
       if (virtual.bracketId && virtual.bracketMatchId) {
-        // For shared brackets, subscribe to the shared doc; for local brackets, subscribe to user doc
+        // For shared brackets, subscribe to the shared doc; for local brackets, subscribe to workspace doc
         const bRef = virtual.bracketShareCode
           ? doc(db, 'artifacts', appId, 'shared', virtual.bracketShareCode)
-          : userDocRef(db, appId, user.uid, 'brackets', virtual.bracketId);
+          : workspaceDocRef(db, appId, activeWsId, 'brackets', virtual.bracketId);
         unsubBracket = onSnapshot(bRef, (bSnap) => {
           if (!bSnap.exists()) return;
           const bracketDoc = bSnap.data();
@@ -98,12 +100,12 @@ export default function AnalysisScreen() {
     return () => {
       if (unsubBracket) unsubBracket();
     };
-  }, [user, db, appId, sessionId, location.state]);
+  }, [user, db, appId, activeWsId, sessionId, location.state]);
 
   // Load or create analysis
   useEffect(() => {
-    if (!user || !db || !sessionId || !session) return;
-    return subscribeToAnalysis(sessionId, { uid: user.uid, db, appId }, (analysis) => {
+    if (!user || !db || !sessionId || !session || !activeWsId) return;
+    return subscribeToAnalysis(sessionId, { wsId: activeWsId, db, appId }, (analysis) => {
       const empty = emptyAnalysisData(session);
       if (initializedRef.current) {
         if (session.tipo === 'playoff') {
@@ -128,14 +130,14 @@ export default function AnalysisScreen() {
       initializedRef.current = true;
       setLoading(false);
     });
-  }, [user, db, appId, sessionId, session]);
+  }, [user, db, appId, activeWsId, sessionId, session]);
 
   function triggerSave(newData) {
     setSaveStatus('unsaved');
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setSaveStatus('saving');
-      await saveAnalysis(newData, sessionId, { uid: user.uid, db, appId });
+      await saveAnalysis(newData, sessionId, { wsId: activeWsId, db, appId });
       if (session?.tipo === 'playoff' && session?.bracketId && session?.bracketMatchId) {
         try {
           await updatePlayoffMatchScoreFromSession(
@@ -146,7 +148,7 @@ export default function AnalysisScreen() {
               isMyTeamTeam1: session.isMyTeamTeam1,
             },
             { local: newData.resultado?.local ?? '', visitante: newData.resultado?.visitante ?? '' },
-            { uid: user.uid, db, appId },
+            { wsId: activeWsId, db, appId },
           );
         } catch (err) {
           console.error('Error syncing playoff score to bracket:', err);

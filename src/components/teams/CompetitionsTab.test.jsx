@@ -6,12 +6,12 @@ vi.mock('../../hooks/useCompetitions', () => ({
   useCompetitions: () => ({ competitions: [], loading: false }),
 }));
 
-vi.mock('../../contexts/AuthContext', () => ({
-  useAuth: () => ({ user: { uid: 'u1' } }),
-}));
-
 vi.mock('../../contexts/FirebaseContext', () => ({
   useFirebase: () => ({ db: {}, appId: 'app1' }),
+}));
+
+vi.mock('../../contexts/WorkspaceContext', () => ({
+  useWorkspace: () => ({ activeWsId: 'ws1' }),
 }));
 
 describe('CompetitionsTab', () => {

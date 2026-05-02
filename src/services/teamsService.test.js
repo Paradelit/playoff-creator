@@ -12,8 +12,8 @@ vi.mock('firebase/firestore', () => ({
 }));
 
 vi.mock('./firestoreHelpers', () => ({
-  userColRef: vi.fn(() => 'mock-user-col-ref'),
-  saveUserDoc: vi.fn(() => Promise.resolve()),
+  workspaceColRef: vi.fn(() => 'mock-ws-col-ref'),
+  saveWorkspaceDoc: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock('./dataCleanupService', () => ({
@@ -21,7 +21,7 @@ vi.mock('./dataCleanupService', () => ({
 }));
 
 import { setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
-import { saveUserDoc } from './firestoreHelpers';
+import { saveWorkspaceDoc } from './firestoreHelpers';
 import { deleteTeamCascade } from './dataCleanupService';
 import {
   subscribeToTeams,
@@ -42,7 +42,7 @@ import {
   saveInformeJugadores,
 } from './teamsService';
 
-const ctx = { uid: 'u1', db: {}, appId: 'app1' };
+const ctx = { wsId: 'ws1', db: {}, appId: 'app1' };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -58,15 +58,18 @@ describe('subscribeToTeams', () => {
       return vi.fn();
     });
 
-    subscribeToTeams('u1', {}, 'app1', cb);
+    subscribeToTeams('ws1', {}, 'app1', cb);
     expect(cb).toHaveBeenCalledWith([{ id: 't1', categoria: 'Infantil' }]);
   });
 });
 
 describe('saveTeam / deleteTeam', () => {
-  it('saveTeam delegates to saveUserDoc', async () => {
+  it('saveTeam delegates to saveWorkspaceDoc', async () => {
     await saveTeam({ id: 't1', categoria: 'Cadete' }, ctx);
-    expect(saveUserDoc).toHaveBeenCalledWith({}, 'app1', 'u1', 'teams', 't1', { id: 't1', categoria: 'Cadete' });
+    expect(saveWorkspaceDoc).toHaveBeenCalledWith({}, 'app1', 'ws1', ['teams', 't1'], {
+      id: 't1',
+      categoria: 'Cadete',
+    });
   });
 
   it('deleteTeam delegates to backend cleanup', async () => {
@@ -85,7 +88,7 @@ describe('subscribeToMembers', () => {
       return vi.fn();
     });
 
-    subscribeToMembers('t1', 'u1', {}, 'app1', cb);
+    subscribeToMembers('t1', 'ws1', {}, 'app1', cb);
     expect(cb).toHaveBeenCalledWith([{ id: 'm1', nombre: 'Player 1', tipo: 'jugador' }]);
   });
 });
@@ -114,7 +117,7 @@ describe('cuaderno subscriptions', () => {
       return vi.fn();
     });
 
-    subscribeToTeamJugadores('t1', 'u1', {}, 'app1', cb);
+    subscribeToTeamJugadores('t1', 'ws1', {}, 'app1', cb);
     expect(cb).toHaveBeenCalledWith(['j1', 'j2']);
   });
 
@@ -125,7 +128,7 @@ describe('cuaderno subscriptions', () => {
       return vi.fn();
     });
 
-    subscribeToTeamJugadores('t1', 'u1', {}, 'app1', cb);
+    subscribeToTeamJugadores('t1', 'ws1', {}, 'app1', cb);
     expect(cb).toHaveBeenCalledWith([]);
   });
 
@@ -136,7 +139,7 @@ describe('cuaderno subscriptions', () => {
       return vi.fn();
     });
 
-    subscribeToTestTiro('t1', 'u1', {}, 'app1', cb);
+    subscribeToTestTiro('t1', 'ws1', {}, 'app1', cb);
     expect(cb).toHaveBeenCalledWith({ a: 1 });
   });
 
@@ -147,7 +150,7 @@ describe('cuaderno subscriptions', () => {
       return vi.fn();
     });
 
-    subscribeToAsistencia('t1', 'u1', {}, 'app1', cb);
+    subscribeToAsistencia('t1', 'ws1', {}, 'app1', cb);
     expect(cb).toHaveBeenCalledWith({ attendance: {}, manualSessions: {} });
   });
 
@@ -158,7 +161,7 @@ describe('cuaderno subscriptions', () => {
       return vi.fn();
     });
 
-    subscribeToTeamNotes('t1', 'u1', {}, 'app1', cb);
+    subscribeToTeamNotes('t1', 'ws1', {}, 'app1', cb);
     expect(cb).toHaveBeenCalledWith('mis notas');
   });
 });
@@ -198,7 +201,7 @@ describe('subscribeToInformeJugadores', () => {
       });
       return vi.fn();
     });
-    subscribeToInformeJugadores('t1', 'u1', {}, 'app1', cb);
+    subscribeToInformeJugadores('t1', 'ws1', {}, 'app1', cb);
     expect(cb).toHaveBeenCalledWith({ rows: [{ id: 0, nombre: 'A' }], observaciones: 'comentario' });
   });
 
@@ -211,7 +214,7 @@ describe('subscribeToInformeJugadores', () => {
       });
       return vi.fn();
     });
-    subscribeToInformeJugadores('t1', 'u1', {}, 'app1', cb);
+    subscribeToInformeJugadores('t1', 'ws1', {}, 'app1', cb);
     expect(cb).toHaveBeenCalledWith({ rows: [{ id: 0, nombre: 'A' }], observaciones: '' });
   });
 
@@ -221,7 +224,7 @@ describe('subscribeToInformeJugadores', () => {
       callback({ exists: () => false });
       return vi.fn();
     });
-    subscribeToInformeJugadores('t1', 'u1', {}, 'app1', cb);
+    subscribeToInformeJugadores('t1', 'ws1', {}, 'app1', cb);
     expect(cb).toHaveBeenCalledWith({ rows: [], observaciones: '' });
   });
 });

@@ -1,18 +1,18 @@
 import { collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy } from 'firebase/firestore';
 
-function competitionsCol(teamId, uid, db, appId) {
-  return collection(db, 'artifacts', appId, 'users', uid, 'teams', teamId, 'competitions');
+function competitionsCol(teamId, wsId, db, appId) {
+  return collection(db, 'artifacts', appId, 'workspaces', wsId, 'teams', teamId, 'competitions');
 }
 
-export function subscribeToCompetitions(teamId, uid, db, appId, callback) {
-  const q = query(competitionsCol(teamId, uid, db, appId), orderBy('createdAt', 'asc'));
+export function subscribeToCompetitions(teamId, wsId, db, appId, callback) {
+  const q = query(competitionsCol(teamId, wsId, db, appId), orderBy('createdAt', 'asc'));
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
   });
 }
 
-export async function saveCompetition(competition, teamId, { uid, db, appId }) {
-  const ref = doc(competitionsCol(teamId, uid, db, appId), competition.id);
+export async function saveCompetition(competition, teamId, { wsId, db, appId }) {
+  const ref = doc(competitionsCol(teamId, wsId, db, appId), competition.id);
   await setDoc(
     ref,
     {
@@ -24,6 +24,6 @@ export async function saveCompetition(competition, teamId, { uid, db, appId }) {
   );
 }
 
-export async function deleteCompetition(competitionId, teamId, { uid, db, appId }) {
-  await deleteDoc(doc(competitionsCol(teamId, uid, db, appId), competitionId));
+export async function deleteCompetition(competitionId, teamId, { wsId, db, appId }) {
+  await deleteDoc(doc(competitionsCol(teamId, wsId, db, appId), competitionId));
 }
