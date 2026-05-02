@@ -31,12 +31,13 @@ interface CalendarSessionData {
   [key: string]: unknown;
 }
 
-interface ProactiveNotification {
+export interface ProactiveNotification {
   message: string;
   type: "match-reminder" | "training-tip";
   generatedAt: string;
   read: boolean;
-  sessionId?: string;
+  sessionId: string;
+  wsId: string;
   teamId?: string;
 }
 
@@ -116,66 +117,73 @@ export async function runProactiveBriefing(
 
   console.log(`[proactiveEngine] Starting run for appId=${appId}, today=${today}, tomorrow=${tomorrow}`);
 
-  // ── Step 1: Collect active users ──────────────────────────────────────────
+  // ── Step 1: Collect active workspaces ─────────────────────────────────────
 
-  const usersRef = db
+  const workspacesRef = db
     .collection("artifacts")
     .doc(appId)
-    .collection("users");
+    .collection("workspaces");
 
   // We over-fetch to account for filtering; Firestore doesn't support
   // cross-collection queries, so we check activity after listing.
-  const usersSnap = await usersRef.limit(MAX_USERS * 3).get();
+  const workspacesSnap = await workspacesRef.limit(MAX_USERS * 3).get();
 
-  const activeUids: string[] = [];
+  interface ActiveWorkspace {
+    wsId: string;
+    ownerId: string;
+  }
+  const activeWorkspaces: ActiveWorkspace[] = [];
 
-  for (const userDoc of usersSnap.docs) {
-    if (activeUids.length >= MAX_USERS) break;
+  for (const wsDoc of workspacesSnap.docs) {
+    if (activeWorkspaces.length >= MAX_USERS) break;
 
-    const uid = userDoc.id;
+    const wsId = wsDoc.id;
+    const wsData = wsDoc.data() as { ownerId?: string; type?: string };
+    const ownerId = wsData.ownerId;
+    if (!ownerId) continue;
 
-    // Check for teams (existence = active user)
+    // Check for teams (existence = active workspace)
     const teamsSnap = await db
       .collection("artifacts").doc(appId)
-      .collection("users").doc(uid)
+      .collection("workspaces").doc(wsId)
       .collection("teams")
       .limit(1)
       .get();
 
     if (!teamsSnap.empty) {
-      activeUids.push(uid);
+      activeWorkspaces.push({ wsId, ownerId });
       continue;
     }
 
     // Check for any calendar session within the activity window
     const recentSnap = await db
       .collection("artifacts").doc(appId)
-      .collection("users").doc(uid)
+      .collection("workspaces").doc(wsId)
       .collection("calendarSessions")
       .where("fecha", ">=", activityCutoff)
       .limit(1)
       .get();
 
     if (!recentSnap.empty) {
-      activeUids.push(uid);
+      activeWorkspaces.push({ wsId, ownerId });
     }
   }
 
-  console.log(`[proactiveEngine] Active users found: ${activeUids.length}`);
+  console.log(`[proactiveEngine] Active workspaces found: ${activeWorkspaces.length}`);
 
-  // ── Step 2: Process each user ─────────────────────────────────────────────
+  // ── Step 2: Process each workspace ────────────────────────────────────────
 
   let processed = 0;
   let notifications = 0;
   let errors = 0;
   let skipped = 0;
 
-  for (const uid of activeUids) {
+  for (const { wsId, ownerId: uid } of activeWorkspaces) {
     try {
       // Query sessions for today and tomorrow in a single range query
       const sessionsSnap = await db
         .collection("artifacts").doc(appId)
-        .collection("users").doc(uid)
+        .collection("workspaces").doc(wsId)
         .collection("calendarSessions")
         .where("fecha", ">=", today)
         .where("fecha", "<=", tomorrow)
@@ -195,6 +203,9 @@ export async function runProactiveBriefing(
           tipo === "partido" ? "match-reminder" : "training-tip";
 
         // ── Idempotency check ────────────────────────────────────────────────
+        // Notif still lives under users/{uid}/ — per the constitution
+        // "datos del usuario viajan con el usuario" — but the wsId field
+        // below tells the UI which workspace the notif belongs to.
         const notifId = `${fecha}-${sessionId}`;
         const notifRef = db
           .collection("artifacts").doc(appId)
@@ -226,19 +237,20 @@ export async function runProactiveBriefing(
               : fallbackMessage(tipo, dayLabel, rival);
         } catch (llmErr) {
           console.warn(
-            `[proactiveEngine] LLM failed for uid=${uid} session=${sessionId}: ` +
+            `[proactiveEngine] LLM failed for ws=${wsId} session=${sessionId}: ` +
             (llmErr as Error).message
           );
           message = fallbackMessage(tipo, dayLabel, rival);
         }
 
-        // ── Write notification ───────────────────────────────────────────────
+        // ── Write notification with wsId field ──────────────────────────────
         const notif: ProactiveNotification = {
           message,
           type: notifType,
           generatedAt: new Date().toISOString(),
           read: false,
           sessionId,
+          wsId,
           ...(session.teamId ? { teamId: session.teamId } : {}),
         };
 
@@ -246,14 +258,14 @@ export async function runProactiveBriefing(
         notifications++;
 
         console.log(
-          `[proactiveEngine] Notification written: uid=${uid} notifId=${notifId} type=${notifType}`
+          `[proactiveEngine] Notification written: ws=${wsId} uid=${uid} notifId=${notifId} type=${notifType}`
         );
       }
 
       processed++;
     } catch (err) {
       console.error(
-        `[proactiveEngine] Error processing uid=${uid}: `,
+        `[proactiveEngine] Error processing ws=${wsId} uid=${uid}: `,
         (err as Error).message
       );
       errors++;
