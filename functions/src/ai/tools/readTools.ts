@@ -80,7 +80,7 @@ export function createReadTools(): ToolDefinition[] {
         const teamId = resolveId(args, ctx, "teamId");
         if (!teamId) return { error: "Falta teamId. Llama a list_teams primero o pregunta al usuario." };
         const teamSnap = await ctx.db
-          .doc(`artifacts/${ctx.appId}/users/${ctx.userId}/teams/${teamId}`).get();
+          .doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}/teams/${teamId}`).get();
         if (!teamSnap.exists) return { error: "Equipo no encontrado" };
         const memSnap = await teamSubCol(ctx, teamId, "members").get();
         const members = memSnap.docs.map((d) => {
@@ -170,7 +170,7 @@ export function createReadTools(): ToolDefinition[] {
         const exerciseId = String(args.exerciseId || "");
         if (!exerciseId) return { error: "Falta exerciseId." };
         const snap = await ctx.db
-          .doc(`artifacts/${ctx.appId}/users/${ctx.userId}/exercises/${exerciseId}`).get();
+          .doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}/exercises/${exerciseId}`).get();
         if (!snap.exists) return { error: "Ejercicio no encontrado" };
         return { id: exerciseId, ...snap.data() };
       },
@@ -227,7 +227,7 @@ export function createReadTools(): ToolDefinition[] {
         if (!teamId) return { error: "Falta teamId." };
         const trainingId = String(args.trainingId);
         const snap = await ctx.db
-          .doc(`artifacts/${ctx.appId}/users/${ctx.userId}/teams/${teamId}/trainings/${trainingId}`).get();
+          .doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}/teams/${teamId}/trainings/${trainingId}`).get();
         if (!snap.exists) return { error: "Entrenamiento no encontrado" };
         return { id: trainingId, ...snap.data() };
       },
@@ -305,7 +305,7 @@ export function createReadTools(): ToolDefinition[] {
         const bracketId = resolveId(args, ctx, "bracketId");
         if (!bracketId) return { error: "Falta bracketId. Llama a list_brackets primero." };
         const snap = await ctx.db
-          .doc(`artifacts/${ctx.appId}/users/${ctx.userId}/brackets/${bracketId}`).get();
+          .doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}/brackets/${bracketId}`).get();
         if (!snap.exists) return { error: "Bracket no encontrado" };
         const data = snap.data() || {};
         if (typeof data.shareCode === "string" && data.shareCode) {
@@ -332,7 +332,7 @@ export function createReadTools(): ToolDefinition[] {
         const bracketId = resolveId(args, ctx, "bracketId");
         if (!bracketId) return { error: "Falta bracketId." };
         const snap = await ctx.db
-          .doc(`artifacts/${ctx.appId}/users/${ctx.userId}/brackets/${bracketId}`).get();
+          .doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}/brackets/${bracketId}`).get();
         if (!snap.exists) return { error: "Bracket no encontrado" };
         const data = snap.data() || {};
         if (!data.shareCode) return { bracketId, shared: false };
@@ -368,7 +368,7 @@ export function createReadTools(): ToolDefinition[] {
         if (!teamId) return { error: "Falta teamId." };
         const section = String(args.section);
         const snap = await ctx.db
-          .doc(`artifacts/${ctx.appId}/users/${ctx.userId}/teams/${teamId}/cuaderno/${section}`).get();
+          .doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}/teams/${teamId}/cuaderno/${section}`).get();
         if (!snap.exists) return { section, empty: true };
         return { section, ...snap.data() };
       },
@@ -388,7 +388,7 @@ export function createReadTools(): ToolDefinition[] {
       handler: async (args, ctx) => {
         const teamId = resolveId(args, ctx, "teamId");
         if (!teamId) return { error: "Falta teamId." };
-        const snap = await ctx.db.doc(`artifacts/${ctx.appId}/users/${ctx.userId}/teams/${teamId}/cuaderno/asistencia`).get();
+        const snap = await ctx.db.doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}/teams/${teamId}/cuaderno/asistencia`).get();
         if (!snap.exists) return { empty: true };
         const data = snap.data();
         if (args.sessionId && typeof args.sessionId === 'string') {
@@ -463,7 +463,7 @@ export function createReadTools(): ToolDefinition[] {
       handler: async (args, ctx) => {
         const teamId = resolveId(args, ctx, "teamId");
         if (!teamId) return { error: "Falta teamId." };
-        const snap = await ctx.db.doc(`artifacts/${ctx.appId}/users/${ctx.userId}/teams/${teamId}/cuaderno/informe-jugadores`).get();
+        const snap = await ctx.db.doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}/teams/${teamId}/cuaderno/informe-jugadores`).get();
         if (!snap.exists) return { empty: true };
         return snap.data() || {};
       }
@@ -482,7 +482,7 @@ export function createReadTools(): ToolDefinition[] {
       handler: async (args, ctx) => {
         const teamId = resolveId(args, ctx, "teamId");
         if (!teamId) return { error: "Falta teamId." };
-        const snap = await ctx.db.doc(`artifacts/${ctx.appId}/users/${ctx.userId}/teams/${teamId}/cuaderno/test-tiro`).get();
+        const snap = await ctx.db.doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}/teams/${teamId}/cuaderno/test-tiro`).get();
         if (!snap.exists) return { empty: true };
         return snap.data() || {};
       }
@@ -501,7 +501,7 @@ export function createReadTools(): ToolDefinition[] {
       handler: async (args, ctx) => {
         const sessionId = resolveId(args, ctx, "sessionId");
         if (!sessionId) return { error: "Falta sessionId." };
-        const snap = await ctx.db.doc(`artifacts/${ctx.appId}/users/${ctx.userId}/scoutings/${sessionId}`).get();
+        const snap = await ctx.db.doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}/scoutings/${sessionId}`).get();
         if (!snap.exists) return { empty: true };
         return { id: sessionId, ...snap.data() };
       }
@@ -520,7 +520,7 @@ export function createReadTools(): ToolDefinition[] {
       handler: async (args, ctx) => {
         const sessionId = resolveId(args, ctx, "sessionId");
         if (!sessionId) return { error: "Falta sessionId." };
-        const snap = await ctx.db.doc(`artifacts/${ctx.appId}/users/${ctx.userId}/analisis/${sessionId}`).get();
+        const snap = await ctx.db.doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}/analisis/${sessionId}`).get();
         if (!snap.exists) return { empty: true };
         return { id: sessionId, ...snap.data() };
       }
@@ -600,7 +600,7 @@ export function createReadTools(): ToolDefinition[] {
           session = found;
         } else {
           const snap = await ctx.db
-            .doc(`artifacts/${ctx.appId}/users/${ctx.userId}/calendarSessions/${sessionId}`)
+            .doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}/calendarSessions/${sessionId}`)
             .get();
           if (!snap.exists) return { error: `No encontré la sesión ${sessionId}.` };
           const data = snap.data() || {};
@@ -625,7 +625,7 @@ export function createReadTools(): ToolDefinition[] {
         if (!session.teamId) return { error: "La sesión no tiene equipo asociado." };
 
         const teamSnap = await ctx.db
-          .doc(`artifacts/${ctx.appId}/users/${ctx.userId}/teams/${session.teamId}`)
+          .doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}/teams/${session.teamId}`)
           .get();
         const team: TeamShape | null = teamSnap.exists
           ? ({ id: teamSnap.id, ...teamSnap.data() } as TeamShape)
@@ -635,7 +635,7 @@ export function createReadTools(): ToolDefinition[] {
         if (session.competitionId && session.teamId) {
           const cSnap = await ctx.db
             .doc(
-              `artifacts/${ctx.appId}/users/${ctx.userId}/teams/${session.teamId}/competitions/${session.competitionId}`,
+              `artifacts/${ctx.appId}/workspaces/${ctx.wsId}/teams/${session.teamId}/competitions/${session.competitionId}`,
             )
             .get();
           if (cSnap.exists) competition = { id: cSnap.id, ...cSnap.data() } as CompetitionShape;
