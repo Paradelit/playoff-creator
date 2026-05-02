@@ -212,8 +212,8 @@ export function useBracketSync({
         unsubscribeShareCode(bracketBeingDeleted.shareCode);
       }
       setBrackets((prev) => prev.filter((b) => b.id !== bracketToDelete));
-      if (user && db) {
-        await deleteBracketCascade({ appId, bracketId: bracketToDelete });
+      if (user && db && activeWsId) {
+        await deleteBracketCascade({ appId, wsId: activeWsId, bracketId: bracketToDelete });
       }
       setBracketToDelete(null);
     }

@@ -74,7 +74,7 @@ describe('saveTeam / deleteTeam', () => {
 
   it('deleteTeam delegates to backend cleanup', async () => {
     await deleteTeam('t1', ctx);
-    expect(deleteTeamCascade).toHaveBeenCalledWith({ appId: 'app1', teamId: 't1' });
+    expect(deleteTeamCascade).toHaveBeenCalledWith({ appId: 'app1', wsId: 'ws1', teamId: 't1' });
   });
 });
 

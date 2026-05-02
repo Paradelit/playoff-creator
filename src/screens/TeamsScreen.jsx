@@ -89,7 +89,7 @@ export default function TeamsScreen() {
   }
 
   async function handleDelete(teamId) {
-    await deleteTeam(teamId, { appId });
+    await deleteTeam(teamId, { appId, wsId: activeWsId });
     setDeletingTeamId(null);
   }
 

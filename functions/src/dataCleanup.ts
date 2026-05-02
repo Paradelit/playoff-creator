@@ -6,6 +6,7 @@ export interface CleanupParams {
   db: Firestore;
   appId: string;
   userId: string;
+  wsId?: string; // required for deleteTeam/Bracket/Conversation; not used for deleteAllUserData (server iterates memberships)
   action: CleanupAction;
   teamId?: string;
   bracketId?: string;
@@ -35,6 +36,14 @@ function userRoot(db: Firestore, appId: string, userId: string) {
 
 function userCol(db: Firestore, appId: string, userId: string, collectionName: string) {
   return userRoot(db, appId, userId).collection(collectionName);
+}
+
+function workspaceRoot(db: Firestore, appId: string, wsId: string) {
+  return db.collection("artifacts").doc(appId).collection("workspaces").doc(wsId);
+}
+
+function workspaceCol(db: Firestore, appId: string, wsId: string, collectionName: string) {
+  return workspaceRoot(db, appId, wsId).collection(collectionName);
 }
 
 function sharedDoc(db: Firestore, appId: string, shareCode: string) {
@@ -73,29 +82,29 @@ async function deleteQueryDocs(query: Query): Promise<number> {
 async function deletePlayoffArtifactsForBracket(
   db: Firestore,
   appId: string,
-  userId: string,
+  wsId: string,
   bracketId: string,
   result: CleanupResult
 ): Promise<void> {
   const prefix = `playoff-${bracketId}-`;
-  const end = `${prefix}\uf8ff`;
+  const end = `${prefix}`;
 
   const scoutingsDeleted = await deleteQueryDocs(
-    userCol(db, appId, userId, "scoutings")
+    workspaceCol(db, appId, wsId, "scoutings")
       .where(FieldPath.documentId(), ">=", prefix)
       .where(FieldPath.documentId(), "<=", end)
   );
   result.deleted.scoutings += scoutingsDeleted;
 
   const analysisDeleted = await deleteQueryDocs(
-    userCol(db, appId, userId, "analisis")
+    workspaceCol(db, appId, wsId, "analisis")
       .where(FieldPath.documentId(), ">=", prefix)
       .where(FieldPath.documentId(), "<=", end)
   );
   result.deleted.analisis += analysisDeleted;
 
   const planillasDeleted = await deleteQueryDocs(
-    userCol(db, appId, userId, "planillas")
+    workspaceCol(db, appId, wsId, "planillas")
       .where(FieldPath.documentId(), ">=", prefix)
       .where(FieldPath.documentId(), "<=", end)
   );
@@ -145,15 +154,16 @@ async function deleteBracketById(
   db: Firestore,
   appId: string,
   userId: string,
+  wsId: string,
   bracketId: string,
   result: CleanupResult
 ): Promise<void> {
-  const ref = userCol(db, appId, userId, "brackets").doc(bracketId);
+  const ref = workspaceCol(db, appId, wsId, "brackets").doc(bracketId);
   const snap = await ref.get();
   if (!snap.exists) return;
 
   const data = (snap.data() || {}) as Record<string, unknown>;
-  await deletePlayoffArtifactsForBracket(db, appId, userId, bracketId, result);
+  await deletePlayoffArtifactsForBracket(db, appId, wsId, bracketId, result);
 
   const shareCode = typeof data.shareCode === "string" ? data.shareCode : "";
   if (shareCode && (await isOwnedSharedBracket(db, appId, userId, shareCode, data))) {
@@ -168,14 +178,14 @@ async function deleteBracketById(
 async function deleteSessionArtifacts(
   db: Firestore,
   appId: string,
-  userId: string,
+  wsId: string,
   sessionIds: string[],
   result: CleanupResult
 ): Promise<void> {
   for (const sessionId of sessionIds) {
-    const scoutingRef = userCol(db, appId, userId, "scoutings").doc(sessionId);
-    const analysisRef = userCol(db, appId, userId, "analisis").doc(sessionId);
-    const planillaRef = userCol(db, appId, userId, "planillas").doc(sessionId);
+    const scoutingRef = workspaceCol(db, appId, wsId, "scoutings").doc(sessionId);
+    const analysisRef = workspaceCol(db, appId, wsId, "analisis").doc(sessionId);
+    const planillaRef = workspaceCol(db, appId, wsId, "planillas").doc(sessionId);
 
     const [scoutingSnap, analysisSnap, planillaSnap] = await Promise.all([
       scoutingRef.get(),
@@ -202,22 +212,23 @@ async function deleteTeamById(
   db: Firestore,
   appId: string,
   userId: string,
+  wsId: string,
   teamId: string,
   result: CleanupResult
 ): Promise<void> {
-  const teamRef = userCol(db, appId, userId, "teams").doc(teamId);
+  const teamRef = workspaceCol(db, appId, wsId, "teams").doc(teamId);
   const teamSnap = await teamRef.get();
   if (!teamSnap.exists) return;
 
-  const sessionsSnap = await userCol(db, appId, userId, "calendarSessions").where("teamId", "==", teamId).get();
+  const sessionsSnap = await workspaceCol(db, appId, wsId, "calendarSessions").where("teamId", "==", teamId).get();
   const sessionIds = sessionsSnap.docs.map((docSnap) => docSnap.id);
-  await deleteSessionArtifacts(db, appId, userId, sessionIds, result);
+  await deleteSessionArtifacts(db, appId, wsId, sessionIds, result);
   await Promise.all(sessionsSnap.docs.map((docSnap) => docSnap.ref.delete()));
   result.deleted.calendarSessions += sessionsSnap.size;
 
-  const bracketsSnap = await userCol(db, appId, userId, "brackets").where("teamId", "==", teamId).get();
+  const bracketsSnap = await workspaceCol(db, appId, wsId, "brackets").where("teamId", "==", teamId).get();
   for (const bracketDoc of bracketsSnap.docs) {
-    await deleteBracketById(db, appId, userId, bracketDoc.id, result);
+    await deleteBracketById(db, appId, userId, wsId, bracketDoc.id, result);
   }
 
   await db.recursiveDelete(teamRef);
@@ -228,52 +239,82 @@ async function deleteConversationById(
   db: Firestore,
   appId: string,
   userId: string,
+  wsId: string,
   conversationId: string,
   result: CleanupResult
 ): Promise<void> {
-  const ref = userCol(db, appId, userId, "conversations").doc(conversationId);
+  const ref = userRoot(db, appId, userId).collection("pickHistory").doc(wsId).collection("conversations").doc(conversationId);
   await db.recursiveDelete(ref);
   result.deleted.conversations += 1;
 }
 
-async function deleteAllUserArtifacts(db: Firestore, appId: string, userId: string, result: CleanupResult): Promise<void> {
-  const sharedSnap = await db
-    .collection("artifacts")
-    .doc(appId)
-    .collection("shared")
-    .where("shareConfig.ownerId", "==", userId)
-    .get();
+async function deleteAllUserDataCascade(
+  db: Firestore,
+  appId: string,
+  userId: string,
+  result: CleanupResult
+): Promise<void> {
+  // 1. Iterate user's memberships and tear down workspaces accordingly
+  const membershipsSnap = await userCol(db, appId, userId, "memberships").get();
 
-  for (const sharedBracket of sharedSnap.docs) {
-    await deleteSharedArtifacts(db, appId, sharedBracket.id, result);
+  for (const membershipDoc of membershipsSnap.docs) {
+    const wsId = membershipDoc.id;
+    const wsRef = workspaceRoot(db, appId, wsId);
+    const wsSnap = await wsRef.get();
+    if (!wsSnap.exists) continue;
+    const ws = (wsSnap.data() || {}) as { type?: string; ownerId?: string };
+
+    if (ws.type === "personal" && ws.ownerId === userId) {
+      // Personal workspace owned by this user: clean up shared brackets first,
+      // then recursive-delete the entire workspace tree.
+      const sharedSnap = await db
+        .collection("artifacts")
+        .doc(appId)
+        .collection("shared")
+        .where("shareConfig.ownerId", "==", userId)
+        .get();
+
+      for (const sharedBracket of sharedSnap.docs) {
+        await deleteSharedArtifacts(db, appId, sharedBracket.id, result);
+      }
+
+      await db.recursiveDelete(wsRef);
+    } else {
+      // Club workspace where user is a member: just remove their membership.
+      await wsRef.collection("members").doc(userId).delete();
+    }
   }
 
+  // 2. Recursive delete all user-private data (profile, pickHistory, proactiveNotifications, memberships, etc.)
   await db.recursiveDelete(userRoot(db, appId, userId));
   result.deleted.users += 1;
 }
 
 export async function cleanupUserData(params: CleanupParams): Promise<CleanupResult> {
-  const { db, appId, userId, action, teamId, bracketId, conversationId } = params;
+  const { db, appId, userId, wsId, action, teamId, bracketId, conversationId } = params;
   const result = emptyResult(action);
 
   if (action === "deleteTeam") {
     if (!teamId) throw new Error("Missing teamId");
-    await deleteTeamById(db, appId, userId, teamId, result);
+    if (!wsId) throw new Error("Missing wsId");
+    await deleteTeamById(db, appId, userId, wsId, teamId, result);
     return result;
   }
 
   if (action === "deleteBracket") {
     if (!bracketId) throw new Error("Missing bracketId");
-    await deleteBracketById(db, appId, userId, bracketId, result);
+    if (!wsId) throw new Error("Missing wsId");
+    await deleteBracketById(db, appId, userId, wsId, bracketId, result);
     return result;
   }
 
   if (action === "deleteConversation") {
     if (!conversationId) throw new Error("Missing conversationId");
-    await deleteConversationById(db, appId, userId, conversationId, result);
+    if (!wsId) throw new Error("Missing wsId");
+    await deleteConversationById(db, appId, userId, wsId, conversationId, result);
     return result;
   }
 
-  await deleteAllUserArtifacts(db, appId, userId, result);
+  await deleteAllUserDataCascade(db, appId, userId, result);
   return result;
 }

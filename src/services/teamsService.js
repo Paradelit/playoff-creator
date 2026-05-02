@@ -17,8 +17,8 @@ export async function saveTeam(team, { wsId, db, appId }) {
   await saveWorkspaceDoc(db, appId, wsId, ['teams', team.id], team);
 }
 
-export async function deleteTeam(teamId, { appId }) {
-  await deleteTeamCascade({ appId, teamId });
+export async function deleteTeam(teamId, { appId, wsId }) {
+  await deleteTeamCascade({ appId, wsId, teamId });
 }
 
 export function subscribeToMembers(teamId, wsId, db, appId, callback) {

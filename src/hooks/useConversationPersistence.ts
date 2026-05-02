@@ -150,13 +150,13 @@ export function useConversationPersistence() {
       setConversationId(id);
       setLoadedMessages([]);
       // Enforce max conversations limit
-      if (conversations.length >= MAX_CONVERSATIONS) {
+      if (conversations.length >= MAX_CONVERSATIONS && activeWsId) {
         const oldest = conversations[conversations.length - 1];
-        await deleteConversationCascade({ appId, conversationId: oldest.id });
+        await deleteConversationCascade({ appId, wsId: activeWsId, conversationId: oldest.id });
       }
       return id;
     },
-    [appId, conversationsRef, conversations],
+    [appId, conversationsRef, conversations, activeWsId],
   );
 
   const renameConversation = useCallback(

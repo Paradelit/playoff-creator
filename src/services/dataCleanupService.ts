@@ -6,6 +6,7 @@ type CleanupAction = 'deleteTeam' | 'deleteBracket' | 'deleteConversation' | 'de
 interface CleanupRequest {
   action: CleanupAction;
   appId: string;
+  wsId?: string;
   teamId?: string;
   bracketId?: string;
   conversationId?: string;
@@ -27,16 +28,32 @@ async function runCleanup(request: CleanupRequest): Promise<CleanupResponse['res
   return (response.data as CleanupResponse).result;
 }
 
-export async function deleteTeamCascade({ appId, teamId }: { appId: string; teamId: string }) {
-  return runCleanup({ action: 'deleteTeam', appId, teamId });
+export async function deleteTeamCascade({ appId, wsId, teamId }: { appId: string; wsId: string; teamId: string }) {
+  return runCleanup({ action: 'deleteTeam', appId, wsId, teamId });
 }
 
-export async function deleteBracketCascade({ appId, bracketId }: { appId: string; bracketId: string }) {
-  return runCleanup({ action: 'deleteBracket', appId, bracketId });
+export async function deleteBracketCascade({
+  appId,
+  wsId,
+  bracketId,
+}: {
+  appId: string;
+  wsId: string;
+  bracketId: string;
+}) {
+  return runCleanup({ action: 'deleteBracket', appId, wsId, bracketId });
 }
 
-export async function deleteConversationCascade({ appId, conversationId }: { appId: string; conversationId: string }) {
-  return runCleanup({ action: 'deleteConversation', appId, conversationId });
+export async function deleteConversationCascade({
+  appId,
+  wsId,
+  conversationId,
+}: {
+  appId: string;
+  wsId: string;
+  conversationId: string;
+}) {
+  return runCleanup({ action: 'deleteConversation', appId, wsId, conversationId });
 }
 
 export async function deleteAllUserDataCascade({ appId }: { appId: string }) {

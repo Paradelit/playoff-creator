@@ -369,7 +369,6 @@ export const cleanupUserData = onCall(
         db: getFirestore(),
         appId,
         userId: request.auth.uid,
-        // @ts-expect-error wsId added to CleanupParams in Commit 4 (Task 4.1)
         wsId,
         action: action as CleanupAction,
         teamId,
