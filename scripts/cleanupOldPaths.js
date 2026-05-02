@@ -23,6 +23,9 @@ const OLD_COLLECTIONS_TO_DELETE = [
   'playoffConvocatorias',
   'exercises',
   'conversations',
+  'ragIndex',
+  'digest',
+  'copilotMemory',
 ];
 
 function parseArgs(argv) {

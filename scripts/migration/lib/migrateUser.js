@@ -47,6 +47,9 @@ async function countDryRunStats(db, appId, uid) {
     'teams',
     'conversations',
     'proactiveNotifications',
+    'ragIndex',
+    'digest',
+    'copilotMemory',
   ]) {
     counts[name] = await countDocsRecursive(db, `${base}/${name}`);
   }
@@ -139,11 +142,32 @@ export async function migrateUser(db, appId, uid, { dryRun = false } = {}) {
   );
   counts.teams = await copyTeamsRecursive(db, appId, uid, newWsId);
 
-  // 6. Restructure conversations + add wsId to notifs
+  // 6. Copy workspace-scoped agent state (sub-proyecto 1.5 addition).
+  // ragIndex caches embeddings; digest is reserved for future persisted snapshots
+  // (currently always built fresh, so usually empty); copilotMemory holds the
+  // user-declared preferences/facts/context surfaced by Pick. Any of these may
+  // be empty for a given user — copyCollection is a no-op in that case.
+  counts.ragIndex = await copyCollection(
+    db,
+    `artifacts/${appId}/users/${uid}/ragIndex`,
+    `artifacts/${appId}/workspaces/${newWsId}/ragIndex`,
+  );
+  counts.digest = await copyCollection(
+    db,
+    `artifacts/${appId}/users/${uid}/digest`,
+    `artifacts/${appId}/workspaces/${newWsId}/digest`,
+  );
+  counts.copilotMemory = await copyCollection(
+    db,
+    `artifacts/${appId}/users/${uid}/copilotMemory`,
+    `artifacts/${appId}/workspaces/${newWsId}/copilotMemory`,
+  );
+
+  // 7. Restructure conversations + add wsId to notifs
   counts.conversations = await moveConversationsToPickHistory(db, appId, uid, newWsId);
   counts.notifications = await addWsIdToNotifications(db, appId, uid, newWsId);
 
-  // 7. Verify counts
+  // 8. Verify counts
   const verify = await verifyMigration(db, appId, uid, newWsId);
   if (!verify.ok) {
     return {
@@ -153,7 +177,7 @@ export async function migrateUser(db, appId, uid, { dryRun = false } = {}) {
     };
   }
 
-  // 8. Mark migration complete (only after verify passes).
+  // 9. Mark migration complete (only after verify passes).
   await db.doc(`artifacts/${appId}/workspaces/${newWsId}`).update({
     migrationCompleteAt: admin.firestore.FieldValue.serverTimestamp(),
   });

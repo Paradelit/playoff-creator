@@ -210,7 +210,6 @@ export async function aiChatHandler(request: AiChatRequest, system: System, db: 
   const agentOptions = { userId, sessionId: conversationId };
 
   try {
-    // @ts-expect-error wsId added to buildUserDigest signature in Commit 5 (Task 5.2)
     const userDigest = await buildUserDigest({ db, userId, wsId, appId, clientDate });
 
     // Infer default IDs from the current screen so tools can fallback

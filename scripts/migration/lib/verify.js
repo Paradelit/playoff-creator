@@ -10,7 +10,16 @@ export async function countDocsRecursive(db, path) {
   return total;
 }
 
-const COLLECTIONS_TO_VERIFY = ['brackets', 'calendarSessions', 'playoffConvocatorias', 'exercises', 'teams'];
+const COLLECTIONS_TO_VERIFY = [
+  'brackets',
+  'calendarSessions',
+  'playoffConvocatorias',
+  'exercises',
+  'teams',
+  'ragIndex',
+  'digest',
+  'copilotMemory',
+];
 
 export async function verifyMigration(db, appId, uid, wsId) {
   const oldBase = `artifacts/${appId}/users/${uid}`;

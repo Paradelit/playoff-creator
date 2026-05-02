@@ -23,17 +23,22 @@ export interface UserDigest {
 }
 
 /**
- * Build a compact snapshot of the user's state for injection into the
+ * Build a compact snapshot of the workspace's state for injection into the
  * orchestrator system prompt. Size target: ~1KB for typical accounts.
+ *
+ * `userId` is retained for audit fields and any future user-private reads,
+ * but all data reads are scoped to the workspace.
  */
 export async function buildUserDigest(deps: {
   db: Firestore;
   userId: string;
+  wsId: string;
   appId: string;
   clientDate?: string;
 }): Promise<UserDigest> {
-  const { db, userId, appId, clientDate } = deps;
-  const base = db.collection("artifacts").doc(appId).collection("users").doc(userId);
+  const { db, userId, wsId, appId, clientDate } = deps;
+  void userId;
+  const base = db.collection("artifacts").doc(appId).collection("workspaces").doc(wsId);
 
   const todayISO = clientDate || new Date().toISOString().slice(0, 10);
   const sevenDaysFromNow = new Date(todayISO);
@@ -50,7 +55,7 @@ export async function buildUserDigest(deps: {
       .orderBy("fecha", "asc")
       .get(),
     base.collection("profile").doc("main").get(),
-    fetchMemoriesForDigest(db, appId, userId, 15),
+    fetchMemoriesForDigest(db, appId, wsId, 15),
   ]);
 
   const teams = await Promise.all(

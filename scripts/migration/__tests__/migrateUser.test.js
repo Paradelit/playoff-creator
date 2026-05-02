@@ -190,4 +190,31 @@ describe('migrateUser', () => {
     const notif = await db.doc(`artifacts/${APP_ID}/users/${UID}/proactiveNotifications/n1`).get();
     expect(notif.data().wsId).toBe(ws);
   });
+
+  it('copies ragIndex, digest, and copilotMemory collections', async () => {
+    // Seed Pick agent state under the legacy user-scoped paths.
+    await db
+      .doc(`artifacts/${APP_ID}/users/${UID}/ragIndex/r1`)
+      .set({ id: 'r1', embedding: [0.1, 0.2], contentHash: 'abc' });
+    await db.doc(`artifacts/${APP_ID}/users/${UID}/digest/main`).set({ summary: 'X' });
+    await db
+      .doc(`artifacts/${APP_ID}/users/${UID}/copilotMemory/m1`)
+      .set({ id: 'm1', type: 'preference', content: 'prefiero entrenamientos de 75 min' });
+
+    const result = await migrateUser(db, APP_ID, UID, { dryRun: false });
+    expect(result.status).toBe('migrated');
+
+    const ws = result.newWsId;
+    const ragDoc = await db.doc(`artifacts/${APP_ID}/workspaces/${ws}/ragIndex/r1`).get();
+    expect(ragDoc.exists).toBe(true);
+    expect(ragDoc.data().contentHash).toBe('abc');
+
+    const digestDoc = await db.doc(`artifacts/${APP_ID}/workspaces/${ws}/digest/main`).get();
+    expect(digestDoc.exists).toBe(true);
+    expect(digestDoc.data().summary).toBe('X');
+
+    const memDoc = await db.doc(`artifacts/${APP_ID}/workspaces/${ws}/copilotMemory/m1`).get();
+    expect(memDoc.exists).toBe(true);
+    expect(memDoc.data().type).toBe('preference');
+  });
 });
