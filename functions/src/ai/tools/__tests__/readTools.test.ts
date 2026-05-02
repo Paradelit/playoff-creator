@@ -324,10 +324,6 @@ describe('readTools — workspace path coverage', () => {
   });
 
   it('read_analysis reads from workspaces/{wsId}/analisis/{sessionId}', async () => {
-    // Calendar-side coverage: read_analysis hits workspaces/{wsId}/analisis/{sessionId}
-    // (the create-read-tools registry has no get_calendar_session — list_calendar_sessions
-    //  uses the userCol helper which is out of scope for Commit 2). read_analysis is the
-    //  closest representative that exercises a session-keyed swapped path (line 523).
     const db = makeDb([
       [`artifacts/${APP_ID}/workspaces/${WS_ID}/analisis/s1`, { foco: 'rebote', notas: 'Mejorar' }],
     ]);
@@ -336,5 +332,63 @@ describe('readTools — workspace path coverage', () => {
     const result = await findTool('read_analysis').handler({}, ctx);
 
     expect(result).toMatchObject({ id: 's1', foco: 'rebote' });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// List-style tools — verify they read from workspaces/{wsId}/... via the
+// userCol/teamSubCol helpers after the helper migration.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('readTools — list tools via helpers', () => {
+  it('list_teams reads from workspaces/{wsId}/teams and counts members from workspaces/{wsId}/teams/{id}/members', async () => {
+    const db = makeDb([
+      [`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1`, { categoria: 'Cadete', nivel: 'A' }],
+      [`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/members/m1`, { tipo: 'jugador', nombre: 'Pepe' }],
+      [`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/members/m2`, { tipo: 'jugador', nombre: 'Ana' }],
+      [`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t2`, { categoria: 'Infantil', nivel: 'B' }],
+      // Decoy: legacy-shaped doc that must NOT be picked up by the migrated helper.
+      [`artifacts/${APP_ID}/users/${USER_ID}/teams/legacy`, { categoria: 'Senior' }],
+    ]);
+
+    const result = (await findTool('list_teams').handler({}, buildCtx(db))) as {
+      teams: Array<{ id: string; categoria: string; nivel: string; memberCount: number }>;
+    };
+
+    expect(result.teams).toHaveLength(2);
+    expect(result.teams).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 't1', categoria: 'Cadete', nivel: 'A', memberCount: 2 }),
+        expect.objectContaining({ id: 't2', categoria: 'Infantil', nivel: 'B', memberCount: 0 }),
+      ]),
+    );
+    expect(result.teams.find((t) => t.id === 'legacy')).toBeUndefined();
+  });
+
+  it('list_calendar_sessions reads from workspaces/{wsId}/calendarSessions', async () => {
+    const db = makeDb([
+      [
+        `artifacts/${APP_ID}/workspaces/${WS_ID}/calendarSessions/s1`,
+        { tipo: 'partido', fecha: '2026-05-10', teamId: 't1' },
+      ],
+      [
+        `artifacts/${APP_ID}/workspaces/${WS_ID}/calendarSessions/s2`,
+        { tipo: 'entrenamiento', fecha: '2026-05-11', teamId: 't1' },
+      ],
+      // Decoy: legacy-shaped doc must not be returned.
+      [
+        `artifacts/${APP_ID}/users/${USER_ID}/calendarSessions/legacy`,
+        { tipo: 'partido', fecha: '2026-05-10', teamId: 't1' },
+      ],
+    ]);
+
+    const result = (await findTool('list_calendar_sessions').handler(
+      { from: '2026-05-01', to: '2026-05-31' },
+      buildCtx(db),
+    )) as { sessions: Array<{ id: string; tipo: string; fecha: string }> };
+
+    expect(result.sessions).toHaveLength(2);
+    expect(result.sessions.map((s) => s.id)).toEqual(expect.arrayContaining(['s1', 's2']));
+    expect(result.sessions.find((s) => s.id === 'legacy')).toBeUndefined();
   });
 });

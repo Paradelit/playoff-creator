@@ -5,14 +5,14 @@ import { renderConvocatoria, SessionShape, TeamShape, CompetitionShape } from ".
 function userCol(ctx: ToolContext, collectionName: string) {
   return ctx.db
     .collection("artifacts").doc(ctx.appId)
-    .collection("users").doc(ctx.userId)
+    .collection("workspaces").doc(ctx.wsId)
     .collection(collectionName);
 }
 
 function teamSubCol(ctx: ToolContext, teamId: string, collectionName: string) {
   return ctx.db
     .collection("artifacts").doc(ctx.appId)
-    .collection("users").doc(ctx.userId)
+    .collection("workspaces").doc(ctx.wsId)
     .collection("teams").doc(teamId)
     .collection(collectionName);
 }
