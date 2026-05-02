@@ -1,10 +1,12 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { defineSecret } from "firebase-functions/params";
+import * as functionsV1 from "firebase-functions/v1";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { cleanupUserData as runCleanupUserData, type CleanupAction } from "./dataCleanup";
 import { runProactiveBriefing } from "./proactiveEngine";
+import { bootstrapPersonalWorkspace } from "./auth/onUserCreate";
 import {
   AgentRouter,
   ObservabilityService,
@@ -405,5 +407,31 @@ export const proactiveDailyBriefing = onSchedule(
     }
   }
 );
+
+// 7. onUserCreate — Auth trigger that fires when a new Firebase Auth user is created.
+//    Bootstraps a personal workspace + owner member + memberships cache so post-cutover
+//    sign-ups never land in WorkspaceProvisioningState indefinitely. Idempotent on retry.
+//    Uses the v1 trigger because firebase-functions v2 does not expose a non-blocking
+//    auth.user().onCreate equivalent (only beforeUserCreated, which blocks signup).
+const PICK_APP_ID = process.env.PICK_APP_ID || "uros-fbm-app";
+
+export const onUserCreate = functionsV1
+  .region("europe-west1")
+  .auth.user()
+  .onCreate(async (user) => {
+    try {
+      const result = await bootstrapPersonalWorkspace({ uid: user.uid }, PICK_APP_ID);
+      console.log(
+        `[onUserCreate] uid=${user.uid} ${result.status} wsId=${result.wsId}`
+      );
+    } catch (err) {
+      console.error(
+        `[onUserCreate] uid=${user.uid} FATAL:`,
+        (err as Error).message
+      );
+      // Do not rethrow: the user record exists in Auth and we don't want to leave
+      // them in a half-broken state. Client's WorkspaceProvisioningState handles retry.
+    }
+  });
 
 export { resolveMapsUrl } from "./locations/resolveMapsUrl";
