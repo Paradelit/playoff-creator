@@ -84,6 +84,77 @@ describe('migrateUser', () => {
     expect(allWorkspaces.docs[0].id).toBe(first.newWsId);
   });
 
+  it('sets migrationCompleteAt only after a successful migration', async () => {
+    await db.doc(`artifacts/${APP_ID}/users/${UID}/teams/t1`).set({ name: 'A' });
+    const result = await migrateUser(db, APP_ID, UID, { dryRun: false });
+    expect(result.status).toBe('migrated');
+    const wsDoc = await db.doc(`artifacts/${APP_ID}/workspaces/${result.newWsId}`).get();
+    expect(wsDoc.data().migrationCompleteAt).toBeTruthy();
+  });
+
+  it('retries an incomplete migration: workspace exists without migrationCompleteAt → re-runs and sets the field', async () => {
+    // Seed an in-progress workspace (no migrationCompleteAt) for this user, mimicking
+    // a migration that committed the workspace + member docs but failed at verify time.
+    const orphanWsId = 'orphan-ws-1';
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    await db
+      .batch()
+      .set(db.doc(`artifacts/${APP_ID}/workspaces/${orphanWsId}`), {
+        type: 'personal',
+        name: 'Mi cuenta',
+        ownerId: UID,
+        createdAt: now,
+        updatedAt: now,
+        plan: 'free',
+        planUpdatedAt: null,
+        billing: null,
+        // NOTE: no migrationCompleteAt → considered in-progress
+      })
+      .set(db.doc(`artifacts/${APP_ID}/workspaces/${orphanWsId}/members/${UID}`), {
+        role: 'owner',
+        assignedTeamIds: [],
+        joinedAt: now,
+      })
+      .set(db.doc(`artifacts/${APP_ID}/users/${UID}/memberships/${orphanWsId}`), {
+        role: 'owner',
+        workspaceName: 'Mi cuenta',
+        workspaceType: 'personal',
+        joinedAt: now,
+      })
+      .commit();
+
+    // Subcollections are missing — the previous attempt failed before copying.
+    await db.doc(`artifacts/${APP_ID}/users/${UID}/teams/t1`).set({ name: 'A' });
+    await db.doc(`artifacts/${APP_ID}/users/${UID}/brackets/b1`).set({ name: 'BR' });
+
+    const result = await migrateUser(db, APP_ID, UID, { dryRun: false });
+    expect(result.status).toBe('migrated');
+    // Reuses the orphan wsId rather than generating a new one.
+    expect(result.newWsId).toBe(orphanWsId);
+
+    // Subcollections were copied on the retry.
+    expect((await db.doc(`artifacts/${APP_ID}/workspaces/${orphanWsId}/teams/t1`).get()).exists).toBe(true);
+    expect((await db.doc(`artifacts/${APP_ID}/workspaces/${orphanWsId}/brackets/b1`).get()).exists).toBe(true);
+
+    // migrationCompleteAt is now set.
+    const wsDoc = await db.doc(`artifacts/${APP_ID}/workspaces/${orphanWsId}`).get();
+    expect(wsDoc.data().migrationCompleteAt).toBeTruthy();
+
+    // No duplicate workspaces.
+    const all = await db.collection(`artifacts/${APP_ID}/workspaces`).get();
+    expect(all.size).toBe(1);
+  });
+
+  it('skips a fully migrated user (workspace has migrationCompleteAt)', async () => {
+    await db.doc(`artifacts/${APP_ID}/users/${UID}/teams/t1`).set({ name: 'A' });
+    const first = await migrateUser(db, APP_ID, UID, { dryRun: false });
+    expect(first.status).toBe('migrated');
+
+    const second = await migrateUser(db, APP_ID, UID, { dryRun: false });
+    expect(second.status).toBe('skipped');
+    expect(second.newWsId).toBe(first.newWsId);
+  });
+
   it('dry-run does not write anything', async () => {
     await db.doc(`artifacts/${APP_ID}/users/${UID}/teams/t1`).set({ name: 'A' });
 

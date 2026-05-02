@@ -86,4 +86,51 @@ describe('verifyMigration', () => {
       expect.arrayContaining([expect.objectContaining({ name: 'brackets', oldCount: 5, newCount: 3 })]),
     );
   });
+
+  it('returns ok=true when conversations were copied to pickHistory and all notifs have wsId', async () => {
+    const oldBase = `artifacts/${APP_ID}/users/${UID}`;
+    // Seed conversations in the old location AND a matching pickHistory copy.
+    await db.doc(`${oldBase}/conversations/c1`).set({});
+    await db.doc(`${oldBase}/conversations/c2`).set({});
+    await db.doc(`${oldBase}/pickHistory/${WS_ID}/conversations/c1`).set({});
+    await db.doc(`${oldBase}/pickHistory/${WS_ID}/conversations/c2`).set({});
+    // Notifs all tagged with wsId.
+    await db.doc(`${oldBase}/proactiveNotifications/n1`).set({ wsId: WS_ID });
+    await db.doc(`${oldBase}/proactiveNotifications/n2`).set({ wsId: WS_ID });
+
+    const result = await verifyMigration(db, APP_ID, UID, WS_ID);
+    expect(result.ok).toBe(true);
+    expect(result.diffs).toEqual([]);
+  });
+
+  it('flags a conversations parity mismatch between users/{uid}/conversations and pickHistory', async () => {
+    const oldBase = `artifacts/${APP_ID}/users/${UID}`;
+    await db.doc(`${oldBase}/conversations/c1`).set({});
+    await db.doc(`${oldBase}/conversations/c2`).set({});
+    await db.doc(`${oldBase}/pickHistory/${WS_ID}/conversations/c1`).set({});
+    // c2 is missing in pickHistory.
+
+    const result = await verifyMigration(db, APP_ID, UID, WS_ID);
+    expect(result.ok).toBe(false);
+    expect(result.diffs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'conversations (pickHistory)', oldCount: 2, newCount: 1 }),
+      ]),
+    );
+  });
+
+  it('flags notifications missing the wsId field', async () => {
+    const oldBase = `artifacts/${APP_ID}/users/${UID}`;
+    await db.doc(`${oldBase}/proactiveNotifications/n1`).set({ wsId: WS_ID });
+    await db.doc(`${oldBase}/proactiveNotifications/n2`).set({ message: 'no wsId' });
+    await db.doc(`${oldBase}/proactiveNotifications/n3`).set({ message: 'also no wsId' });
+
+    const result = await verifyMigration(db, APP_ID, UID, WS_ID);
+    expect(result.ok).toBe(false);
+    expect(result.diffs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'notifications without wsId', oldCount: 2, newCount: 0 }),
+      ]),
+    );
+  });
 });

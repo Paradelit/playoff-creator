@@ -5,14 +5,32 @@ import { migrateUser } from './lib/migrateUser.js';
 
 export function parseArgs(argv) {
   const args = { dryRun: false, user: null, project: null, credentials: null, appId: 'uros-fbm-app' };
+
+  function nextValue(currentFlag, i) {
+    const value = argv[i + 1];
+    if (!value || value.startsWith('--')) {
+      console.error(`${currentFlag} requires a value`);
+      process.exit(2);
+    }
+    return value;
+  }
+
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--dry-run') args.dryRun = true;
-    else if (a === '--user') args.user = argv[++i];
-    else if (a === '--project') args.project = argv[++i];
-    else if (a === '--credentials') args.credentials = argv[++i];
-    else if (a === '--app-id') args.appId = argv[++i];
-    else {
+    else if (a === '--user') {
+      args.user = nextValue(a, i);
+      i++;
+    } else if (a === '--project') {
+      args.project = nextValue(a, i);
+      i++;
+    } else if (a === '--credentials') {
+      args.credentials = nextValue(a, i);
+      i++;
+    } else if (a === '--app-id') {
+      args.appId = nextValue(a, i);
+      i++;
+    } else {
       console.error(`Unknown argument: ${a}`);
       process.exit(2);
     }

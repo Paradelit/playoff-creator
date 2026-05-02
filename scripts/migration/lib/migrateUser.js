@@ -5,7 +5,28 @@ import { moveConversationsToPickHistory } from './conversationsMove.js';
 import { addWsIdToNotifications } from './notifsWsId.js';
 import { verifyMigration, countDocsRecursive } from './verify.js';
 
-async function findExistingPersonal(db, appId, uid) {
+/**
+ * Returns the wsId of a personal workspace for `uid` ONLY if the workspace was
+ * fully migrated (i.e. has `migrationCompleteAt` set). A personal workspace
+ * without that field is treated as in-progress and the migration should retry.
+ */
+async function findCompletedPersonal(db, appId, uid) {
+  const snap = await db
+    .collection(`artifacts/${appId}/workspaces`)
+    .where('type', '==', 'personal')
+    .where('ownerId', '==', uid)
+    .limit(1)
+    .get();
+  if (snap.empty) return null;
+  const doc = snap.docs[0];
+  return doc.data().migrationCompleteAt ? doc.id : null;
+}
+
+/**
+ * Returns the wsId of any personal workspace for `uid`, completed or not.
+ * Used to reuse an in-progress wsId on retry instead of leaving a duplicate.
+ */
+async function findAnyPersonal(db, appId, uid) {
   const snap = await db
     .collection(`artifacts/${appId}/workspaces`)
     .where('type', '==', 'personal')
@@ -34,16 +55,28 @@ async function countDryRunStats(db, appId, uid) {
 }
 
 export async function migrateUser(db, appId, uid, { dryRun = false } = {}) {
-  // 1. Idempotency check
-  const existing = await findExistingPersonal(db, appId, uid);
-  if (existing) {
-    return { status: 'skipped', message: `personal workspace already exists: ${existing}`, newWsId: existing };
+  // 1. Idempotency check — only skip if a previous run completed.
+  const completedWsId = await findCompletedPersonal(db, appId, uid);
+  if (completedWsId) {
+    return {
+      status: 'skipped',
+      message: `personal workspace already migrated: ${completedWsId}`,
+      newWsId: completedWsId,
+    };
   }
 
-  // 2. Generate wsId
-  const newWsId = db.collection(`artifacts/${appId}/workspaces`).doc().id;
+  // 2. Reuse any existing in-progress wsId, or generate a new one.
+  // (Skip lookup in dry-run since we don't write anything.)
+  let existingWsId = null;
+  if (!dryRun) {
+    existingWsId = await findAnyPersonal(db, appId, uid);
+    if (existingWsId) {
+      console.log(`[${uid}] retrying incomplete migration: ${existingWsId}`);
+    }
+  }
+  const newWsId = existingWsId ?? db.collection(`artifacts/${appId}/workspaces`).doc().id;
 
-  // 3. Dry-run: count, return
+  // 3. Dry-run: count, return.
   if (dryRun) {
     const { counts, totalDocs } = await countDryRunStats(db, appId, uid);
     return {
@@ -53,32 +86,34 @@ export async function migrateUser(db, appId, uid, { dryRun = false } = {}) {
     };
   }
 
-  // 4. Create workspace + member + cache atomically
-  const now = admin.firestore.FieldValue.serverTimestamp();
-  await db
-    .batch()
-    .set(db.doc(`artifacts/${appId}/workspaces/${newWsId}`), {
-      type: 'personal',
-      name: 'Mi cuenta',
-      ownerId: uid,
-      createdAt: now,
-      updatedAt: now,
-      plan: 'free',
-      planUpdatedAt: null,
-      billing: null,
-    })
-    .set(db.doc(`artifacts/${appId}/workspaces/${newWsId}/members/${uid}`), {
-      role: 'owner',
-      assignedTeamIds: [],
-      joinedAt: now,
-    })
-    .set(db.doc(`artifacts/${appId}/users/${uid}/memberships/${newWsId}`), {
-      role: 'owner',
-      workspaceName: 'Mi cuenta',
-      workspaceType: 'personal',
-      joinedAt: now,
-    })
-    .commit();
+  // 4. Create workspace + member + cache atomically — only if not retrying.
+  if (!existingWsId) {
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    await db
+      .batch()
+      .set(db.doc(`artifacts/${appId}/workspaces/${newWsId}`), {
+        type: 'personal',
+        name: 'Mi cuenta',
+        ownerId: uid,
+        createdAt: now,
+        updatedAt: now,
+        plan: 'free',
+        planUpdatedAt: null,
+        billing: null,
+      })
+      .set(db.doc(`artifacts/${appId}/workspaces/${newWsId}/members/${uid}`), {
+        role: 'owner',
+        assignedTeamIds: [],
+        joinedAt: now,
+      })
+      .set(db.doc(`artifacts/${appId}/users/${uid}/memberships/${newWsId}`), {
+        role: 'owner',
+        workspaceName: 'Mi cuenta',
+        workspaceType: 'personal',
+        joinedAt: now,
+      })
+      .commit();
+  }
 
   // 5. Copy subcollections
   const counts = {};
@@ -117,6 +152,11 @@ export async function migrateUser(db, appId, uid, { dryRun = false } = {}) {
       error: `verify mismatch: ${JSON.stringify(verify.diffs)}`,
     };
   }
+
+  // 8. Mark migration complete (only after verify passes).
+  await db.doc(`artifacts/${appId}/workspaces/${newWsId}`).update({
+    migrationCompleteAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
 
   return {
     status: 'migrated',

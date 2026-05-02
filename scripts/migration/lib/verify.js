@@ -27,5 +27,21 @@ export async function verifyMigration(db, appId, uid, wsId) {
     }
   }
 
+  // Verify conversations were copied to pickHistory/{wsId}/conversations.
+  const [oldConvosCount, newConvosCount] = await Promise.all([
+    countDocsRecursive(db, `${oldBase}/conversations`),
+    countDocsRecursive(db, `${oldBase}/pickHistory/${wsId}/conversations`),
+  ]);
+  if (oldConvosCount !== newConvosCount) {
+    diffs.push({ name: 'conversations (pickHistory)', oldCount: oldConvosCount, newCount: newConvosCount });
+  }
+
+  // Verify every proactiveNotification was tagged with a wsId.
+  const notifsSnap = await db.collection(`${oldBase}/proactiveNotifications`).get();
+  const notifsWithoutWsId = notifsSnap.docs.filter((d) => !d.data().wsId).length;
+  if (notifsWithoutWsId > 0) {
+    diffs.push({ name: 'notifications without wsId', oldCount: notifsWithoutWsId, newCount: 0 });
+  }
+
   return { ok: diffs.length === 0, diffs };
 }
