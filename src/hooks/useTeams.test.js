@@ -50,7 +50,7 @@ describe('useTeams', () => {
     mockUseAuth.mockReturnValue({ user: null });
     const { result } = renderHook(() => useTeams());
     expect(result.current.teams).toEqual([]);
-    expect(result.current.loading).toBe(true);
+    expect(result.current.loading).toBe(false);
     expect(subscribeToTeams).not.toHaveBeenCalled();
   });
 
@@ -58,7 +58,7 @@ describe('useTeams', () => {
     mockUseWorkspace.mockReturnValue({ activeWsId: null });
     const { result } = renderHook(() => useTeams());
     expect(result.current.teams).toEqual([]);
-    expect(result.current.loading).toBe(true);
+    expect(result.current.loading).toBe(false);
     expect(subscribeToTeams).not.toHaveBeenCalled();
   });
 

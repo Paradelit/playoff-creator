@@ -113,7 +113,7 @@ async function importSharedBrackets(db, appId, sharedBrackets) {
 
 // ── Public API ─────────────────────────────────────────────────────────────
 
-export async function exportUserData(uid, wsId, db, appId) {
+export async function exportUserData({ uid, wsId, db, appId }) {
   const userBase = userBasePath(uid, appId);
   const wsBase = workspaceBasePath(wsId, appId);
 

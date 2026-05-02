@@ -17,7 +17,10 @@ export function useFirestoreSubscription(subscribeFn, { initialData = [], deps =
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!subscribeFn) return;
+    if (!subscribeFn) {
+      setLoading(false);
+      return;
+    }
 
     let unsubscribe;
     Promise.resolve().then(() => {

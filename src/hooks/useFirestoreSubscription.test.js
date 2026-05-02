@@ -33,9 +33,9 @@ describe('useFirestoreSubscription', () => {
     expect(unsub).toHaveBeenCalledOnce();
   });
 
-  it('skips subscription when subscribeFn is null', () => {
+  it('skips subscription and clears loading when subscribeFn is null', () => {
     const { result } = renderHook(() => useFirestoreSubscription(null));
-    expect(result.current.loading).toBe(true);
+    expect(result.current.loading).toBe(false);
     expect(result.current.data).toEqual([]);
   });
 

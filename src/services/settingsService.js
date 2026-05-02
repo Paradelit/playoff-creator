@@ -50,6 +50,6 @@ export async function autoAddCoachToTeam(teamId, profile, { wsId, db, appId }) {
   await saveMember(member, teamId, { wsId, db, appId });
 }
 
-export async function deleteAllUserData(uid, db, appId) {
+export async function deleteAllUserData(appId) {
   await deleteAllUserDataCascade({ appId });
 }

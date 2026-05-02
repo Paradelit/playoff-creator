@@ -115,7 +115,7 @@ export function useSettings() {
     if (!activeWsId) return;
     setExporting(true);
     try {
-      const data = await exportUserData(user.uid, activeWsId, db, appId);
+      const data = await exportUserData({ uid: user.uid, wsId: activeWsId, db, appId });
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -170,7 +170,7 @@ export function useSettings() {
   async function handleDeleteData() {
     setDeletingData(true);
     try {
-      await deleteAllUserData(user.uid, db, appId);
+      await deleteAllUserData(appId);
       setShowDeleteDataModal(false);
       setShowDeleteAccountModal(true);
     } catch (e) {

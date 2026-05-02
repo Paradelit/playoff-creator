@@ -40,7 +40,7 @@ describe('useProfile', () => {
     mockUseAuth.mockReturnValue({ user: null });
     const { result } = renderHook(() => useProfile());
     expect(result.current.profile).toEqual({});
-    expect(result.current.loading).toBe(true);
+    expect(result.current.loading).toBe(false);
     expect(subscribeToProfile).not.toHaveBeenCalled();
   });
 
