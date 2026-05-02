@@ -29,7 +29,7 @@ const OLD_COLLECTIONS_TO_DELETE = [
 ];
 
 function parseArgs(argv) {
-  const args = { dryRun: false, project: null, credentials: null, appId: 'uros-fbm-app' };
+  const args = { dryRun: false, project: null, credentials: null, appId: null };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--dry-run') args.dryRun = true;
@@ -37,6 +37,12 @@ function parseArgs(argv) {
     else if (a === '--credentials') args.credentials = argv[++i];
     else if (a === '--app-id') args.appId = argv[++i];
   }
+
+  if (!args.appId) {
+    console.error('Error: --app-id is required (no default; foot-gun protection)');
+    process.exit(2);
+  }
+
   return args;
 }
 

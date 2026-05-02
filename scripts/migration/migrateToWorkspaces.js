@@ -4,7 +4,7 @@ import { initAdmin, getDb, getAuth } from './lib/admin.js';
 import { migrateUser } from './lib/migrateUser.js';
 
 export function parseArgs(argv) {
-  const args = { dryRun: false, user: null, project: null, credentials: null, appId: 'uros-fbm-app' };
+  const args = { dryRun: false, user: null, project: null, credentials: null, appId: null };
 
   function nextValue(currentFlag, i) {
     const value = argv[i + 1];
@@ -35,6 +35,12 @@ export function parseArgs(argv) {
       process.exit(2);
     }
   }
+
+  if (!args.appId) {
+    console.error('Error: --app-id is required (no default; foot-gun protection)');
+    process.exit(2);
+  }
+
   return args;
 }
 

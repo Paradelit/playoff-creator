@@ -7,7 +7,7 @@ afterEach(() => {
 
 describe('parseArgs', () => {
   it('parses --user UID into args.user', () => {
-    const argv = ['node', 'migrateToWorkspaces.js', '--user', 'abc123'];
+    const argv = ['node', 'migrateToWorkspaces.js', '--user', 'abc123', '--app-id', 'uros-fbm-app'];
     const args = parseArgs(argv);
     expect(args.user).toBe('abc123');
   });
@@ -85,8 +85,22 @@ describe('parseArgs', () => {
     expect(exitSpy).toHaveBeenCalledWith(2);
   });
 
-  it('uses default appId when --app-id is not passed', () => {
-    const args = parseArgs(['node', 'migrateToWorkspaces.js', '--dry-run']);
-    expect(args.appId).toBe('uros-fbm-app');
+  it('rejects missing --app-id with exit 2', () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit called');
+    });
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => parseArgs(['node', 'script.js', '--project', 'p1'])).toThrow();
+    expect(exitSpy).toHaveBeenCalledWith(2);
+    expect(errSpy.mock.calls.flat().join(' ')).toContain('--app-id is required');
+
+    exitSpy.mockRestore();
+    errSpy.mockRestore();
+  });
+
+  it('accepts --app-id with a value', () => {
+    const result = parseArgs(['node', 'script.js', '--app-id', 'app1']);
+    expect(result.appId).toBe('app1');
   });
 });
