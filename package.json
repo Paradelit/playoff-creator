@@ -16,6 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:rules": "firebase emulators:exec --only firestore \"npx vitest run --config vitest.rules.config.js\"",
+    "test:migrate": "firebase emulators:exec --only firestore \"npx vitest run --config vitest.migrate.config.js\"",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "firebase deploy --only hosting",

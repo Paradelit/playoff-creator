@@ -128,6 +128,26 @@ describe('firestore.rules — workspaces', () => {
     const db = testEnv.authenticatedContext('U_C').firestore();
     await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/WS_A/members/U_X`).set({ role: 'coach' }));
   });
+
+  it('non-owner member cannot promote themselves to owner', async () => {
+    // Seed U_C as a regular coach member of WS_A.
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc(`artifacts/${APP_ID}/workspaces/WS_A/members/U_C`).set({ role: 'coach' });
+    });
+    // U_C tries to upgrade their own membership doc to role: 'owner'.
+    // This must fail: only the workspace owner can write to members/.
+    const db = testEnv.authenticatedContext('U_C').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/WS_A/members/U_C`).update({ role: 'owner' }));
+  });
+
+  it('member can list workspace members collection', async () => {
+    // Seed U_C as a member of WS_A so the read rule applies.
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc(`artifacts/${APP_ID}/workspaces/WS_A/members/U_C`).set({ role: 'coach' });
+    });
+    const db = testEnv.authenticatedContext('U_C').firestore();
+    await assertSucceeds(db.collection(`artifacts/${APP_ID}/workspaces/WS_A/members`).get());
+  });
 });
 
 describe('firestore.rules — users (private data, unchanged effect)', () => {
