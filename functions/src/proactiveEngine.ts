@@ -14,8 +14,8 @@ import { ObservabilityService } from "./ai/observability";
 
 export const PROACTIVE_APP_ID = "playoff-creator";
 
-/** Maximum number of users to process per run to stay within GCF timeout. */
-const MAX_USERS = 50;
+/** Maximum number of workspaces to process per run to stay within GCF timeout. */
+const MAX_WORKSPACES = 50;
 
 /** How many days back to consider a user "active". */
 const ACTIVITY_WINDOW_DAYS = 30;
@@ -126,7 +126,7 @@ export async function runProactiveBriefing(
 
   // We over-fetch to account for filtering; Firestore doesn't support
   // cross-collection queries, so we check activity after listing.
-  const workspacesSnap = await workspacesRef.limit(MAX_USERS * 3).get();
+  const workspacesSnap = await workspacesRef.limit(MAX_WORKSPACES * 3).get();
 
   interface ActiveWorkspace {
     wsId: string;
@@ -135,12 +135,15 @@ export async function runProactiveBriefing(
   const activeWorkspaces: ActiveWorkspace[] = [];
 
   for (const wsDoc of workspacesSnap.docs) {
-    if (activeWorkspaces.length >= MAX_USERS) break;
+    if (activeWorkspaces.length >= MAX_WORKSPACES) break;
 
     const wsId = wsDoc.id;
     const wsData = wsDoc.data() as { ownerId?: string; type?: string };
     const ownerId = wsData.ownerId;
-    if (!ownerId) continue;
+    if (!ownerId) {
+      console.warn(`[proactiveEngine] Skipping ws=${wsId}: missing ownerId`);
+      continue;
+    }
 
     // Check for teams (existence = active workspace)
     const teamsSnap = await db
