@@ -22,6 +22,9 @@ Tras el cutover de la migración a `workspaces/{wsId}/`, ejecutar este runbook +
 4. Verify counts en migration.log — sin failed entries
 
 5. Deploy nuevo código + reglas + onCreate trigger:
+   - Confirmar que `functions/.env` (o el equivalente en GCF console) contiene
+     `PICK_APP_ID=<APP_ID>`. Sin esa var, `onUserCreate` y `proactiveDailyBriefing`
+     fallan en seco (log error y return) en vez de escribir al namespace equivocado.
    firebase deploy --only hosting,functions,firestore:rules,firestore:indexes \
      --project <PROJECT_ID>
 

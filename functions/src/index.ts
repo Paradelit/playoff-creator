@@ -387,6 +387,21 @@ export const cleanupUserData = onCall(
 // 6. proactiveDailyBriefing — scheduled function that runs every morning at 08:00 Europe/Madrid.
 //    Queries active users, finds sessions for today/tomorrow, generates AI suggestions,
 //    and writes them to proactiveNotifications/{date}-{sessionId} (idempotent).
+/**
+ * Resolves the Firestore appId (the `artifacts/{appId}/...` namespace) from the
+ * `PICK_APP_ID` env var. Fails closed: returns null and logs an error if the
+ * var is missing, so a misconfigured deploy can never write to the wrong
+ * namespace by accident. Callers handle null by skipping work.
+ */
+function resolveAppId(handlerName: string): string | null {
+  const appId = process.env.PICK_APP_ID;
+  if (!appId) {
+    console.error(`[${handlerName}] PICK_APP_ID env var missing; skipping run.`);
+    return null;
+  }
+  return appId;
+}
+
 export const proactiveDailyBriefing = onSchedule(
   {
     schedule: "0 8 * * *",
@@ -397,9 +412,11 @@ export const proactiveDailyBriefing = onSchedule(
     memory: "256MiB",
   },
   async (_event) => {
+    const appId = resolveAppId("proactiveDailyBriefing");
+    if (!appId) return;
     const apiKey = geminiKey.value();
     try {
-      const result = await runProactiveBriefing(apiKey);
+      const result = await runProactiveBriefing(apiKey, appId);
       console.log("[proactiveDailyBriefing] Completed:", result);
     } catch (err) {
       console.error("[proactiveDailyBriefing] Fatal error:", (err as Error).message);
@@ -413,14 +430,14 @@ export const proactiveDailyBriefing = onSchedule(
 //    sign-ups never land in WorkspaceProvisioningState indefinitely. Idempotent on retry.
 //    Uses the v1 trigger because firebase-functions v2 does not expose a non-blocking
 //    auth.user().onCreate equivalent (only beforeUserCreated, which blocks signup).
-const PICK_APP_ID = process.env.PICK_APP_ID || "uros-fbm-app";
-
 export const onUserCreate = functionsV1
   .region("europe-west1")
   .auth.user()
   .onCreate(async (user) => {
+    const appId = resolveAppId("onUserCreate");
+    if (!appId) return;
     try {
-      const result = await bootstrapPersonalWorkspace({ uid: user.uid }, PICK_APP_ID);
+      const result = await bootstrapPersonalWorkspace({ uid: user.uid }, appId);
       console.log(
         `[onUserCreate] uid=${user.uid} ${result.status} wsId=${result.wsId}`
       );

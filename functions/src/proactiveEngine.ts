@@ -12,8 +12,6 @@ import { ObservabilityService } from "./ai/observability";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-export const PROACTIVE_APP_ID = "playoff-creator";
-
 /** Maximum number of workspaces to process per run to stay within GCF timeout. */
 const MAX_WORKSPACES = 50;
 
@@ -97,11 +95,13 @@ function fallbackMessage(tipo: string, dayLabel: string, rival?: string): string
  * Called from the scheduled Cloud Function in index.ts.
  *
  * @param geminiApiKey  The Gemini API key (passed in from the function secret).
- * @param appId         Firestore appId (defaults to PROACTIVE_APP_ID).
+ * @param appId         Firestore appId (the `artifacts/{appId}/...` namespace,
+ *                      not the GCP project ID). Required — caller resolves it
+ *                      from `PICK_APP_ID` env var.
  */
 export async function runProactiveBriefing(
   geminiApiKey: string,
-  appId: string = PROACTIVE_APP_ID
+  appId: string
 ): Promise<BriefingResult> {
   const db = getFirestore();
   const observability = new ObservabilityService();
