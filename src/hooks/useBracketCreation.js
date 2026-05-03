@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { getDoc, setDoc } from 'firebase/firestore';
-import { userDocRef } from '../services/firestoreHelpers';
+import { workspaceDocRef } from '../services/firestoreHelpers';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import logger from '../utils/logger';
 import { buildDynamicBracket } from '../utils/bracketEngine';
 import { extractTextFromFile } from '../services/aiService';
@@ -21,6 +22,7 @@ export function useBracketCreation({
   setPreviewZoom,
 }) {
   const { runAgent } = usePick();
+  const { activeWsId } = useWorkspace();
   const [newBracketName, setNewBracketName] = useState('');
   const [basesFile, setBasesFile] = useState(null);
   const [clasifFile, setClasifFile] = useState(null);
@@ -40,8 +42,8 @@ export function useBracketCreation({
 
   // Fetch equipo asociado por initialTeamId
   useEffect(() => {
-    if (!initialTeamId || !db || !user) return;
-    getDoc(userDocRef(db, appId, user.uid, 'teams', initialTeamId))
+    if (!initialTeamId || !db || !user || !activeWsId) return;
+    getDoc(workspaceDocRef(db, appId, activeWsId, 'teams', initialTeamId))
       .then((snap) => {
         if (snap.exists()) {
           setPendingTeamId(initialTeamId);
@@ -50,7 +52,7 @@ export function useBracketCreation({
         }
       })
       .catch((e) => logger.warn('Error cargando equipo inicial', e));
-  }, [initialTeamId, db, user, appId]);
+  }, [initialTeamId, db, user, appId, activeWsId]);
 
   const handleProcessDocuments = async () => {
     if (!basesFile || !clasifFile) {
@@ -225,10 +227,10 @@ export function useBracketCreation({
     setAppMode('bracket');
 
     localStorage.setItem('playoffs:lastActiveBracketId', bracketToSave.id);
-    if (user && db) {
+    if (user && db && activeWsId) {
       try {
-        setDoc(userDocRef(db, appId, user.uid, 'brackets', bracketToSave.id), toFirestore(bracketToSave)).catch((e) =>
-          logger.warn('No se pudo guardar en la nube', e),
+        setDoc(workspaceDocRef(db, appId, activeWsId, 'brackets', bracketToSave.id), toFirestore(bracketToSave)).catch(
+          (e) => logger.warn('No se pudo guardar en la nube', e),
         );
       } catch (e) {
         logger.warn('No se pudo guardar en la nube', e);

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { setDoc } from 'firebase/firestore';
-import { userDocRef } from '../services/firestoreHelpers';
+import { workspaceDocRef } from '../services/firestoreHelpers';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import logger from '../utils/logger';
 import { buildDynamicBracket, calculateMatchWinner } from '../utils/bracketEngine';
 import { extractTextFromFile } from '../services/aiService';
@@ -25,6 +26,7 @@ export function useBracketEditor({
 }) {
   const toast = useToast();
   const { runAgent } = usePick();
+  const { activeWsId } = useWorkspace();
   const [zoom, setZoom] = useState(1);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showMobileTools, setShowMobileTools] = useState(false);
@@ -120,6 +122,7 @@ export function useBracketEditor({
     (bracket, updatedBracket) =>
       saveBracketToFirestore(bracket, updatedBracket, {
         user,
+        wsId: activeWsId,
         db,
         appId,
         onError: (msg) => {
@@ -127,7 +130,7 @@ export function useBracketEditor({
           setTimeout(() => setSaveError(''), 4000);
         },
       }),
-    [user, db, appId],
+    [user, activeWsId, db, appId],
   );
 
   const updateActiveBracketData = useCallback(
@@ -416,9 +419,9 @@ export function useBracketEditor({
 
   const handleSetMyTeam = (team) => {
     setBrackets((prev) => prev.map((b) => (b.id === activeBracketId ? { ...b, myTeam: team } : b)));
-    if (user && db) {
+    if (user && db && activeWsId) {
       setDoc(
-        userDocRef(db, appId, user.uid, 'brackets', activeBracketId),
+        workspaceDocRef(db, appId, activeWsId, 'brackets', activeBracketId),
         { myTeam: team || null },
         { merge: true },
       ).catch((e) => logger.warn('Error guardando myTeam', e));

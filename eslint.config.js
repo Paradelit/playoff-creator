@@ -59,5 +59,16 @@ export default defineConfig([
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true, allowExportNames: [] }],
     },
   },
+  // Node-side migration / cleanup scripts: run via `node`, need
+  // process / console / etc.
+  {
+    files: ['scripts/migration/**/*.js', 'scripts/cleanupOldPaths.js'],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
   eslintConfigPrettier,
 ]);

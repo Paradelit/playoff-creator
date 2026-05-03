@@ -47,8 +47,8 @@ export function createMemoryTools(): ToolDefinition[] {
         const base = ctx.db
           .collection("artifacts")
           .doc(ctx.appId)
-          .collection("users")
-          .doc(ctx.userId);
+          .collection("workspaces")
+          .doc(ctx.wsId);
 
         // Enforce cap: if over limit, drop oldest by lastUsedAt
         const col = base.collection("copilotMemory");
@@ -96,8 +96,8 @@ export function createMemoryTools(): ToolDefinition[] {
         const base = ctx.db
           .collection("artifacts")
           .doc(ctx.appId)
-          .collection("users")
-          .doc(ctx.userId);
+          .collection("workspaces")
+          .doc(ctx.wsId);
         const col = base.collection("copilotMemory");
         let query = col.orderBy("lastUsedAt", "desc") as FirebaseFirestore.Query;
         if (args.type) {
@@ -134,8 +134,8 @@ export function createMemoryTools(): ToolDefinition[] {
         const ref = ctx.db
           .collection("artifacts")
           .doc(ctx.appId)
-          .collection("users")
-          .doc(ctx.userId)
+          .collection("workspaces")
+          .doc(ctx.wsId)
           .collection("copilotMemory")
           .doc(id);
         const snap = await ref.get();
@@ -154,14 +154,14 @@ export function createMemoryTools(): ToolDefinition[] {
 export async function fetchMemoriesForDigest(
   db: FirebaseFirestore.Firestore,
   appId: string,
-  userId: string,
+  wsId: string,
   limit = 15
 ): Promise<Array<{ id: string; type: MemoryType; content: string }>> {
   const col = db
     .collection("artifacts")
     .doc(appId)
-    .collection("users")
-    .doc(userId)
+    .collection("workspaces")
+    .doc(wsId)
     .collection("copilotMemory");
   const snap = await col.orderBy("lastUsedAt", "desc").limit(limit).get();
   return snap.docs.map((d) => {

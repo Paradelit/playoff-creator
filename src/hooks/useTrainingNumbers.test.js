@@ -5,6 +5,7 @@ const mockUser = { uid: 'u1' };
 const mockDb = {};
 const mockUnsubscribe = vi.fn();
 const mockUseAuth = vi.fn(() => ({ user: mockUser }));
+const mockUseWorkspace = vi.fn(() => ({ activeWsId: 'ws1' }));
 
 vi.mock('../contexts/AuthContext', () => ({
   useAuth: (...args) => mockUseAuth(...args),
@@ -14,8 +15,12 @@ vi.mock('../contexts/FirebaseContext', () => ({
   useFirebase: () => ({ db: mockDb, appId: 'app1' }),
 }));
 
+vi.mock('../contexts/WorkspaceContext', () => ({
+  useWorkspace: (...args) => mockUseWorkspace(...args),
+}));
+
 vi.mock('../services/calendarService', () => ({
-  subscribeToAllTrainingSessions: vi.fn((_uid, _db, _appId, _start, _end, callback) => {
+  subscribeToAllTrainingSessions: vi.fn((_wsId, _db, _appId, _start, _end, callback) => {
     callback([
       { id: 's3', teamId: 'tA', fecha: '2025-10-15', horaInicio: '10:00' },
       { id: 's1', teamId: 'tA', fecha: '2025-10-01', horaInicio: '09:00' },
@@ -35,6 +40,7 @@ import { useTrainingNumbers } from './useTrainingNumbers';
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseAuth.mockReturnValue({ user: mockUser });
+  mockUseWorkspace.mockReturnValue({ activeWsId: 'ws1' });
 });
 
 describe('useTrainingNumbers', () => {

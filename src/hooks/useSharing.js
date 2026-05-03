@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
-import { userDocRef } from '../services/firestoreHelpers';
+import { workspaceDocRef } from '../services/firestoreHelpers';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import logger from '../utils/logger';
 import { getUserColor } from '../utils/cursorUtils';
 import { toFirestore } from '../services/firestoreService';
 
 export function useSharing({ user, db, appId, setBrackets, activeBracket, appMode, mainRef }) {
+  const { activeWsId } = useWorkspace();
   const [sharingBracket, setSharingBracket] = useState(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -90,8 +92,8 @@ export function useSharing({ user, db, appId, setBrackets, activeBracket, appMod
       }
       finalBracket = { ...bracket, shareCode, shareConfig };
       setBrackets((prev) => prev.map((b) => (b.id === bracket.id ? finalBracket : b)));
-      if (user) {
-        setDoc(userDocRef(db, appId, user.uid, 'brackets', bracket.id), toFirestore(finalBracket)).catch((e) =>
+      if (user && activeWsId) {
+        setDoc(workspaceDocRef(db, appId, activeWsId, 'brackets', bracket.id), toFirestore(finalBracket)).catch((e) =>
           logger.warn('Error guardando shareCode', e),
         );
       }
@@ -110,9 +112,9 @@ export function useSharing({ user, db, appId, setBrackets, activeBracket, appMod
       { shareConfig: newConfig },
       { merge: true },
     );
-    if (user)
+    if (user && activeWsId)
       setDoc(
-        userDocRef(db, appId, user.uid, 'brackets', sharingBracket.id),
+        workspaceDocRef(db, appId, activeWsId, 'brackets', sharingBracket.id),
         { shareConfig: newConfig },
         { merge: true },
       ).catch((e) => logger.warn('Error guardando shareConfig local', e));

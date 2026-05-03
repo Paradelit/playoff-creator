@@ -9,7 +9,7 @@ import {
   query,
   orderBy,
 } from 'firebase/firestore';
-import { userColRef, saveUserDoc, deleteUserDoc } from './firestoreHelpers';
+import { workspaceColRef, saveWorkspaceDoc, deleteWorkspaceDoc } from './firestoreHelpers';
 
 function normalizeExerciseTags(ex) {
   if (Array.isArray(ex.tags) && ex.tags.length > 0) return ex;
@@ -23,19 +23,19 @@ function normalizeExerciseTags(ex) {
   };
 }
 
-function trainingsCol(teamId, uid, db, appId) {
-  return collection(db, 'artifacts', appId, 'users', uid, 'teams', teamId, 'trainings');
+function trainingsCol(teamId, wsId, db, appId) {
+  return collection(db, 'artifacts', appId, 'workspaces', wsId, 'teams', teamId, 'trainings');
 }
 
-export function subscribeToTrainings(teamId, uid, db, appId, callback) {
-  const q = query(trainingsCol(teamId, uid, db, appId), orderBy('createdAt', 'desc'));
+export function subscribeToTrainings(teamId, wsId, db, appId, callback) {
+  const q = query(trainingsCol(teamId, wsId, db, appId), orderBy('createdAt', 'desc'));
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
   });
 }
 
-export async function saveTraining(training, teamId, { uid, db, appId }) {
-  const ref = doc(trainingsCol(teamId, uid, db, appId), training.id);
+export async function saveTraining(training, teamId, { wsId, db, appId }) {
+  const ref = doc(trainingsCol(teamId, wsId, db, appId), training.id);
   await setDoc(
     ref,
     {
@@ -47,40 +47,40 @@ export async function saveTraining(training, teamId, { uid, db, appId }) {
   );
 }
 
-export async function deleteTraining(trainingId, teamId, { uid, db, appId }) {
-  await deleteDoc(doc(trainingsCol(teamId, uid, db, appId), trainingId));
+export async function deleteTraining(trainingId, teamId, { wsId, db, appId }) {
+  await deleteDoc(doc(trainingsCol(teamId, wsId, db, appId), trainingId));
 }
 
-export function subscribeToExercises(uid, db, appId, callback) {
-  const q = query(userColRef(db, appId, uid, 'exercises'), orderBy('createdAt', 'desc'));
+export function subscribeToExercises(wsId, db, appId, callback) {
+  const q = query(workspaceColRef(db, appId, wsId, 'exercises'), orderBy('createdAt', 'desc'));
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map((d) => normalizeExerciseTags({ ...d.data(), id: d.id })));
   });
 }
 
-export async function saveExercise(exercise, { uid, db, appId }) {
+export async function saveExercise(exercise, { wsId, db, appId }) {
   const toSave = { ...exercise };
   if (Array.isArray(toSave.tags)) {
     toSave.contenido = toSave.tags.join(', ');
   }
-  await saveUserDoc(db, appId, uid, 'exercises', toSave.id, toSave);
+  await saveWorkspaceDoc(db, appId, wsId, ['exercises', toSave.id], toSave);
 }
 
-export async function deleteExercise(exerciseId, { uid, db, appId }) {
-  await deleteUserDoc(db, appId, uid, 'exercises', exerciseId);
+export async function deleteExercise(exerciseId, { wsId, db, appId }) {
+  await deleteWorkspaceDoc(db, appId, wsId, ['exercises', exerciseId]);
 }
 
 // Minimal-write helper for favoriting; avoids round-tripping the whole exercise doc.
-export async function setFavorite(exerciseId, favorite, { uid, db, appId }) {
-  const ref = doc(userColRef(db, appId, uid, 'exercises'), exerciseId);
+export async function setFavorite(exerciseId, favorite, { wsId, db, appId }) {
+  const ref = doc(workspaceColRef(db, appId, wsId, 'exercises'), exerciseId);
   await setDoc(ref, { favorite: !!favorite, updatedAt: serverTimestamp() }, { merge: true });
 }
 
 // Propagates edits of a library exercise to every training that references it.
-export async function propagateExerciseUpdate(exercise, { uid, db, appId }) {
-  const teamsSnap = await getDocs(userColRef(db, appId, uid, 'teams'));
+export async function propagateExerciseUpdate(exercise, { wsId, db, appId }) {
+  const teamsSnap = await getDocs(workspaceColRef(db, appId, wsId, 'teams'));
   for (const teamDoc of teamsSnap.docs) {
-    const trainingsSnap = await getDocs(trainingsCol(teamDoc.id, uid, db, appId));
+    const trainingsSnap = await getDocs(trainingsCol(teamDoc.id, wsId, db, appId));
     for (const trainingDoc of trainingsSnap.docs) {
       const ejercicios = trainingDoc.data().ejercicios || [];
       if (!ejercicios.some((e) => e.libExerciseId === exercise.id)) continue;

@@ -2,8 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Printer, RotateCcw, Plus, Minus } from 'lucide-react';
 import ClubLogo from '../../components/ClubLogo';
-import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 import { subscribeToTestTiro, saveTestTiro } from '../../services/teamsService';
 import { teamDisplayName } from '../../utils/teamUtils';
 import { useTeams } from '../../hooks/useTeams';
@@ -28,8 +28,8 @@ function createInitialTable() {
 export default function TestTiroScreen() {
   const { teamId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const { teams } = useTeams();
   const { profile } = useProfile();
@@ -41,21 +41,21 @@ export default function TestTiroScreen() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToTestTiro(teamId, user.uid, db, appId, (data) => {
+    if (!db || !activeWsId) return;
+    return subscribeToTestTiro(teamId, activeWsId, db, appId, (data) => {
       if (isFirstLoad.current) {
         if (data) setTables(data);
         isFirstLoad.current = false;
       }
     });
-  }, [user, db, appId, teamId]);
+  }, [db, appId, activeWsId, teamId]);
 
   function triggerSave(newTables) {
     setSaveStatus('unsaved');
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setSaveStatus('saving');
-      await saveTestTiro(teamId, newTables, { uid: user.uid, db, appId });
+      await saveTestTiro(teamId, newTables, { wsId: activeWsId, db, appId });
       setSaveStatus('saved');
     }, 1500);
   }

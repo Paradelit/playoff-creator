@@ -5,6 +5,16 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isWorkspaceMember(appId, wsId) {
+      return exists(/databases/$(database)/documents/artifacts/$(appId)/workspaces/$(wsId)/members/$(request.auth.uid));
+    }
+
+    function isWorkspaceOwner(appId, wsId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/artifacts/$(appId)/workspaces/$(wsId))
+          .data.ownerId == request.auth.uid;
+    }
+
     function sharedPath(appId, shareCode) {
       return /databases/$(database)/documents/artifacts/$(appId)/shared/$(shareCode);
     }
@@ -42,12 +52,35 @@ service cloud.firestore {
       return exists(sharedPath(appId, shareCode)) && canReadSharedData(get(sharedPath(appId, shareCode)).data);
     }
 
+    // Workspace doc + subcolecciones (NUEVO)
+    match /artifacts/{appId}/workspaces/{wsId} {
+      allow read:   if isSignedIn() && isWorkspaceMember(appId, wsId);
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isWorkspaceOwner(appId, wsId);
+      allow delete: if isWorkspaceOwner(appId, wsId);
+
+      match /members/{memberUid} {
+        allow read:                   if isSignedIn() && isWorkspaceMember(appId, wsId);
+        allow create, update, delete: if isWorkspaceOwner(appId, wsId);
+      }
+
+      // Wildcard for product subcollections (teams, brackets, calendarSessions, etc.).
+      // Excludes `members/` so the more restrictive owner-only rule above is not
+      // overridden by Firestore's match-OR semantics (any matching `allow` grants access).
+      match /{collection}/{docId=**} {
+        allow read, write: if isSignedIn() && isWorkspaceMember(appId, wsId)
+          && collection != 'members';
+      }
+    }
+
+    // User-private data (scope ahora más estrecho: profile, memberships, pickHistory, proactiveNotifications)
     match /artifacts/{appId}/users/{uid}/{document=**} {
       allow read, write: if isSignedIn() && request.auth.uid == uid;
     }
 
+    // Shared (sin cambios)
     match /artifacts/{appId}/shared/{shareCode} {
-      allow read: if canReadSharedData(resource.data);
+      allow read:   if canReadSharedData(resource.data);
       allow create: if isSignedIn() && sharedConfig(request.resource.data).ownerId == request.auth.uid;
       allow update: if canEditSharedData(resource.data)
         && sharedConfig(request.resource.data).ownerId == sharedConfig(resource.data).ownerId;
@@ -59,7 +92,7 @@ service cloud.firestore {
     }
 
     match /artifacts/{appId}/shared-exercises/{shareCode} {
-      allow read: if true;
+      allow read:  if true;
       allow write: if isSignedIn();
     }
   }

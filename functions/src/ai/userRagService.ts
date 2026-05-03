@@ -19,8 +19,8 @@ export interface RankedChunk extends UserContextChunk {
 const MAX_CHUNKS_TO_PROCESS = 30;
 const MIN_SIMILARITY_SCORE = 0.45;
 
-function userBase(db: Firestore, appId: string, userId: string) {
-  return db.collection("artifacts").doc(appId).collection("users").doc(userId);
+function workspaceBase(db: Firestore, appId: string, wsId: string) {
+  return db.collection("artifacts").doc(appId).collection("workspaces").doc(wsId);
 }
 
 /**
@@ -30,9 +30,9 @@ function userBase(db: Firestore, appId: string, userId: string) {
 export async function getUserContextChunks(
   db: Firestore,
   appId: string,
-  userId: string
+  wsId: string
 ): Promise<UserContextChunk[]> {
-  const base = userBase(db, appId, userId);
+  const base = workspaceBase(db, appId, wsId);
   const chunks: UserContextChunk[] = [];
 
   // ── 1. Memories (already compact, always include) ──────────────────────
@@ -226,10 +226,10 @@ async function getOrCreateEmbedding(
   chunk: UserContextChunk,
   db: Firestore,
   appId: string,
-  userId: string,
+  wsId: string,
   geminiApiKey: string
 ): Promise<number[]> {
-  const base = userBase(db, appId, userId);
+  const base = workspaceBase(db, appId, wsId);
   const ref = base.collection("ragIndex").doc(chunk.id);
   const snap = await ref.get();
 
@@ -270,10 +270,10 @@ function hashContent(content: string): string {
 }
 
 /**
- * Search the user's personal context for chunks relevant to the given query.
+ * Search the workspace's context for chunks relevant to the given query.
  *
  * Uses lazy embedding: embeddings are generated on first access and cached
- * in Firestore under `artifacts/{appId}/users/{uid}/ragIndex/`.
+ * in Firestore under `artifacts/{appId}/workspaces/{wsId}/ragIndex/`.
  *
  * Limits processing to MAX_CHUNKS_TO_PROCESS to stay within Cloud Function timeouts.
  */
@@ -281,11 +281,11 @@ export async function searchUserContext(
   query: string,
   db: Firestore,
   appId: string,
-  userId: string,
+  wsId: string,
   geminiApiKey: string,
   topK = 5
 ): Promise<RankedChunk[]> {
-  const chunks = await getUserContextChunks(db, appId, userId);
+  const chunks = await getUserContextChunks(db, appId, wsId);
   if (chunks.length === 0) return [];
 
   // Limit to avoid timeout — prioritize first chunks (memories + notes come first)
@@ -299,7 +299,7 @@ export async function searchUserContext(
   await Promise.all(
     toProcess.map(async (chunk) => {
       try {
-        const embedding = await getOrCreateEmbedding(chunk, db, appId, userId, geminiApiKey);
+        const embedding = await getOrCreateEmbedding(chunk, db, appId, wsId, geminiApiKey);
         const score = cosineSimilarity(queryEmbedding, embedding);
         if (score >= MIN_SIMILARITY_SCORE) {
           scored.push({ ...chunk, score });

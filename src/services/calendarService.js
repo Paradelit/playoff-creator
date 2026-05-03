@@ -11,13 +11,13 @@ import {
   where,
 } from 'firebase/firestore';
 
-function calendarSessionsCol(uid, db, appId) {
-  return collection(db, 'artifacts', appId, 'users', uid, 'calendarSessions');
+function calendarSessionsCol(wsId, db, appId) {
+  return collection(db, 'artifacts', appId, 'workspaces', wsId, 'calendarSessions');
 }
 
-export function subscribeToCalendarSessions(uid, db, appId, startDate, endDate, callback) {
+export function subscribeToCalendarSessions(wsId, db, appId, startDate, endDate, callback) {
   const q = query(
-    calendarSessionsCol(uid, db, appId),
+    calendarSessionsCol(wsId, db, appId),
     where('fecha', '>=', startDate),
     where('fecha', '<=', endDate),
     orderBy('fecha', 'asc'),
@@ -27,8 +27,8 @@ export function subscribeToCalendarSessions(uid, db, appId, startDate, endDate, 
   });
 }
 
-export async function saveCalendarSession(session, { uid, db, appId }) {
-  const ref = doc(calendarSessionsCol(uid, db, appId), session.id);
+export async function saveCalendarSession(session, { wsId, db, appId }) {
+  const ref = doc(calendarSessionsCol(wsId, db, appId), session.id);
   await setDoc(
     ref,
     {
@@ -40,19 +40,19 @@ export async function saveCalendarSession(session, { uid, db, appId }) {
   );
 }
 
-export async function deleteCalendarSession(sessionId, { uid, db, appId }) {
-  await deleteDoc(doc(calendarSessionsCol(uid, db, appId), sessionId));
+export async function deleteCalendarSession(sessionId, { wsId, db, appId }) {
+  await deleteDoc(doc(calendarSessionsCol(wsId, db, appId), sessionId));
 }
 
-export async function bulkImportCalendarSessions(sessions, { uid, db, appId }) {
+export async function bulkImportCalendarSessions(sessions, { wsId, db, appId }) {
   await Promise.all(
-    sessions.map((s) => saveCalendarSession({ ...s, id: s.id || crypto.randomUUID() }, { uid, db, appId })),
+    sessions.map((s) => saveCalendarSession({ ...s, id: s.id || crypto.randomUUID() }, { wsId, db, appId })),
   );
 }
 
-export async function getCalendarSessionsInRange(uid, db, appId, startDate, endDate) {
+export async function getCalendarSessionsInRange(wsId, db, appId, startDate, endDate) {
   const q = query(
-    calendarSessionsCol(uid, db, appId),
+    calendarSessionsCol(wsId, db, appId),
     where('fecha', '>=', startDate),
     where('fecha', '<=', endDate),
     orderBy('fecha', 'asc'),
@@ -61,15 +61,15 @@ export async function getCalendarSessionsInRange(uid, db, appId, startDate, endD
   return snap.docs.map((d) => ({ ...d.data(), id: d.id }));
 }
 
-export async function deleteCalendarSessionsByTeamAndRange(teamIds, startDate, endDate, { uid, db, appId }) {
-  const existing = await getCalendarSessionsInRange(uid, db, appId, startDate, endDate);
+export async function deleteCalendarSessionsByTeamAndRange(teamIds, startDate, endDate, { wsId, db, appId }) {
+  const existing = await getCalendarSessionsInRange(wsId, db, appId, startDate, endDate);
   const toDelete = existing.filter((s) => teamIds.includes(s.teamId));
-  await Promise.all(toDelete.map((s) => deleteCalendarSession(s.id, { uid, db, appId })));
+  await Promise.all(toDelete.map((s) => deleteCalendarSession(s.id, { wsId, db, appId })));
 }
 
-export function subscribeToTeamSessions(uid, db, appId, teamId, tipo, callback) {
+export function subscribeToTeamSessions(wsId, db, appId, teamId, tipo, callback) {
   const q = query(
-    calendarSessionsCol(uid, db, appId),
+    calendarSessionsCol(wsId, db, appId),
     where('teamId', '==', teamId),
     where('tipo', '==', tipo),
     orderBy('fecha', 'asc'),
@@ -79,13 +79,13 @@ export function subscribeToTeamSessions(uid, db, appId, teamId, tipo, callback) 
   });
 }
 
-export async function linkTrainingToSession(sessionId, trainingId, { uid, db, appId }) {
-  const ref = doc(calendarSessionsCol(uid, db, appId), sessionId);
+export async function linkTrainingToSession(sessionId, trainingId, { wsId, db, appId }) {
+  const ref = doc(calendarSessionsCol(wsId, db, appId), sessionId);
   await setDoc(ref, { trainingId, updatedAt: serverTimestamp() }, { merge: true });
 }
 
-export async function getSessionsByRecurrenceId(uid, db, appId, recurrenceId, fromDate) {
-  const q = query(calendarSessionsCol(uid, db, appId), where('recurrenceId', '==', recurrenceId));
+export async function getSessionsByRecurrenceId(wsId, db, appId, recurrenceId, fromDate) {
+  const q = query(calendarSessionsCol(wsId, db, appId), where('recurrenceId', '==', recurrenceId));
   const snap = await getDocs(q);
   return snap.docs
     .map((d) => ({ ...d.data(), id: d.id }))
@@ -93,11 +93,11 @@ export async function getSessionsByRecurrenceId(uid, db, appId, recurrenceId, fr
     .sort((a, b) => (a.fecha > b.fecha ? 1 : -1));
 }
 
-export async function batchUpdateCalendarSessions(sessions, fields, { uid, db, appId }) {
+export async function batchUpdateCalendarSessions(sessions, fields, { wsId, db, appId }) {
   await Promise.all(
     sessions.map((s) =>
       setDoc(
-        doc(calendarSessionsCol(uid, db, appId), s.id),
+        doc(calendarSessionsCol(wsId, db, appId), s.id),
         { ...fields, updatedAt: serverTimestamp() },
         { merge: true },
       ),
@@ -105,9 +105,9 @@ export async function batchUpdateCalendarSessions(sessions, fields, { uid, db, a
   );
 }
 
-export function subscribeToAllTrainingSessions(uid, db, appId, startDate, endDate, callback) {
+export function subscribeToAllTrainingSessions(wsId, db, appId, startDate, endDate, callback) {
   const q = query(
-    calendarSessionsCol(uid, db, appId),
+    calendarSessionsCol(wsId, db, appId),
     where('fecha', '>=', startDate),
     where('fecha', '<=', endDate),
     orderBy('fecha', 'asc'),
@@ -118,8 +118,8 @@ export function subscribeToAllTrainingSessions(uid, db, appId, startDate, endDat
   });
 }
 
-export async function deleteSessionsByRecurrenceId(uid, db, appId, recurrenceId, fromDate) {
-  const sessions = await getSessionsByRecurrenceId(uid, db, appId, recurrenceId, fromDate);
-  await Promise.all(sessions.map((s) => deleteCalendarSession(s.id, { uid, db, appId })));
+export async function deleteSessionsByRecurrenceId(wsId, db, appId, recurrenceId, fromDate) {
+  const sessions = await getSessionsByRecurrenceId(wsId, db, appId, recurrenceId, fromDate);
+  await Promise.all(sessions.map((s) => deleteCalendarSession(s.id, { wsId, db, appId })));
   return sessions;
 }

@@ -5,11 +5,12 @@ import { ArrowLeft, Printer, RotateCcw, Plus, Minus } from 'lucide-react';
 import ClubLogo from '../components/ClubLogo';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { subscribeToMembers } from '../services/teamsService';
 import { useTeams } from '../hooks/useTeams';
 import { useProfile } from '../hooks/useProfile';
 import { subscribeToPlanilla, savePlanilla } from '../services/planillaService';
-import { userDocRef } from '../services/firestoreHelpers';
+import { workspaceDocRef } from '../services/firestoreHelpers';
 import { teamDisplayName } from '../utils/teamUtils';
 import { validateSextos } from '../utils/minibasketUtils';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -22,6 +23,7 @@ export default function PlanillaSextosScreen() {
   const location = useLocation();
   const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const [session, setSession] = useState(null);
   const { teams } = useTeams();
@@ -38,8 +40,8 @@ export default function PlanillaSextosScreen() {
 
   // Load session (from Firestore or from route state for virtual playoff sessions)
   useEffect(() => {
-    if (!user || !db || !sessionId) return;
-    const ref = userDocRef(db, appId, user.uid, 'calendarSessions', sessionId);
+    if (!user || !db || !sessionId || !activeWsId) return;
+    const ref = workspaceDocRef(db, appId, activeWsId, 'calendarSessions', sessionId);
     getDoc(ref).then((snap) => {
       if (snap.exists()) {
         setSession({ ...snap.data(), id: snap.id });
@@ -47,13 +49,13 @@ export default function PlanillaSextosScreen() {
         setSession({ ...location.state.playoffSession, id: sessionId });
       }
     });
-  }, [user, db, appId, sessionId, location.state]);
+  }, [user, db, appId, activeWsId, sessionId, location.state]);
 
   // Load or create planilla
   useEffect(() => {
-    if (!user || !db || !sessionId || !session) return;
+    if (!user || !db || !sessionId || !session || !activeWsId) return;
 
-    const unsub = subscribeToPlanilla(sessionId, { uid: user.uid, db, appId }, (planilla) => {
+    const unsub = subscribeToPlanilla(sessionId, { wsId: activeWsId, db, appId }, (planilla) => {
       if (initializedRef.current) return;
 
       if (planilla) {
@@ -63,7 +65,7 @@ export default function PlanillaSextosScreen() {
         setLoading(false);
       } else {
         // No planilla yet — load members and create
-        const unsubMembers = subscribeToMembers(session.teamId, user.uid, db, appId, (members) => {
+        const unsubMembers = subscribeToMembers(session.teamId, activeWsId, db, appId, (members) => {
           const players = members
             .filter((m) => m.tipo === 'jugador')
             .map((m) => ({
@@ -85,7 +87,7 @@ export default function PlanillaSextosScreen() {
             jugadores: players,
           };
 
-          savePlanilla(newPlanilla, sessionId, { uid: user.uid, db, appId });
+          savePlanilla(newPlanilla, sessionId, { wsId: activeWsId, db, appId });
           setJugadores(players);
           initializedRef.current = true;
           setLoading(false);
@@ -95,7 +97,7 @@ export default function PlanillaSextosScreen() {
     });
 
     return unsub;
-  }, [user, db, appId, sessionId, session]);
+  }, [user, db, appId, activeWsId, sessionId, session]);
 
   function triggerSave(newJugadores, newMeta) {
     setSaveStatus('unsaved');
@@ -115,7 +117,7 @@ export default function PlanillaSextosScreen() {
           jugadores: newJugadores,
         },
         sessionId,
-        { uid: user.uid, db, appId },
+        { wsId: activeWsId, db, appId },
       );
       setSaveStatus('saved');
     }, 1500);

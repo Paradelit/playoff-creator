@@ -181,18 +181,17 @@ function makeDb(initialDocs: Array<[string, DocData]>): FakeFirestore {
 describe('cleanupUserData', () => {
   it('deletes a team cascade including sessions, playoff artifacts and owned shared brackets', async () => {
     const db = makeDb([
-      ['artifacts/app1/users/u1/teams/team-1', { categoria: 'Cadete' }],
-      ['artifacts/app1/users/u1/teams/team-1/members/m1', { nombre: 'Ana' }],
-      ['artifacts/app1/users/u1/teams/team-2', { categoria: 'Infantil' }],
-      ['artifacts/app1/users/u1/calendarSessions/session-1', { teamId: 'team-1' }],
-      ['artifacts/app1/users/u1/scoutings/session-1', { rival: 'Rojo' }],
-      ['artifacts/app1/users/u1/analisis/session-1', { foco: 'rebote' }],
-      ['artifacts/app1/users/u1/planillas/session-1', { jugadores: [] }],
-      ['artifacts/app1/users/u1/scoutings/playoff-bracket-1-R1-M0-0', { rival: 'Azul' }],
-      ['artifacts/app1/users/u1/analisis/playoff-bracket-1-R1-M0-0', { foco: 'cierre' }],
-      ['artifacts/app1/users/u1/planillas/playoff-bracket-1-R1-M0-0', { jugadores: [] }],
-      ['artifacts/app1/users/u1/brackets/bracket-1', { teamId: 'team-1', shareCode: 'SHARE1' }],
-      ['artifacts/app1/users/u2/brackets/bookmark-1', { shareCode: 'SHARE1' }],
+      ['artifacts/app1/workspaces/ws1/teams/team-1', { categoria: 'Cadete' }],
+      ['artifacts/app1/workspaces/ws1/teams/team-1/members/m1', { nombre: 'Ana' }],
+      ['artifacts/app1/workspaces/ws1/teams/team-2', { categoria: 'Infantil' }],
+      ['artifacts/app1/workspaces/ws1/calendarSessions/session-1', { teamId: 'team-1' }],
+      ['artifacts/app1/workspaces/ws1/scoutings/session-1', { rival: 'Rojo' }],
+      ['artifacts/app1/workspaces/ws1/analisis/session-1', { foco: 'rebote' }],
+      ['artifacts/app1/workspaces/ws1/planillas/session-1', { jugadores: [] }],
+      ['artifacts/app1/workspaces/ws1/scoutings/playoff-bracket-1-R1-M0-0', { rival: 'Azul' }],
+      ['artifacts/app1/workspaces/ws1/analisis/playoff-bracket-1-R1-M0-0', { foco: 'cierre' }],
+      ['artifacts/app1/workspaces/ws1/planillas/playoff-bracket-1-R1-M0-0', { jugadores: [] }],
+      ['artifacts/app1/workspaces/ws1/brackets/bracket-1', { teamId: 'team-1', shareCode: 'SHARE1' }],
       ['artifacts/app1/shared/SHARE1', { shareConfig: { ownerId: 'u1' } }],
       ['artifacts/app1/shared/SHARE1/comments/c1', { text: 'hola' }],
       ['artifacts/app1/shared/SHARE2', { shareConfig: { ownerId: 'u2' } }],
@@ -204,6 +203,7 @@ describe('cleanupUserData', () => {
       db: db as unknown as Firestore,
       appId: 'app1',
       userId: 'u1',
+      wsId: 'ws1',
       action: 'deleteTeam',
       teamId: 'team-1',
     });
@@ -214,33 +214,66 @@ describe('cleanupUserData', () => {
       scoutings: 2,
       analisis: 2,
       planillas: 2,
-      sharedRefs: 2,
+      sharedRefs: 1,
       sharedBrackets: 1,
       presence: 1,
     });
-    expect(db.has('artifacts/app1/users/u1/teams/team-1')).toBe(false);
-    expect(db.has('artifacts/app1/users/u1/teams/team-1/members/m1')).toBe(false);
-    expect(db.has('artifacts/app1/users/u1/calendarSessions/session-1')).toBe(false);
-    expect(db.has('artifacts/app1/users/u1/scoutings/playoff-bracket-1-R1-M0-0')).toBe(false);
-    expect(db.has('artifacts/app1/users/u1/brackets/bracket-1')).toBe(false);
-    expect(db.has('artifacts/app1/users/u2/brackets/bookmark-1')).toBe(false);
+    expect(db.has('artifacts/app1/workspaces/ws1/teams/team-1')).toBe(false);
+    expect(db.has('artifacts/app1/workspaces/ws1/teams/team-1/members/m1')).toBe(false);
+    expect(db.has('artifacts/app1/workspaces/ws1/calendarSessions/session-1')).toBe(false);
+    expect(db.has('artifacts/app1/workspaces/ws1/scoutings/playoff-bracket-1-R1-M0-0')).toBe(false);
+    expect(db.has('artifacts/app1/workspaces/ws1/brackets/bracket-1')).toBe(false);
     expect(db.has('artifacts/app1/shared/SHARE1')).toBe(false);
     expect(db.has('artifacts/app1/presence/SHARE1/members/u1')).toBe(false);
-    expect(db.has('artifacts/app1/users/u1/teams/team-2')).toBe(true);
+    expect(db.has('artifacts/app1/workspaces/ws1/teams/team-2')).toBe(true);
     expect(db.has('artifacts/app1/shared/SHARE2')).toBe(true);
   });
 
-  it('deletes all user data and only removes shared artifacts owned by that user', async () => {
+  it('deletes a bracket cascade including playoff artifacts and owned shared bracket', async () => {
     const db = makeDb([
+      ['artifacts/app1/workspaces/ws1/brackets/bracket-1', { teamId: 'team-1', shareCode: 'SHARE1' }],
+      ['artifacts/app1/workspaces/ws1/scoutings/playoff-bracket-1-R1-M0-0', { rival: 'Azul' }],
+      ['artifacts/app1/workspaces/ws1/analisis/playoff-bracket-1-R1-M0-0', { foco: 'cierre' }],
+      ['artifacts/app1/workspaces/ws1/planillas/playoff-bracket-1-R1-M0-0', { jugadores: [] }],
+      ['artifacts/app1/shared/SHARE1', { shareConfig: { ownerId: 'u1' } }],
+      ['artifacts/app1/presence/SHARE1/members/u1', { active: true }],
+    ]);
+
+    const result = await cleanupUserData({
+      db: db as unknown as Firestore,
+      appId: 'app1',
+      userId: 'u1',
+      wsId: 'ws1',
+      action: 'deleteBracket',
+      bracketId: 'bracket-1',
+    });
+
+    expect(result.deleted).toMatchObject({
+      scoutings: 1,
+      analisis: 1,
+      planillas: 1,
+      sharedRefs: 1,
+      sharedBrackets: 1,
+      presence: 1,
+    });
+    expect(db.has('artifacts/app1/workspaces/ws1/brackets/bracket-1')).toBe(false);
+    expect(db.has('artifacts/app1/workspaces/ws1/scoutings/playoff-bracket-1-R1-M0-0')).toBe(false);
+    expect(db.has('artifacts/app1/shared/SHARE1')).toBe(false);
+    expect(db.has('artifacts/app1/presence/SHARE1/members/u1')).toBe(false);
+  });
+
+  it('deleteAllUserData removes user personal workspace + user-private data', async () => {
+    const db = makeDb([
+      ['artifacts/app1/workspaces/ws1', { type: 'personal', ownerId: 'u1' }],
+      ['artifacts/app1/workspaces/ws1/teams/t1', { categoria: 'Cadete' }],
+      ['artifacts/app1/workspaces/ws1/brackets/bracket-own', { shareCode: 'OWN1' }],
+      ['artifacts/app1/users/u1/memberships/ws1', { role: 'owner' }],
       ['artifacts/app1/users/u1/profile/main', { nombre: 'Coach' }],
-      ['artifacts/app1/users/u1/teams/team-1', { categoria: 'Cadete' }],
-      ['artifacts/app1/users/u1/brackets/bracket-own', { shareCode: 'OWN1' }],
-      ['artifacts/app1/users/u1/brackets/bookmark-foreign', { shareCode: 'FOREIGN1' }],
-      ['artifacts/app1/users/u2/brackets/bookmark-own', { shareCode: 'OWN1' }],
+      ['artifacts/app1/users/u1/proactiveNotifications/n1', { message: 'X' }],
+      ['artifacts/app1/users/u1/pickHistory/ws1/conversations/c1', { title: 'hola' }],
       ['artifacts/app1/shared/OWN1', { shareConfig: { ownerId: 'u1' } }],
       ['artifacts/app1/shared/FOREIGN1', { shareConfig: { ownerId: 'u2' } }],
       ['artifacts/app1/presence/OWN1/members/u1', { active: true }],
-      ['artifacts/app1/presence/FOREIGN1/members/u2', { active: true }],
     ]);
 
     const result = await cleanupUserData({
@@ -252,37 +285,69 @@ describe('cleanupUserData', () => {
 
     expect(result.deleted).toMatchObject({
       users: 1,
-      sharedRefs: 2,
       sharedBrackets: 1,
       presence: 1,
     });
+    expect(db.has('artifacts/app1/workspaces/ws1')).toBe(false);
+    expect(db.has('artifacts/app1/workspaces/ws1/teams/t1')).toBe(false);
+    expect(db.has('artifacts/app1/workspaces/ws1/brackets/bracket-own')).toBe(false);
     expect(db.has('artifacts/app1/users/u1/profile/main')).toBe(false);
-    expect(db.has('artifacts/app1/users/u1/brackets/bookmark-foreign')).toBe(false);
+    expect(db.has('artifacts/app1/users/u1/proactiveNotifications/n1')).toBe(false);
+    expect(db.has('artifacts/app1/users/u1/memberships/ws1')).toBe(false);
+    expect(db.has('artifacts/app1/users/u1/pickHistory/ws1/conversations/c1')).toBe(false);
     expect(db.has('artifacts/app1/shared/OWN1')).toBe(false);
     expect(db.has('artifacts/app1/presence/OWN1/members/u1')).toBe(false);
-    expect(db.has('artifacts/app1/users/u2/brackets/bookmark-own')).toBe(false);
+    // Foreign shared artifacts survive
     expect(db.has('artifacts/app1/shared/FOREIGN1')).toBe(true);
-    expect(db.has('artifacts/app1/presence/FOREIGN1/members/u2')).toBe(true);
   });
 
-  it('deletes a conversation recursively', async () => {
+  it('deleteAllUserData leaves club workspaces standing, only removes user from members', async () => {
     const db = makeDb([
-      ['artifacts/app1/users/u1/conversations/c1', { title: 'Plan partido' }],
-      ['artifacts/app1/users/u1/conversations/c1/messages/m1', { role: 'user', content: 'hola' }],
-      ['artifacts/app1/users/u1/conversations/c1/messages/m2', { role: 'assistant', content: 'ok' }],
+      ['artifacts/app1/workspaces/ws-club', { type: 'club', ownerId: 'u-other' }],
+      ['artifacts/app1/workspaces/ws-club/members/u1', { role: 'coach' }],
+      ['artifacts/app1/workspaces/ws-club/members/u-other', { role: 'owner' }],
+      ['artifacts/app1/workspaces/ws-club/teams/t1', { categoria: 'Cadete' }],
+      ['artifacts/app1/users/u1/memberships/ws-club', { role: 'coach' }],
+      ['artifacts/app1/users/u1/profile/main', { nombre: 'Coach' }],
+    ]);
+
+    await cleanupUserData({
+      db: db as unknown as Firestore,
+      appId: 'app1',
+      userId: 'u1',
+      action: 'deleteAllUserData',
+    });
+
+    // Club survives
+    expect(db.has('artifacts/app1/workspaces/ws-club')).toBe(true);
+    expect(db.has('artifacts/app1/workspaces/ws-club/teams/t1')).toBe(true);
+    expect(db.has('artifacts/app1/workspaces/ws-club/members/u-other')).toBe(true);
+    // User's membership in the club is removed
+    expect(db.has('artifacts/app1/workspaces/ws-club/members/u1')).toBe(false);
+    // User-private data is gone
+    expect(db.has('artifacts/app1/users/u1/profile/main')).toBe(false);
+    expect(db.has('artifacts/app1/users/u1/memberships/ws-club')).toBe(false);
+  });
+
+  it('deletes a conversation recursively under pickHistory/{wsId}', async () => {
+    const db = makeDb([
+      ['artifacts/app1/users/u1/pickHistory/ws1/conversations/c1', { title: 'Plan partido' }],
+      ['artifacts/app1/users/u1/pickHistory/ws1/conversations/c1/messages/m1', { role: 'user', content: 'hola' }],
+      ['artifacts/app1/users/u1/pickHistory/ws1/conversations/c1/messages/m2', { role: 'assistant', content: 'ok' }],
     ]);
 
     const result = await cleanupUserData({
       db: db as unknown as Firestore,
       appId: 'app1',
       userId: 'u1',
+      wsId: 'ws1',
       action: 'deleteConversation',
       conversationId: 'c1',
     });
 
     expect(result.deleted.conversations).toBe(1);
-    expect(db.has('artifacts/app1/users/u1/conversations/c1')).toBe(false);
-    expect(db.has('artifacts/app1/users/u1/conversations/c1/messages/m1')).toBe(false);
-    expect(db.has('artifacts/app1/users/u1/conversations/c1/messages/m2')).toBe(false);
+    expect(db.has('artifacts/app1/users/u1/pickHistory/ws1/conversations/c1')).toBe(false);
+    expect(db.has('artifacts/app1/users/u1/pickHistory/ws1/conversations/c1/messages/m1')).toBe(false);
+    expect(db.has('artifacts/app1/users/u1/pickHistory/ws1/conversations/c1/messages/m2')).toBe(false);
   });
 });

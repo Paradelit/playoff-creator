@@ -13,7 +13,7 @@ vi.mock('firebase/firestore', () => ({
 
 import { saveCompetition, deleteCompetition, subscribeToCompetitions } from './competitionsService';
 
-const ctx = { uid: 'u1', db: {}, appId: 'app1' };
+const ctx = { wsId: 'ws1', db: {}, appId: 'app1' };
 
 describe('competitionsService', () => {
   it('saveCompetition writes with createdAt when new', async () => {
@@ -49,7 +49,7 @@ describe('competitionsService', () => {
     const { onSnapshot } = await import('firebase/firestore');
     onSnapshot.mockClear();
     const cb = vi.fn();
-    subscribeToCompetitions('t1', 'u1', {}, 'app1', cb);
+    subscribeToCompetitions('t1', 'ws1', {}, 'app1', cb);
     expect(onSnapshot).toHaveBeenCalled();
   });
 });

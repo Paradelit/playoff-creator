@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { subscribeToTrainings } from '../services/trainingsService';
 import { useTeams } from './useTeams';
 
@@ -14,6 +15,7 @@ import { useTeams } from './useTeams';
 export function useAllTrainings() {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
   const { teams, loading: loadingTeams } = useTeams();
   const [trainingsByTeam, setTrainingsByTeam] = useState({});
   const [ready, setReady] = useState(false);
@@ -28,7 +30,7 @@ export function useAllTrainings() {
   );
 
   useEffect(() => {
-    if (!user || !db) return undefined;
+    if (!user || !db || !activeWsId) return undefined;
     if (teams.length === 0) {
       setTrainingsByTeam({});
       setReady(true);
@@ -37,7 +39,7 @@ export function useAllTrainings() {
     setReady(false);
     const received = new Set();
     const unsubs = teams.map((team) =>
-      subscribeToTrainings(team.id, user.uid, db, appId, (list) => {
+      subscribeToTrainings(team.id, activeWsId, db, appId, (list) => {
         received.add(team.id);
         setTrainingsByTeam((prev) => ({ ...prev, [team.id]: list }));
         if (received.size === teams.length) setReady(true);
@@ -47,7 +49,7 @@ export function useAllTrainings() {
       unsubs.forEach((u) => u && u());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, db, appId, teamIdsKey]);
+  }, [user, db, appId, activeWsId, teamIdsKey]);
 
   const allTrainings = useMemo(() => {
     const out = [];

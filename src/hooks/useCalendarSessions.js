@@ -2,10 +2,11 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useTeams } from './useTeams';
 import { useTrainingNumbers } from './useTrainingNumbers';
 import { subscribeToCalendarSessions } from '../services/calendarService';
-import { userColRef } from '../services/firestoreHelpers';
+import { workspaceColRef } from '../services/firestoreHelpers';
 import { buildPlayoffSessions } from '../utils/calendarUtils';
 import { toYMD } from '../utils/dateUtils';
 import { mergeBracketsWithPrevious, useSharedBracketSubscriptions } from './useSharedBrackets';
@@ -42,6 +43,7 @@ export function getMonday(date) {
 export function useCalendarSessions(currentDate, viewMode) {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
   const { teams } = useTeams();
   const trainingNumbers = useTrainingNumbers();
 
@@ -49,8 +51,8 @@ export function useCalendarSessions(currentDate, viewMode) {
   const [brackets, setBrackets] = useState([]);
   const [loadedSubscriptionKey, setLoadedSubscriptionKey] = useState('');
   const [start, end] = useMemo(() => getDateRange(currentDate, viewMode), [currentDate, viewMode]);
-  const subscriptionKey = `${user?.uid || 'guest'}:${appId}:${start}:${end}`;
-  const loading = Boolean(user && db) && loadedSubscriptionKey !== subscriptionKey;
+  const subscriptionKey = `${user?.uid || 'guest'}:${activeWsId || 'no-ws'}:${appId}:${start}:${end}`;
+  const loading = Boolean(user && db && activeWsId) && loadedSubscriptionKey !== subscriptionKey;
   const mergeBracketSnapshot = useCallback(
     (fetchedBrackets, previousBrackets) =>
       mergeBracketsWithPrevious(fetchedBrackets, previousBrackets, (bracket, existing) => {
@@ -65,25 +67,25 @@ export function useCalendarSessions(currentDate, viewMode) {
     );
   }, []);
 
-  // Subscribe to user bracket docs
+  // Subscribe to workspace bracket docs
   useEffect(() => {
-    if (!user || !db) return undefined;
-    return onSnapshot(userColRef(db, appId, user.uid, 'brackets'), (snap) => {
+    if (!user || !db || !activeWsId) return undefined;
+    return onSnapshot(workspaceColRef(db, appId, activeWsId, 'brackets'), (snap) => {
       const fetched = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
       setBrackets((prev) => mergeBracketSnapshot(fetched, prev));
     });
-  }, [appId, db, mergeBracketSnapshot, user]);
+  }, [appId, db, mergeBracketSnapshot, user, activeWsId]);
 
   const shareCodes = useMemo(() => brackets.filter((b) => b.shareCode).map((b) => b.shareCode), [brackets]);
   useSharedBracketSubscriptions({ db, appId, shareCodes, onSharedSnapshot: handleSharedSnapshot });
 
   useEffect(() => {
-    if (!user || !db) return undefined;
-    return subscribeToCalendarSessions(user.uid, db, appId, start, end, (data) => {
+    if (!user || !db || !activeWsId) return undefined;
+    return subscribeToCalendarSessions(activeWsId, db, appId, start, end, (data) => {
       setSessions(data);
       setLoadedSubscriptionKey(subscriptionKey);
     });
-  }, [appId, db, end, start, subscriptionKey, user]);
+  }, [appId, db, end, start, subscriptionKey, user, activeWsId]);
 
   const playoffSessions = useMemo(() => buildPlayoffSessions(brackets, teams), [brackets, teams]);
   const teamIds = useMemo(() => new Set(teams.map((t) => t.id)), [teams]);

@@ -2,10 +2,15 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, doc, updateDoc, orderBy, limit } from 'firebase/firestore';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 
 /**
- * Subscribes to unread proactive notifications for the current user.
- * Notifications are generated daily by the proactiveDailyBriefing Cloud Function.
+ * Subscribes to unread proactive notifications for the current user, scoped
+ * to the active workspace via a `wsId` filter.
+ *
+ * Notifications are stored under `users/{uid}/proactiveNotifications` (user-
+ * private), but each notif now carries a `wsId` field so multiple workspaces
+ * coexist for the same user.
  *
  * Returns:
  *   notifications — array of unread notification docs (most recent first, max 5)
@@ -15,17 +20,24 @@ import { useAuth } from '../contexts/AuthContext';
 export function useProactiveNotifications() {
   const { db, appId } = useFirebase();
   const { user } = useAuth();
+  const { activeWsId } = useWorkspace();
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    if (!db || !appId || !user?.uid) {
+    if (!db || !appId || !user?.uid || !activeWsId) {
       setNotifications([]);
       return;
     }
 
     const uid = user.uid;
     const colRef = collection(db, 'artifacts', appId, 'users', uid, 'proactiveNotifications');
-    const q = query(colRef, where('read', '==', false), orderBy('generatedAt', 'desc'), limit(5));
+    const q = query(
+      colRef,
+      where('wsId', '==', activeWsId),
+      where('read', '==', false),
+      orderBy('generatedAt', 'desc'),
+      limit(5),
+    );
 
     const unsub = onSnapshot(
       q,
@@ -40,7 +52,7 @@ export function useProactiveNotifications() {
     );
 
     return unsub;
-  }, [db, appId, user?.uid]);
+  }, [db, appId, user?.uid, activeWsId]);
 
   async function markAsRead(notifId) {
     if (!db || !appId || !user?.uid) return;

@@ -14,8 +14,8 @@ import {
 import ClubLogo from '../../components/ClubLogo';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ExportMenu from '../../components/cuaderno/ExportMenu';
-import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useProfile } from '../../hooks/useProfile';
 import { useTeams } from '../../hooks/useTeams';
@@ -126,8 +126,8 @@ function ExplicacionInforme({ open, onToggle }) {
 export default function InformeJugadoresScreen() {
   const { teamId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const { teams } = useTeams();
   const { profile } = useProfile();
@@ -153,11 +153,11 @@ export default function InformeJugadoresScreen() {
 
   /* ─── Cargar miembros del equipo ─── */
   useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToMembers(teamId, user.uid, db, appId, (data) => {
+    if (!db || !activeWsId) return;
+    return subscribeToMembers(teamId, activeWsId, db, appId, (data) => {
       membersRef.current = data.filter((m) => m.tipo === 'jugador');
     });
-  }, [user, db, appId, teamId]);
+  }, [db, appId, activeWsId, teamId]);
 
   useEffect(() => {
     rowsRef.current = rows;
@@ -165,10 +165,10 @@ export default function InformeJugadoresScreen() {
 
   /* ─── Cargar datos del informe ─── */
   useEffect(() => {
-    if (!user || !db) return;
+    if (!db || !activeWsId) return;
     return subscribeToInformeJugadores(
       teamId,
-      user.uid,
+      activeWsId,
       db,
       appId,
       ({ rows: loadedRows, observaciones: loadedObs }) => {
@@ -189,7 +189,7 @@ export default function InformeJugadoresScreen() {
         }
       },
     );
-  }, [user, db, appId, teamId]);
+  }, [db, appId, activeWsId, teamId]);
 
   /* ─── Auto-save con debounce ─── */
   const triggerSave = useCallback(
@@ -201,12 +201,12 @@ export default function InformeJugadoresScreen() {
         await saveInformeJugadores(
           teamId,
           { rows: newRows, observaciones: newObservaciones },
-          { uid: user.uid, db, appId },
+          { wsId: activeWsId, db, appId },
         );
         setSaveStatus('saved');
       }, 1500);
     },
-    [teamId, user, db, appId],
+    [teamId, activeWsId, db, appId],
   );
 
   function updateRow(id, field, value) {

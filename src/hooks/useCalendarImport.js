@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import {
   bulkImportCalendarSessions,
   linkTrainingToSession,
@@ -48,8 +48,8 @@ function expandRecurring(patterns, startDate, endDate) {
 }
 
 export function useCalendarImport(teams, getTrainingNum) {
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
   const { runAgent } = usePick();
   const fileInputRef = useRef(null);
 
@@ -130,7 +130,7 @@ export function useCalendarImport(teams, getTrainingNum) {
     if (!toImport.length) return;
     const { startDate, endDate } = importPreview;
     const teamIds = [...new Set(toImport.map((s) => s.teamId).filter(Boolean))];
-    const existing = await getCalendarSessionsInRange(user.uid, db, appId, startDate, endDate);
+    const existing = await getCalendarSessionsInRange(activeWsId, db, appId, startDate, endDate);
     const conflicts = existing.filter((s) => teamIds.includes(s.teamId));
     if (conflicts.length > 0) {
       setDuplicateConflict({ count: conflicts.length, teamIds, toImport });
@@ -143,10 +143,10 @@ export function useCalendarImport(teams, getTrainingNum) {
     setBulkSaving(true);
     try {
       if (replace) {
-        await deleteCalendarSessionsByTeamAndRange(teamIds, startDate, endDate, { uid: user.uid, db, appId });
+        await deleteCalendarSessionsByTeamAndRange(teamIds, startDate, endDate, { wsId: activeWsId, db, appId });
       }
       const sessionsWithIds = toImport.map((s) => ({ ...s, id: s.id || crypto.randomUUID() }));
-      await bulkImportCalendarSessions(sessionsWithIds, { uid: user.uid, db, appId });
+      await bulkImportCalendarSessions(sessionsWithIds, { wsId: activeWsId, db, appId });
       const entrenamientos = sessionsWithIds.filter((s) => s.tipo === 'entrenamiento' && s.teamId);
       await Promise.all(
         entrenamientos.map(async (s) => {
@@ -169,9 +169,9 @@ export function useCalendarImport(teams, getTrainingNum) {
               cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
             },
             s.teamId,
-            { uid: user.uid, db, appId },
+            { wsId: activeWsId, db, appId },
           );
-          await linkTrainingToSession(s.id, trainingId, { uid: user.uid, db, appId });
+          await linkTrainingToSession(s.id, trainingId, { wsId: activeWsId, db, appId });
         }),
       );
       setImportPreview(null);

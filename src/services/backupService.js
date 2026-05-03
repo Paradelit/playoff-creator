@@ -4,6 +4,10 @@ function userBasePath(uid, appId) {
   return ['artifacts', appId, 'users', uid];
 }
 
+function workspaceBasePath(wsId, appId) {
+  return ['artifacts', appId, 'workspaces', wsId];
+}
+
 function stripTimestamps(record) {
   if (!record || typeof record !== 'object' || Array.isArray(record)) return record;
   const { updatedAt: _updatedAt, createdAt: _createdAt, ...rest } = record;
@@ -109,13 +113,15 @@ async function importSharedBrackets(db, appId, sharedBrackets) {
 
 // ── Public API ─────────────────────────────────────────────────────────────
 
-export async function exportUserData(uid, db, appId) {
-  const base = userBasePath(uid, appId);
-  const profileSnap = await getDoc(doc(db, ...base, 'profile', 'main'));
+export async function exportUserData({ uid, wsId, db, appId }) {
+  const userBase = userBasePath(uid, appId);
+  const wsBase = workspaceBasePath(wsId, appId);
+
+  const profileSnap = await getDoc(doc(db, ...userBase, 'profile', 'main'));
   const profile = profileSnap.exists() ? profileSnap.data() : {};
-  const teams = await readCollection(db, ...base, 'teams');
-  const { members, trainings, cuaderno } = await exportTeamBundles(db, base, teams);
-  const topLevelCollections = await exportTopLevelCollections(db, base);
+  const teams = await readCollection(db, ...wsBase, 'teams');
+  const { members, trainings, cuaderno } = await exportTeamBundles(db, wsBase, teams);
+  const topLevelCollections = await exportTopLevelCollections(db, wsBase);
   const sharedBrackets = await exportSharedBrackets(db, appId, uid);
 
   return {
@@ -131,18 +137,19 @@ export async function exportUserData(uid, db, appId) {
   };
 }
 
-export async function importUserData(data, { uid, db, appId }) {
-  const base = userBasePath(uid, appId);
+export async function importUserData(data, { uid, wsId, db, appId }) {
+  const userBase = userBasePath(uid, appId);
+  const wsBase = workspaceBasePath(wsId, appId);
   const version = Number(data?.version || 1);
 
   if (data?.profile && Object.keys(data.profile).length > 0) {
-    await setDoc(doc(db, ...base, 'profile', 'main'), stripTimestamps(data.profile), { merge: true });
+    await setDoc(doc(db, ...userBase, 'profile', 'main'), stripTimestamps(data.profile), { merge: true });
   }
 
   for (const team of data?.teams || []) {
-    await importTeamBundle(db, base, team, data, version);
+    await importTeamBundle(db, wsBase, team, data, version);
   }
 
-  await importTopLevelCollections(db, base, data);
+  await importTopLevelCollections(db, wsBase, data);
   await importSharedBrackets(db, appId, data?.sharedBrackets);
 }

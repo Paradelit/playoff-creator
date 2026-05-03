@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, ArrowRight, ClipboardList, BookOpen, FolderOpen, ShieldHalf } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { subscribeToTrainings, saveTraining, deleteTraining } from '../services/trainingsService';
 import { teamDisplayName } from '../utils/teamUtils';
 import { useTeams } from '../hooks/useTeams';
@@ -11,8 +11,8 @@ import { formatDateDisplay } from '../utils/dateUtils';
 export default function TeamTrainingsScreen() {
   const { teamId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const { teams } = useTeams();
   const team = teams.find((t) => t.id === teamId) || null;
@@ -22,14 +22,15 @@ export default function TeamTrainingsScreen() {
   const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToTrainings(teamId, user.uid, db, appId, (data) => {
+    if (!db || !activeWsId) return;
+    return subscribeToTrainings(teamId, activeWsId, db, appId, (data) => {
       setTrainings(data);
       setLoading(false);
     });
-  }, [user, db, appId, teamId]);
+  }, [db, appId, activeWsId, teamId]);
 
   async function handleCreate() {
+    if (!activeWsId) return;
     setCreating(true);
     try {
       const id = crypto.randomUUID();
@@ -44,7 +45,7 @@ export default function TeamTrainingsScreen() {
           cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
         },
         teamId,
-        { uid: user.uid, db, appId },
+        { wsId: activeWsId, db, appId },
       );
       navigate(`/teams/${teamId}/trainings/${id}`);
     } finally {
@@ -53,7 +54,7 @@ export default function TeamTrainingsScreen() {
   }
 
   async function handleDelete(id) {
-    await deleteTraining(id, teamId, { uid: user.uid, db, appId });
+    await deleteTraining(id, teamId, { wsId: activeWsId, db, appId });
     setDeletingId(null);
   }
 

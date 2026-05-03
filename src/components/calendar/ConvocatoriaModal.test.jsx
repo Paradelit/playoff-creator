@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ConvocatoriaModal from './ConvocatoriaModal';
 
-vi.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ user: { uid: 'u1' } }) }));
 vi.mock('../../contexts/FirebaseContext', () => ({ useFirebase: () => ({ db: {}, appId: 'a1' }) }));
+vi.mock('../../contexts/WorkspaceContext', () => ({ useWorkspace: () => ({ activeWsId: 'ws1' }) }));
 vi.mock('../../services/calendarService', () => ({ saveCalendarSession: vi.fn() }));
 vi.mock('../../services/playoffConvocatoriasService', () => ({ savePlayoffConvocatoria: vi.fn() }));
 

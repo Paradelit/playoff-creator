@@ -1,13 +1,13 @@
 import type { Firestore } from 'firebase/firestore';
 import { setDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
-import { userDocRef, userColRef } from './firestoreHelpers';
+import { workspaceDocRef, workspaceColRef } from './firestoreHelpers';
 import type { WriteProposal, WriteProposalKind } from './contentBlocks';
 import { calculateMatchWinner, buildDynamicBracket } from '../utils/bracketEngine';
 
 export interface ExecuteContext {
   db: Firestore;
   appId: string;
-  uid: string;
+  wsId: string;
 }
 
 type ProposalPayload = WriteProposal['payload'];
@@ -82,7 +82,7 @@ function refreshWinnerCascade(
 }
 
 async function resolveBracketWriteTarget(ctx: ExecuteContext, bracketId: string) {
-  const userRef = userDocRef(ctx.db, ctx.appId, ctx.uid, 'brackets', bracketId);
+  const userRef = workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'brackets', bracketId);
   const userSnap = await getDoc(userRef);
   if (!userSnap.exists()) throw new Error('Bracket no encontrado');
 
@@ -104,7 +104,7 @@ async function handleCreateTraining(ctx: ExecuteContext, payload: ProposalPayloa
 
   const id = (training.id as string) || `tr_${Date.now()}`;
   await setDoc(
-    doc(userColRef(ctx.db, ctx.appId, ctx.uid, 'teams'), teamId, 'trainings', id),
+    doc(workspaceColRef(ctx.db, ctx.appId, ctx.wsId, 'teams'), teamId, 'trainings', id),
     { ...training, id, createdAt: serverTimestamp(), updatedAt: serverTimestamp() },
     { merge: true },
   );
@@ -116,7 +116,7 @@ async function handleCreateCalendarSession(ctx: ExecuteContext, payload: Proposa
 
   const id = (session.id as string) || `cal_${Date.now()}`;
   await setDoc(
-    userDocRef(ctx.db, ctx.appId, ctx.uid, 'calendarSessions', id),
+    workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'calendarSessions', id),
     { ...session, id, createdAt: serverTimestamp(), updatedAt: serverTimestamp() },
     { merge: true },
   );
@@ -164,7 +164,7 @@ async function handleSaveNote(ctx: ExecuteContext, payload: ProposalPayload) {
   const append = payload.append === true;
   if (!teamId || typeof text !== 'string') throw invalidProposal('falta teamId o text');
 
-  const ref = doc(userColRef(ctx.db, ctx.appId, ctx.uid, 'teams'), teamId, 'cuaderno', 'notas');
+  const ref = doc(workspaceColRef(ctx.db, ctx.appId, ctx.wsId, 'teams'), teamId, 'cuaderno', 'notas');
   let finalText = text;
 
   if (append) {
@@ -203,7 +203,7 @@ async function handleCreateBracket(ctx: ExecuteContext, payload: ProposalPayload
   }
 
   await setDoc(
-    userDocRef(ctx.db, ctx.appId, ctx.uid, 'brackets', id),
+    workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'brackets', id),
     {
       ...bracket,
       bracketData: finalBracketData,
@@ -225,7 +225,7 @@ async function handleSaveAttendance(ctx: ExecuteContext, payload: ProposalPayloa
     throw invalidProposal('falta teamId, sessionId o attendance');
   }
 
-  const ref = doc(userColRef(ctx.db, ctx.appId, ctx.uid, 'teams'), teamId, 'cuaderno', 'asistencia');
+  const ref = doc(workspaceColRef(ctx.db, ctx.appId, ctx.wsId, 'teams'), teamId, 'cuaderno', 'asistencia');
   const snap = await getDoc(ref);
   const data = snap.exists() ? asRecord(snap.data()) || {} : {};
 
@@ -250,7 +250,7 @@ async function handleSavePlayerReport(ctx: ExecuteContext, payload: ProposalPayl
   if (!teamId || !report) throw invalidProposal('falta teamId o report');
 
   const rows = Array.isArray(report.rows) ? report.rows : [];
-  const ref = doc(userColRef(ctx.db, ctx.appId, ctx.uid, 'teams'), teamId, 'cuaderno', 'informe-jugadores');
+  const ref = doc(workspaceColRef(ctx.db, ctx.appId, ctx.wsId, 'teams'), teamId, 'cuaderno', 'informe-jugadores');
   await setDoc(ref, { ...report, rows, updatedAt: serverTimestamp() }, { merge: true });
 }
 
@@ -260,7 +260,7 @@ async function handleSaveShootingTest(ctx: ExecuteContext, payload: ProposalPayl
   if (!teamId || !testResults) throw invalidProposal('falta teamId o testResults');
 
   const tables = testResults.tables !== undefined ? testResults.tables : testResults;
-  const ref = doc(userColRef(ctx.db, ctx.appId, ctx.uid, 'teams'), teamId, 'cuaderno', 'test-tiro');
+  const ref = doc(workspaceColRef(ctx.db, ctx.appId, ctx.wsId, 'teams'), teamId, 'cuaderno', 'test-tiro');
   await setDoc(ref, { ...testResults, tables, updatedAt: serverTimestamp() }, { merge: true });
 }
 
@@ -269,7 +269,7 @@ async function handleSaveScouting(ctx: ExecuteContext, payload: ProposalPayload)
   const scoutingData = asRecord(payload.scoutingData);
   if (!sessionId || !scoutingData) throw invalidProposal('falta sessionId o scoutingData');
 
-  const ref = userDocRef(ctx.db, ctx.appId, ctx.uid, 'scoutings', sessionId);
+  const ref = workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'scoutings', sessionId);
   await setDoc(ref, { ...scoutingData, sessionId, updatedAt: serverTimestamp() }, { merge: true });
 }
 
@@ -278,7 +278,7 @@ async function handleSaveAnalysis(ctx: ExecuteContext, payload: ProposalPayload)
   const analysisData = asRecord(payload.analysisData);
   if (!sessionId || !analysisData) throw invalidProposal('falta sessionId o analysisData');
 
-  const ref = userDocRef(ctx.db, ctx.appId, ctx.uid, 'analisis', sessionId);
+  const ref = workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'analisis', sessionId);
   await setDoc(ref, { ...analysisData, sessionId, updatedAt: serverTimestamp() }, { merge: true });
 }
 
@@ -296,7 +296,7 @@ async function handleCreateExercise(ctx: ExecuteContext, payload: ProposalPayloa
   const id = (exercise.id as string) || `ex_${Date.now()}`;
   const normalized = normalizeExerciseTags({ ...exercise, id });
   await setDoc(
-    userDocRef(ctx.db, ctx.appId, ctx.uid, 'exercises', id),
+    workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'exercises', id),
     { ...normalized, createdAt: serverTimestamp(), updatedAt: serverTimestamp() },
     { merge: true },
   );
@@ -304,7 +304,7 @@ async function handleCreateExercise(ctx: ExecuteContext, payload: ProposalPayloa
 
 async function handleCreateExercises(ctx: ExecuteContext, payload: ProposalPayload) {
   const exercises = Array.isArray(payload.exercises) ? payload.exercises : [];
-  if (exercises.length === 0) throw invalidProposal('array de ejercicios vac\u00edo');
+  if (exercises.length === 0) throw invalidProposal('array de ejercicios vacío');
 
   for (const raw of exercises) {
     const exercise = asRecord(raw);

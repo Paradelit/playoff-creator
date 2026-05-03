@@ -9,7 +9,19 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     setupFiles: ['./src/test/setup.js'],
-    exclude: ['node_modules', 'dist', 'functions/**', 'tests/**', '.claude/**', '.worktrees/**'],
+    exclude: [
+      'node_modules',
+      'dist',
+      'functions/**',
+      'tests/**',
+      '.claude/**',
+      '.worktrees/**',
+      'firestore.rules.test.ts',
+      // Migration tests need the Firestore Emulator. Run them via
+      // `npm run test:migrate` (firebase emulators:exec). Mirrors the
+      // exclusion of firestore.rules.test.ts.
+      'scripts/migration/__tests__/**',
+    ],
   },
   server: {
     headers: {

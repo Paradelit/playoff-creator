@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 import { useAuth } from './AuthContext';
 import { useFirebase } from './FirebaseContext';
+import { useWorkspace } from './WorkspaceContext';
 import { subscribeToTeams } from '../services/teamsService';
 
 import { useBracketSync } from '../hooks/useBracketSync';
@@ -15,6 +16,7 @@ const BracketContext = createContext(null);
 export function BracketProvider({ initialShareCode, initialTeamId, onShareCodeConsumed, shareUrlBase, children }) {
   const { user, handleLogout: authLogout } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
   const firebaseError = !db;
 
   // --- APP MODE ---
@@ -28,9 +30,9 @@ export function BracketProvider({ initialShareCode, initialTeamId, onShareCodeCo
   const [coachTeams, setCoachTeams] = useState([]);
 
   useEffect(() => {
-    if (!user || !db) return;
-    return subscribeToTeams(user.uid, db, appId, setCoachTeams);
-  }, [user, db, appId]);
+    if (!user || !db || !activeWsId) return;
+    return subscribeToTeams(activeWsId, db, appId, setCoachTeams);
+  }, [user, db, appId, activeWsId]);
 
   // --- HOOKS ---
   const sync = useBracketSync({

@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { userDocRef } from './firestoreHelpers';
+import { workspaceDocRef } from './firestoreHelpers';
 import { calculateMatchWinner } from '../utils/bracketEngine';
 import { parseDateToISO } from '../utils/calendarUtils';
 
@@ -13,11 +13,11 @@ function ensureArrayLength(arr, len, fill = '') {
 /**
  * Resolve the correct Firestore ref for a bracket.
  * Shared brackets store bracketData in artifacts/{appId}/shared/{shareCode},
- * while local brackets store everything in users/{uid}/brackets/{id}.
+ * while local brackets store everything in workspaces/{wsId}/brackets/{id}.
  * Returns { ref, bracketDoc } or null if not found.
  */
-async function resolveBracketRef(bracketId, { uid, db, appId }) {
-  const userRef = userDocRef(db, appId, uid, 'brackets', bracketId);
+async function resolveBracketRef(bracketId, { wsId, db, appId }) {
+  const userRef = workspaceDocRef(db, appId, wsId, 'brackets', bracketId);
   const userSnap = await getDoc(userRef);
   if (!userSnap.exists()) return null;
   const userData = userSnap.data();
@@ -30,7 +30,7 @@ async function resolveBracketRef(bracketId, { uid, db, appId }) {
     return { ref: sharedRef, bracketDoc: sharedSnap.data() };
   }
 
-  // Local bracket: everything is in the user doc
+  // Local bracket: everything is in the workspace doc
   return { ref: userRef, bracketDoc: userData };
 }
 
@@ -44,10 +44,10 @@ export async function updatePlayoffMatchSchedule(
   matchId,
   gameIndex,
   { fecha, horaInicio, horaFin, lugar },
-  { uid, db, appId },
+  { wsId, db, appId },
 ) {
   if (!bracketId || !matchId) return false;
-  const resolved = await resolveBracketRef(bracketId, { uid, db, appId });
+  const resolved = await resolveBracketRef(bracketId, { wsId, db, appId });
   if (!resolved) return false;
   const { ref: bracketRef, bracketDoc } = resolved;
   const match = bracketDoc.bracketData?.state?.[matchId];
@@ -85,10 +85,10 @@ export async function updatePlayoffMatchSchedule(
 export async function updatePlayoffMatchScoreFromSession(
   { bracketId, bracketMatchId, gameIndex, isMyTeamTeam1 },
   { local, visitante },
-  { uid, db, appId },
+  { wsId, db, appId },
 ) {
   if (!bracketId || !bracketMatchId) return false;
-  const resolved = await resolveBracketRef(bracketId, { uid, db, appId });
+  const resolved = await resolveBracketRef(bracketId, { wsId, db, appId });
   if (!resolved) return false;
   const { ref: bracketRef, bracketDoc } = resolved;
   const match = bracketDoc.bracketData?.state?.[bracketMatchId];

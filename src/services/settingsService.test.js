@@ -38,7 +38,7 @@ import {
   deleteAllUserData,
 } from './settingsService';
 
-const ctx = { uid: 'u1', db: {}, appId: 'app1' };
+const ctx = { uid: 'u1', wsId: 'ws1', db: {}, appId: 'app1' };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -90,7 +90,7 @@ describe('autoAddCoachToTeam', () => {
         licencia: '123',
       }),
       't1',
-      ctx,
+      { wsId: 'ws1', db: {}, appId: 'app1' },
     );
   });
 
@@ -121,7 +121,7 @@ describe('exportUserData', () => {
       .mockResolvedValueOnce({ docs: [{ id: 'p1', data: () => ({ jugadores: [] }) }] }) // planillas
       .mockResolvedValueOnce({ docs: [{ id: 'SHARE1', data: () => ({ name: 'Shared playoff' }) }] }); // shared
 
-    const result = await exportUserData('u1', {}, 'app1');
+    const result = await exportUserData({ uid: 'u1', wsId: 'ws1', db: {}, appId: 'app1' });
 
     expect(result.version).toBe(2);
     expect(result.profile).toEqual({ nombre: 'Coach', proactivityMode: 'suggestions' });
@@ -193,7 +193,7 @@ describe('importUserData', () => {
 
 describe('deleteAllUserData', () => {
   it('delegates full deletion to the backend cleanup callable', async () => {
-    await deleteAllUserData('u1', {}, 'app1');
+    await deleteAllUserData('app1');
     expect(deleteAllUserDataCascade).toHaveBeenCalledWith({ appId: 'app1' });
   });
 });

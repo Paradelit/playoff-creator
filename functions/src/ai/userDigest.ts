@@ -23,17 +23,24 @@ export interface UserDigest {
 }
 
 /**
- * Build a compact snapshot of the user's state for injection into the
+ * Build a compact snapshot of the workspace's state for injection into the
  * orchestrator system prompt. Size target: ~1KB for typical accounts.
+ *
+ * Workspace-scoped data (teams, brackets, sessions, memories) reads from
+ * `workspaces/{wsId}/...`. User preferences persist on `profile/main` under
+ * the user-private namespace `users/{uid}/profile/main` and are read from
+ * there — they were never migrated to the workspace.
  */
 export async function buildUserDigest(deps: {
   db: Firestore;
   userId: string;
+  wsId: string;
   appId: string;
   clientDate?: string;
 }): Promise<UserDigest> {
-  const { db, userId, appId, clientDate } = deps;
-  const base = db.collection("artifacts").doc(appId).collection("users").doc(userId);
+  const { db, userId, wsId, appId, clientDate } = deps;
+  const base = db.collection("artifacts").doc(appId).collection("workspaces").doc(wsId);
+  const userRoot = db.collection("artifacts").doc(appId).collection("users").doc(userId);
 
   const todayISO = clientDate || new Date().toISOString().slice(0, 10);
   const sevenDaysFromNow = new Date(todayISO);
@@ -49,8 +56,8 @@ export async function buildUserDigest(deps: {
       .where("fecha", "<=", toISO)
       .orderBy("fecha", "asc")
       .get(),
-    base.collection("profile").doc("main").get(),
-    fetchMemoriesForDigest(db, appId, userId, 15),
+    userRoot.collection("profile").doc("main").get(),
+    fetchMemoriesForDigest(db, appId, wsId, 15),
   ]);
 
   const teams = await Promise.all(

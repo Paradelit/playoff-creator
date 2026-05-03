@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, ShieldHalf, X, FolderOpen } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { saveTeam, deleteTeam } from '../services/teamsService';
 import { autoAddCoachToTeam } from '../services/settingsService';
 import { useProfile } from '../hooks/useProfile';
@@ -13,8 +13,8 @@ import { TeamFormFields } from '../components/teams/TeamFormFields';
 import { EMPTY_FORM } from '../components/teams/teamFormConstants';
 
 export default function TeamsScreen() {
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
   const navigate = useNavigate();
 
   const { teams, loadingTeams: loading, allSessions, activePlayoffs } = useHomeDashboard();
@@ -73,12 +73,13 @@ export default function TeamsScreen() {
 
   async function handleCreate(e) {
     e.preventDefault();
+    if (!activeWsId) return;
     setSaving(true);
     try {
       const teamId = crypto.randomUUID();
-      await saveTeam({ id: teamId, ...form }, { uid: user.uid, db, appId });
+      await saveTeam({ id: teamId, ...form }, { wsId: activeWsId, db, appId });
       if (profile?.autoAddToTeams) {
-        await autoAddCoachToTeam(teamId, profile, { uid: user.uid, db, appId });
+        await autoAddCoachToTeam(teamId, profile, { wsId: activeWsId, db, appId });
       }
       setShowCreateModal(false);
       setForm(EMPTY_FORM);
@@ -88,7 +89,7 @@ export default function TeamsScreen() {
   }
 
   async function handleDelete(teamId) {
-    await deleteTeam(teamId, { uid: user.uid, db, appId });
+    await deleteTeam(teamId, { appId, wsId: activeWsId });
     setDeletingTeamId(null);
   }
 

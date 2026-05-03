@@ -35,7 +35,7 @@ export async function uploadLogoClub(file, { uid, storage, db, appId }) {
   return url;
 }
 
-export async function autoAddCoachToTeam(teamId, profile, { uid, db, appId }) {
+export async function autoAddCoachToTeam(teamId, profile, { wsId, db, appId }) {
   if (!profile?.nombre?.trim()) return;
   const member = {
     id: crypto.randomUUID(),
@@ -47,9 +47,9 @@ export async function autoAddCoachToTeam(teamId, profile, { uid, db, appId }) {
     rol: profile.rol || 'Entrenador',
     licencia: profile.licencia || '',
   };
-  await saveMember(member, teamId, { uid, db, appId });
+  await saveMember(member, teamId, { wsId, db, appId });
 }
 
-export async function deleteAllUserData(uid, db, appId) {
+export async function deleteAllUserData(appId) {
   await deleteAllUserDataCascade({ appId });
 }

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Trophy, Users, CalendarDays, Plus, X, ShieldHalf, ClipboardList, BookOpen } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { saveTeam } from '../services/teamsService';
 import { saveTraining } from '../services/trainingsService';
 import { autoAddCoachToTeam } from '../services/settingsService';
@@ -45,8 +45,8 @@ function NavItem({ to, label, Icon, end }) {
 
 export function CreateSheet({ onClose }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const { teams } = useTeams();
   const { profile } = useProfile();
@@ -57,12 +57,13 @@ export function CreateSheet({ onClose }) {
 
   async function handleCreateTeam(e) {
     e.preventDefault();
+    if (!activeWsId) return;
     setSaving(true);
     try {
       const teamId = crypto.randomUUID();
-      await saveTeam({ id: teamId, ...teamForm }, { uid: user.uid, db, appId });
+      await saveTeam({ id: teamId, ...teamForm }, { wsId: activeWsId, db, appId });
       if (profile?.autoAddToTeams) {
-        await autoAddCoachToTeam(teamId, profile, { uid: user.uid, db, appId });
+        await autoAddCoachToTeam(teamId, profile, { wsId: activeWsId, db, appId });
       }
       onClose();
       navigate('/area-privada/teams');
@@ -72,6 +73,7 @@ export function CreateSheet({ onClose }) {
   }
 
   async function handleNewTrainingForTeam(team) {
+    if (!activeWsId) return;
     const trainingId = crypto.randomUUID();
     await saveTraining(
       {
@@ -83,7 +85,7 @@ export function CreateSheet({ onClose }) {
         cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
       },
       team.id,
-      { uid: user.uid, db, appId },
+      { wsId: activeWsId, db, appId },
     );
     onClose();
     navigate(`/area-privada/teams/${team.id}/trainings/${trainingId}`);

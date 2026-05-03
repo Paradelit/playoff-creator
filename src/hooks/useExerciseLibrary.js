@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useToast } from '../contexts/ToastContext';
 import {
   subscribeToExercises,
@@ -15,11 +16,12 @@ import { useFirestoreSubscription } from './useFirestoreSubscription';
 export function useExerciseLibrary() {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
   const toast = useToast();
   const importRef = useRef(null);
 
-  const subscribeFn = useCallback((cb) => subscribeToExercises(user.uid, db, appId, cb), [user, db, appId]);
-  const { data: rawExercises, loading } = useFirestoreSubscription(user && db ? subscribeFn : null);
+  const subscribeFn = useCallback((cb) => subscribeToExercises(activeWsId, db, appId, cb), [activeWsId, db, appId]);
+  const { data: rawExercises, loading } = useFirestoreSubscription(user && db && activeWsId ? subscribeFn : null);
 
   // Optimistic overrides for the favorite flag. Merged over subscription data
   // so a click feels instant; discarded when the server echo arrives.
@@ -61,9 +63,9 @@ export function useExerciseLibrary() {
         pasos,
         elementos: pasos[0]?.elementos || exercise.elementos || [],
       };
-      await saveExercise(toSave, { uid: user.uid, db, appId });
+      await saveExercise(toSave, { wsId: activeWsId, db, appId });
       if (exercise.id) {
-        await propagateExerciseUpdate(toSave, { uid: user.uid, db, appId });
+        await propagateExerciseUpdate(toSave, { wsId: activeWsId, db, appId });
       }
     } finally {
       setSaving(false);
@@ -76,7 +78,7 @@ export function useExerciseLibrary() {
     const next = !ex.favorite;
     setFavoriteOverrides((prev) => ({ ...prev, [id]: next }));
     try {
-      await setFavorite(id, next, { uid: user.uid, db, appId });
+      await setFavorite(id, next, { wsId: activeWsId, db, appId });
     } catch (err) {
       setFavoriteOverrides((prev) => {
         const copy = { ...prev };
@@ -106,12 +108,12 @@ export function useExerciseLibrary() {
     const variants = exercises.filter((e) => e.parentId === id);
     if (variants.length > 0 && ex && !ex.parentId) {
       const [newParent, ...rest] = variants;
-      await saveExercise({ ...newParent, parentId: null }, { uid: user.uid, db, appId });
+      await saveExercise({ ...newParent, parentId: null }, { wsId: activeWsId, db, appId });
       for (const v of rest) {
-        await saveExercise({ ...v, parentId: newParent.id }, { uid: user.uid, db, appId });
+        await saveExercise({ ...v, parentId: newParent.id }, { wsId: activeWsId, db, appId });
       }
     }
-    await deleteExercise(id, { uid: user.uid, db, appId });
+    await deleteExercise(id, { wsId: activeWsId, db, appId });
     setDeletingId(null);
   }
 
@@ -182,7 +184,7 @@ export function useExerciseLibrary() {
     try {
       for (const ex of importPreview) {
         const { _import, id: _id, ...rest } = ex;
-        await saveExercise({ ...rest, id: crypto.randomUUID() }, { uid: user.uid, db, appId });
+        await saveExercise({ ...rest, id: crypto.randomUUID() }, { wsId: activeWsId, db, appId });
       }
       setImportPreview(null);
     } finally {

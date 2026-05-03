@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useToast } from '../contexts/ToastContext';
 import {
   saveCalendarSession,
@@ -18,8 +18,8 @@ import { teamDisplayName } from '../utils/teamUtils';
 
 export function useSessionEditor(teams, getTrainingNum) {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
   const addToast = useToast();
 
   const [selectedSession, setSelectedSession] = useState(null);
@@ -45,7 +45,7 @@ export function useSessionEditor(teams, getTrainingNum) {
             horaFin: sessionData.horaFin || '',
             lugar: sessionData.lugar || '',
           },
-          { uid: user.uid, db, appId },
+          { wsId: activeWsId, db, appId },
         );
         setEditingSession(null);
         setSelectedSession(null);
@@ -67,12 +67,12 @@ export function useSessionEditor(teams, getTrainingNum) {
         ...(choice === 'single' && sessionData.recurrenceId ? { recurrenceDetached: true } : {}),
       };
 
-      await saveCalendarSession(sessionToSave, { uid: user.uid, db, appId });
+      await saveCalendarSession(sessionToSave, { wsId: activeWsId, db, appId });
 
       if (choice === 'thisAndFuture' && sessionData.recurrenceId) {
         try {
           const futureSessions = await getSessionsByRecurrenceId(
-            user.uid,
+            activeWsId,
             db,
             appId,
             sessionData.recurrenceId,
@@ -85,7 +85,7 @@ export function useSessionEditor(teams, getTrainingNum) {
             if (sessionData.horaFin !== undefined) bulkFields.horaFin = sessionData.horaFin;
             if (sessionData.lugar !== undefined) bulkFields.lugar = sessionData.lugar;
             if (sessionData.tipo !== undefined) bulkFields.tipo = sessionData.tipo;
-            await batchUpdateCalendarSessions(toUpdate, bulkFields, { uid: user.uid, db, appId });
+            await batchUpdateCalendarSessions(toUpdate, bulkFields, { wsId: activeWsId, db, appId });
             addToast(`Actualizada esta sesión y ${toUpdate.length} más`, 'success');
           }
         } catch (err) {
@@ -114,9 +114,9 @@ export function useSessionEditor(teams, getTrainingNum) {
             cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
           },
           sessionData.teamId,
-          { uid: user.uid, db, appId },
+          { wsId: activeWsId, db, appId },
         );
-        await linkTrainingToSession(sessionId, trainingId, { uid: user.uid, db, appId });
+        await linkTrainingToSession(sessionId, trainingId, { wsId: activeWsId, db, appId });
       }
       setEditingSession(null);
       setSelectedSession(null);
@@ -154,7 +154,7 @@ export function useSessionEditor(teams, getTrainingNum) {
           session.bracketMatchId,
           session.gameIndex || 0,
           { fecha: '', horaInicio: '', horaFin: '', lugar: '' },
-          { uid: user.uid, db, appId },
+          { wsId: activeWsId, db, appId },
         );
       }
       setDeletingId(null);
@@ -163,8 +163,8 @@ export function useSessionEditor(teams, getTrainingNum) {
     }
     const id = typeof idOrSession === 'string' ? idOrSession : idOrSession?.id;
     if (!id) return;
-    await deleteCalendarSession(id, { uid: user.uid, db, appId });
-    deletePlanilla(id, { uid: user.uid, db, appId }).catch(() => {});
+    await deleteCalendarSession(id, { wsId: activeWsId, db, appId });
+    deletePlanilla(id, { wsId: activeWsId, db, appId }).catch(() => {});
     setDeletingId(null);
     setSelectedSession(null);
   }
@@ -195,8 +195,14 @@ export function useSessionEditor(teams, getTrainingNum) {
         if (choice === 'single') {
           await handleDelete(session.id);
         } else if (choice === 'thisAndFuture') {
-          const deleted = await deleteSessionsByRecurrenceId(user.uid, db, appId, session.recurrenceId, session.fecha);
-          deleted.forEach((s) => deletePlanilla(s.id, { uid: user.uid, db, appId }).catch(() => {}));
+          const deleted = await deleteSessionsByRecurrenceId(
+            activeWsId,
+            db,
+            appId,
+            session.recurrenceId,
+            session.fecha,
+          );
+          deleted.forEach((s) => deletePlanilla(s.id, { wsId: activeWsId, db, appId }).catch(() => {}));
           setSelectedSession(null);
           if (deleted.length > 0) {
             addToast(`${deleted.length} sesiones eliminadas`, 'success');
@@ -231,9 +237,9 @@ export function useSessionEditor(teams, getTrainingNum) {
           cierre: { faltas: '', retrasos: '', anotaciones: '', observaciones: '' },
         },
         session.teamId,
-        { uid: user.uid, db, appId },
+        { wsId: activeWsId, db, appId },
       );
-      await linkTrainingToSession(session.id, trainingId, { uid: user.uid, db, appId });
+      await linkTrainingToSession(session.id, trainingId, { wsId: activeWsId, db, appId });
       navigate(`/teams/${session.teamId}/trainings/${trainingId}`);
     } finally {
       setCreatingTraining(false);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { subscribeToAllTrainingSessions } from '../services/calendarService';
 import { getSeasonDateRange } from '../utils/dateUtils';
 
@@ -12,12 +13,13 @@ import { getSeasonDateRange } from '../utils/dateUtils';
 export function useTrainingNumbers() {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
   const [numberMap, setNumberMap] = useState(new Map());
 
   useEffect(() => {
-    if (!user || !db) return;
+    if (!user || !db || !activeWsId) return;
     const { startDate, endDate } = getSeasonDateRange();
-    return subscribeToAllTrainingSessions(user.uid, db, appId, startDate, endDate, (sessions) => {
+    return subscribeToAllTrainingSessions(activeWsId, db, appId, startDate, endDate, (sessions) => {
       const map = new Map();
       const byTeam = {};
       for (const s of sessions) {
@@ -35,7 +37,7 @@ export function useTrainingNumbers() {
       }
       setNumberMap(map);
     });
-  }, [user, db, appId]);
+  }, [user, db, appId, activeWsId]);
 
   return numberMap;
 }

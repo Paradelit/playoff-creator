@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 import { saveTeam } from '../../services/teamsService';
 import { DEFAULT_TEMPLATE, VARIABLE_LABELS, renderConvocatoria } from '../../utils/convocatoriaTemplate';
 import PickHintBanner from '../pick/PickHintBanner';
@@ -26,8 +26,8 @@ const PREVIEW_COMPETITION = {
 };
 
 export default function ConvocatoriasTab({ team }) {
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
   const [form, setForm] = useState({
     plantillaConvocatoria: team.plantillaConvocatoria || DEFAULT_TEMPLATE,
     citaOffsetMinutos: team.citaOffsetMinutos ?? 45,
@@ -54,7 +54,7 @@ export default function ConvocatoriasTab({ team }) {
   async function handleSave() {
     setSaving(true);
     try {
-      await saveTeam({ ...team, ...form }, { uid: user.uid, db, appId });
+      await saveTeam({ ...team, ...form }, { wsId: activeWsId, db, appId });
     } finally {
       setSaving(false);
     }

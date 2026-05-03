@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore';
-import { userDocRef, userColRef } from '../services/firestoreHelpers';
+import { workspaceDocRef, workspaceColRef } from '../services/firestoreHelpers';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { deleteBracketCascade } from '../services/dataCleanupService';
 import logger from '../utils/logger';
 import { teamDisplayName } from '../utils/teamUtils';
@@ -20,6 +21,7 @@ export function useBracketSync({
   setPreviewZoom,
 }) {
   const toast = useToast();
+  const { activeWsId } = useWorkspace();
   const [brackets, setBrackets] = useState([]);
   const [activeBracketId, setActiveBracketId] = useState(null);
   const activeBracket = useMemo(() => brackets.find((b) => b.id === activeBracketId), [brackets, activeBracketId]);
@@ -93,8 +95,8 @@ export function useBracketSync({
 
   // Sincronizacion Firestore principal
   useEffect(() => {
-    if (!user || !db) return undefined;
-    const bracketsRef = userColRef(db, appId, user.uid, 'brackets');
+    if (!user || !db || !activeWsId) return undefined;
+    const bracketsRef = workspaceColRef(db, appId, activeWsId, 'brackets');
     isFirstSnapshot.current = true;
     const unsubscribe = onSnapshot(
       bracketsRef,
@@ -133,7 +135,7 @@ export function useBracketSync({
       },
     );
     return () => unsubscribe();
-  }, [appId, db, initialTeamId, mergeBracketSnapshot, setAppMode, user]);
+  }, [appId, db, initialTeamId, mergeBracketSnapshot, setAppMode, user, activeWsId]);
 
   // Auto-abrir cuadro compartido
   useEffect(() => {
@@ -178,8 +180,8 @@ export function useBracketSync({
           myTeam: undefined,
         };
         setBrackets((prev) => [bookmark, ...prev.filter((b) => b.id !== bookmarkId)]);
-        if (!user.isAnonymous) {
-          setDoc(userDocRef(db, appId, user.uid, 'brackets', bookmarkId), {
+        if (!user.isAnonymous && activeWsId) {
+          setDoc(workspaceDocRef(db, appId, activeWsId, 'brackets', bookmarkId), {
             id: bookmarkId,
             isSharedRef: true,
             shareCode: pendingShareCode,
@@ -198,7 +200,7 @@ export function useBracketSync({
         resetPendingShare();
       });
     return undefined;
-  }, [appId, appMode, brackets, db, pendingShareCode, resetPendingShare, setAppMode, toast, user]);
+  }, [appId, appMode, brackets, db, pendingShareCode, resetPendingShare, setAppMode, toast, user, activeWsId]);
 
   // Handlers
   const handleDeleteBracket = (idToDelete) => setBracketToDelete(idToDelete);
@@ -210,8 +212,8 @@ export function useBracketSync({
         unsubscribeShareCode(bracketBeingDeleted.shareCode);
       }
       setBrackets((prev) => prev.filter((b) => b.id !== bracketToDelete));
-      if (user && db) {
-        await deleteBracketCascade({ appId, bracketId: bracketToDelete });
+      if (user && db && activeWsId) {
+        await deleteBracketCascade({ appId, wsId: activeWsId, bracketId: bracketToDelete });
       }
       setBracketToDelete(null);
     }
@@ -262,9 +264,9 @@ export function useBracketSync({
   const handleLinkTeam = (bracketId, team) => {
     const displayName = teamDisplayName(team);
     setBrackets((prev) => prev.map((b) => (b.id === bracketId ? { ...b, teamId: team.id, teamName: displayName } : b)));
-    if (user && db) {
+    if (user && db && activeWsId) {
       setDoc(
-        userDocRef(db, appId, user.uid, 'brackets', bracketId),
+        workspaceDocRef(db, appId, activeWsId, 'brackets', bracketId),
         { teamId: team.id, teamName: displayName },
         { merge: true },
       ).catch((e) => logger.warn('Error vinculando equipo', e));
@@ -273,9 +275,9 @@ export function useBracketSync({
 
   const handleUnlinkTeam = (bracketId) => {
     setBrackets((prev) => prev.map((b) => (b.id === bracketId ? { ...b, teamId: null, teamName: null } : b)));
-    if (user && db) {
+    if (user && db && activeWsId) {
       setDoc(
-        userDocRef(db, appId, user.uid, 'brackets', bracketId),
+        workspaceDocRef(db, appId, activeWsId, 'brackets', bracketId),
         { teamId: null, teamName: null },
         { merge: true },
       ).catch((e) => logger.warn('Error desvinculando equipo', e));

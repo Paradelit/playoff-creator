@@ -2,8 +2,8 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronLeft, ChevronRight, Search, X, Printer, ArrowRight } from 'lucide-react';
 import ClubLogo from '../../components/ClubLogo';
-import { useAuth } from '../../contexts/AuthContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 import { subscribeToTrainings, saveTraining } from '../../services/trainingsService';
 import { subscribeToTeamSessions, linkTrainingToSession } from '../../services/calendarService';
 import { teamDisplayName } from '../../utils/teamUtils';
@@ -15,8 +15,8 @@ import { getTemporada, formatDateDisplay } from '../../utils/dateUtils';
 export default function EntrenamientosScreen() {
   const { teamId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { db, appId } = useFirebase();
+  const { activeWsId } = useWorkspace();
 
   const { teams } = useTeams();
   const { profile } = useProfile();
@@ -32,26 +32,26 @@ export default function EntrenamientosScreen() {
 
   // Subscribe to calendar sessions of type 'entrenamiento' for this team
   useEffect(() => {
-    if (!user || !db || !teamId) return;
-    return subscribeToTeamSessions(user.uid, db, appId, teamId, 'entrenamiento', (data) => {
+    if (!db || !activeWsId || !teamId) return;
+    return subscribeToTeamSessions(activeWsId, db, appId, teamId, 'entrenamiento', (data) => {
       setSessions(data);
     });
-  }, [user, db, appId, teamId]);
+  }, [db, appId, activeWsId, teamId]);
 
   // Subscribe to training docs for this team
   useEffect(() => {
-    if (!user || !db || !teamId) return;
-    return subscribeToTrainings(teamId, user.uid, db, appId, (data) => {
+    if (!db || !activeWsId || !teamId) return;
+    return subscribeToTrainings(teamId, activeWsId, db, appId, (data) => {
       setTrainings(data);
       setLoading(false);
     });
-  }, [user, db, appId, teamId]);
+  }, [db, appId, activeWsId, teamId]);
 
   // Auto-create missing training docs for sessions that don't have one
   useEffect(() => {
-    if (!user || !db || !team || sessions.length === 0) return;
+    if (!db || !activeWsId || !team || sessions.length === 0) return;
     const trainingIds = new Set(trainings.map((t) => t.id));
-    const ctx = { uid: user.uid, db, appId };
+    const ctx = { wsId: activeWsId, db, appId };
     const teamName = teamDisplayName(team);
 
     for (const s of sessions) {
@@ -85,7 +85,7 @@ export default function EntrenamientosScreen() {
         }
       });
     }
-  }, [user, db, appId, team, sessions, trainings, teamId, trainingNumbers]);
+  }, [db, appId, activeWsId, team, sessions, trainings, teamId, trainingNumbers]);
 
   // Build page list: one entry per session, merged with training data
   const pages = useMemo(() => {

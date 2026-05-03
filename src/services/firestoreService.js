@@ -1,5 +1,5 @@
 import { doc, setDoc } from 'firebase/firestore';
-import { userDocRef } from './firestoreHelpers';
+import { workspaceDocRef } from './firestoreHelpers';
 import logger from '../utils/logger';
 
 // Firestore rejects undefined values synchronously, including deep inside
@@ -27,20 +27,20 @@ export const toFirestore = (bracket, forShared = false) => {
   return { ...clean, myTeam: myTeam || null };
 };
 
-export const saveBracketToFirestore = async (bracket, updatedBracket, { user, db, appId, onError }) => {
-  if (!user || !db) return;
+export const saveBracketToFirestore = async (bracket, updatedBracket, { user, wsId, db, appId, onError }) => {
+  if (!user || !db || !wsId) return;
   try {
     if (bracket.shareCode) {
       await setDoc(doc(db, 'artifacts', appId, 'shared', bracket.shareCode), toFirestore(updatedBracket, true));
       if (updatedBracket.myTeam !== undefined) {
         setDoc(
-          userDocRef(db, appId, user.uid, 'brackets', updatedBracket.id),
+          workspaceDocRef(db, appId, wsId, 'brackets', updatedBracket.id),
           { myTeam: updatedBracket.myTeam || null },
           { merge: true },
         ).catch((e) => logger.warn('Error guardando myTeam en shared bracket', e));
       }
     } else {
-      await setDoc(userDocRef(db, appId, user.uid, 'brackets', updatedBracket.id), toFirestore(updatedBracket));
+      await setDoc(workspaceDocRef(db, appId, wsId, 'brackets', updatedBracket.id), toFirestore(updatedBracket));
     }
   } catch (e) {
     logger.error('Error guardando en la nube', e);

@@ -12,6 +12,10 @@ vi.mock('../contexts/FirebaseContext', () => ({
   useFirebase: () => ({ db: mockDb, appId: 'app1' }),
 }));
 
+vi.mock('../contexts/WorkspaceContext', () => ({
+  useWorkspace: () => ({ activeWsId: 'ws1' }),
+}));
+
 const teamsMock = { teams: [{ id: 't1' }, { id: 't2' }], loading: false };
 vi.mock('./useTeams', () => ({
   useTeams: () => teamsMock,

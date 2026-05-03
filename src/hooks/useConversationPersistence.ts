@@ -3,6 +3,7 @@ import { collection, doc, setDoc, getDocs, query, orderBy, limit } from 'firebas
 import type { Firestore } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import type { ContentBlock } from '../services/contentBlocks';
 import { deleteConversationCascade } from '../services/dataCleanupService';
 
@@ -44,22 +45,34 @@ interface FirebaseContextValue {
 export function useConversationPersistence() {
   const { user } = useAuth() as AuthContextValue;
   const { db, appId } = useFirebase() as FirebaseContextValue;
+  const { activeWsId } = useWorkspace() as { activeWsId: string | null };
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loadedMessages, setLoadedMessages] = useState<ChatMessage[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   const conversationsRef = useCallback(() => {
-    if (!db || !user) return null;
-    return collection(db, 'artifacts', appId, 'users', user.uid, 'conversations');
-  }, [db, user, appId]);
+    if (!db || !user || !activeWsId) return null;
+    return collection(db, 'artifacts', appId, 'users', user.uid, 'pickHistory', activeWsId, 'conversations');
+  }, [db, user, appId, activeWsId]);
 
   const messagesRef = useCallback(
     (convId: string) => {
-      if (!db || !user) return null;
-      return collection(db, 'artifacts', appId, 'users', user.uid, 'conversations', convId, 'messages');
+      if (!db || !user || !activeWsId) return null;
+      return collection(
+        db,
+        'artifacts',
+        appId,
+        'users',
+        user.uid,
+        'pickHistory',
+        activeWsId,
+        'conversations',
+        convId,
+        'messages',
+      );
     },
-    [db, user, appId],
+    [db, user, appId, activeWsId],
   );
 
   const loadMessages = useCallback(
@@ -137,13 +150,13 @@ export function useConversationPersistence() {
       setConversationId(id);
       setLoadedMessages([]);
       // Enforce max conversations limit
-      if (conversations.length >= MAX_CONVERSATIONS) {
+      if (conversations.length >= MAX_CONVERSATIONS && activeWsId) {
         const oldest = conversations[conversations.length - 1];
-        await deleteConversationCascade({ appId, conversationId: oldest.id });
+        await deleteConversationCascade({ appId, wsId: activeWsId, conversationId: oldest.id });
       }
       return id;
     },
-    [appId, conversationsRef, conversations],
+    [appId, conversationsRef, conversations, activeWsId],
   );
 
   const renameConversation = useCallback(

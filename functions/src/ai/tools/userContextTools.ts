@@ -43,7 +43,7 @@ export function createUserContextTools(geminiApiKey: string): ToolDefinition[] {
             query,
             ctx.db,
             ctx.appId,
-            ctx.userId,
+            ctx.wsId,
             apiKey,
             5
           );

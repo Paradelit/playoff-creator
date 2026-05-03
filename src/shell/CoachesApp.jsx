@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { FirebaseProvider } from '../contexts/FirebaseContext';
 import { AuthProvider } from '../contexts/AuthContext';
+import { WorkspaceProvider } from '../contexts/WorkspaceContext';
 import { ScreenContextProvider } from '../contexts/ScreenContextProvider';
 import { PickProvider } from '../contexts/PickProvider';
 import { ToastProvider } from '../contexts/ToastContext';
@@ -18,20 +19,22 @@ export default function CoachesApp() {
       <BrowserRouter>
         <FirebaseProvider>
           <AuthProvider>
-            <ScreenContextProvider>
-              <PickProvider>
-                <ToastProvider>
-                  <ErrorBoundary>
-                    <SidebarProvider>
-                      <AppShell>
-                        <AppRouter />
-                      </AppShell>
-                      <PickRoot />
-                    </SidebarProvider>
-                  </ErrorBoundary>
-                </ToastProvider>
-              </PickProvider>
-            </ScreenContextProvider>
+            <WorkspaceProvider>
+              <ScreenContextProvider>
+                <PickProvider>
+                  <ToastProvider>
+                    <ErrorBoundary>
+                      <SidebarProvider>
+                        <AppShell>
+                          <AppRouter />
+                        </AppShell>
+                        <PickRoot />
+                      </SidebarProvider>
+                    </ErrorBoundary>
+                  </ToastProvider>
+                </PickProvider>
+              </ScreenContextProvider>
+            </WorkspaceProvider>
           </AuthProvider>
         </FirebaseProvider>
       </BrowserRouter>
