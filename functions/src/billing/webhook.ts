@@ -22,9 +22,17 @@ export type WebhookHandler = (db: Firestore, event: Stripe.Event) => Promise<voi
  * - Writes the marker AFTER the handler succeeds. If the handler throws,
  *   the marker is NOT written so Stripe retries; handlers must be idempotent.
  *
- * Marker writes always include the event type and the resolved wsId (or null)
- * for forensic queries. That's why this function takes appId — the marker
- * lives under `artifacts/{appId}/stripeEvents/`.
+ * Marker writes include the event type and the resolved wsId (or null) for
+ * forensic queries. That's why this function takes appId — the marker lives
+ * under `artifacts/{appId}/stripeEvents/`.
+ *
+ * IMPORTANT: this no-marker-transaction model relies on every handler being
+ * purely deterministic — given the same event payload, it must produce the
+ * same Firestore writes. All current handlers use `.update()` with fields
+ * derived directly from the event, which is safe under at-least-once delivery
+ * and parallel-delivery races. If a future handler conditionally branches on
+ * existing workspace state (e.g., "only downgrade if currently pro"), wrap
+ * that handler in a Firestore transaction to close the lost-update window.
  */
 export async function dispatchWebhook(
   db: Firestore,
@@ -42,8 +50,11 @@ export async function dispatchWebhook(
     return;
   }
 
+  // Mirror the handlers' metadata fallback so forensic queries by wsId catch
+  // invoice events too (invoices carry wsId in subscription_details.metadata).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const wsId = (event.data.object as any)?.metadata?.wsId ?? null;
+  const obj = event.data.object as any;
+  const wsId = obj?.metadata?.wsId ?? obj?.subscription_details?.metadata?.wsId ?? null;
   const handler = handlers[event.type];
   if (handler) {
     try {
@@ -106,13 +117,31 @@ export const stripeWebhook = onRequest(
       return;
     }
 
-    const appId = process.env.PICK_APP_ID || "uros-fbm-app";
+    // Fail closed if PICK_APP_ID is unset — never silently process live
+    // Stripe traffic against the prod namespace from a misconfigured deploy.
+    // 503 lets Stripe retry while the deploy is fixed.
+    const appId = process.env.PICK_APP_ID;
+    if (!appId) {
+      logger.error("[stripeWebhook] PICK_APP_ID env var missing; refusing dispatch", {
+        eventId: event.id,
+      });
+      res.status(503).send("Service misconfigured");
+      return;
+    }
     try {
       await dispatchWebhook(getFirestore(), appId, event, HANDLERS);
       res.status(200).send("ok");
     } catch (err) {
-      // Generic handler failure — Stripe will retry per its backoff policy.
-      res.status(500).send(`Handler error: ${(err as Error).message}`);
+      // Stripe doesn't read the response body for retry decisions — only the
+      // status code matters. Keep the body generic so handler internals
+      // (paths, IDs, customer data) don't leak into Stripe's webhook attempt
+      // logs. Detailed error is in logger.error inside the dispatcher.
+      logger.error("[stripeWebhook] dispatch failed", {
+        eventId: event.id,
+        type: event.type,
+        err: (err as Error).message,
+      });
+      res.status(500).send("Handler error");
     }
   }
 );
