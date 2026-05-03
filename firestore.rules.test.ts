@@ -176,6 +176,63 @@ describe('firestore.rules — users (private data, unchanged effect)', () => {
   });
 });
 
+describe('firestore.rules — workspaces/{wsId}/usage/{monthId}', () => {
+  it('member can read usage doc', async () => {
+    // Seed usage doc via security-rules-disabled context
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx
+        .firestore()
+        .doc(`artifacts/${APP_ID}/workspaces/WS_A/usage/2026-05`)
+        .set({ requestCount: 42, updatedAt: '2026-05-01' });
+    });
+    // U_A is owner/member of WS_A — should be able to read
+    const db = testEnv.authenticatedContext('U_A').firestore();
+    await assertSucceeds(
+      db.doc(`artifacts/${APP_ID}/workspaces/WS_A/usage/2026-05`).get(),
+    );
+  });
+
+  it('non-member cannot read usage doc', async () => {
+    // Seed usage doc
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx
+        .firestore()
+        .doc(`artifacts/${APP_ID}/workspaces/WS_A/usage/2026-05`)
+        .set({ requestCount: 42, updatedAt: '2026-05-01' });
+    });
+    // U_B is NOT a member of WS_A — should be denied
+    const db = testEnv.authenticatedContext('U_B').firestore();
+    await assertFails(
+      db.doc(`artifacts/${APP_ID}/workspaces/WS_A/usage/2026-05`).get(),
+    );
+  });
+
+  it('nobody can write usage from client (set/update/delete)', async () => {
+    // Seed usage doc so update/delete have a target
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx
+        .firestore()
+        .doc(`artifacts/${APP_ID}/workspaces/WS_A/usage/2026-05`)
+        .set({ requestCount: 42, updatedAt: '2026-05-01' });
+    });
+    // U_A is owner of WS_A — writes must still fail (client writes forbidden)
+    const db = testEnv.authenticatedContext('U_A').firestore();
+    await assertFails(
+      db
+        .doc(`artifacts/${APP_ID}/workspaces/WS_A/usage/2026-05`)
+        .set({ requestCount: 100 }),
+    );
+    await assertFails(
+      db
+        .doc(`artifacts/${APP_ID}/workspaces/WS_A/usage/2026-05`)
+        .update({ requestCount: 100 }),
+    );
+    await assertFails(
+      db.doc(`artifacts/${APP_ID}/workspaces/WS_A/usage/2026-05`).delete(),
+    );
+  });
+});
+
 describe('firestore.rules — shared (unchanged)', () => {
   it('shared bracket with linkAccess=view is readable by signed-in user', async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
