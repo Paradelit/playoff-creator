@@ -173,6 +173,7 @@ class FakeFirestore {
 
 const fakeState = vi.hoisted(() => ({
   db: null as FakeFirestore | null,
+  quotaShouldThrow: false,
 }));
 
 vi.mock('firebase-admin/firestore', () => ({
@@ -196,6 +197,17 @@ vi.mock('./ai/observability', () => ({
   },
 }));
 
+vi.mock('./billing/quota', () => ({
+  assertWithinQuota: async () => {
+    if (fakeState.quotaShouldThrow) {
+      // Dynamically import HttpsError to keep mock factory synchronous-looking.
+      const { HttpsError } = await import('firebase-functions/v2/https');
+      throw new HttpsError('resource-exhausted', 'QUOTA_EXCEEDED');
+    }
+    return { count: 1, monthId: '2026-05' };
+  },
+}));
+
 // Imported AFTER the mocks above so getFirestore() returns the fake.
 import { runProactiveBriefing } from './proactiveEngine';
 
@@ -208,6 +220,7 @@ function todayStr(): string {
 describe('runProactiveBriefing — workspace iteration', () => {
   beforeEach(() => {
     fakeState.db = new FakeFirestore();
+    fakeState.quotaShouldThrow = false;
   });
 
   it('iterates workspaces (not users) and writes notif with wsId field', async () => {
@@ -278,5 +291,33 @@ describe('runProactiveBriefing — workspace iteration', () => {
     // Pre-existing notif is untouched (message stays 'pre-existing').
     const notif = db.read(`artifacts/${APP_ID}/users/user1/proactiveNotifications/${today}-sess1`);
     expect(notif).toMatchObject({ message: 'pre-existing' });
+  });
+
+  it('skips workspace and increments skipped counter when quota is exhausted', async () => {
+    const today = todayStr();
+    const db = fakeState.db!;
+
+    // Workspace with a session for today — would normally generate a briefing.
+    db.write(`artifacts/${APP_ID}/workspaces/ws-over-quota`, { type: 'personal', ownerId: 'user3', plan: 'free' });
+    db.write(`artifacts/${APP_ID}/workspaces/ws-over-quota/teams/t3`, { categoria: 'Infantil' });
+    db.write(`artifacts/${APP_ID}/workspaces/ws-over-quota/calendarSessions/sess3`, {
+      fecha: today,
+      tipo: 'entrenamiento',
+      teamId: 't3',
+    });
+
+    // Trigger quota exhaustion for all workspaces in this test.
+    fakeState.quotaShouldThrow = true;
+
+    const result = await runProactiveBriefing('mock-api-key', APP_ID);
+
+    // The workspace was skipped due to quota, not processed.
+    expect(result.skipped).toBeGreaterThanOrEqual(1);
+    expect(result.notifications).toBe(0);
+    expect(result.errors).toBe(0);
+
+    // No notification was written for this workspace.
+    const notif = db.read(`artifacts/${APP_ID}/users/user3/proactiveNotifications/${today}-sess3`);
+    expect(notif).toBeUndefined();
   });
 });

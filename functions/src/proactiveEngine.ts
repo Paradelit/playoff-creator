@@ -7,8 +7,10 @@
  */
 
 import { getFirestore } from "firebase-admin/firestore";
+import { HttpsError } from "firebase-functions/v2/https";
 import { LLMProvider } from "./ai/llmProvider";
 import { ObservabilityService } from "./ai/observability";
+import { assertWithinQuota } from "./billing/quota";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -182,6 +184,21 @@ export async function runProactiveBriefing(
   let skipped = 0;
 
   for (const { wsId, ownerId: uid } of activeWorkspaces) {
+    // ── Quota gate (per-workspace) ─────────────────────────────────────────
+    // assertWithinQuota always increments the counter before checking.
+    // For a batch job we must not abort the whole run on a single workspace
+    // exceeding its cap: catch resource-exhausted, log, and continue.
+    try {
+      await assertWithinQuota(db, { wsId, appId });
+    } catch (err) {
+      if (err instanceof HttpsError && err.code === "resource-exhausted") {
+        console.warn("[proactiveEngine] BRIEFING_SKIPPED_QUOTA", { wsId, appId });
+        skipped++;
+        continue;
+      }
+      throw err; // unknown error — propagate and let the outer catch handle it
+    }
+
     try {
       // Query sessions for today and tomorrow in a single range query
       const sessionsSnap = await db
