@@ -27,7 +27,7 @@ export async function incrementUsage(
       });
       return { count: 1, monthId };
     }
-    const next = (snap.data().count ?? 0) + 1;
+    const next = ((snap.data()?.count as number) ?? 0) + 1;
     tx.update(ref, {
       count: FieldValue.increment(1),
       lastIncrementAt: FieldValue.serverTimestamp(),

@@ -29,6 +29,7 @@ import {
   buildUserDigest,
   AutoEvaluator,
 } from "./ai";
+import { assertWithinQuota } from "./billing/quota";
 
 if (getApps().length === 0) initializeApp();
 
@@ -200,6 +201,9 @@ export async function aiChatHandler(request: AiChatRequest, system: System, db: 
   if (!memberSnap.exists) {
     throw new HttpsError("permission-denied", "Not a member of this workspace");
   }
+
+  // Quota gate — increments counter atomically; throws resource-exhausted when free + over.
+  await assertWithinQuota(db, { wsId, appId });
 
   const trace = system.observability.createTrace({
     name: "orchestrator",
