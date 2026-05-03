@@ -7,11 +7,13 @@ import { incrementUsage } from "./usage";
 const APP_ID = "test-app";
 const WS_ID = "ws-1";
 const MONTH_ID = "2026-05";
+// Unique per run to avoid cross-run interference; emulator restart clears stale data.
 const PROJECT_ID = "billing-test-" + Date.now();
 
 let app: App;
 let db: Firestore;
 
+// FIRESTORE_EMULATOR_HOST must be set before initializeApp; the Admin SDK reads it at SDK init time.
 beforeAll(() => {
   process.env.FIRESTORE_EMULATOR_HOST = "localhost:8080";
   app = initializeApp({ projectId: PROJECT_ID }, "billing-test");
