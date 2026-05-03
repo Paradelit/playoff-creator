@@ -13,12 +13,41 @@ import { aiChatHandler } from "../index";
 type Mocked = ReturnType<typeof vi.fn>;
 
 function makeFakeDb(memberExists: boolean) {
-  const get: Mocked = vi.fn(async () => ({ exists: memberExists }));
-  const doc: Mocked = vi.fn(() => ({ get }));
+  // Member check returns exists flag, no data() needed.
+  const memberGet: Mocked = vi.fn(async () => ({ exists: memberExists }));
+  const memberRef = { get: memberGet };
+
+  // Workspace plan lookup (assertWithinQuota) — returns a "pro" plan so quota is never exhausted.
+  const wsGet: Mocked = vi.fn(async () => ({
+    exists: true,
+    data: () => ({ plan: "pro" }),
+  }));
+  const wsRef = { get: wsGet };
+
+  // Usage doc (incrementUsage inside assertWithinQuota).
+  const usageGet: Mocked = vi.fn(async () => ({ exists: false }));
+  const usageRef = { get: usageGet };
+
+  // The transaction mock: just run the callback synchronously with a fake tx.
+  const fakeTx = {
+    get: vi.fn(async () => ({ exists: false })),
+    set: vi.fn(),
+    update: vi.fn(),
+  };
+  const runTransaction: Mocked = vi.fn(async (cb) => cb(fakeTx));
+
+  // Route doc() calls by path prefix.
+  const doc: Mocked = vi.fn((path: string) => {
+    if (path.includes("/members/")) return memberRef;
+    if (path.includes("/usage/")) return usageRef;
+    return wsRef; // workspace plan lookup
+  });
+
   return {
-    db: { doc } as unknown as Parameters<typeof aiChatHandler>[2],
+    db: { doc, runTransaction } as unknown as Parameters<typeof aiChatHandler>[2],
     doc,
-    get,
+    memberGet,
+    wsGet,
   };
 }
 
@@ -54,7 +83,7 @@ describe("aiChat wsId validation", () => {
 
   it("throws permission-denied when user is not a member of wsId", async () => {
     const { fakeSystem } = makeFakeSystem();
-    const { db, doc, get } = makeFakeDb(false);
+    const { db, doc, memberGet } = makeFakeDb(false);
     const request = {
       auth: { uid: "user1" },
       data: { message: "hi", appId: "app1", wsId: "ws-other" },
@@ -65,7 +94,7 @@ describe("aiChat wsId validation", () => {
     expect(doc).toHaveBeenCalledWith(
       "artifacts/app1/workspaces/ws-other/members/user1"
     );
-    expect(get).toHaveBeenCalledTimes(1);
+    expect(memberGet).toHaveBeenCalledTimes(1);
   });
 
   it("proceeds when wsId is provided and user is a member", async () => {

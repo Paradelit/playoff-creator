@@ -64,12 +64,19 @@ service cloud.firestore {
         allow create, update, delete: if isWorkspaceOwner(appId, wsId);
       }
 
+      // Usage counter — read only for members, writes only via Admin SDK (Cloud Functions).
+      match /usage/{monthId} {
+        allow read:  if isSignedIn() && isWorkspaceMember(appId, wsId);
+        allow write: if false;
+      }
+
       // Wildcard for product subcollections (teams, brackets, calendarSessions, etc.).
-      // Excludes `members/` so the more restrictive owner-only rule above is not
+      // Excludes `members/` and `usage/` so the more restrictive rules above are not
       // overridden by Firestore's match-OR semantics (any matching `allow` grants access).
       match /{collection}/{docId=**} {
         allow read, write: if isSignedIn() && isWorkspaceMember(appId, wsId)
-          && collection != 'members';
+          && collection != 'members'
+          && collection != 'usage';
       }
     }
 
