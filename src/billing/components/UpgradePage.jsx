@@ -53,7 +53,7 @@ export function UpgradePage() {
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err?.message ?? 'No se pudo iniciar el checkout.');
+        setError(err?.message ?? 'No hemos podido iniciar el pago.');
       });
     return () => {
       cancelled = true;
@@ -125,7 +125,7 @@ export function UpgradePage() {
 
         {error ? (
           <div role="alert" className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-900">
-            No se pudo iniciar el checkout: {error}
+            No hemos podido iniciar el pago: {error}
           </div>
         ) : checkoutOptions && stripePromise ? (
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
