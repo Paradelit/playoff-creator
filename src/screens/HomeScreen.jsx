@@ -368,7 +368,6 @@ export default function HomeScreen() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 -mt-24">
-        <QuotaWarningBanner />
         {/* Hero row (full width) */}
         <div className="mb-4">
           {loadingTeams && !nextActionEvent ? (
@@ -383,6 +382,7 @@ export default function HomeScreen() {
             />
           )}
         </div>
+        <QuotaWarningBanner />
 
         {/* Mobile-only: Pendientes lifted just below Hero so the formativo coach
             opening the app at 23h sees their queue immediately, before the team
