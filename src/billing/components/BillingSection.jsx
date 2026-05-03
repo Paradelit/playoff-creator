@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { httpsCallable } from 'firebase/functions';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, AlertTriangle } from 'lucide-react';
 import { useFirebase } from '../../contexts/FirebaseContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
@@ -72,8 +72,9 @@ export function BillingSection() {
                 : ' · activo'}
             </p>
             {billing?.status === 'past_due' && (
-              <p className="text-amber-700 text-xs mb-3">
-                ⚠ Tu pago ha fallado. Actualiza tu tarjeta para que Pick siga al 100%.
+              <p className="text-amber-700 text-xs mb-3 flex items-center gap-1.5">
+                <AlertTriangle size={14} aria-hidden="true" />
+                Tu pago ha fallado. Actualiza tu tarjeta para que Pick siga al 100%.
               </p>
             )}
             <button

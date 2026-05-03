@@ -38,12 +38,16 @@ export function PaymentFailedBanner() {
     }
   };
 
+  const message = isOwner
+    ? 'Tu pago ha fallado. Actualiza tu tarjeta o el equipo se queda sin Pick.'
+    : 'El pago del workspace ha fallado. Avisa al propietario para que actualice el método de pago.';
+
   return (
     <div
       role="alert"
       className="bg-red-50 border-l-4 border-red-500 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-sm"
     >
-      <span className="text-red-900">Tu pago ha fallado. Actualiza tu tarjeta o el equipo se queda sin Pick.</span>
+      <span className="text-red-900">{message}</span>
       {isOwner && (
         <button
           type="button"

@@ -41,13 +41,23 @@ export function UpgradePage() {
     if (!activeWsId || !appId) return;
     if (isPro) return;
 
+    let cancelled = false;
     setClientSecret(null);
     setError(null);
     const functions = getRegionalFunctions();
     const fn = httpsCallable(functions, 'createCheckoutSession');
     fn({ wsId: activeWsId, appId, priceId })
-      .then(({ data }) => setClientSecret(data?.clientSecret ?? null))
-      .catch((err) => setError(err?.message ?? 'No se pudo iniciar el checkout.'));
+      .then(({ data }) => {
+        if (cancelled) return;
+        setClientSecret(data?.clientSecret ?? null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err?.message ?? 'No se pudo iniciar el checkout.');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [appId, activeWsId, wsLoading, planLoading, isPro, priceId]);
 
   if (!planLoading && isPro) {
@@ -119,7 +129,9 @@ export function UpgradePage() {
           </div>
         ) : checkoutOptions && stripePromise ? (
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-            <EmbeddedCheckoutProvider stripe={stripePromise} options={checkoutOptions}>
+            {/* key forces a clean remount when priceId changes — Stripe's
+                EmbeddedCheckoutProvider does not support live clientSecret swap. */}
+            <EmbeddedCheckoutProvider key={priceId} stripe={stripePromise} options={checkoutOptions}>
               <EmbeddedCheckout />
             </EmbeddedCheckoutProvider>
           </div>

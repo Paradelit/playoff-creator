@@ -24,7 +24,7 @@ export function UpgradeSuccessPage() {
     }
   }, [loading, isPro, navigate]);
 
-  if (timedOut && !isPro) {
+  if (timedOut && !loading && !isPro) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
         <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 text-center">
