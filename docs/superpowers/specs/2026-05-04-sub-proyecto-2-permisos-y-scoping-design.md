@@ -67,7 +67,7 @@
 
 Las memberships creadas en sub-1 no llevan `role` ni `assignedTeamIds`. Cloud Function de migración one-shot (ver §6) las backfilea: `role: 'dt'` para todos (todos eran DT en su personal workspace) y `assignedTeamIds = [...todos los teamIds del ws]`. Idempotente.
 
-Docs existentes en colecciones gateadas por `createdBy` (exercises, cuaderno/\*, brackets, calendarSessions, trainings) tampoco lo tienen. La misma migración los backfilea con `createdBy = workspace.ownerId`.
+Docs existentes en colecciones de items gateadas por `createdBy` (exercises, brackets, calendarSessions, teams/\*/trainings, teams/\*/members) tampoco lo tienen. La misma migración los backfilea con `createdBy = workspace.ownerId`. Cuaderno docs NO se backfilean porque son singleton state colaborativo, sin semántica de autor.
 
 ---
 
@@ -92,10 +92,12 @@ DT escribe, members leen.
 V1 modo B (strict scope) desde el principio.
 
 - `workspaces/{wsId}/teams/{teamId}` — el team doc (nombre, color, metadata pública)
-- `workspaces/{wsId}/teams/{teamId}/{members,trainings,cuaderno/{collectionType}/{*}}` — todo el contenido per-team
+- `workspaces/{wsId}/teams/{teamId}/members/{*}` — jugadores del equipo (collection)
+- `workspaces/{wsId}/teams/{teamId}/trainings/{*}` — entrenamientos (collection)
+- `workspaces/{wsId}/teams/{teamId}/cuaderno/{sectionId}` — singleton docs por sección. `sectionId ∈ {'notas', 'pilares', 'normas', 'jugadores', 'test-tiro', 'asistencia', 'informe-jugadores', 'info'}` (kebab-case, real del codebase). Cada doc es estado colaborativo del equipo, NO carga `createdBy` semantic.
 - `workspaces/{wsId}/brackets/{*}` — brackets enlazados al team vía campo `teamId`
 - `workspaces/{wsId}/calendarSessions/{*}` — sessions enlazadas al team vía campo `teamId`
-- `workspaces/{wsId}/teams/{teamId}/grants/{collectionType}/{grantedToUid}` — sharing grants per-team-per-colección (V1: `collectionType ∈ {'asistencia', 'informeJugadores'}`)
+- `workspaces/{wsId}/teams/{teamId}/grants/{collectionType}/grantees/{grantedToUid}` — sharing grants per-team-per-sección. V1: `collectionType ∈ {'asistencia', 'informe-jugadores'}` (kebab-case, idéntico al sectionId del cuaderno). Path con `grantees` intermedio porque las reglas de Firestore exigen alternancia collection/doc estricta.
 
 **Nota**: el `teams/{teamId}` doc en sí es member-readable (todos saben qué equipos existen + nombre/color). Solo el contenido nested está strict-scoped.
 
@@ -158,17 +160,19 @@ DT NO obtiene read automático en club workspaces. Solo via `isAssignedToTeam`, 
 
 **Bypass para personal workspaces**: el helper `isPersonalWorkspaceOwner` (ver §4) abre acceso total al owner-único de su personal workspace, dado que por diseño (sub-0) los personal workspaces son solo-uso. Todas las reglas de Cat C empiezan con `isPersonalWorkspaceOwner(appId, wsId) || ...`. Esto evita que crear teams nuevos post-sub-2 deje contenido inaccesible hasta que sub-3 sincronice `assignedTeamIds`.
 
-| Doc                                                                       | read                                                                              | create                                                    | update                                                              | delete                                                   |
-| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------- |
-| `teams/{teamId}` (el doc)                                                 | member (todos saben qué equipos existen)                                          | DT/owner                                                  | DT/owner · O coach asignado                                         | DT/owner                                                 |
-| `teams/{teamId}/members/{*}` (jugadores)                                  | coach asignado · O `isCreator`                                                    | coach asignado · O DT (DT-create override)                | coach asignado · O `isCreator`                                      | coach asignado · O `isCreator`                           |
-| `teams/{teamId}/trainings/{*}`                                            | coach asignado · O `isCreator`                                                    | coach asignado · O DT                                     | coach asignado · O `isCreator`                                      | coach asignado · O `isCreator`                           |
-| `teams/{teamId}/cuaderno/{X}/{*}` para X ∉ {asistencia, informeJugadores} | coach asignado · O `isCreator`                                                    | coach asignado · O DT                                     | coach asignado · O `isCreator`                                      | coach asignado · O `isCreator`                           |
-| `teams/{teamId}/cuaderno/asistencia/{*}`                                  | coach asignado · O `isCreator` · O `hasGrantOn(wsId, teamId, 'asistencia')`       | coach asignado · O DT                                     | coach asignado · O `isCreator`                                      | coach asignado · O `isCreator`                           |
-| `teams/{teamId}/cuaderno/informeJugadores/{*}`                            | coach asignado · O `isCreator` · O `hasGrantOn(wsId, teamId, 'informeJugadores')` | coach asignado · O DT                                     | coach asignado · O `isCreator`                                      | coach asignado · O `isCreator`                           |
-| `brackets/{*}` (con `teamId` field)                                       | coach asignado al `resource.data.teamId` · O `isCreator`                          | coach asignado al `request.resource.data.teamId` · O DT   | coach asignado a AMBOS teamIds (existing y request) · O `isCreator` | coach asignado al `resource.data.teamId` · O `isCreator` |
-| `calendarSessions/{*}` (con `teamId` field)                               | igual brackets                                                                    | igual brackets                                            | igual brackets                                                      | igual brackets                                           |
-| `teams/{teamId}/grants/{collectionType}/{grantedToUid}`                   | member (transparencia)                                                            | coach asignado · `grantedBy == auth.uid` · path coherente | ❌ (update prohibido, recreate)                                     | granter · O DT/owner                                     |
+| Doc                                                                                    | read                                                               | create                                                    | update                                                              | delete                                                   |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------- |
+| `teams/{teamId}` (el doc)                                                              | member (todos saben qué equipos existen)                           | DT/owner                                                  | DT/owner · O coach asignado                                         | DT/owner                                                 |
+| `teams/{teamId}/members/{*}` (jugadores)                                               | coach asignado · O `isCreator`                                     | coach asignado · O DT (DT-create override)                | coach asignado · O `isCreator`                                      | coach asignado · O `isCreator`                           |
+| `teams/{teamId}/trainings/{*}`                                                         | coach asignado · O `isCreator`                                     | coach asignado · O DT                                     | coach asignado · O `isCreator`                                      | coach asignado · O `isCreator`                           |
+| `teams/{teamId}/cuaderno/{sectionId}` para sectionId ∉ {asistencia, informe-jugadores} | coach asignado                                                     | coach asignado                                            | coach asignado                                                      | coach asignado                                           |
+| `teams/{teamId}/cuaderno/asistencia` (singleton)                                       | coach asignado · O `hasGrantOn(wsId, teamId, 'asistencia')`        | coach asignado                                            | coach asignado                                                      | coach asignado                                           |
+| `teams/{teamId}/cuaderno/informe-jugadores` (singleton)                                | coach asignado · O `hasGrantOn(wsId, teamId, 'informe-jugadores')` | coach asignado                                            | coach asignado                                                      | coach asignado                                           |
+| `brackets/{*}` (con `teamId` field)                                                    | coach asignado al `resource.data.teamId` · O `isCreator`           | coach asignado al `request.resource.data.teamId` · O DT   | coach asignado a AMBOS teamIds (existing y request) · O `isCreator` | coach asignado al `resource.data.teamId` · O `isCreator` |
+| `calendarSessions/{*}` (con `teamId` field)                                            | igual brackets                                                     | igual brackets                                            | igual brackets                                                      | igual brackets                                           |
+| `teams/{teamId}/grants/{collectionType}/grantees/{grantedToUid}`                       | member (transparencia)                                             | coach asignado · `grantedBy == auth.uid` · path coherente | ❌ (update prohibido, recreate)                                     | granter · O DT/owner                                     |
+
+**Cuaderno docs son singleton state, no items con autor.** Cada `sectionId` es UN doc por equipo (no una subcolección). Coaches asignados al equipo escriben colaborativamente sobre el mismo doc. La regla NO incluye cláusula `isCreator` para cuaderno: si te quitan asignación al equipo, pierdes acceso a la cuaderno aunque hubieras escrito en el pasado. Coherente con "el cuaderno es del equipo, no del autor".
 
 **Sharp edges:**
 
@@ -256,7 +260,7 @@ function hasGrantOn(appId, wsId, teamId, collectionType) {
   return isWorkspaceMember(appId, wsId) && exists(
     /databases/$(database)/documents/
       artifacts/$(appId)/workspaces/$(wsId)/teams/$(teamId)
-      /grants/$(collectionType)/$(request.auth.uid)
+      /grants/$(collectionType)/grantees/$(request.auth.uid)
   );
 }
 
@@ -269,19 +273,33 @@ function workspaceMetaProtected(diff) {
 }
 ```
 
-### Patrón de regla — team-scoped (cuaderno wildcard)
+### Patrón de regla — cuaderno (singleton por sección, sin createdBy)
 
 ```js
 match /artifacts/{appId}/workspaces/{wsId}
-  /teams/{teamId}/cuaderno/{collectionType}/{docId} {
+  /teams/{teamId}/cuaderno/{sectionId} {
 
   allow read: if isPersonalWorkspaceOwner(appId, wsId)
                  || isAssignedToTeam(appId, wsId, teamId)
-                 || (resource != null && isCreator(resource.data))
                  || (
-                   (collectionType == 'asistencia' || collectionType == 'informeJugadores')
-                   && hasGrantOn(appId, wsId, teamId, collectionType)
+                   (sectionId == 'asistencia' || sectionId == 'informe-jugadores')
+                   && hasGrantOn(appId, wsId, teamId, sectionId)
                  );
+
+  allow write: if isPersonalWorkspaceOwner(appId, wsId)
+                   || isAssignedToTeam(appId, wsId, teamId);
+}
+```
+
+### Patrón de regla — items con createdBy (trainings, jugadores)
+
+```js
+match /artifacts/{appId}/workspaces/{wsId}
+  /teams/{teamId}/trainings/{trainingId} {
+
+  allow read: if isPersonalWorkspaceOwner(appId, wsId)
+                 || isAssignedToTeam(appId, wsId, teamId)
+                 || (resource != null && isCreator(resource.data));
 
   allow create: if isPersonalWorkspaceOwner(appId, wsId)
                    || (
@@ -329,7 +347,7 @@ match /artifacts/{appId}/workspaces/{wsId}/brackets/{bracketId} {
 
 ### Notas de implementación
 
-1. **Wildcard de cuaderno por collectionType**: el match `cuaderno/{collectionType}/{docId}` con `collectionType == 'asistencia' || ...` (gating de grants por nombre) es DRY. Pin de seguridad: si añadimos una nueva subcolección de cuaderno, hereda el comportamiento base sin sharing — null-safe.
+1. **Wildcard de cuaderno por sectionId**: el match `cuaderno/{sectionId}` con `sectionId == 'asistencia' || sectionId == 'informe-jugadores'` (gating de grants por nombre) es DRY. Si añadimos una nueva sección al cuaderno, hereda el comportamiento base sin sharing — null-safe.
 
 2. **`resource != null` en reads**: Firestore evalúa la regla read tanto para `get` (resource existe) como para `list` (resource null en algunos paths). El check evita NullPointerException al acceder `resource.data.createdBy`.
 
@@ -378,7 +396,7 @@ match /members/{memberUid} {
 **Quién crea grants**: coach asignado al equipo:
 
 ```js
-match /teams/{teamId}/grants/{collectionType}/{grantedToUid} {
+match /teams/{teamId}/grants/{collectionType}/grantees/{grantedToUid} {
   allow read: if isWorkspaceMember(appId, wsId);
   allow create: if isAssignedToTeam(appId, wsId, teamId)
                    && request.resource.data.grantedBy == request.auth.uid
@@ -442,11 +460,11 @@ Si no es 0, abort. Re-run migration.
 **Patrón** (referencia, no exhaustivo):
 
 ```ts
-it('coach asignado a t1 NO puede leer cuaderno/notas de t2', async () => {
+it('coach asignado a t1 NO puede leer cuaderno/notas (doc) de t2', async () => {
   const coach = testEnv.authenticatedContext('coach-uid', {
     /*...*/
   });
-  await assertFails(getDoc(coach.firestore().doc('artifacts/test-app/workspaces/ws1/teams/t2/cuaderno/notas/n1')));
+  await assertFails(getDoc(coach.firestore().doc('artifacts/test-app/workspaces/ws1/teams/t2/cuaderno/notas')));
 });
 ```
 
@@ -462,7 +480,7 @@ export const migrateToSubproyecto2 = onCall(async (req) => {
   // 3. Por cada workspace:
   //    a. Iterar memberships subcolección.
   //       Si !exists(role): set role='dt', assignedTeamIds=[...todos los teamIds del ws]
-  //    b. Iterar docs sin createdBy en exercises, cuaderno/*/*, brackets, calendarSessions, trainings.
+  //    b. Iterar docs sin createdBy en exercises, brackets, calendarSessions, teams/{tid}/trainings, teams/{tid}/members. Cuaderno NO se backfilea (singleton state, sin createdBy semántico).
   //       Si !exists(createdBy): set createdBy=workspace.ownerId
   // 4. Devolver counts: workspacesProcessed, membershipsBackfilled, docsBackfilled
 });

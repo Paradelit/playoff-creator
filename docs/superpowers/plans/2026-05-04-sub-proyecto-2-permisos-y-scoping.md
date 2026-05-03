@@ -57,7 +57,7 @@ interface MigrationResult {
 
 // uid del super-admin autorizado para correr la migración. Reemplazar por el
 // uid real antes de deploy. Si necesitas rotar, redeploy con valor nuevo.
-const SUPERADMIN_UID = 'REPLACE_WITH_SERPA_UID';
+const SUPERADMIN_UID = 'y6vqlMynjRQeRpAKUnYmQdUiMen1';
 
 export const migrateToSubproyecto2 = onCall<unknown, Promise<MigrationResult>>(
   { region: 'europe-west1', timeoutSeconds: 540, memory: '1GiB' },
@@ -102,7 +102,7 @@ git commit -m "feat(migrations): scaffold sub-proyecto 2 migration callable"
 
 - [ ] **Step 2: Editar el constante**
 
-Reemplazar `REPLACE_WITH_SERPA_UID` por el uid real (string, hardcoded). Comentar que es Sergio Paradela (`serpa2003@gmail.com`) para audit posterior.
+Reemplazar `y6vqlMynjRQeRpAKUnYmQdUiMen1` por el uid real (string, hardcoded). Comentar que es Sergio Paradela (`serpa2003@gmail.com`) para audit posterior.
 
 - [ ] **Step 3: Commit**
 
@@ -218,7 +218,7 @@ git commit -m "feat(migrations): backfill role + assignedTeamIds on memberships"
 
 - Modify: `functions/src/migrations/migrateToSubproyecto2.ts`
 
-Las colecciones a iterar (per spec §1 migración): `exercises`, `brackets`, `calendarSessions`, `teams/*/trainings`, `teams/*/cuaderno/{collectionType}/*`. Las nested bajo teams requieren un loop adicional.
+Las colecciones a iterar (per spec §1 migración): `exercises`, `brackets`, `calendarSessions`, `teams/*/trainings`, `teams/*/members`. Cuaderno NO se backfilea — sus docs son singleton state colaborativo, sin createdBy semantic.
 
 - [ ] **Step 1: Añadir helper para backfilear una colección plana**
 
@@ -267,22 +267,13 @@ for (const teamDoc of teamsSnap.docs) {
   const teamPath = `artifacts/${APP_ID}/workspaces/${wsId}/teams/${teamId}`;
 
   docsBackfilled += await backfillCreatedByInCollection(db, `${teamPath}/trainings`, ownerId);
+  docsBackfilled += await backfillCreatedByInCollection(db, `${teamPath}/members`, ownerId);
 
-  // cuaderno tiene subcolecciones por collectionType (notas, pilares, normas,
-  // jugadores, test-tiro, asistencia, informeJugadores). Cada subcolección
-  // contiene los docs reales.
-  const cuadernoCollectionTypes = [
-    'notas',
-    'pilares',
-    'normas',
-    'jugadores',
-    'test-tiro',
-    'asistencia',
-    'informeJugadores',
-  ];
-  for (const ct of cuadernoCollectionTypes) {
-    docsBackfilled += await backfillCreatedByInCollection(db, `${teamPath}/cuaderno/${ct}`, ownerId);
-  }
+  // Cuaderno NO se backfilea: las "secciones" del cuaderno son docs singleton
+  // (workspaces/{ws}/teams/{tid}/cuaderno/{sectionId} donde sectionId ∈
+  // {notas, pilares, normas, jugadores, test-tiro, asistencia, informe-jugadores, info})
+  // — estado colaborativo del equipo, sin semántica de autor.
+  // Las reglas Cat C de cuaderno NO usan isCreator, solo isAssignedToTeam + grants.
 }
 ```
 
@@ -315,19 +306,12 @@ interface VerifyResult {
   ok: boolean;
 }
 
-const SUPERADMIN_UID = 'REPLACE_WITH_SERPA_UID'; // mismo que migrateToSubproyecto2
+const SUPERADMIN_UID = 'y6vqlMynjRQeRpAKUnYmQdUiMen1'; // mismo que migrateToSubproyecto2
 const APP_ID = 'uros-fbm-app';
 
 const COLLECTIONS_PLAIN = ['exercises', 'brackets', 'calendarSessions'] as const;
-const CUADERNO_TYPES = [
-  'notas',
-  'pilares',
-  'normas',
-  'jugadores',
-  'test-tiro',
-  'asistencia',
-  'informeJugadores',
-] as const;
+const TEAM_SUBCOLLECTIONS = ['trainings', 'members'] as const;
+// Cuaderno NO se verifica: docs singleton sin createdBy semantic.
 
 async function countMissing(db: admin.firestore.Firestore, collectionPath: string, field: string): Promise<number> {
   const snap = await db.collection(collectionPath).get();
@@ -362,9 +346,8 @@ export const verifySubproyecto2Migration = onCall<unknown, Promise<VerifyResult>
       const teamsSnap = await db.collection(`artifacts/${APP_ID}/workspaces/${wsId}/teams`).get();
       for (const t of teamsSnap.docs) {
         const teamPath = `artifacts/${APP_ID}/workspaces/${wsId}/teams/${t.id}`;
-        docsMissingCreatedBy += await countMissing(db, `${teamPath}/trainings`, 'createdBy');
-        for (const ct of CUADERNO_TYPES) {
-          docsMissingCreatedBy += await countMissing(db, `${teamPath}/cuaderno/${ct}`, 'createdBy');
+        for (const c of TEAM_SUBCOLLECTIONS) {
+          docsMissingCreatedBy += await countMissing(db, `${teamPath}/${c}`, 'createdBy');
         }
       }
     }
@@ -379,7 +362,7 @@ export const verifySubproyecto2Migration = onCall<unknown, Promise<VerifyResult>
 );
 ```
 
-- [ ] **Step 2: Reemplazar `REPLACE_WITH_SERPA_UID`** con el mismo uid del Task 2.
+- [ ] **Step 2: Reemplazar `y6vqlMynjRQeRpAKUnYmQdUiMen1`** con el mismo uid del Task 2.
 
 - [ ] **Step 3: Commit**
 
@@ -489,7 +472,7 @@ describe('migrateToSubproyecto2', () => {
 
     const { migrateToSubproyecto2 } = await import('./migrateToSubproyecto2');
     const result = await (migrateToSubproyecto2 as any)({
-      auth: { uid: 'REPLACE_WITH_SERPA_UID' },
+      auth: { uid: 'y6vqlMynjRQeRpAKUnYmQdUiMen1' },
     });
 
     expect(admin.__mockUpdate).toHaveBeenCalledWith(
@@ -515,7 +498,7 @@ describe('migrateToSubproyecto2', () => {
 
     const { migrateToSubproyecto2 } = await import('./migrateToSubproyecto2');
     const result = await (migrateToSubproyecto2 as any)({
-      auth: { uid: 'REPLACE_WITH_SERPA_UID' },
+      auth: { uid: 'y6vqlMynjRQeRpAKUnYmQdUiMen1' },
     });
 
     expect(admin.__mockUpdate).not.toHaveBeenCalled();
@@ -524,7 +507,7 @@ describe('migrateToSubproyecto2', () => {
 });
 ```
 
-> **Nota**: ajustar `REPLACE_WITH_SERPA_UID` al valor hardcoded del Task 2.
+> **Nota**: ajustar `y6vqlMynjRQeRpAKUnYmQdUiMen1` al valor hardcoded del Task 2.
 
 - [ ] **Step 2: Run test**
 
@@ -1264,40 +1247,27 @@ git commit -m "feat(rules): Cat C team-scoped trainings + jugadores"
 
 ---
 
-### Task 18: Cat C — match `teams/{teamId}/cuaderno/{collectionType}/{*}` con grants
+### Task 18: Cat C — match `teams/{teamId}/cuaderno/{sectionId}` (singleton, sin createdBy)
 
 **Files:**
 
 - Modify: `firestore.rules`
 
+> **Importante**: la cuaderno NO es subcolección por collectionType. Es una colección plana donde cada doc es un sectionId concreto (`notas`, `pilares`, `normas`, `jugadores`, `test-tiro`, `asistencia`, `informe-jugadores`, `info`). Path real: `workspaces/{wsId}/teams/{teamId}/cuaderno/{sectionId}` — un solo wildcard. La regla NO usa `isCreator` porque el doc es estado colaborativo del equipo, no autor-attribuido.
+
 - [ ] **Step 1: Añadir match DENTRO del match `teams/{teamId}`**
 
 ```js
-match /cuaderno/{collectionType}/{docId} {
+match /cuaderno/{sectionId} {
   allow read: if isPersonalWorkspaceOwner(appId, wsId)
                  || isAssignedToTeam(appId, wsId, teamId)
-                 || (resource != null && isCreator(resource.data))
                  || (
-                   (collectionType == 'asistencia' || collectionType == 'informeJugadores')
-                   && hasGrantOn(appId, wsId, teamId, collectionType)
+                   (sectionId == 'asistencia' || sectionId == 'informe-jugadores')
+                   && hasGrantOn(appId, wsId, teamId, sectionId)
                  );
 
-  allow create: if isPersonalWorkspaceOwner(appId, wsId)
-                   || (
-                     (isAssignedToTeam(appId, wsId, teamId) || isDT(appId, wsId))
-                     && isCreator(request.resource.data)
-                   );
-
-  allow update: if (
-                     isPersonalWorkspaceOwner(appId, wsId)
-                     || isAssignedToTeam(appId, wsId, teamId)
-                     || (resource != null && isCreator(resource.data))
-                   )
-                   && request.resource.data.createdBy == resource.data.createdBy;
-
-  allow delete: if isPersonalWorkspaceOwner(appId, wsId)
-                   || isAssignedToTeam(appId, wsId, teamId)
-                   || (resource != null && isCreator(resource.data));
+  allow write: if isPersonalWorkspaceOwner(appId, wsId)
+                  || isAssignedToTeam(appId, wsId, teamId);
 }
 ```
 
@@ -1305,7 +1275,7 @@ match /cuaderno/{collectionType}/{docId} {
 
 ```bash
 git add firestore.rules
-git commit -m "feat(rules): Cat C cuaderno wildcard with grant clause for asistencia/informe"
+git commit -m "feat(rules): Cat C cuaderno singleton with grant clause for asistencia/informe-jugadores"
 ```
 
 ---
@@ -1383,16 +1353,18 @@ git commit -m "feat(rules): Cat C brackets + calendarSessions with double-teamId
 
 ---
 
-### Task 20: Cat C — match `teams/{teamId}/grants/{collectionType}/{grantedToUid}`
+### Task 20: Cat C — match `teams/{teamId}/grants/{collectionType}/grantees/{grantedToUid}`
 
 **Files:**
 
 - Modify: `firestore.rules`
 
+> **Importante**: el path tiene 4 segmentos (`grants`/`{collectionType}`/`grantees`/`{grantedToUid}`) porque Firestore exige alternancia collection/doc. `grants/{ct}/{uid}` (3 segmentos) NO es un path válido para un doc — el último segmento sería un nombre de colección, no un docId.
+
 - [ ] **Step 1: Añadir match DENTRO del match `teams/{teamId}`**
 
 ```js
-match /grants/{collectionType}/{grantedToUid} {
+match /grants/{collectionType}/grantees/{grantedToUid} {
   allow read: if isWorkspaceMember(appId, wsId);
 
   allow create: if isAssignedToTeam(appId, wsId, teamId)
@@ -1453,10 +1425,10 @@ describe('sub-proyecto 2 — Cat C team-scoped strict', () => {
         .set({ role: 'coach', assignedTeamIds: ['t2'] });
       await db.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1`).set({ name: 'T1' });
       await db.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t2`).set({ name: 'T2' });
-      // Seed cuaderno notes en t1, autoría coach-t1
+      // Seed cuaderno/notas (singleton) en t1
       await db
-        .doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/notas/n1`)
-        .set({ text: 'nota t1', createdBy: COACH_T1_UID });
+        .doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/notas`)
+        .set({ items: [{ text: 'nota t1' }] });
       // Seed bracket en t1, autoría coach-t1
       await db.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/brackets/b1`).set({
         teamId: 't1',
@@ -1465,61 +1437,46 @@ describe('sub-proyecto 2 — Cat C team-scoped strict', () => {
     });
   });
 
-  it('coach-t1 R/W en cuaderno/notas de t1', async () => {
+  it('coach-t1 R/W en cuaderno/notas (singleton) de t1', async () => {
     const c = testEnv.authenticatedContext(COACH_T1_UID).firestore();
-    await assertSucceeds(c.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/notas/n1`).get());
+    await assertSucceeds(c.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/notas`).get());
     await assertSucceeds(
-      c
-        .doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/notas/n2`)
-        .set({ text: 'new', createdBy: COACH_T1_UID }),
+      c.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/notas`).update({ items: [{ text: 'updated' }] }),
     );
   });
 
-  it('coach-t1 denegado para leer cuaderno/notas de t2', async () => {
+  it('coach-t1 denegado para leer cuaderno/notas (singleton) de t2', async () => {
     const c = testEnv.authenticatedContext(COACH_T1_UID).firestore();
-    await assertFails(c.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t2/cuaderno/notas/x`).get());
+    await assertFails(c.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t2/cuaderno/notas`).get());
   });
 
-  it('DT denegado leer notas creadas por coach (sin asignación, sin grant)', async () => {
+  it('DT denegado leer cuaderno/notas (sin asignación, sin grant)', async () => {
     const dt = testEnv.authenticatedContext(DT_UID).firestore();
-    await assertFails(dt.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/notas/n1`).get());
+    await assertFails(dt.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/notas`).get());
   });
 
-  it('DT puede CREATE cuaderno entry en t1 aunque no esté asignado', async () => {
-    const dt = testEnv.authenticatedContext(DT_UID).firestore();
+  it('coach-t1 puede escribir su cuaderno/notas (singleton)', async () => {
+    const c = testEnv.authenticatedContext(COACH_T1_UID).firestore();
     await assertSucceeds(
-      dt
-        .doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/notas/n-dt`)
-        .set({ text: 'from DT', createdBy: DT_UID }),
+      c.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/notas`).set({ items: [{ text: 'X' }] }),
     );
-  });
-
-  it('DT mantiene R/W de su propia creación vía createdBy', async () => {
-    const dt = testEnv.authenticatedContext(DT_UID).firestore();
-    await testEnv.withSecurityRulesDisabled(async (ctx) => {
-      await ctx
-        .firestore()
-        .doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/notas/n-dt`)
-        .set({ text: 'from DT', createdBy: DT_UID });
-    });
-    await assertSucceeds(dt.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/notas/n-dt`).get());
   });
 
   it('non-member denegado lectura cuaderno', async () => {
     const stranger = testEnv.authenticatedContext('stranger').firestore();
-    await assertFails(stranger.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/notas/n1`).get());
+    await assertFails(stranger.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/notas`).get());
   });
 
   it('coach-t1 grants asistencia a DT; DT puede leer asistencia', async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await ctx
         .firestore()
-        .doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/asistencia/a1`)
-        .set({ date: '2026-04-15', createdBy: COACH_T1_UID });
+        .doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/asistencia`)
+        .set({ records: [{ date: '2026-04-15' }] });
     });
     const c = testEnv.authenticatedContext(COACH_T1_UID).firestore();
     await assertSucceeds(
-      c.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/grants/asistencia/${DT_UID}`).set({
+      c.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/grants/asistencia/grantees/${DT_UID}`).set({
         grantedBy: COACH_T1_UID,
         grantedTo: DT_UID,
         collectionType: 'asistencia',
@@ -1527,27 +1484,25 @@ describe('sub-proyecto 2 — Cat C team-scoped strict', () => {
       }),
     );
     const dt = testEnv.authenticatedContext(DT_UID).firestore();
-    await assertSucceeds(dt.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/asistencia/a1`).get());
+    await assertSucceeds(dt.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/asistencia`).get());
   });
 
   it('DT sin grant denegado para asistencia', async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await ctx
         .firestore()
-        .doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/asistencia/a1`)
-        .set({ date: '2026-04-15', createdBy: COACH_T1_UID });
+        .doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/asistencia`)
+        .set({ records: [] });
     });
     const dt = testEnv.authenticatedContext(DT_UID).firestore();
-    await assertFails(dt.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/asistencia/a1`).get());
+    await assertFails(dt.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/asistencia`).get());
   });
 
   it('revoke de grant: coach borra el grant; DT vuelve a estar denegado', async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       const db = ctx.firestore();
-      await db
-        .doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/asistencia/a1`)
-        .set({ date: '2026-04-15', createdBy: COACH_T1_UID });
-      await db.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/grants/asistencia/${DT_UID}`).set({
+      await db.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/asistencia`).set({ records: [] });
+      await db.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/grants/asistencia/grantees/${DT_UID}`).set({
         grantedBy: COACH_T1_UID,
         grantedTo: DT_UID,
         collectionType: 'asistencia',
@@ -1555,24 +1510,27 @@ describe('sub-proyecto 2 — Cat C team-scoped strict', () => {
     });
     const c = testEnv.authenticatedContext(COACH_T1_UID).firestore();
     await assertSucceeds(
-      c.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/grants/asistencia/${DT_UID}`).delete(),
+      c.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/grants/asistencia/grantees/${DT_UID}`).delete(),
     );
     const dt = testEnv.authenticatedContext(DT_UID).firestore();
-    await assertFails(dt.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/asistencia/a1`).get());
+    await assertFails(dt.doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/cuaderno/asistencia`).get());
   });
 
   it('update de grant prohibido', async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
-      await ctx.firestore().doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/grants/asistencia/${DT_UID}`).set({
-        grantedBy: COACH_T1_UID,
-        grantedTo: DT_UID,
-        collectionType: 'asistencia',
-      });
+      await ctx
+        .firestore()
+        .doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/grants/asistencia/grantees/${DT_UID}`)
+        .set({
+          grantedBy: COACH_T1_UID,
+          grantedTo: DT_UID,
+          collectionType: 'asistencia',
+        });
     });
     const c = testEnv.authenticatedContext(COACH_T1_UID).firestore();
     await assertFails(
       c
-        .doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/grants/asistencia/${DT_UID}`)
+        .doc(`artifacts/${APP_ID}/workspaces/${WS_ID}/teams/t1/grants/asistencia/grantees/${DT_UID}`)
         .update({ grantedAt: new Date() }),
     );
   });
