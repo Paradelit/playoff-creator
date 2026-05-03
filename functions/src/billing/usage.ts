@@ -27,6 +27,7 @@ export async function incrementUsage(
       });
       return { count: 1, monthId };
     }
+    // TS strict does not narrow snap.data() as non-undefined via snap.exists; optional chaining required.
     const next = ((snap.data()?.count as number) ?? 0) + 1;
     tx.update(ref, {
       count: FieldValue.increment(1),
