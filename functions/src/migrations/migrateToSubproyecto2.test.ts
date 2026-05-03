@@ -40,13 +40,12 @@ describe("handleMigration (sub-2 backfill)", () => {
     expect((err as HttpsError).code).toBe("permission-denied");
   });
 
-  it("backfilea membership sin role/assignedTeamIds; idempotente sobre re-run", async () => {
+  it("backfilea membership sin role/assignedTeamIds", async () => {
     const APP = "artifacts/uros-fbm-app";
     const wsId = "ws1";
 
     const memberUpdate = vi.fn().mockResolvedValue(undefined);
     const memberLegacy = makeDoc("owner-uid", {}, memberUpdate);
-
     const team1 = makeDoc("t1", {});
 
     const db = makeDb({
@@ -71,7 +70,35 @@ describe("handleMigration (sub-2 backfill)", () => {
     expect(result.docsBackfilled).toBe(0);
   });
 
-  it("no toca membership con role + assignedTeamIds ya presentes", async () => {
+  it("convierte role: 'owner' (legacy sub-1) a role: 'dt'", async () => {
+    const APP = "artifacts/uros-fbm-app";
+    const wsId = "ws1";
+
+    const memberUpdate = vi.fn().mockResolvedValue(undefined);
+    // Sub-1 dejó memberships con role: 'owner' y assignedTeamIds: [].
+    // Sub-2 normaliza a role: 'dt' (ownership es propiedad del workspace).
+    const memberLegacyOwner = makeDoc(
+      "owner-uid",
+      { role: "owner", assignedTeamIds: [] },
+      memberUpdate,
+    );
+
+    const db = makeDb({
+      [`${APP}/workspaces`]: [makeDoc(wsId, { ownerId: "owner-uid" })],
+      [`${APP}/workspaces/${wsId}/teams`]: [],
+      [`${APP}/workspaces/${wsId}/members`]: [memberLegacyOwner],
+      [`${APP}/workspaces/${wsId}/exercises`]: [],
+      [`${APP}/workspaces/${wsId}/brackets`]: [],
+      [`${APP}/workspaces/${wsId}/calendarSessions`]: [],
+    });
+
+    const result = await handleMigration({ db, uid: SUPERADMIN_UID });
+
+    expect(memberUpdate).toHaveBeenCalledWith({ role: "dt" });
+    expect(result.membershipsBackfilled).toBe(1);
+  });
+
+  it("no toca membership con role: 'dt' + assignedTeamIds ya presentes", async () => {
     const APP = "artifacts/uros-fbm-app";
     const wsId = "ws1";
 

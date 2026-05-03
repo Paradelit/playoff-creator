@@ -1,19 +1,66 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() {
-      return request.auth != null;
+
+    // ============ HELPERS — IDENTIDAD ============
+
+    function isSignedIn() { return request.auth != null; }
+
+    function workspaceData(appId, wsId) {
+      return get(/databases/$(database)/documents/artifacts/$(appId)/workspaces/$(wsId)).data;
+    }
+
+    function membershipData(appId, wsId) {
+      return get(/databases/$(database)/documents/artifacts/$(appId)/workspaces/$(wsId)/members/$(request.auth.uid)).data;
     }
 
     function isWorkspaceMember(appId, wsId) {
-      return exists(/databases/$(database)/documents/artifacts/$(appId)/workspaces/$(wsId)/members/$(request.auth.uid));
+      return isSignedIn() && exists(/databases/$(database)/documents/artifacts/$(appId)/workspaces/$(wsId)/members/$(request.auth.uid));
+    }
+
+    function isWorkspaceMemberUid(appId, wsId, uid) {
+      return exists(/databases/$(database)/documents/artifacts/$(appId)/workspaces/$(wsId)/members/$(uid));
     }
 
     function isWorkspaceOwner(appId, wsId) {
-      return isSignedIn() &&
-        get(/databases/$(database)/documents/artifacts/$(appId)/workspaces/$(wsId))
-          .data.ownerId == request.auth.uid;
+      return isSignedIn() && workspaceData(appId, wsId).ownerId == request.auth.uid;
     }
+
+    function isPersonalWorkspaceOwner(appId, wsId) {
+      // Personal workspaces son solo-uso (sub-0). El owner único bypasea
+      // strict scoping de Cat C — sin esto, crear teams nuevos post-sub-2
+      // dejaría inaccesible el contenido propio hasta que sub-3 sincronice
+      // assignedTeamIds. Field es 'type' (no 'workspaceType') — sub-1 lo creó así.
+      return isWorkspaceOwner(appId, wsId)
+          && workspaceData(appId, wsId).type == 'personal';
+    }
+
+    function isDT(appId, wsId) {
+      return isWorkspaceMember(appId, wsId) && membershipData(appId, wsId).role == 'dt';
+    }
+
+    // ============ HELPERS — SCOPING ============
+
+    function isAssignedToTeam(appId, wsId, teamId) {
+      return isWorkspaceMember(appId, wsId)
+          && teamId in membershipData(appId, wsId).assignedTeamIds;
+    }
+
+    function hasGrantOn(appId, wsId, teamId, collectionType) {
+      return isWorkspaceMember(appId, wsId) && exists(
+        /databases/$(database)/documents/artifacts/$(appId)/workspaces/$(wsId)/teams/$(teamId)/grants/$(collectionType)/grantees/$(request.auth.uid)
+      );
+    }
+
+    // ============ HELPERS — COMPOSICIÓN ============
+
+    function isCreator(data) { return data.createdBy == request.auth.uid; }
+
+    function workspaceMetaProtected(diff) {
+      return diff.affectedKeys().hasAny(['ownerId', 'plan', 'billing']) == false;
+    }
+
+    // ============ HELPERS — SHARED LEGACY ============
 
     function sharedPath(appId, shareCode) {
       return /databases/$(database)/documents/artifacts/$(appId)/shared/$(shareCode);
@@ -49,50 +96,229 @@ service cloud.firestore {
     }
 
     function canReadSharedDoc(appId, shareCode) {
-      return exists(sharedPath(appId, shareCode)) && canReadSharedData(get(sharedPath(appId, shareCode)).data);
+      return exists(sharedPath(appId, shareCode))
+          && canReadSharedData(get(sharedPath(appId, shareCode)).data);
     }
 
-    // Workspace doc + subcolecciones (NUEVO)
+    // ============ Cat A — Workspace meta ============
+
     match /artifacts/{appId}/workspaces/{wsId} {
-      allow read:   if isSignedIn() && isWorkspaceMember(appId, wsId);
-      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isWorkspaceOwner(appId, wsId);
+      allow read: if isWorkspaceMember(appId, wsId);
+
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid;
+
+      // Owner libre de tocar todo, incluso transferir ownership (siempre que
+      // el nuevo ownerId sea ya member del workspace).
+      allow update: if isWorkspaceOwner(appId, wsId)
+        && (
+          request.resource.data.ownerId == resource.data.ownerId
+          || isWorkspaceMemberUid(appId, wsId, request.resource.data.ownerId)
+        );
+      // DT no-owner puede editar settings pero no ownerId/plan/billing.
+      allow update: if isDT(appId, wsId)
+        && workspaceMetaProtected(request.resource.data.diff(resource.data));
+
       allow delete: if isWorkspaceOwner(appId, wsId);
 
       match /members/{memberUid} {
-        allow read:                   if isSignedIn() && isWorkspaceMember(appId, wsId);
-        allow create, update, delete: if isWorkspaceOwner(appId, wsId);
+        allow read: if isWorkspaceMember(appId, wsId);
+
+        allow create: if (isDT(appId, wsId) || isWorkspaceOwner(appId, wsId));
+
+        // DT/owner pueden tocar memberships, salvo la del ownerId.
+        allow update: if (isDT(appId, wsId) || isWorkspaceOwner(appId, wsId))
+                         && memberUid != workspaceData(appId, wsId).ownerId;
+        // Owner sí puede modificar SU PROPIA membership (cambiar
+        // assignedTeamIds, etc.).
+        allow update: if isWorkspaceOwner(appId, wsId)
+                         && memberUid == request.auth.uid;
+
+        allow delete: if (isDT(appId, wsId) || isWorkspaceOwner(appId, wsId))
+                         && memberUid != workspaceData(appId, wsId).ownerId;
       }
 
-      // Usage counter — read only for members, writes only via Admin SDK (Cloud Functions).
+      // ============ Cat B — Workspace-wide DT-curated ============
+
+      match /exercises/{exerciseId} {
+        allow read: if isWorkspaceMember(appId, wsId);
+        allow create: if (isDT(appId, wsId) || isWorkspaceOwner(appId, wsId))
+                         && isCreator(request.resource.data);
+        allow update: if (isDT(appId, wsId) || isWorkspaceOwner(appId, wsId))
+                         && isCreator(resource.data)
+                         && request.resource.data.createdBy == resource.data.createdBy;
+        allow delete: if (isDT(appId, wsId) || isWorkspaceOwner(appId, wsId))
+                         && isCreator(resource.data);
+      }
+
+      match /cuadernoTemplate/{sectionId} {
+        allow read: if isWorkspaceMember(appId, wsId);
+        allow write: if isDT(appId, wsId) || isWorkspaceOwner(appId, wsId);
+      }
+
+      // ============ Cat C — Team-scoped strict ============
+
+      match /teams/{teamId} {
+        // El team doc en sí es member-readable (todos saben qué equipos existen).
+        allow read: if isWorkspaceMember(appId, wsId);
+
+        allow create: if isDT(appId, wsId) || isWorkspaceOwner(appId, wsId);
+
+        allow update: if isDT(appId, wsId)
+                         || isWorkspaceOwner(appId, wsId)
+                         || isAssignedToTeam(appId, wsId, teamId);
+
+        allow delete: if isDT(appId, wsId) || isWorkspaceOwner(appId, wsId);
+
+        // Items con createdBy semántico (jugadores del equipo, entrenamientos).
+        match /members/{teamMemberDocId} {
+          allow read: if isPersonalWorkspaceOwner(appId, wsId)
+                         || isAssignedToTeam(appId, wsId, teamId)
+                         || (resource != null && isCreator(resource.data));
+          allow create: if isPersonalWorkspaceOwner(appId, wsId)
+                           || (
+                             (isAssignedToTeam(appId, wsId, teamId) || isDT(appId, wsId))
+                             && isCreator(request.resource.data)
+                           );
+          allow update: if (
+                             isPersonalWorkspaceOwner(appId, wsId)
+                             || isAssignedToTeam(appId, wsId, teamId)
+                             || (resource != null && isCreator(resource.data))
+                           )
+                           && request.resource.data.createdBy == resource.data.createdBy;
+          allow delete: if isPersonalWorkspaceOwner(appId, wsId)
+                           || isAssignedToTeam(appId, wsId, teamId)
+                           || (resource != null && isCreator(resource.data));
+        }
+
+        match /trainings/{trainingId} {
+          allow read: if isPersonalWorkspaceOwner(appId, wsId)
+                         || isAssignedToTeam(appId, wsId, teamId)
+                         || (resource != null && isCreator(resource.data));
+          allow create: if isPersonalWorkspaceOwner(appId, wsId)
+                           || (
+                             (isAssignedToTeam(appId, wsId, teamId) || isDT(appId, wsId))
+                             && isCreator(request.resource.data)
+                           );
+          allow update: if (
+                             isPersonalWorkspaceOwner(appId, wsId)
+                             || isAssignedToTeam(appId, wsId, teamId)
+                             || (resource != null && isCreator(resource.data))
+                           )
+                           && request.resource.data.createdBy == resource.data.createdBy;
+          allow delete: if isPersonalWorkspaceOwner(appId, wsId)
+                           || isAssignedToTeam(appId, wsId, teamId)
+                           || (resource != null && isCreator(resource.data));
+        }
+
+        // Cuaderno: docs SINGLETON por sección. Sin createdBy semantic.
+        // Sharing primitive solo aplica a 'asistencia' y 'informe-jugadores'.
+        match /cuaderno/{sectionId} {
+          allow read: if isPersonalWorkspaceOwner(appId, wsId)
+                         || isAssignedToTeam(appId, wsId, teamId)
+                         || (
+                           (sectionId == 'asistencia' || sectionId == 'informe-jugadores')
+                           && hasGrantOn(appId, wsId, teamId, sectionId)
+                         );
+          allow write: if isPersonalWorkspaceOwner(appId, wsId)
+                          || isAssignedToTeam(appId, wsId, teamId);
+        }
+
+        // Sharing grants per-team-per-sección. Path `grants/{ct}/grantees/{uid}`
+        // (4 segmentos) por la alternancia collection/doc estricta de Firestore.
+        match /grants/{collectionType}/grantees/{grantedToUid} {
+          allow read: if isWorkspaceMember(appId, wsId);
+          allow create: if isAssignedToTeam(appId, wsId, teamId)
+                           && request.resource.data.grantedBy == request.auth.uid
+                           && request.resource.data.collectionType == collectionType
+                           && request.resource.data.grantedTo == grantedToUid;
+          allow update: if false;
+          allow delete: if (
+            isAssignedToTeam(appId, wsId, teamId)
+            && resource.data.grantedBy == request.auth.uid
+          ) || isDT(appId, wsId) || isWorkspaceOwner(appId, wsId);
+        }
+      }
+
+      // Brackets y calendarSessions con teamId en field, no en path.
+      // Update tiene doble gate: base-access OR isCreator, Y un reparent-gate
+      // independiente que bloquea cambiar `teamId` a un team al que no estás
+      // asignado (sin esto, el autor podría escapar del scoping).
+      match /brackets/{bracketId} {
+        allow read: if isPersonalWorkspaceOwner(appId, wsId)
+                       || isAssignedToTeam(appId, wsId, resource.data.teamId)
+                       || isCreator(resource.data);
+        allow create: if isPersonalWorkspaceOwner(appId, wsId)
+                         || (
+                           (isAssignedToTeam(appId, wsId, request.resource.data.teamId)
+                             || isDT(appId, wsId))
+                           && isCreator(request.resource.data)
+                         );
+        allow update: if (
+                           isPersonalWorkspaceOwner(appId, wsId)
+                           || isAssignedToTeam(appId, wsId, resource.data.teamId)
+                           || isCreator(resource.data)
+                         )
+                         && (
+                           request.resource.data.teamId == resource.data.teamId
+                           || isPersonalWorkspaceOwner(appId, wsId)
+                           || isDT(appId, wsId)
+                           || isAssignedToTeam(appId, wsId, request.resource.data.teamId)
+                         )
+                         && request.resource.data.createdBy == resource.data.createdBy;
+        allow delete: if isPersonalWorkspaceOwner(appId, wsId)
+                         || isAssignedToTeam(appId, wsId, resource.data.teamId)
+                         || isCreator(resource.data);
+      }
+
+      match /calendarSessions/{sessionId} {
+        allow read: if isPersonalWorkspaceOwner(appId, wsId)
+                       || isAssignedToTeam(appId, wsId, resource.data.teamId)
+                       || isCreator(resource.data);
+        allow create: if isPersonalWorkspaceOwner(appId, wsId)
+                         || (
+                           (isAssignedToTeam(appId, wsId, request.resource.data.teamId)
+                             || isDT(appId, wsId))
+                           && isCreator(request.resource.data)
+                         );
+        allow update: if (
+                           isPersonalWorkspaceOwner(appId, wsId)
+                           || isAssignedToTeam(appId, wsId, resource.data.teamId)
+                           || isCreator(resource.data)
+                         )
+                         && (
+                           request.resource.data.teamId == resource.data.teamId
+                           || isPersonalWorkspaceOwner(appId, wsId)
+                           || isDT(appId, wsId)
+                           || isAssignedToTeam(appId, wsId, request.resource.data.teamId)
+                         )
+                         && request.resource.data.createdBy == resource.data.createdBy;
+        allow delete: if isPersonalWorkspaceOwner(appId, wsId)
+                         || isAssignedToTeam(appId, wsId, resource.data.teamId)
+                         || isCreator(resource.data);
+      }
+
+      // ============ Cat E — Sistema (sin cambios sub-2) ============
+
       match /usage/{monthId} {
-        allow read:  if isSignedIn() && isWorkspaceMember(appId, wsId);
+        allow read: if isWorkspaceMember(appId, wsId);
         allow write: if false;
-      }
-
-      // Wildcard for product subcollections (teams, brackets, calendarSessions, etc.).
-      // Excludes `members/` and `usage/` so the more restrictive rules above are not
-      // overridden by Firestore's match-OR semantics (any matching `allow` grants access).
-      match /{collection}/{docId=**} {
-        allow read, write: if isSignedIn() && isWorkspaceMember(appId, wsId)
-          && collection != 'members'
-          && collection != 'usage';
       }
     }
 
-    // Stripe webhook idempotency markers — written only by Cloud Functions
-    // (Admin SDK bypasses rules). Locked from clients to keep billing state
-    // tamper-proof.
+    // Stripe webhook idempotency markers — Admin SDK only.
     match /artifacts/{appId}/stripeEvents/{eventId} {
       allow read, write: if false;
     }
 
-    // User-private data (scope ahora más estrecho: profile, memberships, pickHistory, proactiveNotifications)
+    // ============ Cat D — User-scoped (sin cambios) ============
+
     match /artifacts/{appId}/users/{uid}/{document=**} {
       allow read, write: if isSignedIn() && request.auth.uid == uid;
     }
 
-    // Shared (sin cambios)
+    // ============ Shared by-code (legacy, sin cambios) ============
+
     match /artifacts/{appId}/shared/{shareCode} {
       allow read:   if canReadSharedData(resource.data);
       allow create: if isSignedIn() && sharedConfig(request.resource.data).ownerId == request.auth.uid;

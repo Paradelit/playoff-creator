@@ -248,6 +248,439 @@ describe('firestore.rules — shared (unchanged)', () => {
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────
+// Sub-proyecto 2 — permisos y scoping (rules sub-2)
+// ─────────────────────────────────────────────────────────────────────────
+
+describe('sub-proyecto 2 — Cat A workspace meta (club)', () => {
+  const WS = 'WS_CLUB';
+  const OWNER = 'CLUB_OWNER';
+  const DT = 'CLUB_DT';
+  const COACH = 'CLUB_COACH';
+  const STRANGER = 'NO_MEMBER';
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc(`artifacts/${APP_ID}/workspaces/${WS}`).set({
+        type: 'club',
+        name: 'Club Test',
+        ownerId: OWNER,
+        plan: 'pro',
+        billing: { stripeCustomerId: 'cus_x', status: 'active' },
+      });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${OWNER}`)
+        .set({ role: 'dt', assignedTeamIds: [] });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${DT}`)
+        .set({ role: 'dt', assignedTeamIds: [] });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${COACH}`)
+        .set({ role: 'coach', assignedTeamIds: ['t1'] });
+    });
+  });
+
+  it('owner edita settings del workspace', async () => {
+    const owner = testEnv.authenticatedContext(OWNER).firestore();
+    await assertSucceeds(
+      owner.doc(`artifacts/${APP_ID}/workspaces/${WS}`).update({ name: 'Renamed' }),
+    );
+  });
+
+  it('DT no-owner NO puede tocar plan/billing/ownerId', async () => {
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    await assertFails(owner_update_plan(dt));
+    await assertFails(owner_update_billing(dt));
+    await assertFails(owner_update_owner(dt));
+
+    function owner_update_plan(db: ReturnType<typeof testEnv.authenticatedContext>['firestore']) {
+      return db.doc(`artifacts/${APP_ID}/workspaces/${WS}`).update({ plan: 'max' });
+    }
+    function owner_update_billing(
+      db: ReturnType<typeof testEnv.authenticatedContext>['firestore'],
+    ) {
+      return db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}`)
+        .update({ billing: { stripeCustomerId: 'cus_hacked' } });
+    }
+    function owner_update_owner(
+      db: ReturnType<typeof testEnv.authenticatedContext>['firestore'],
+    ) {
+      return db.doc(`artifacts/${APP_ID}/workspaces/${WS}`).update({ ownerId: DT });
+    }
+  });
+
+  it('coach denegado para editar workspace doc', async () => {
+    const coach = testEnv.authenticatedContext(COACH).firestore();
+    await assertFails(
+      coach.doc(`artifacts/${APP_ID}/workspaces/${WS}`).update({ name: 'Coach edit' }),
+    );
+  });
+
+  it('DT puede crear nueva membership en members directory', async () => {
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    await assertSucceeds(
+      dt
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/NEW_COACH`)
+        .set({ role: 'coach', assignedTeamIds: ['t2'] }),
+    );
+  });
+
+  it('DT NO puede tocar la membership del ownerId', async () => {
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    await assertFails(
+      dt.doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${OWNER}`).update({ role: 'coach' }),
+    );
+  });
+
+  it('owner edita SU PROPIA membership', async () => {
+    const owner = testEnv.authenticatedContext(OWNER).firestore();
+    await assertSucceeds(
+      owner
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${OWNER}`)
+        .update({ assignedTeamIds: ['t1', 't2'] }),
+    );
+  });
+
+  it('transfer ownership: nuevo owner debe ser member', async () => {
+    const owner = testEnv.authenticatedContext(OWNER).firestore();
+    await assertSucceeds(
+      owner.doc(`artifacts/${APP_ID}/workspaces/${WS}`).update({ ownerId: DT }),
+    );
+  });
+
+  it('transfer ownership a uid no-member es denegado', async () => {
+    const owner = testEnv.authenticatedContext(OWNER).firestore();
+    await assertFails(
+      owner.doc(`artifacts/${APP_ID}/workspaces/${WS}`).update({ ownerId: STRANGER }),
+    );
+  });
+});
+
+describe('sub-proyecto 2 — Cat B workspace-wide DT-curated (club)', () => {
+  const WS = 'WS_CLUB_B';
+  const DT = 'B_DT';
+  const COACH = 'B_COACH';
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}`)
+        .set({ type: 'club', ownerId: DT });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${DT}`)
+        .set({ role: 'dt', assignedTeamIds: [] });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${COACH}`)
+        .set({ role: 'coach', assignedTeamIds: ['t1'] });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/exercises/ex-dt`)
+        .set({ name: 'Batería defensiva', createdBy: DT });
+    });
+  });
+
+  it('DT crea ejercicio en biblioteca club', async () => {
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    await assertSucceeds(
+      dt
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/exercises/ex-new`)
+        .set({ name: 'X', createdBy: DT }),
+    );
+  });
+
+  it('coach lee biblioteca club pero NO escribe', async () => {
+    const coach = testEnv.authenticatedContext(COACH).firestore();
+    await assertSucceeds(coach.doc(`artifacts/${APP_ID}/workspaces/${WS}/exercises/ex-dt`).get());
+    await assertFails(
+      coach
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/exercises/ex-coach`)
+        .set({ name: 'Y', createdBy: COACH }),
+    );
+  });
+
+  it('coach NO edita ejercicio creado por DT', async () => {
+    const coach = testEnv.authenticatedContext(COACH).firestore();
+    await assertFails(
+      coach
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/exercises/ex-dt`)
+        .update({ name: 'Renamed' }),
+    );
+  });
+
+  it('DT edita su propia creación pero NO puede cambiar createdBy', async () => {
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    await assertSucceeds(
+      dt
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/exercises/ex-dt`)
+        .update({ name: 'Renamed by DT' }),
+    );
+    await assertFails(
+      dt
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/exercises/ex-dt`)
+        .update({ createdBy: 'ghost-uid' }),
+    );
+  });
+
+  it('DT escribe en cuadernoTemplate; coach lee pero no escribe', async () => {
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    const coach = testEnv.authenticatedContext(COACH).firestore();
+    await assertSucceeds(
+      dt
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/cuadernoTemplate/main`)
+        .set({ clubLogoUrl: 'x', clubName: 'Test club' }),
+    );
+    await assertSucceeds(
+      coach.doc(`artifacts/${APP_ID}/workspaces/${WS}/cuadernoTemplate/main`).get(),
+    );
+    await assertFails(
+      coach
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/cuadernoTemplate/main`)
+        .set({ clubName: 'Coach takeover' }),
+    );
+  });
+});
+
+describe('sub-proyecto 2 — Cat C team-scoped strict (club)', () => {
+  const WS = 'WS_CLUB_C';
+  const OWNER = 'C_OWNER';
+  const DT = 'C_DT';
+  const COACH_T1 = 'C_COACH_T1';
+  const COACH_T2 = 'C_COACH_T2';
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}`)
+        .set({ type: 'club', ownerId: OWNER });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${OWNER}`)
+        .set({ role: 'dt', assignedTeamIds: [] });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${DT}`)
+        .set({ role: 'dt', assignedTeamIds: [] });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${COACH_T1}`)
+        .set({ role: 'coach', assignedTeamIds: ['t1'] });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${COACH_T2}`)
+        .set({ role: 'coach', assignedTeamIds: ['t2'] });
+      await db.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1`).set({ name: 'T1' });
+      await db.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t2`).set({ name: 'T2' });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1/cuaderno/notas`)
+        .set({ items: [{ text: 'nota t1' }] });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/brackets/b1`)
+        .set({ teamId: 't1', createdBy: COACH_T1 });
+    });
+  });
+
+  it('coach-t1 R/W en cuaderno/notas (singleton) de t1', async () => {
+    const c = testEnv.authenticatedContext(COACH_T1).firestore();
+    await assertSucceeds(c.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1/cuaderno/notas`).get());
+    await assertSucceeds(
+      c
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1/cuaderno/notas`)
+        .update({ items: [{ text: 'updated' }] }),
+    );
+  });
+
+  it('coach-t1 denegado para leer cuaderno/notas de t2', async () => {
+    const c = testEnv.authenticatedContext(COACH_T1).firestore();
+    await assertFails(c.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t2/cuaderno/notas`).get());
+  });
+
+  it('DT denegado para leer cuaderno (sin asignación, sin grant)', async () => {
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    await assertFails(dt.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1/cuaderno/notas`).get());
+  });
+
+  it('DT puede CREATE training en cualquier team aunque no esté asignado', async () => {
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    await assertSucceeds(
+      dt
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1/trainings/tr-dt`)
+        .set({ name: 'Sesión defensiva', createdBy: DT }),
+    );
+  });
+
+  it('DT mantiene R/W de su propia creación de training vía createdBy', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx
+        .firestore()
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1/trainings/tr-dt`)
+        .set({ name: 'Sesión X', createdBy: DT });
+    });
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    await assertSucceeds(
+      dt.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1/trainings/tr-dt`).get(),
+    );
+    await assertSucceeds(
+      dt
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1/trainings/tr-dt`)
+        .update({ name: 'Sesión X v2' }),
+    );
+  });
+
+  it('non-member denegado lectura de cuaderno', async () => {
+    const stranger = testEnv.authenticatedContext('STRANGER').firestore();
+    await assertFails(
+      stranger.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1/cuaderno/notas`).get(),
+    );
+  });
+
+  it('coach-t1 R/W en bracket de t1', async () => {
+    const c = testEnv.authenticatedContext(COACH_T1).firestore();
+    await assertSucceeds(c.doc(`artifacts/${APP_ID}/workspaces/${WS}/brackets/b1`).get());
+    await assertSucceeds(
+      c.doc(`artifacts/${APP_ID}/workspaces/${WS}/brackets/b1`).update({ name: 'Updated' }),
+    );
+  });
+
+  it('coach-t1 NO puede reparentear bracket de t1 a t2', async () => {
+    const c = testEnv.authenticatedContext(COACH_T1).firestore();
+    await assertFails(
+      c.doc(`artifacts/${APP_ID}/workspaces/${WS}/brackets/b1`).update({ teamId: 't2' }),
+    );
+  });
+
+  it('DT crea bracket en cualquier team aunque no esté asignado', async () => {
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    await assertSucceeds(
+      dt
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/brackets/b-new`)
+        .set({ teamId: 't2', createdBy: DT }),
+    );
+  });
+});
+
+describe('sub-proyecto 2 — Cat C sharing primitive (grants)', () => {
+  const WS = 'WS_CLUB_G';
+  const DT = 'G_DT';
+  const COACH_T1 = 'G_COACH_T1';
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}`)
+        .set({ type: 'club', ownerId: DT });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${DT}`)
+        .set({ role: 'dt', assignedTeamIds: [] });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${COACH_T1}`)
+        .set({ role: 'coach', assignedTeamIds: ['t1'] });
+      await db.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1`).set({ name: 'T1' });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1/cuaderno/asistencia`)
+        .set({ records: [{ date: '2026-04-15' }] });
+    });
+  });
+
+  it('coach-t1 grants asistencia a DT; DT lee asistencia', async () => {
+    const c = testEnv.authenticatedContext(COACH_T1).firestore();
+    await assertSucceeds(
+      c
+        .doc(
+          `artifacts/${APP_ID}/workspaces/${WS}/teams/t1/grants/asistencia/grantees/${DT}`,
+        )
+        .set({
+          grantedBy: COACH_T1,
+          grantedTo: DT,
+          collectionType: 'asistencia',
+          grantedAt: '2026-05-04',
+        }),
+    );
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    await assertSucceeds(
+      dt.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1/cuaderno/asistencia`).get(),
+    );
+  });
+
+  it('DT sin grant denegado para asistencia', async () => {
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    await assertFails(
+      dt.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1/cuaderno/asistencia`).get(),
+    );
+  });
+
+  it('coach revoca grant; DT vuelve a estar denegado', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx
+        .firestore()
+        .doc(
+          `artifacts/${APP_ID}/workspaces/${WS}/teams/t1/grants/asistencia/grantees/${DT}`,
+        )
+        .set({
+          grantedBy: COACH_T1,
+          grantedTo: DT,
+          collectionType: 'asistencia',
+        });
+    });
+    const c = testEnv.authenticatedContext(COACH_T1).firestore();
+    await assertSucceeds(
+      c
+        .doc(
+          `artifacts/${APP_ID}/workspaces/${WS}/teams/t1/grants/asistencia/grantees/${DT}`,
+        )
+        .delete(),
+    );
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    await assertFails(
+      dt.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1/cuaderno/asistencia`).get(),
+    );
+  });
+
+  it('update de grant prohibido (recreate-only)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx
+        .firestore()
+        .doc(
+          `artifacts/${APP_ID}/workspaces/${WS}/teams/t1/grants/asistencia/grantees/${DT}`,
+        )
+        .set({
+          grantedBy: COACH_T1,
+          grantedTo: DT,
+          collectionType: 'asistencia',
+        });
+    });
+    const c = testEnv.authenticatedContext(COACH_T1).firestore();
+    await assertFails(
+      c
+        .doc(
+          `artifacts/${APP_ID}/workspaces/${WS}/teams/t1/grants/asistencia/grantees/${DT}`,
+        )
+        .update({ grantedAt: '2026-05-05' }),
+    );
+  });
+
+  it('coach NO asignado al team NO puede crear grant', async () => {
+    const otherCoach = 'OUT_COACH';
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx
+        .firestore()
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${otherCoach}`)
+        .set({ role: 'coach', assignedTeamIds: ['t2'] });
+    });
+    const c = testEnv.authenticatedContext(otherCoach).firestore();
+    await assertFails(
+      c
+        .doc(
+          `artifacts/${APP_ID}/workspaces/${WS}/teams/t1/grants/asistencia/grantees/${DT}`,
+        )
+        .set({
+          grantedBy: otherCoach,
+          grantedTo: DT,
+          collectionType: 'asistencia',
+        }),
+    );
+  });
+});
+
 describe('firestore.rules — stripeEvents (Stripe webhook idempotency)', () => {
   it('signed-in user cannot read stripeEvents docs', async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
