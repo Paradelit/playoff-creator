@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { isPublicPath } from '../router/publicPaths';
 import ProactiveNotificationsBanner from '../components/ProactiveNotificationsBanner';
+import { QuotaExceededModal } from '../billing/components/QuotaExceededModal';
 
 function WorkspaceLoadingState() {
   return (
@@ -95,6 +96,7 @@ export default function AppShell({ children }) {
           <DesktopSidebar />
         </>
       )}
+      <QuotaExceededModal />
     </>
   );
 }

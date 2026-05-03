@@ -22,6 +22,8 @@ import CumpleañosModal from '../components/home/CumpleañosModal';
 import { useCompetitions } from '../hooks/useCompetitions';
 import NewsFeed from '../components/home/NewsFeed';
 import WeekStrip from '../components/home/WeekStrip';
+import { UsageCounter } from '../billing/components/UsageCounter';
+import { QuotaWarningBanner } from '../billing/components/QuotaWarningBanner';
 
 // Team gradient is sourced from teamUtils.teamGradient(teamId) for deterministic
 // continuity between HomeScreen TeamCard, TeamDetail header, and any other
@@ -337,6 +339,7 @@ export default function HomeScreen() {
             <p className="text-blue-200/80 text-xs mt-0.5 truncate">{subline}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <UsageCounter />
             {photoURL ? (
               <img src={photoURL} alt="Avatar" className="w-9 h-9 rounded-full border-2 border-blue-700" />
             ) : (
@@ -379,6 +382,7 @@ export default function HomeScreen() {
             />
           )}
         </div>
+        <QuotaWarningBanner />
 
         {/* Mobile-only: Pendientes lifted just below Hero so the formativo coach
             opening the app at 23h sees their queue immediately, before the team
