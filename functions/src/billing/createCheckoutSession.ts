@@ -27,6 +27,11 @@ export async function handleCreateCheckoutSession({ db, auth, data }: HandlerArg
   // Allowlist guards against an attacker passing an arbitrary priceId
   // (e.g. a free or 1¢ price they created). Only our two known prices are accepted.
   const allowedPrices = [stripePriceMonthly.value(), stripePriceAnnual.value()].filter(Boolean);
+  // If both secrets are unset (misconfigured deploy) the allowlist collapses to []
+  // and every request would look like client-side priceId tampering. Surface the real cause.
+  if (allowedPrices.length === 0) {
+    throw new HttpsError("failed-precondition", "Stripe price configuration missing");
+  }
   if (!allowedPrices.includes(priceId)) {
     throw new HttpsError("invalid-argument", `Invalid priceId: ${priceId}`);
   }
