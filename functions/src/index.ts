@@ -462,3 +462,8 @@ export const onUserCreate = functionsV1
   });
 
 export { resolveMapsUrl } from "./locations/resolveMapsUrl";
+
+// Stripe billing (sub-proyecto 5).
+export { createCheckoutSession } from "./billing/createCheckoutSession";
+export { createPortalSession } from "./billing/createPortalSession";
+export { stripeWebhook } from "./billing/webhook";

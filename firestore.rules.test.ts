@@ -247,3 +247,38 @@ describe('firestore.rules — shared (unchanged)', () => {
     await assertSucceeds(db.doc(`artifacts/${APP_ID}/shared/SHARE1`).get());
   });
 });
+
+describe('firestore.rules — stripeEvents (Stripe webhook idempotency)', () => {
+  it('signed-in user cannot read stripeEvents docs', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx
+        .firestore()
+        .doc(`artifacts/${APP_ID}/stripeEvents/evt_xyz`)
+        .set({ type: 'checkout.session.completed', wsId: 'WS_A' });
+    });
+    const db = testEnv.authenticatedContext('U_A').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/stripeEvents/evt_xyz`).get());
+  });
+
+  it('signed-in user cannot write stripeEvents docs (create/update/delete)', async () => {
+    const db = testEnv.authenticatedContext('U_A').firestore();
+    await assertFails(
+      db.doc(`artifacts/${APP_ID}/stripeEvents/evt_new`).set({ type: 'checkout.session.completed' }),
+    );
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx
+        .firestore()
+        .doc(`artifacts/${APP_ID}/stripeEvents/evt_existing`)
+        .set({ type: 'invoice.payment_succeeded' });
+    });
+    await assertFails(
+      db.doc(`artifacts/${APP_ID}/stripeEvents/evt_existing`).update({ type: 'tampered' }),
+    );
+    await assertFails(db.doc(`artifacts/${APP_ID}/stripeEvents/evt_existing`).delete());
+  });
+
+  it('signed-in user cannot list stripeEvents collection', async () => {
+    const db = testEnv.authenticatedContext('U_A').firestore();
+    await assertFails(db.collection(`artifacts/${APP_ID}/stripeEvents`).get());
+  });
+});

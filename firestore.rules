@@ -80,6 +80,13 @@ service cloud.firestore {
       }
     }
 
+    // Stripe webhook idempotency markers — written only by Cloud Functions
+    // (Admin SDK bypasses rules). Locked from clients to keep billing state
+    // tamper-proof.
+    match /artifacts/{appId}/stripeEvents/{eventId} {
+      allow read, write: if false;
+    }
+
     // User-private data (scope ahora más estrecho: profile, memberships, pickHistory, proactiveNotifications)
     match /artifacts/{appId}/users/{uid}/{document=**} {
       allow read, write: if isSignedIn() && request.auth.uid == uid;
