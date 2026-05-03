@@ -216,7 +216,7 @@ describe('currentMonthId', () => {
     expect(currentMonthId()).toBe('2026-05');
   });
 
-  it('uses Europe/Madrid timezone — last second of month UTC is still that month in Madrid (+1h CEST)', () => {
+  it('uses Europe/Madrid timezone — UTC 23:30 at end of May is already June in Madrid (CEST = UTC+2)', () => {
     vi.useFakeTimers();
     // 2026-05-31T23:30:00Z → 2026-06-01T01:30 Madrid (CEST = UTC+2 in summer)
     vi.setSystemTime(new Date('2026-05-31T23:30:00Z'));
