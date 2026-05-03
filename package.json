@@ -32,6 +32,8 @@
     ]
   },
   "dependencies": {
+    "@stripe/react-stripe-js": "^3.10.0",
+    "@stripe/stripe-js": "^4.10.0",
     "docx": "^9.6.1",
     "exceljs": "^4.4.0",
     "firebase": "^12.11.0",
