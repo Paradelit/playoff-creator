@@ -31,10 +31,12 @@
 
 ```ts
 {
-  ownerId: string,                           // exactamente 1 por workspace, source of truth
-  workspaceType: 'personal' | 'club',         // ya existe (sub-1)
-  plan: 'free' | 'pro' | ...,                 // ya existe (sub-5)
-  billing: { ...stripe-managed... },          // ya existe (sub-5), Cloud Functions only
+  ownerId: string,                  // exactamente 1 por workspace, source of truth
+  type: 'personal' | 'club',         // ya existe (sub-1) — atención: en el workspace doc
+                                     // el campo se llama `type`, NO `workspaceType`.
+                                     // El membership doc del usuario sí usa `workspaceType`.
+  plan: 'free' | 'pro' | ...,        // ya existe (sub-5)
+  billing: { ...stripe-managed... }, // ya existe (sub-5), Cloud Functions only
   // ...resto sin tocar...
 }
 ```
@@ -65,7 +67,7 @@
 
 ### Migración (data, no rules)
 
-Las memberships creadas en sub-1 no llevan `role` ni `assignedTeamIds`. Cloud Function de migración one-shot (ver §6) las backfilea: `role: 'dt'` para todos (todos eran DT en su personal workspace) y `assignedTeamIds = [...todos los teamIds del ws]`. Idempotente.
+Las memberships creadas en sub-1 ya llevan `assignedTeamIds: []` y `role: 'owner'` (sub-1 las pobló así). Sub-2 las normaliza vía Cloud Function one-shot (ver §6): convierte `role: 'owner'` → `role: 'dt'` (alinea con la taxonomía sub-2 donde owner es propiedad del workspace, no rol de membership) y rellena `role: 'dt'` si está undefined. `assignedTeamIds` se mantiene como sub-1 lo dejó (vacío en personal workspaces; el bypass `isPersonalWorkspaceOwner` cubre el acceso). Idempotente.
 
 Docs existentes en colecciones de items gateadas por `createdBy` (exercises, brackets, calendarSessions, teams/\*/trainings, teams/\*/members) tampoco lo tienen. La misma migración los backfilea con `createdBy = workspace.ownerId`. Cuaderno docs NO se backfilean porque son singleton state colaborativo, sin semántica de autor.
 
@@ -241,8 +243,9 @@ function isPersonalWorkspaceOwner(appId, wsId) {
   // habitante. Bypass de strict scoping en Cat C — sin esto, crear teams nuevos
   // en personal workspace post-sub-2 dejaría inaccesible el contenido propio
   // hasta que sub-3 sincronice assignedTeamIds. Defensa belt-and-suspenders.
+  // Field es 'type' (no 'workspaceType') — sub-1 lo creó así.
   return isWorkspaceOwner(appId, wsId)
-      && workspaceData(appId, wsId).workspaceType == 'personal';
+      && workspaceData(appId, wsId).type == 'personal';
 }
 
 function isDT(appId, wsId) {

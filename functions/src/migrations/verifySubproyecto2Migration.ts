@@ -43,7 +43,9 @@ export const verifySubproyecto2Migration = onCall<unknown, Promise<VerifyResult>
         .collection(`artifacts/${APP_ID}/workspaces/${wsId}/members`)
         .get();
       for (const m of membersSnap.docs) {
-        if (m.data().role === undefined) membershipsMissingRole += 1;
+        const role = m.data().role;
+        // Cuenta como missing si no es uno de los valores válidos sub-2.
+        if (role !== "dt" && role !== "coach") membershipsMissingRole += 1;
         if (m.data().assignedTeamIds === undefined) membershipsMissingAssignedTeamIds += 1;
       }
 

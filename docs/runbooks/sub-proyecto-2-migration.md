@@ -2,27 +2,38 @@
 
 ## Ejecución 2026-05-04 (PR #1 deployed)
 
-PR #1 (commit `55c6694`) desplegó `migrateToSubproyecto2` y `verifySubproyecto2Migration` en europe-west1. La ejecución se hizo localmente con Admin SDK (service account · bypassea la onCall layer) usando un script one-shot equivalente. El resultado es idéntico al deployed callable.
+PR #1 (commit `55c6694`) desplegó `migrateToSubproyecto2` y `verifySubproyecto2Migration` en europe-west1. La ejecución se hizo localmente con Admin SDK (service account · bypassea la onCall layer) usando un script one-shot equivalente. Resultado idéntico al deployed callable.
 
-**Resultado de la migración:**
+### Run 1 — backfill createdBy
 
 ```
 workspacesProcessed:   36
-membershipsBackfilled:  0
+membershipsBackfilled:  0  ← sub-1 ya pobló role + assignedTeamIds
 docsBackfilled:       490
 durationMs:         38854
 ```
 
-**Verificación post-migración:**
+### Run 2 — normalize 'owner' → 'dt'
+
+Tras Run 1 se descubrió que sub-1 había puesto `role: 'owner'` en las memberships personales. Esto chocaba con la taxonomía sub-2 (donde 'owner' es propiedad del workspace, NO valor de membership.role). Se actualizó la lógica de migración para tratar `role === 'owner'` como `undefined` y normalizar a `'dt'`. Re-run:
 
 ```
-membershipsMissingRole:           0
+workspacesProcessed:   36
+membershipsBackfilled: 36  ← todas convertidas owner → dt
+docsBackfilled:         0  ← Run 1 ya las cubrió
+durationMs:         12096
+```
+
+### Verificación post-migración (final)
+
+```
+membershipsMissingRole:            0  ← ahora "missing" significa role ∉ {dt, coach}
 membershipsMissingAssignedTeamIds: 0
 docsMissingCreatedBy:              0
 ok:                             true
 ```
 
-**Lectura:** `membershipsBackfilled = 0` indica que sub-1 (`bootstrapPersonalWorkspace` Cloud Function trigger) ya estaba poblando `role: 'dt'` y `assignedTeamIds` desde la creación del workspace personal. Los 490 docs backfilleados son de colecciones de items (ejercicios, brackets, calendarSessions, trainings, jugadores) que sub-1 dejó sin `createdBy` y que ahora pasan a estar firmados como `createdBy = workspace.ownerId`. Cuaderno docs no se tocan (singleton state, sin createdBy semantic).
+**Lectura final:** todas las 36 memberships personales tienen `role: 'dt'` + `assignedTeamIds` populated (vacío en personal workspaces, cubierto por bypass `isPersonalWorkspaceOwner`). 490 docs (ejercicios + brackets + calendar sessions + trainings + jugadores) firmados con `createdBy = workspace.ownerId`. Cuaderno no se toca (singleton state).
 
 ## Próximos pasos
 

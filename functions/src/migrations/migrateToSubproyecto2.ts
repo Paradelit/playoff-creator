@@ -68,7 +68,9 @@ export async function handleMigration({ db, uid }: HandlerArgs): Promise<Migrati
     for (const memberDoc of membersSnap.docs) {
       const m = memberDoc.data();
       const updates: Record<string, unknown> = {};
-      if (m.role === undefined) {
+      // Sub-1 dejó role: 'owner' en memberships personal workspace. Sub-2
+      // alinea con la taxonomía dt/coach (ownership es propiedad del workspace).
+      if (m.role === undefined || m.role === "owner") {
         updates.role = "dt";
       }
       if (m.assignedTeamIds === undefined) {
