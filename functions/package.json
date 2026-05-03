@@ -9,7 +9,8 @@
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:firestore": "firebase emulators:exec --only firestore --project demo-test \"vitest run --config vitest.firestore.config.ts\""
   },
   "engines": {
     "node": "22"
