@@ -32,6 +32,10 @@ const AnalysisScreen = lazy(() => import('../screens/AnalysisScreen'));
 const EntrenamientosScreen = lazy(() => import('../screens/cuaderno/EntrenamientosScreen'));
 const SharedExerciseScreen = lazy(() => import('../screens/SharedExerciseScreen'));
 const PendientesScreen = lazy(() => import('../screens/PendientesScreen'));
+const UpgradePage = lazy(() => import('../billing/components/UpgradePage').then((m) => ({ default: m.UpgradePage })));
+const UpgradeSuccessPage = lazy(() =>
+  import('../billing/components/UpgradeSuccessPage').then((m) => ({ default: m.UpgradeSuccessPage })),
+);
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -336,6 +340,25 @@ export default function AppRouter() {
           element={
             <Guarded name="Pendientes">
               <PendientesScreen />
+            </Guarded>
+          }
+        />
+
+        {/* Billing — sub-proyecto 5. Paths kept outside /area-privada because
+            Stripe Embedded Checkout's return_url targets /upgrade/success. */}
+        <Route
+          path="/upgrade"
+          element={
+            <Guarded name="Upgrade">
+              <UpgradePage />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/upgrade/success"
+          element={
+            <Guarded name="Upgrade">
+              <UpgradeSuccessPage />
             </Guarded>
           }
         />

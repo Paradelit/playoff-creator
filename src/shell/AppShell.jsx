@@ -9,6 +9,7 @@ import { useWorkspace } from '../contexts/WorkspaceContext';
 import { isPublicPath } from '../router/publicPaths';
 import ProactiveNotificationsBanner from '../components/ProactiveNotificationsBanner';
 import { QuotaExceededModal } from '../billing/components/QuotaExceededModal';
+import { PaymentFailedBanner } from '../billing/components/PaymentFailedBanner';
 
 function WorkspaceLoadingState() {
   return (
@@ -87,6 +88,7 @@ export default function AppShell({ children }) {
             : `${pad} pb-16 md:pb-0 transition-[padding] duration-200 outline-none print:!p-0 print:!m-0`
         }
       >
+        {!publicPath && <PaymentFailedBanner />}
         {!publicPath && <ProactiveNotificationsBanner />}
         {children}
       </main>
