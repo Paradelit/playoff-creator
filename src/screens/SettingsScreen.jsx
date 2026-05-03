@@ -11,6 +11,7 @@ import {
   AccountSection,
   DangerZoneSection,
 } from '../components/settings/SettingsSections';
+import { BillingSection } from '../billing/components/BillingSection';
 
 export default function SettingsScreen() {
   const s = useSettings();
@@ -34,6 +35,7 @@ export default function SettingsScreen() {
         <ClubSection s={s} />
         <RemindersSection s={s} />
         <PickSection s={s} />
+        <BillingSection />
         <DataSection s={s} />
         <AccountSection s={s} />
         <DangerZoneSection s={s} />
