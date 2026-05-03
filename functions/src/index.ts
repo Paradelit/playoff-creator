@@ -149,8 +149,14 @@ export const runAgent = onCall(
   async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
 
-    const { agent, input, sessionId } = request.data;
+    const { agent, input, sessionId, appId, wsId } = request.data;
     if (!agent || !input) throw new HttpsError("invalid-argument", "Missing agent or input");
+    if (!appId) throw new HttpsError("invalid-argument", "Missing appId");
+    if (!wsId) throw new HttpsError("invalid-argument", "Missing wsId");
+
+    const db = getFirestore();
+    // Quota gate — same as aiChat. Increments counter atomically; throws resource-exhausted when free + over.
+    await assertWithinQuota(db, { wsId: wsId as string, appId: appId as string });
 
     const system = getSystem();
     try {

@@ -270,10 +270,11 @@ export function usePickInternal(): PickAPI {
 
   const runAgentBound = useCallback(
     async <TResult>(agentName: string, input: Record<string, unknown>) => {
+      if (!activeWsId) throw new Error('Workspace no disponible');
       const sessionId = persistence.conversationId || crypto.randomUUID();
-      return await runAgent<TResult>(agentName, input, sessionId);
+      return await runAgent<TResult>(agentName, input, { wsId: activeWsId, appId, sessionId });
     },
-    [persistence.conversationId],
+    [persistence.conversationId, activeWsId, appId],
   );
 
   return {

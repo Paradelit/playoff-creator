@@ -35,11 +35,11 @@ async function callAICallable<TPayload, TResult>(
 export async function runAgent<TResult>(
   agentName: string,
   input: Record<string, unknown>,
-  sessionId?: string,
+  opts: { wsId: string; appId: string; sessionId?: string },
 ): Promise<{ result: TResult; traceId: string }> {
   return callAICallable<Record<string, unknown>, { result: TResult; traceId: string }>(
     'runAgent',
-    { agent: agentName, input, sessionId },
+    { agent: agentName, input, wsId: opts.wsId, appId: opts.appId, sessionId: opts.sessionId },
     CALLABLE_TIMEOUT_MS,
   );
 }
