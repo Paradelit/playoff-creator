@@ -53,7 +53,7 @@ export function UpgradePage() {
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err?.message ?? 'No se pudo iniciar el checkout.');
+        setError(err?.message ?? 'No hemos podido iniciar el pago.');
       });
     return () => {
       cancelled = true;
@@ -94,11 +94,11 @@ export function UpgradePage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <div role="tablist" aria-label="Periodicidad" className="flex gap-2 mb-6">
+        <div role="radiogroup" aria-label="Periodicidad" className="flex gap-2 mb-6">
           <button
             type="button"
-            role="tab"
-            aria-selected={billingPeriod === 'monthly'}
+            role="radio"
+            aria-checked={billingPeriod === 'monthly'}
             onClick={() => setBillingPeriod('monthly')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
               billingPeriod === 'monthly'
@@ -110,8 +110,8 @@ export function UpgradePage() {
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={billingPeriod === 'annual'}
+            role="radio"
+            aria-checked={billingPeriod === 'annual'}
             onClick={() => setBillingPeriod('annual')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
               billingPeriod === 'annual'
@@ -125,7 +125,7 @@ export function UpgradePage() {
 
         {error ? (
           <div role="alert" className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-900">
-            No se pudo iniciar el checkout: {error}
+            No hemos podido iniciar el pago: {error}
           </div>
         ) : checkoutOptions && stripePromise ? (
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
