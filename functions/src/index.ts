@@ -467,3 +467,7 @@ export { resolveMapsUrl } from "./locations/resolveMapsUrl";
 export { createCheckoutSession } from "./billing/createCheckoutSession";
 export { createPortalSession } from "./billing/createPortalSession";
 export { stripeWebhook } from "./billing/webhook";
+
+// Sub-proyecto 2 migration (one-shot, will be removed in cleanup PR).
+export { migrateToSubproyecto2 } from "./migrations/migrateToSubproyecto2";
+export { verifySubproyecto2Migration } from "./migrations/verifySubproyecto2Migration";
