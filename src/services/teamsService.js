@@ -1,4 +1,15 @@
-import { collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  documentId,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  serverTimestamp,
+  query,
+  orderBy,
+  where,
+} from 'firebase/firestore';
 import { workspaceColRef, saveWorkspaceDoc } from './firestoreHelpers';
 import { deleteTeamCascade } from './dataCleanupService';
 
@@ -6,8 +17,33 @@ function membersCol(teamId, wsId, db, appId) {
   return collection(db, 'artifacts', appId, 'workspaces', wsId, 'teams', teamId, 'members');
 }
 
-export function subscribeToTeams(wsId, db, appId, callback) {
-  const q = query(workspaceColRef(db, appId, wsId, 'teams'), orderBy('createdAt', 'desc'));
+/**
+ * Subscribe to teams visible to the caller.
+ *
+ * `scope` controls the query:
+ * - `{ scope: 'all' }` — all teams of the workspace (owner / personal owner).
+ * - `{ scope: 'assigned', assignedTeamIds: [...] }` — only teams in the array.
+ *   Required for non-owner members in club workspaces (sub-3 visibility
+ *   scoping). If `assignedTeamIds` is empty, calls back with [] without
+ *   subscribing — Firestore rejects `where(documentId(), 'in', [])`.
+ *
+ * Legacy callers without `scope` default to `'all'` (preserves personal
+ * workspace behavior, which is the only path that hit this before sub-3).
+ */
+export function subscribeToTeams(wsId, db, appId, callback, scope = { scope: 'all' }) {
+  const teamsCol = workspaceColRef(db, appId, wsId, 'teams');
+  if (scope.scope === 'assigned') {
+    const ids = Array.isArray(scope.assignedTeamIds) ? scope.assignedTeamIds : [];
+    if (ids.length === 0) {
+      callback([]);
+      return () => undefined;
+    }
+    const q = query(teamsCol, where(documentId(), 'in', ids));
+    return onSnapshot(q, (snap) => {
+      callback(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
+    });
+  }
+  const q = query(teamsCol, orderBy('createdAt', 'desc'));
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
   });

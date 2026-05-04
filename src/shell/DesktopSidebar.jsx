@@ -4,6 +4,7 @@ import { Plus, Settings, LogOut, ShieldHalf, PanelLeftClose, PanelLeftOpen } fro
 import { useAuth } from '../contexts/AuthContext';
 import { useSidebar } from '../contexts/SidebarContext';
 import { NAV_ITEMS, CreateSheet } from './CoachesNav';
+import { WorkspaceSelector } from './WorkspaceSelector';
 
 function SidebarItem({ to, label, Icon, end, collapsed }) {
   return (
@@ -111,20 +112,23 @@ function SidebarHeader({ collapsed, toggle, ToggleIcon }) {
     );
   }
   return (
-    <div className="pt-6 pb-4 flex items-center border-b border-blue-900 px-5 gap-2 justify-between">
-      <div className="flex items-center gap-2 min-w-0">
-        <ShieldHalf size={22} className="text-amber-400 shrink-0" aria-hidden="true" />
-        <span className="text-white font-bold text-base tracking-tight truncate">Playoff Creator</span>
+    <div className="pt-6 pb-4 flex flex-col border-b border-blue-900 px-5 gap-2">
+      <div className="flex items-center gap-2 justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <ShieldHalf size={22} className="text-amber-400 shrink-0" aria-hidden="true" />
+          <span className="text-white font-bold text-base tracking-tight truncate">Playoff Creator</span>
+        </div>
+        <button
+          type="button"
+          onClick={toggle}
+          title="Colapsar (Ctrl/Cmd+B)"
+          aria-label="Colapsar panel lateral"
+          className="text-blue-300 hover:text-white p-1 rounded-lg hover:bg-blue-900 transition-colors"
+        >
+          <ToggleIcon size={16} aria-hidden="true" />
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={toggle}
-        title="Colapsar (Ctrl/Cmd+B)"
-        aria-label="Colapsar panel lateral"
-        className="text-blue-300 hover:text-white p-1 rounded-lg hover:bg-blue-900 transition-colors"
-      >
-        <ToggleIcon size={16} aria-hidden="true" />
-      </button>
+      <WorkspaceSelector />
     </div>
   );
 }

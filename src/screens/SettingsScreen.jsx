@@ -1,10 +1,12 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useSettings } from '../hooks/useSettings';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 import { ImportPreviewModal, DeleteDataModal, DeleteAccountModal } from '../components/settings/SettingsModals';
 import {
   ProfileSection,
   ClubSection,
+  ClubMembersSection,
   RemindersSection,
   PickSection,
   DataSection,
@@ -15,6 +17,8 @@ import { BillingSection } from '../billing/components/BillingSection';
 
 export default function SettingsScreen() {
   const s = useSettings();
+  const { activeWorkspace } = useWorkspace();
+  const isClub = activeWorkspace?.type === 'club';
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans pb-24">
@@ -33,6 +37,7 @@ export default function SettingsScreen() {
       <div className="max-w-lg mx-auto px-4 pt-6 flex flex-col gap-6">
         <ProfileSection s={s} />
         <ClubSection s={s} />
+        {isClub && <ClubMembersSection s={s} />}
         <RemindersSection s={s} />
         <PickSection s={s} />
         <BillingSection />

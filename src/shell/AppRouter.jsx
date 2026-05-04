@@ -36,6 +36,9 @@ const UpgradePage = lazy(() => import('../billing/components/UpgradePage').then(
 const UpgradeSuccessPage = lazy(() =>
   import('../billing/components/UpgradeSuccessPage').then((m) => ({ default: m.UpgradeSuccessPage })),
 );
+const MembersScreen = lazy(() => import('../screens/settings/MembersScreen'));
+const TransferOwnershipScreen = lazy(() => import('../screens/settings/TransferOwnershipScreen'));
+const InviteLandingScreen = lazy(() => import('../screens/InviteLandingScreen'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -101,7 +104,9 @@ function LoginRoute() {
   if (user) {
     const params = new URLSearchParams(location.search);
     const redirect = params.get('redirect');
-    if (redirect && redirect.startsWith('/area-privada')) {
+    // Whitelist explícito: solo paths internos seguros. Sub-3 añade /invite/...
+    // como ruta pública de claim que se atraviesa con login redirect.
+    if (redirect && (redirect.startsWith('/area-privada') || redirect.startsWith('/invite/'))) {
       return <Navigate to={redirect} replace />;
     }
     return <Navigate to="/area-privada" replace />;
@@ -150,6 +155,16 @@ export default function AppRouter() {
             <Suspense fallback={<LazyFallback />}>
               <ModuleBoundary>
                 <SharedExerciseScreen />
+              </ModuleBoundary>
+            </Suspense>
+          }
+        />
+        <Route
+          path="/invite/:wsId/:inviteId"
+          element={
+            <Suspense fallback={<LazyFallback />}>
+              <ModuleBoundary name="Invitación">
+                <InviteLandingScreen />
               </ModuleBoundary>
             </Suspense>
           }
@@ -332,6 +347,22 @@ export default function AppRouter() {
           element={
             <Guarded name="Ajustes">
               <SettingsScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/settings/miembros"
+          element={
+            <Guarded name="Miembros">
+              <MembersScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/settings/transferir-propiedad"
+          element={
+            <Guarded name="Transferir propiedad">
+              <TransferOwnershipScreen />
             </Guarded>
           }
         />

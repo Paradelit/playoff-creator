@@ -52,6 +52,7 @@ export function WorkspaceProvider({ children }) {
   const [memberships, setMemberships] = useState([]);
   const [activeWsId, setActiveWsIdState] = useState(null);
   const [activeWorkspace, setActiveWorkspace] = useState(null);
+  const [activeMember, setActiveMember] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Subscribe to user's memberships
@@ -106,6 +107,28 @@ export function WorkspaceProvider({ children }) {
     return unsub;
   }, [db, appId, activeWsId]);
 
+  // Subscribe to the caller's member doc (role + assignedTeamIds). Sub-3
+  // necesita esto para filtrar consultas de teams en clubs scoped — el listener
+  // de teams falla si la query devuelve docs que el caller no puede leer.
+  useEffect(() => {
+    if (!db || !appId || !activeWsId || !user?.uid) {
+      setActiveMember(null);
+      return;
+    }
+    const ref = doc(db, 'artifacts', appId, 'workspaces', activeWsId, 'members', user.uid);
+    const unsub = onSnapshot(
+      ref,
+      (snap) => {
+        setActiveMember(snap.exists() ? { uid: snap.id, ...snap.data() } : null);
+      },
+      (err) => {
+        console.error('[WorkspaceProvider] member doc snapshot error', err);
+        setActiveMember(null);
+      },
+    );
+    return unsub;
+  }, [db, appId, activeWsId, user?.uid]);
+
   const setActive = useCallback(
     (wsId) => {
       if (!memberships.some((m) => m.wsId === wsId)) {
@@ -122,11 +145,12 @@ export function WorkspaceProvider({ children }) {
     () => ({
       activeWsId,
       activeWorkspace,
+      activeMember,
       memberships,
       isLoading,
       setActiveWorkspace: setActive,
     }),
-    [activeWsId, activeWorkspace, memberships, isLoading, setActive],
+    [activeWsId, activeWorkspace, activeMember, memberships, isLoading, setActive],
   );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
