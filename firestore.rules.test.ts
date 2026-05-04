@@ -557,6 +557,73 @@ describe('sub-proyecto 2 — Cat C team-scoped strict (club)', () => {
   });
 });
 
+describe('sub-proyecto 3 — team metadata visibility scoping', () => {
+  // Modelo: owner del workspace ve TODOS los teams. Cualquier otro member
+  // (DT no-owner, coach) ve únicamente los teams en su assignedTeamIds.
+  const WS = 'WS_SCOPE';
+  const OWNER = 'S_OWNER';
+  const DT_RAMA = 'S_DT_RAMA'; // DT no-owner asignado solo a t1
+  const COACH = 'S_COACH'; // coach asignado solo a t1
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}`)
+        .set({ type: 'club', ownerId: OWNER });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${OWNER}`)
+        .set({ role: 'dt', assignedTeamIds: [] });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${DT_RAMA}`)
+        .set({ role: 'dt', assignedTeamIds: ['t1'] });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${COACH}`)
+        .set({ role: 'coach', assignedTeamIds: ['t1'] });
+      await db.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1`).set({ name: 'T1' });
+      await db.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t2`).set({ name: 'T2' });
+    });
+  });
+
+  it('owner lee CUALQUIER team del club', async () => {
+    const o = testEnv.authenticatedContext(OWNER).firestore();
+    await assertSucceeds(o.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1`).get());
+    await assertSucceeds(o.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t2`).get());
+  });
+
+  it('DT no-owner solo lee teams de assignedTeamIds', async () => {
+    const dt = testEnv.authenticatedContext(DT_RAMA).firestore();
+    await assertSucceeds(dt.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1`).get());
+    await assertFails(dt.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t2`).get());
+  });
+
+  it('coach solo lee teams de assignedTeamIds', async () => {
+    const c = testEnv.authenticatedContext(COACH).firestore();
+    await assertSucceeds(c.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1`).get());
+    await assertFails(c.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t2`).get());
+  });
+
+  it('non-member denegado lectura', async () => {
+    const stranger = testEnv.authenticatedContext('STRANGER').firestore();
+    await assertFails(stranger.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1`).get());
+  });
+
+  it('DT no-owner NO puede update team al que NO está asignado', async () => {
+    const dt = testEnv.authenticatedContext(DT_RAMA).firestore();
+    await assertFails(dt.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t2`).update({ name: 'X' }));
+  });
+
+  it('DT no-owner SÍ puede update team al que está asignado', async () => {
+    const dt = testEnv.authenticatedContext(DT_RAMA).firestore();
+    await assertSucceeds(dt.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1`).update({ name: 'X' }));
+  });
+
+  it('owner puede update CUALQUIER team', async () => {
+    const o = testEnv.authenticatedContext(OWNER).firestore();
+    await assertSucceeds(o.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t2`).update({ name: 'X' }));
+  });
+});
+
 describe('sub-proyecto 2 — Cat C sharing primitive (grants)', () => {
   const WS = 'WS_CLUB_G';
   const DT = 'G_DT';
