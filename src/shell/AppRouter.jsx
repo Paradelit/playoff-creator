@@ -36,6 +36,9 @@ const UpgradePage = lazy(() => import('../billing/components/UpgradePage').then(
 const UpgradeSuccessPage = lazy(() =>
   import('../billing/components/UpgradeSuccessPage').then((m) => ({ default: m.UpgradeSuccessPage })),
 );
+const MembersScreen = lazy(() => import('../screens/settings/MembersScreen'));
+const TransferOwnershipScreen = lazy(() => import('../screens/settings/TransferOwnershipScreen'));
+const InviteLandingScreen = lazy(() => import('../screens/InviteLandingScreen'));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -150,6 +153,16 @@ export default function AppRouter() {
             <Suspense fallback={<LazyFallback />}>
               <ModuleBoundary>
                 <SharedExerciseScreen />
+              </ModuleBoundary>
+            </Suspense>
+          }
+        />
+        <Route
+          path="/invite/:wsId/:inviteId"
+          element={
+            <Suspense fallback={<LazyFallback />}>
+              <ModuleBoundary name="Invitación">
+                <InviteLandingScreen />
               </ModuleBoundary>
             </Suspense>
           }
@@ -332,6 +345,22 @@ export default function AppRouter() {
           element={
             <Guarded name="Ajustes">
               <SettingsScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/settings/miembros"
+          element={
+            <Guarded name="Miembros">
+              <MembersScreen />
+            </Guarded>
+          }
+        />
+        <Route
+          path="/area-privada/settings/transferir-propiedad"
+          element={
+            <Guarded name="Transferir propiedad">
+              <TransferOwnershipScreen />
             </Guarded>
           }
         />
