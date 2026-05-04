@@ -121,21 +121,14 @@ service cloud.firestore {
 
       allow delete: if isWorkspaceOwner(appId, wsId);
 
+      // Sub-3: writes a members SOLO via callables (createClub, acceptInvite,
+      // revokeMember, setMemberTeams, setMemberRole, transferOwnership) que validan
+      // invariantes (teamId existe, no demote owner, atomic role bump en
+      // transferOwnership) que las rules no pueden expresar fácilmente.
+      // Reads siguen abiertos a todos los members.
       match /members/{memberUid} {
         allow read: if isWorkspaceMember(appId, wsId);
-
-        allow create: if (isDT(appId, wsId) || isWorkspaceOwner(appId, wsId));
-
-        // DT/owner pueden tocar memberships, salvo la del ownerId.
-        allow update: if (isDT(appId, wsId) || isWorkspaceOwner(appId, wsId))
-                         && memberUid != workspaceData(appId, wsId).ownerId;
-        // Owner sí puede modificar SU PROPIA membership (cambiar
-        // assignedTeamIds, etc.).
-        allow update: if isWorkspaceOwner(appId, wsId)
-                         && memberUid == request.auth.uid;
-
-        allow delete: if (isDT(appId, wsId) || isWorkspaceOwner(appId, wsId))
-                         && memberUid != workspaceData(appId, wsId).ownerId;
+        allow write: if false;
       }
 
       // Sub-3: invites son read-only desde cliente. Toda mutación va por callables
