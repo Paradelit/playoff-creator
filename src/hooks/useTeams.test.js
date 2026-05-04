@@ -5,7 +5,12 @@ const mockUser = { uid: 'u1' };
 const mockDb = {};
 const mockUnsubscribe = vi.fn();
 const mockUseAuth = vi.fn(() => ({ user: mockUser }));
-const mockUseWorkspace = vi.fn(() => ({ activeWsId: 'ws1' }));
+// Default: u1 es owner del workspace ws1 → useTeams subscribe con scope='all'.
+const mockUseWorkspace = vi.fn(() => ({
+  activeWsId: 'ws1',
+  activeWorkspace: { wsId: 'ws1', ownerId: 'u1' },
+  activeMember: { uid: 'u1', role: 'dt', assignedTeamIds: [] },
+}));
 
 vi.mock('../contexts/AuthContext', () => ({
   useAuth: (...args) => mockUseAuth(...args),
@@ -35,7 +40,11 @@ import { useTeams } from './useTeams';
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseAuth.mockReturnValue({ user: mockUser });
-  mockUseWorkspace.mockReturnValue({ activeWsId: 'ws1' });
+  mockUseWorkspace.mockReturnValue({
+    activeWsId: 'ws1',
+    activeWorkspace: { wsId: 'ws1', ownerId: 'u1' },
+    activeMember: { uid: 'u1', role: 'dt', assignedTeamIds: [] },
+  });
 });
 
 describe('useTeams', () => {
@@ -55,7 +64,11 @@ describe('useTeams', () => {
   });
 
   it('returns empty teams when no active workspace', () => {
-    mockUseWorkspace.mockReturnValue({ activeWsId: null });
+    mockUseWorkspace.mockReturnValue({
+      activeWsId: null,
+      activeWorkspace: null,
+      activeMember: null,
+    });
     const { result } = renderHook(() => useTeams());
     expect(result.current.teams).toEqual([]);
     expect(result.current.loading).toBe(false);
