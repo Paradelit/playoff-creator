@@ -471,3 +471,18 @@ export { stripeWebhook } from "./billing/webhook";
 // Sub-proyecto 2 migration (one-shot, will be removed in cleanup PR).
 export { migrateToSubproyecto2 } from "./migrations/migrateToSubproyecto2";
 export { verifySubproyecto2Migration } from "./migrations/verifySubproyecto2Migration";
+
+// Sub-proyecto 3 — invitaciones y licencias.
+export { createClub } from "./sub3/createClub";
+export { inviteMember } from "./sub3/inviteMember";
+export { acceptInvite } from "./sub3/acceptInvite";
+export { revokeInvite } from "./sub3/revokeInvite";
+export { revokeMember } from "./sub3/revokeMember";
+export { setMemberTeams } from "./sub3/setMemberTeams";
+export { setMemberRole } from "./sub3/setMemberRole";
+export { transferOwnership } from "./sub3/transferOwnership";
+export { getClubAllowlistStatus } from "./sub3/getClubAllowlistStatus";
+export { onMemberDelete } from "./sub3/onMemberDelete";
+export { onTeamCreate } from "./sub3/onTeamCreate";
+export { onTeamDelete } from "./sub3/onTeamDelete";
+export { cleanupExpiredInvites } from "./sub3/cleanupExpiredInvites";
