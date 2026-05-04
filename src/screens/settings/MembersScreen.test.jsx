@@ -9,7 +9,8 @@ vi.mock('../../contexts/ToastContext', () => ({ useToast: () => vi.fn() }));
 vi.mock('../../hooks/useMembers', () => ({ useMembers: vi.fn() }));
 vi.mock('../../hooks/useInvites', () => ({ useInvites: vi.fn() }));
 vi.mock('../../hooks/useTeams', () => ({
-  useTeams: vi.fn(() => ({ teams: [{ id: 't1', name: 'Cadete A' }], loading: false })),
+  // teamDisplayName espera el shape canónico (categoria + letra), no `name`.
+  useTeams: vi.fn(() => ({ teams: [{ id: 't1', categoria: 'Cadete', letra: 'A' }], loading: false })),
 }));
 
 const mockSvc = {
@@ -73,10 +74,12 @@ describe('MembersScreen', () => {
     expect(screen.getByText(/propietario/i)).toBeInTheDocument();
   });
 
-  it('owner sees actions on every row except own', () => {
+  it('owner sees actions on every row including own (self-edit teams)', () => {
     setupAs('owner');
     render(<MembersScreen />);
-    expect(screen.getAllByRole('button', { name: /acciones/i })).toHaveLength(2);
+    // Owner + DT + coach = 3 menus. Owner puede editar su propia fila para
+    // auto-asignarse equipos (callable setMemberTeams permite owner self-edit).
+    expect(screen.getAllByRole('button', { name: /acciones/i })).toHaveLength(3);
   });
 
   it('coach sees read-only (no action menus)', () => {
