@@ -108,34 +108,31 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.resource.data.ownerId == request.auth.uid;
 
-      // Owner libre de tocar todo, incluso transferir ownership (siempre que
-      // el nuevo ownerId sea ya member del workspace).
+      // Sub-3: ownerId inmutable desde cliente — el cambio de propiedad va por
+      // callable transferOwnership que bumpea atómicamente members/{newOwner}.role.
       allow update: if isWorkspaceOwner(appId, wsId)
-        && (
-          request.resource.data.ownerId == resource.data.ownerId
-          || isWorkspaceMemberUid(appId, wsId, request.resource.data.ownerId)
-        );
+        && request.resource.data.ownerId == resource.data.ownerId;
       // DT no-owner puede editar settings pero no ownerId/plan/billing.
       allow update: if isDT(appId, wsId)
         && workspaceMetaProtected(request.resource.data.diff(resource.data));
 
       allow delete: if isWorkspaceOwner(appId, wsId);
 
+      // Sub-3: writes a members SOLO via callables (createClub, acceptInvite,
+      // revokeMember, setMemberTeams, setMemberRole, transferOwnership) que validan
+      // invariantes (teamId existe, no demote owner, atomic role bump en
+      // transferOwnership) que las rules no pueden expresar fácilmente.
+      // Reads siguen abiertos a todos los members.
       match /members/{memberUid} {
         allow read: if isWorkspaceMember(appId, wsId);
+        allow write: if false;
+      }
 
-        allow create: if (isDT(appId, wsId) || isWorkspaceOwner(appId, wsId));
-
-        // DT/owner pueden tocar memberships, salvo la del ownerId.
-        allow update: if (isDT(appId, wsId) || isWorkspaceOwner(appId, wsId))
-                         && memberUid != workspaceData(appId, wsId).ownerId;
-        // Owner sí puede modificar SU PROPIA membership (cambiar
-        // assignedTeamIds, etc.).
-        allow update: if isWorkspaceOwner(appId, wsId)
-                         && memberUid == request.auth.uid;
-
-        allow delete: if (isDT(appId, wsId) || isWorkspaceOwner(appId, wsId))
-                         && memberUid != workspaceData(appId, wsId).ownerId;
+      // Sub-3: invites son read-only desde cliente. Toda mutación va por callables
+      // (inviteMember/revokeInvite/acceptInvite) con validación server-side.
+      match /invites/{inviteId} {
+        allow read: if isWorkspaceMember(appId, wsId);
+        allow write: if false;
       }
 
       // ============ Cat B — Workspace-wide DT-curated ============

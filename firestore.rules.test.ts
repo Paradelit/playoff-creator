@@ -116,11 +116,6 @@ describe('firestore.rules — workspaces', () => {
     await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/WS_A`).update({ name: 'Hacked' }));
   });
 
-  it('owner can write members subcollection (add member)', async () => {
-    const db = testEnv.authenticatedContext('U_A').firestore();
-    await assertSucceeds(db.doc(`artifacts/${APP_ID}/workspaces/WS_A/members/U_C`).set({ role: 'coach' }));
-  });
-
   it('non-owner member cannot write members subcollection', async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await ctx.firestore().doc(`artifacts/${APP_ID}/workspaces/WS_A/members/U_C`).set({ role: 'coach' });
@@ -318,35 +313,10 @@ describe('sub-proyecto 2 — Cat A workspace meta (club)', () => {
     );
   });
 
-  it('DT puede crear nueva membership en members directory', async () => {
-    const dt = testEnv.authenticatedContext(DT).firestore();
-    await assertSucceeds(
-      dt
-        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/NEW_COACH`)
-        .set({ role: 'coach', assignedTeamIds: ['t2'] }),
-    );
-  });
-
   it('DT NO puede tocar la membership del ownerId', async () => {
     const dt = testEnv.authenticatedContext(DT).firestore();
     await assertFails(
       dt.doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${OWNER}`).update({ role: 'coach' }),
-    );
-  });
-
-  it('owner edita SU PROPIA membership', async () => {
-    const owner = testEnv.authenticatedContext(OWNER).firestore();
-    await assertSucceeds(
-      owner
-        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${OWNER}`)
-        .update({ assignedTeamIds: ['t1', 't2'] }),
-    );
-  });
-
-  it('transfer ownership: nuevo owner debe ser member', async () => {
-    const owner = testEnv.authenticatedContext(OWNER).firestore();
-    await assertSucceeds(
-      owner.doc(`artifacts/${APP_ID}/workspaces/${WS}`).update({ ownerId: DT }),
     );
   });
 
@@ -678,6 +648,104 @@ describe('sub-proyecto 2 — Cat C sharing primitive (grants)', () => {
           collectionType: 'asistencia',
         }),
     );
+  });
+});
+
+describe('firestore.rules — workspaces.ownerId refuerzo (sub-3)', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB`).set({
+        type: 'club', name: 'Club', ownerId: 'U_DT', plan: 'free', billing: null,
+      });
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB/members/U_DT`).set({ role: 'dt', assignedTeamIds: [] });
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB/members/U_DT2`).set({ role: 'dt', assignedTeamIds: [] });
+    });
+  });
+
+  it('owner cannot change ownerId directly anymore', async () => {
+    const db = testEnv.authenticatedContext('U_DT').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/CLUB`).update({ ownerId: 'U_DT2' }));
+  });
+
+  it('non-owner DT also cannot change ownerId (re-confirm sub-2 invariant)', async () => {
+    const db = testEnv.authenticatedContext('U_DT2').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/CLUB`).update({ ownerId: 'U_DT2' }));
+  });
+});
+
+describe('firestore.rules — members refuerzo (sub-3)', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB`).set({
+        type: 'club', name: 'Club', ownerId: 'U_DT', plan: 'free', billing: null,
+      });
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB/members/U_DT`).set({ role: 'dt', assignedTeamIds: [] });
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB/members/U_COACH`).set({ role: 'coach', assignedTeamIds: ['t1'] });
+    });
+  });
+
+  it('DT cannot update a coach role directly', async () => {
+    const db = testEnv.authenticatedContext('U_DT').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/CLUB/members/U_COACH`).update({ role: 'dt' }));
+  });
+
+  it('DT cannot update assignedTeamIds directly', async () => {
+    const db = testEnv.authenticatedContext('U_DT').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/CLUB/members/U_COACH`).update({ assignedTeamIds: ['t2'] }));
+  });
+
+  it('owner cannot update own membership directly anymore', async () => {
+    const db = testEnv.authenticatedContext('U_DT').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/CLUB/members/U_DT`).update({ assignedTeamIds: ['t1'] }));
+  });
+});
+
+describe('firestore.rules — invites (sub-3)', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB`).set({
+        type: 'club', name: 'Club', ownerId: 'U_DT', plan: 'free', billing: null,
+      });
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB/members/U_DT`).set({ role: 'dt', assignedTeamIds: [] });
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB/members/U_COACH`).set({ role: 'coach', assignedTeamIds: ['t1'] });
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB/invites/inv-1`).set({
+        inviteId: 'inv-1', workspaceId: 'CLUB', invitedBy: 'U_DT',
+        inviteEmail: null, inviteName: null, role: 'coach', assignedTeamIds: ['t1'],
+        createdAt: new Date(), expiresAt: new Date(Date.now() + 86_400_000),
+      });
+    });
+  });
+
+  it('DT can read invites', async () => {
+    const db = testEnv.authenticatedContext('U_DT').firestore();
+    await assertSucceeds(db.doc(`artifacts/${APP_ID}/workspaces/CLUB/invites/inv-1`).get());
+  });
+
+  it('coach can read invites (transparency)', async () => {
+    const db = testEnv.authenticatedContext('U_COACH').firestore();
+    await assertSucceeds(db.doc(`artifacts/${APP_ID}/workspaces/CLUB/invites/inv-1`).get());
+  });
+
+  it('non-member denied read', async () => {
+    const db = testEnv.authenticatedContext('U_OUT').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/CLUB/invites/inv-1`).get());
+  });
+
+  it('DT cannot CREATE invite directly (must use callable)', async () => {
+    const db = testEnv.authenticatedContext('U_DT').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/CLUB/invites/inv-NEW`).set({
+      inviteId: 'inv-NEW', workspaceId: 'CLUB', invitedBy: 'U_DT',
+      role: 'coach', assignedTeamIds: ['t1'], inviteEmail: null, inviteName: null,
+      createdAt: new Date(), expiresAt: new Date(Date.now() + 86_400_000),
+    }));
+  });
+
+  it('DT cannot DELETE invite directly (must use callable)', async () => {
+    const db = testEnv.authenticatedContext('U_DT').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/CLUB/invites/inv-1`).delete());
   });
 });
 
