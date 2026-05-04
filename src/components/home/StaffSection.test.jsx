@@ -46,4 +46,11 @@ describe('StaffSection', () => {
     fireEvent.click(screen.getByRole('button', { name: /gestionar/i }));
     expect(navigate).toHaveBeenCalledWith('/area-privada/settings/miembros');
   });
+
+  it('clicking a member row navigates to MembersScreen with ?focus=uid', () => {
+    const navigate = vi.fn();
+    render(<StaffSection members={MEMBERS} currentUid="uid-x" ownerUid="uid-owner" navigate={navigate} />);
+    fireEvent.click(screen.getByRole('button', { name: /ver detalles de pepe/i }));
+    expect(navigate).toHaveBeenCalledWith('/area-privada/settings/miembros?focus=uid-coach');
+  });
 });

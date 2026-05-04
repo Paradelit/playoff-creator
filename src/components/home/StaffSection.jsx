@@ -46,34 +46,41 @@ export default function StaffSection({ members, currentUid, ownerUid, navigate }
           const teamsCount = Array.isArray(m.assignedTeamIds) ? m.assignedTeamIds.length : 0;
           const initial = (m.displayName || m.email || '?').charAt(0).toUpperCase();
           return (
-            <li key={m.uid} className="px-4 py-2.5 flex items-center gap-3">
-              <div className="w-9 h-9 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
-                {initial}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-800 truncate">
-                  {m.displayName || m.email || '(sin nombre)'}
-                  {isMe && <span className="text-xs text-slate-400 font-normal"> · tú</span>}
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  {isOwner ? (
-                    <span className="text-[10px] uppercase tracking-wide bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">
-                      Propietario
-                    </span>
-                  ) : m.role === 'dt' ? (
-                    <span className="text-[10px] uppercase tracking-wide bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold">
-                      DT
-                    </span>
-                  ) : (
-                    <span className="text-[10px] uppercase tracking-wide bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">
-                      Coach
-                    </span>
-                  )}
-                  <span className="text-xs text-slate-500">
-                    {teamsCount} {teamsCount === 1 ? 'equipo' : 'equipos'}
-                  </span>
+            <li key={m.uid}>
+              <button
+                type="button"
+                onClick={() => navigate(`/area-privada/settings/miembros?focus=${encodeURIComponent(m.uid)}`)}
+                className="w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 focus:outline-none focus-visible:bg-slate-50 transition-colors"
+                aria-label={`Ver detalles de ${m.displayName || m.email || 'miembro'}`}
+              >
+                <div className="w-9 h-9 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+                  {initial}
                 </div>
-              </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-800 truncate">
+                    {m.displayName || m.email || '(sin nombre)'}
+                    {isMe && <span className="text-xs text-slate-400 font-normal"> · tú</span>}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {isOwner ? (
+                      <span className="text-[10px] uppercase tracking-wide bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">
+                        Propietario
+                      </span>
+                    ) : m.role === 'dt' ? (
+                      <span className="text-[10px] uppercase tracking-wide bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold">
+                        DT
+                      </span>
+                    ) : (
+                      <span className="text-[10px] uppercase tracking-wide bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">
+                        Coach
+                      </span>
+                    )}
+                    <span className="text-xs text-slate-500">
+                      {teamsCount} {teamsCount === 1 ? 'equipo' : 'equipos'}
+                    </span>
+                  </div>
+                </div>
+              </button>
             </li>
           );
         })}

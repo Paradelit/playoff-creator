@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useFirebase } from '../../contexts/FirebaseContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
@@ -33,6 +33,19 @@ export function MembersScreen() {
   const [showInvite, setShowInvite] = useState(false);
   const [inviteSubmitting, setInviteSubmitting] = useState(false);
   const [successLink, setSuccessLink] = useState(null);
+
+  // Sub-4 slice 5: ?focus=memberUid hace scroll + highlight a esa fila.
+  // Útil cuando se llega desde StaffSection del HomeScreen.
+  const [searchParams] = useSearchParams();
+  const focusUid = searchParams.get('focus');
+  const rowRefs = useRef(new Map());
+  useEffect(() => {
+    if (!focusUid) return;
+    const el = rowRefs.current.get(focusUid);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [focusUid, members]);
 
   if (!activeWorkspace || activeWorkspace.type !== 'club') {
     return null;
@@ -100,8 +113,16 @@ export function MembersScreen() {
             // - DT no-owner puede editar a otros DT/coach pero no al owner.
             // - Coach: read-only.
             const editable = canEdit && (!isOwner || (callerIsOwner && isCallerRow));
+            const isFocused = focusUid === m.uid;
             return (
-              <li key={m.uid} className="px-4 py-3 flex items-center justify-between relative">
+              <li
+                key={m.uid}
+                ref={(el) => {
+                  if (el) rowRefs.current.set(m.uid, el);
+                  else rowRefs.current.delete(m.uid);
+                }}
+                className={`px-4 py-3 flex items-center justify-between relative transition-colors ${isFocused ? 'bg-amber-50 ring-2 ring-amber-300 ring-inset' : ''}`}
+              >
                 <div className="min-w-0 flex-1 pr-2">
                   <p className="text-sm font-medium text-slate-900">{m.displayName || m.email}</p>
                   <p className="text-xs text-slate-500">{m.email}</p>

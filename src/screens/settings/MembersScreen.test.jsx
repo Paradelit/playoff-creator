@@ -25,6 +25,7 @@ vi.mock('../../services/membersService', () => ({ createMembersService: () => mo
 vi.mock('react-router-dom', async () => ({
   ...(await vi.importActual('react-router-dom')),
   useNavigate: () => vi.fn(),
+  useSearchParams: () => [new URLSearchParams(), vi.fn()],
   Link: ({ to, children }) => <a href={to}>{children}</a>,
 }));
 
