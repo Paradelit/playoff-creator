@@ -7,6 +7,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { useMembers } from '../../hooks/useMembers';
 import { useInvites } from '../../hooks/useInvites';
 import { useTeams } from '../../hooks/useTeams';
+import { teamDisplayName } from '../../utils/teamUtils';
 import { createMembersService } from '../../services/membersService';
 import { InviteMemberModal } from './InviteMemberModal';
 import { InviteSuccessModal } from './InviteSuccessModal';
@@ -87,6 +88,10 @@ export function MembersScreen() {
           {members.map((m) => {
             const isOwner = m.uid === ownerUid;
             const isCallerRow = m.uid === callerUid;
+            const memberTeams = (m.assignedTeamIds || [])
+              .map((id) => teams.find((t) => t.id === id))
+              .filter(Boolean)
+              .map((t) => teamDisplayName(t));
             // Reglas de edición:
             // - Owner puede tocar a cualquiera (incluido a sí mismo, p.ej. para
             //   asignarse equipos que entrena personalmente). El callable
@@ -97,10 +102,10 @@ export function MembersScreen() {
             const editable = canEdit && (!isOwner || (callerIsOwner && isCallerRow));
             return (
               <li key={m.uid} className="px-4 py-3 flex items-center justify-between relative">
-                <div>
+                <div className="min-w-0 flex-1 pr-2">
                   <p className="text-sm font-medium text-slate-900">{m.displayName || m.email}</p>
                   <p className="text-xs text-slate-500">{m.email}</p>
-                  <div className="flex gap-2 mt-1">
+                  <div className="flex gap-2 mt-1 flex-wrap items-center">
                     <span className="text-[10px] uppercase tracking-wide bg-slate-100 px-2 py-0.5 rounded">
                       {m.role}
                     </span>
@@ -108,6 +113,13 @@ export function MembersScreen() {
                       <span className="text-[10px] uppercase tracking-wide bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
                         Propietario
                       </span>
+                    )}
+                    {memberTeams.length > 0 ? (
+                      <span className="text-xs text-slate-500 truncate" title={memberTeams.join(', ')}>
+                        · {memberTeams.join(', ')}
+                      </span>
+                    ) : (
+                      !isOwner && <span className="text-xs text-slate-400 italic">· sin equipos asignados</span>
                     )}
                   </div>
                 </div>
