@@ -108,13 +108,10 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.resource.data.ownerId == request.auth.uid;
 
-      // Owner libre de tocar todo, incluso transferir ownership (siempre que
-      // el nuevo ownerId sea ya member del workspace).
+      // Sub-3: ownerId inmutable desde cliente — el cambio de propiedad va por
+      // callable transferOwnership que bumpea atómicamente members/{newOwner}.role.
       allow update: if isWorkspaceOwner(appId, wsId)
-        && (
-          request.resource.data.ownerId == resource.data.ownerId
-          || isWorkspaceMemberUid(appId, wsId, request.resource.data.ownerId)
-        );
+        && request.resource.data.ownerId == resource.data.ownerId;
       // DT no-owner puede editar settings pero no ownerId/plan/billing.
       allow update: if isDT(appId, wsId)
         && workspaceMetaProtected(request.resource.data.diff(resource.data));

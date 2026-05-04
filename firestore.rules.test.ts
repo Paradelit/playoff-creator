@@ -320,13 +320,6 @@ describe('sub-proyecto 2 — Cat A workspace meta (club)', () => {
     );
   });
 
-  it('transfer ownership: nuevo owner debe ser member', async () => {
-    const owner = testEnv.authenticatedContext(OWNER).firestore();
-    await assertSucceeds(
-      owner.doc(`artifacts/${APP_ID}/workspaces/${WS}`).update({ ownerId: DT }),
-    );
-  });
-
   it('transfer ownership a uid no-member es denegado', async () => {
     const owner = testEnv.authenticatedContext(OWNER).firestore();
     await assertFails(
@@ -655,6 +648,29 @@ describe('sub-proyecto 2 — Cat C sharing primitive (grants)', () => {
           collectionType: 'asistencia',
         }),
     );
+  });
+});
+
+describe('firestore.rules — workspaces.ownerId refuerzo (sub-3)', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB`).set({
+        type: 'club', name: 'Club', ownerId: 'U_DT', plan: 'free', billing: null,
+      });
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB/members/U_DT`).set({ role: 'dt', assignedTeamIds: [] });
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB/members/U_DT2`).set({ role: 'dt', assignedTeamIds: [] });
+    });
+  });
+
+  it('owner cannot change ownerId directly anymore', async () => {
+    const db = testEnv.authenticatedContext('U_DT').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/CLUB`).update({ ownerId: 'U_DT2' }));
+  });
+
+  it('non-owner DT also cannot change ownerId (re-confirm sub-2 invariant)', async () => {
+    const db = testEnv.authenticatedContext('U_DT2').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/CLUB`).update({ ownerId: 'U_DT2' }));
   });
 });
 
