@@ -13,8 +13,12 @@ export function subscribeToTeams(wsId, db, appId, callback) {
   });
 }
 
-export async function saveTeam(team, { wsId, db, appId }) {
-  await saveWorkspaceDoc(db, appId, wsId, ['teams', team.id], team);
+export async function saveTeam(team, { wsId, db, appId, uid }) {
+  // Sub-3: persistimos createdBy en el primer save para que el trigger
+  // onTeamCreate sepa quién creó el team y lo auto-asigne en clubs.
+  // Si team ya tiene createdBy (re-save), se respeta.
+  const payload = team.createdBy || !uid ? team : { ...team, createdBy: uid };
+  await saveWorkspaceDoc(db, appId, wsId, ['teams', team.id], payload);
 }
 
 export async function deleteTeam(teamId, { appId, wsId }) {

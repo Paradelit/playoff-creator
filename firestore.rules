@@ -156,16 +156,22 @@ service cloud.firestore {
       // ============ Cat C — Team-scoped strict ============
 
       match /teams/{teamId} {
-        // El team doc en sí es member-readable (todos saben qué equipos existen).
-        allow read: if isWorkspaceMember(appId, wsId);
+        // Sub-3 scoping: solo el owner del workspace ve TODOS los equipos.
+        // Cualquier otro miembro (DT no-owner, coach) ve únicamente los
+        // equipos de su `assignedTeamIds`. Modelo "DT principal centraliza,
+        // DT de rama y coach son scoped".
+        allow read: if isWorkspaceOwner(appId, wsId)
+                       || isPersonalWorkspaceOwner(appId, wsId)
+                       || isAssignedToTeam(appId, wsId, teamId);
 
         allow create: if isDT(appId, wsId) || isWorkspaceOwner(appId, wsId);
 
-        allow update: if isDT(appId, wsId)
-                         || isWorkspaceOwner(appId, wsId)
+        // Update/delete restringidos a owner + assigned (no DT ciegos).
+        allow update: if isWorkspaceOwner(appId, wsId)
                          || isAssignedToTeam(appId, wsId, teamId);
 
-        allow delete: if isDT(appId, wsId) || isWorkspaceOwner(appId, wsId);
+        allow delete: if isWorkspaceOwner(appId, wsId)
+                         || (isDT(appId, wsId) && isAssignedToTeam(appId, wsId, teamId));
 
         // Items con createdBy semántico (jugadores del equipo, entrenamientos).
         match /members/{teamMemberDocId} {
