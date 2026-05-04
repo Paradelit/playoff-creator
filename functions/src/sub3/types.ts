@@ -1,6 +1,6 @@
-import type { Timestamp } from "firebase-admin/firestore";
+import type { Timestamp } from 'firebase-admin/firestore';
 
-export type ClubRole = "dt" | "coach";
+export type ClubRole = 'dt' | 'coach';
 
 // workspaces/{wsId}/invites/{inviteId}
 export interface InviteDoc {
@@ -28,9 +28,9 @@ export interface ClubMemberDoc {
 
 // users/{uid}/memberships/{wsId}
 export interface MembershipDoc {
-  workspaceType: "personal" | "club";
+  workspaceType: 'personal' | 'club';
   workspaceName: string;
-  role: "owner" | ClubRole;
+  role: 'owner' | ClubRole;
   joinedAt: Timestamp;
 }
 
