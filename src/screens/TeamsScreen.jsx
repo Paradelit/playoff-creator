@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, ShieldHalf, X, FolderOpen } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { saveTeam, deleteTeam } from '../services/teamsService';
@@ -15,6 +16,7 @@ import { EMPTY_FORM } from '../components/teams/teamFormConstants';
 export default function TeamsScreen() {
   const { db, appId } = useFirebase();
   const { activeWsId } = useWorkspace();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const { teams, loadingTeams: loading, allSessions, activePlayoffs } = useHomeDashboard();
@@ -77,7 +79,7 @@ export default function TeamsScreen() {
     setSaving(true);
     try {
       const teamId = crypto.randomUUID();
-      await saveTeam({ id: teamId, ...form }, { wsId: activeWsId, db, appId });
+      await saveTeam({ id: teamId, ...form }, { wsId: activeWsId, db, appId, uid: user?.uid });
       if (profile?.autoAddToTeams) {
         await autoAddCoachToTeam(teamId, profile, { wsId: activeWsId, db, appId });
       }
