@@ -681,6 +681,53 @@ describe('sub-proyecto 2 — Cat C sharing primitive (grants)', () => {
   });
 });
 
+describe('firestore.rules — invites (sub-3)', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB`).set({
+        type: 'club', name: 'Club', ownerId: 'U_DT', plan: 'free', billing: null,
+      });
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB/members/U_DT`).set({ role: 'dt', assignedTeamIds: [] });
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB/members/U_COACH`).set({ role: 'coach', assignedTeamIds: ['t1'] });
+      await db.doc(`artifacts/${APP_ID}/workspaces/CLUB/invites/inv-1`).set({
+        inviteId: 'inv-1', workspaceId: 'CLUB', invitedBy: 'U_DT',
+        inviteEmail: null, inviteName: null, role: 'coach', assignedTeamIds: ['t1'],
+        createdAt: new Date(), expiresAt: new Date(Date.now() + 86_400_000),
+      });
+    });
+  });
+
+  it('DT can read invites', async () => {
+    const db = testEnv.authenticatedContext('U_DT').firestore();
+    await assertSucceeds(db.doc(`artifacts/${APP_ID}/workspaces/CLUB/invites/inv-1`).get());
+  });
+
+  it('coach can read invites (transparency)', async () => {
+    const db = testEnv.authenticatedContext('U_COACH').firestore();
+    await assertSucceeds(db.doc(`artifacts/${APP_ID}/workspaces/CLUB/invites/inv-1`).get());
+  });
+
+  it('non-member denied read', async () => {
+    const db = testEnv.authenticatedContext('U_OUT').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/CLUB/invites/inv-1`).get());
+  });
+
+  it('DT cannot CREATE invite directly (must use callable)', async () => {
+    const db = testEnv.authenticatedContext('U_DT').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/CLUB/invites/inv-NEW`).set({
+      inviteId: 'inv-NEW', workspaceId: 'CLUB', invitedBy: 'U_DT',
+      role: 'coach', assignedTeamIds: ['t1'], inviteEmail: null, inviteName: null,
+      createdAt: new Date(), expiresAt: new Date(Date.now() + 86_400_000),
+    }));
+  });
+
+  it('DT cannot DELETE invite directly (must use callable)', async () => {
+    const db = testEnv.authenticatedContext('U_DT').firestore();
+    await assertFails(db.doc(`artifacts/${APP_ID}/workspaces/CLUB/invites/inv-1`).delete());
+  });
+});
+
 describe('firestore.rules — stripeEvents (Stripe webhook idempotency)', () => {
   it('signed-in user cannot read stripeEvents docs', async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {

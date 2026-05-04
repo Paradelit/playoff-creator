@@ -138,6 +138,13 @@ service cloud.firestore {
                          && memberUid != workspaceData(appId, wsId).ownerId;
       }
 
+      // Sub-3: invites son read-only desde cliente. Toda mutación va por callables
+      // (inviteMember/revokeInvite/acceptInvite) con validación server-side.
+      match /invites/{inviteId} {
+        allow read: if isWorkspaceMember(appId, wsId);
+        allow write: if false;
+      }
+
       // ============ Cat B — Workspace-wide DT-curated ============
 
       match /exercises/{exerciseId} {
