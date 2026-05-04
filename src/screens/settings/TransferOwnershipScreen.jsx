@@ -11,7 +11,7 @@ export function TransferOwnershipScreen() {
   const { app } = useFirebase();
   const { user } = useAuth();
   const { activeWsId, activeWorkspace } = useWorkspace();
-  const { push } = useToast();
+  const addToast = useToast();
   const { members } = useMembers(activeWsId);
   const navigate = useNavigate();
   const [pickedUid, setPickedUid] = useState(null);
@@ -38,10 +38,10 @@ export function TransferOwnershipScreen() {
     setSubmitting(true);
     try {
       await svc.transferOwnership({ wsId: activeWsId, newOwnerUid: pickedUid });
-      push({ message: 'Propiedad transferida.', tone: 'success' });
+      addToast('Propiedad transferida.', 'success');
       navigate('/area-privada/settings/miembros');
     } catch (err) {
-      push({ message: err?.message || 'Error', tone: 'error' });
+      addToast(err?.message || 'Error', 'error');
       setSubmitting(false);
     }
   }

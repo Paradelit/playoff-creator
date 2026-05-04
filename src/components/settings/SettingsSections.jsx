@@ -13,6 +13,8 @@ import {
   Shield,
   Bell,
   Sparkles,
+  Users,
+  ChevronRight,
 } from 'lucide-react';
 const ROLES_STAFF = ['Entrenador', 'Entrenador asistente', 'Fisioterapeuta', 'Delegado', 'Médico', 'Otro'];
 
@@ -230,6 +232,22 @@ export function ClubSection({ s }) {
         className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition disabled:opacity-60 text-sm"
       >
         {s.savingProfile ? 'Guardando...' : 'Guardar nombre'}
+      </button>
+    </Section>
+  );
+}
+
+export function ClubMembersSection({ s }) {
+  return (
+    <Section icon={Users} title="Miembros del club" iconColor="text-emerald-600" iconBg="bg-emerald-50">
+      <p className="text-sm text-slate-600 mb-3">Invita a tu staff, asigna equipos y gestiona roles del club.</p>
+      <button
+        type="button"
+        onClick={() => s.navigate('/area-privada/settings/miembros')}
+        className="w-full flex items-center justify-between bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 transition"
+      >
+        <span className="text-sm font-semibold text-slate-700">Gestionar miembros e invitaciones</span>
+        <ChevronRight size={18} className="text-slate-400" aria-hidden="true" />
       </button>
     </Section>
   );

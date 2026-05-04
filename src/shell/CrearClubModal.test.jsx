@@ -10,7 +10,7 @@ vi.mock('../contexts/FirebaseContext', () => ({ useFirebase: () => ({ app: {} })
 vi.mock('../contexts/WorkspaceContext', () => ({
   useWorkspace: () => ({ setActiveWorkspace: vi.fn() }),
 }));
-vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ push: vi.fn() }) }));
+vi.mock('../contexts/ToastContext', () => ({ useToast: () => vi.fn() }));
 vi.mock('react-router-dom', async () => ({
   ...(await vi.importActual('react-router-dom')),
   useNavigate: () => vi.fn(),

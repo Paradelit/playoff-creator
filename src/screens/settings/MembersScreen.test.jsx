@@ -5,7 +5,7 @@ import { MembersScreen } from './MembersScreen';
 vi.mock('../../contexts/WorkspaceContext', () => ({ useWorkspace: vi.fn() }));
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../../contexts/FirebaseContext', () => ({ useFirebase: () => ({ app: {} }) }));
-vi.mock('../../contexts/ToastContext', () => ({ useToast: () => ({ push: vi.fn() }) }));
+vi.mock('../../contexts/ToastContext', () => ({ useToast: () => vi.fn() }));
 vi.mock('../../hooks/useMembers', () => ({ useMembers: vi.fn() }));
 vi.mock('../../hooks/useInvites', () => ({ useInvites: vi.fn() }));
 vi.mock('../../hooks/useTeams', () => ({

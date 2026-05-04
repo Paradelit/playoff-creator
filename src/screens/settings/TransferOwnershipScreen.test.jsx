@@ -5,7 +5,7 @@ import { TransferOwnershipScreen } from './TransferOwnershipScreen';
 vi.mock('../../contexts/WorkspaceContext', () => ({ useWorkspace: vi.fn() }));
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../../contexts/FirebaseContext', () => ({ useFirebase: () => ({ app: {} }) }));
-vi.mock('../../contexts/ToastContext', () => ({ useToast: () => ({ push: vi.fn() }) }));
+vi.mock('../../contexts/ToastContext', () => ({ useToast: () => vi.fn() }));
 vi.mock('../../hooks/useMembers', () => ({ useMembers: vi.fn() }));
 const mockTransfer = vi.fn();
 vi.mock('../../services/membersService', () => ({

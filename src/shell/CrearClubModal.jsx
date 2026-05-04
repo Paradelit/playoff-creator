@@ -9,7 +9,7 @@ import { createMembersService } from '../services/membersService';
 export function CrearClubModal({ onClose }) {
   const { app } = useFirebase();
   const { setActiveWorkspace } = useWorkspace();
-  const { push } = useToast();
+  const addToast = useToast();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -26,8 +26,17 @@ export function CrearClubModal({ onClose }) {
     try {
       const svc = createMembersService({ app });
       const { wsId } = await svc.createClub({ name: trimmed });
-      setActiveWorkspace(wsId);
-      push({ message: 'Workspace de club creado.', tone: 'success' });
+      // Race-safe: el snapshot de memberships aún no ha llegado, así que
+      // setActiveWorkspace(wsId) se rechazaría. Persistimos en localStorage
+      // para que el listener de WorkspaceProvider lo recoja vía
+      // resolveActiveWsId(list, savedWsId) cuando el doc llegue.
+      try {
+        localStorage.setItem('pickncoach.activeWsId', wsId);
+      } catch {
+        /* ignore quota / disabled storage */
+      }
+      setActiveWorkspace(wsId); // intento optimista; si la membership ya llegó, queda activo ya
+      addToast('Workspace de club creado.', 'success');
       onClose();
       navigate('/area-privada');
     } catch (err) {

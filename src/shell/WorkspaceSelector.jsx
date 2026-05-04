@@ -33,7 +33,7 @@ export function WorkspaceSelector() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-1 w-64 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-2"
+          className="absolute left-0 mt-1 w-64 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-2"
         >
           {memberships.map((m) => (
             <button

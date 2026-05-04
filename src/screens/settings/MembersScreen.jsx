@@ -22,7 +22,7 @@ export function MembersScreen() {
   const { app } = useFirebase();
   const { user } = useAuth();
   const { activeWsId, activeWorkspace } = useWorkspace();
-  const { push } = useToast();
+  const addToast = useToast();
   const { members } = useMembers(activeWsId);
   const { invites } = useInvites(activeWsId);
   const { teams } = useTeams();
@@ -51,7 +51,7 @@ export function MembersScreen() {
       setShowInvite(false);
       setSuccessLink(r.link);
     } catch (err) {
-      push({ message: err?.message || 'Error al crear invitación', tone: 'error' });
+      addToast(err?.message || 'Error al crear invitación', 'error');
     } finally {
       setInviteSubmitting(false);
     }
@@ -60,9 +60,9 @@ export function MembersScreen() {
   async function handleRevokeInvite(inviteId) {
     try {
       await svc.revokeInvite({ wsId: activeWsId, inviteId });
-      push({ message: 'Invitación cancelada', tone: 'success' });
+      addToast('Invitación cancelada', 'success');
     } catch (err) {
-      push({ message: err?.message || 'Error', tone: 'error' });
+      addToast(err?.message || 'Error', 'error');
     }
   }
 
@@ -87,7 +87,14 @@ export function MembersScreen() {
           {members.map((m) => {
             const isOwner = m.uid === ownerUid;
             const isCallerRow = m.uid === callerUid;
-            const editable = canEdit && !isCallerRow && !isOwner;
+            // Reglas de edición:
+            // - Owner puede tocar a cualquiera (incluido a sí mismo, p.ej. para
+            //   asignarse equipos que entrena personalmente). El callable
+            //   setMemberRole/revokeMember bloquea cambios al owner; solo
+            //   setMemberTeams permite la auto-edición.
+            // - DT no-owner puede editar a otros DT/coach pero no al owner.
+            // - Coach: read-only.
+            const editable = canEdit && (!isOwner || (callerIsOwner && isCallerRow));
             return (
               <li key={m.uid} className="px-4 py-3 flex items-center justify-between relative">
                 <div>

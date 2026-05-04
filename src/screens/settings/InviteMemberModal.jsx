@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { teamDisplayName } from '../../utils/teamUtils';
 
 export function InviteMemberModal({ teams, onClose, onSubmit, submitting }) {
   const [role, setRole] = useState('coach');
@@ -66,17 +67,20 @@ export function InviteMemberModal({ teams, onClose, onSubmit, submitting }) {
           <legend className="text-sm font-medium mb-1">
             Equipos asignados {role === 'coach' && <span className="text-red-500">*</span>}
           </legend>
-          {teams.map((t) => (
-            <label key={t.id} className="flex items-center gap-2 py-1">
-              <input
-                type="checkbox"
-                aria-label={t.name}
-                checked={picked.includes(t.id)}
-                onChange={() => togglePick(t.id)}
-              />{' '}
-              {t.name}
-            </label>
-          ))}
+          {teams.map((t) => {
+            const label = teamDisplayName(t);
+            return (
+              <label key={t.id} className="flex items-center gap-2 py-1">
+                <input
+                  type="checkbox"
+                  aria-label={label}
+                  checked={picked.includes(t.id)}
+                  onChange={() => togglePick(t.id)}
+                />{' '}
+                {label}
+              </label>
+            );
+          })}
         </fieldset>
         {error && (
           <p className="text-red-600 text-sm" role="alert">

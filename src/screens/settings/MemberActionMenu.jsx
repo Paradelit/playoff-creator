@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MoreVertical } from 'lucide-react';
+import { teamDisplayName } from '../../utils/teamUtils';
 
 export function MemberActionMenu({ member, teams, onChangeRole, onEditTeams, onRevoke }) {
   const [open, setOpen] = useState(false);
@@ -99,19 +100,22 @@ export function MemberActionMenu({ member, teams, onChangeRole, onEditTeams, onR
             setModal(null);
           }}
         >
-          {teams.map((t) => (
-            <label key={t.id} className="flex items-center gap-2 py-1">
-              <input
-                type="checkbox"
-                aria-label={t.name}
-                checked={pickedTeams.includes(t.id)}
-                onChange={() =>
-                  setPickedTeams((cur) => (cur.includes(t.id) ? cur.filter((x) => x !== t.id) : [...cur, t.id]))
-                }
-              />{' '}
-              {t.name}
-            </label>
-          ))}
+          {teams.map((t) => {
+            const label = teamDisplayName(t);
+            return (
+              <label key={t.id} className="flex items-center gap-2 py-1">
+                <input
+                  type="checkbox"
+                  aria-label={label}
+                  checked={pickedTeams.includes(t.id)}
+                  onChange={() =>
+                    setPickedTeams((cur) => (cur.includes(t.id) ? cur.filter((x) => x !== t.id) : [...cur, t.id]))
+                  }
+                />{' '}
+                {label}
+              </label>
+            );
+          })}
         </ConfirmModal>
       )}
       {modal === 'revoke' && (

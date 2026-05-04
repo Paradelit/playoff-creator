@@ -104,7 +104,9 @@ function LoginRoute() {
   if (user) {
     const params = new URLSearchParams(location.search);
     const redirect = params.get('redirect');
-    if (redirect && redirect.startsWith('/area-privada')) {
+    // Whitelist explícito: solo paths internos seguros. Sub-3 añade /invite/...
+    // como ruta pública de claim que se atraviesa con login redirect.
+    if (redirect && (redirect.startsWith('/area-privada') || redirect.startsWith('/invite/'))) {
       return <Navigate to={redirect} replace />;
     }
     return <Navigate to="/area-privada" replace />;
