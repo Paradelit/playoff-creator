@@ -18,10 +18,6 @@ service cloud.firestore {
       return isSignedIn() && exists(/databases/$(database)/documents/artifacts/$(appId)/workspaces/$(wsId)/members/$(request.auth.uid));
     }
 
-    function isWorkspaceMemberUid(appId, wsId, uid) {
-      return exists(/databases/$(database)/documents/artifacts/$(appId)/workspaces/$(wsId)/members/$(uid));
-    }
-
     function isWorkspaceOwner(appId, wsId) {
       return isSignedIn() && workspaceData(appId, wsId).ownerId == request.auth.uid;
     }
@@ -248,7 +244,11 @@ service cloud.firestore {
       // independiente que bloquea cambiar `teamId` a un team al que no estás
       // asignado (sin esto, el autor podría escapar del scoping).
       match /brackets/{bracketId} {
-        allow read: if isPersonalWorkspaceOwner(appId, wsId)
+        // Sub-4: club owner ve TODOS los brackets del workspace sin necesidad
+        // de auto-asignación. Coherente con la visibilidad cross-team del DT
+        // principal sobre la actividad del club.
+        allow read: if isWorkspaceOwner(appId, wsId)
+                       || isPersonalWorkspaceOwner(appId, wsId)
                        || isAssignedToTeam(appId, wsId, resource.data.teamId)
                        || isCreator(resource.data);
         allow create: if isPersonalWorkspaceOwner(appId, wsId)
@@ -275,7 +275,10 @@ service cloud.firestore {
       }
 
       match /calendarSessions/{sessionId} {
-        allow read: if isPersonalWorkspaceOwner(appId, wsId)
+        // Sub-4: club owner ve TODAS las calendarSessions del workspace sin
+        // necesidad de auto-asignación. Mismo razonamiento que brackets.
+        allow read: if isWorkspaceOwner(appId, wsId)
+                       || isPersonalWorkspaceOwner(appId, wsId)
                        || isAssignedToTeam(appId, wsId, resource.data.teamId)
                        || isCreator(resource.data);
         allow create: if isPersonalWorkspaceOwner(appId, wsId)
