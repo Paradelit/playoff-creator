@@ -101,7 +101,6 @@ export function useCalendarSessions(currentDate, viewMode) {
         setBrackets([]);
       },
     );
-     
   }, [appId, db, mergeBracketSnapshot, user, activeWsId, ready, isOwner, assignedKey]);
 
   const shareCodes = useMemo(() => brackets.filter((b) => b.shareCode).map((b) => b.shareCode), [brackets]);
@@ -129,7 +128,6 @@ export function useCalendarSessions(currentDate, viewMode) {
         setLoadedSubscriptionKey(subscriptionKey);
       },
     );
-     
   }, [appId, db, end, start, subscriptionKey, user, activeWsId, ready, isOwner, assignedKey]);
 
   const playoffSessions = useMemo(() => buildPlayoffSessions(brackets, teams), [brackets, teams]);
