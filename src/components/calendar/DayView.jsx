@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, ClipboardList, Trophy } from 'lucide-react';
-import { TEAM_COLORS, teamColorIndex } from '../../utils/constants';
+import { TEAM_COLORS, teamColorIndex, teamBorderClass } from '../../utils/constants';
 import { hhmmToMinutes, minutesToHHMM, toYMD } from '../../utils/dateUtils';
 
 const PX_PER_MIN = 1;
@@ -204,7 +204,7 @@ export default function DayView({ sessions, loading, currentDate, onSelectSessio
             <button
               key={session.id}
               onClick={() => onSelectSession(session)}
-              className={`absolute rounded-lg text-left px-2.5 py-1.5 shadow-sm hover:shadow-md hover:brightness-110 transition overflow-hidden ${sessionBgClass(session)}`}
+              className={`absolute rounded-lg text-left px-2.5 py-1.5 shadow-sm hover:shadow-md hover:brightness-110 transition overflow-hidden border-l-4 ${teamBorderClass(session.teamId)} ${sessionBgClass(session)}`}
               style={{
                 top,
                 height,

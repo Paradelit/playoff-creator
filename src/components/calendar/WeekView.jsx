@@ -1,6 +1,6 @@
 import React from 'react';
 import { toYMD } from '../../utils/dateUtils';
-import { TEAM_COLORS, teamColorIndex, DAY_NAMES_SHORT } from '../../utils/constants';
+import { TEAM_COLORS, teamColorIndex, teamBorderClass, DAY_NAMES_SHORT } from '../../utils/constants';
 
 export default function WeekView({ weekDays, todayYMD, loading, onSelectSession, getTrainingNum }) {
   if (loading) {
@@ -35,7 +35,7 @@ export default function WeekView({ weekDays, todayYMD, loading, onSelectSession,
                     <button
                       key={s.id}
                       onClick={() => onSelectSession(s)}
-                      className={`w-full text-left rounded px-1.5 py-1 text-xs font-semibold truncate transition-opacity hover:opacity-80 ${isPlayoff ? 'bg-amber-500 text-white' : isPartido ? 'bg-rose-500 text-white' : TEAM_COLORS[teamColorIndex(s.teamId)]}`}
+                      className={`w-full text-left rounded px-1.5 py-1 text-xs font-semibold truncate transition-opacity hover:opacity-80 border-l-4 ${teamBorderClass(s.teamId)} ${isPlayoff ? 'bg-amber-500 text-white' : isPartido ? 'bg-rose-500 text-white' : TEAM_COLORS[teamColorIndex(s.teamId)]}`}
                       title={
                         isPlayoff
                           ? `Torneo vs ${s.rival}`

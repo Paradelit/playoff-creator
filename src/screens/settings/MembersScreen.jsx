@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useFirebase } from '../../contexts/FirebaseContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
@@ -7,6 +7,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { useMembers } from '../../hooks/useMembers';
 import { useInvites } from '../../hooks/useInvites';
 import { useTeams } from '../../hooks/useTeams';
+import { teamDisplayName } from '../../utils/teamUtils';
 import { createMembersService } from '../../services/membersService';
 import { InviteMemberModal } from './InviteMemberModal';
 import { InviteSuccessModal } from './InviteSuccessModal';
@@ -32,6 +33,19 @@ export function MembersScreen() {
   const [showInvite, setShowInvite] = useState(false);
   const [inviteSubmitting, setInviteSubmitting] = useState(false);
   const [successLink, setSuccessLink] = useState(null);
+
+  // Sub-4 slice 5: ?focus=memberUid hace scroll + highlight a esa fila.
+  // Útil cuando se llega desde StaffSection del HomeScreen.
+  const [searchParams] = useSearchParams();
+  const focusUid = searchParams.get('focus');
+  const rowRefs = useRef(new Map());
+  useEffect(() => {
+    if (!focusUid) return;
+    const el = rowRefs.current.get(focusUid);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [focusUid, members]);
 
   if (!activeWorkspace || activeWorkspace.type !== 'club') {
     return null;
@@ -87,6 +101,10 @@ export function MembersScreen() {
           {members.map((m) => {
             const isOwner = m.uid === ownerUid;
             const isCallerRow = m.uid === callerUid;
+            const memberTeams = (m.assignedTeamIds || [])
+              .map((id) => teams.find((t) => t.id === id))
+              .filter(Boolean)
+              .map((t) => teamDisplayName(t));
             // Reglas de edición:
             // - Owner puede tocar a cualquiera (incluido a sí mismo, p.ej. para
             //   asignarse equipos que entrena personalmente). El callable
@@ -95,12 +113,20 @@ export function MembersScreen() {
             // - DT no-owner puede editar a otros DT/coach pero no al owner.
             // - Coach: read-only.
             const editable = canEdit && (!isOwner || (callerIsOwner && isCallerRow));
+            const isFocused = focusUid === m.uid;
             return (
-              <li key={m.uid} className="px-4 py-3 flex items-center justify-between relative">
-                <div>
+              <li
+                key={m.uid}
+                ref={(el) => {
+                  if (el) rowRefs.current.set(m.uid, el);
+                  else rowRefs.current.delete(m.uid);
+                }}
+                className={`px-4 py-3 flex items-center justify-between relative transition-colors ${isFocused ? 'bg-amber-50 ring-2 ring-amber-300 ring-inset' : ''}`}
+              >
+                <div className="min-w-0 flex-1 pr-2">
                   <p className="text-sm font-medium text-slate-900">{m.displayName || m.email}</p>
                   <p className="text-xs text-slate-500">{m.email}</p>
-                  <div className="flex gap-2 mt-1">
+                  <div className="flex gap-2 mt-1 flex-wrap items-center">
                     <span className="text-[10px] uppercase tracking-wide bg-slate-100 px-2 py-0.5 rounded">
                       {m.role}
                     </span>
@@ -108,6 +134,13 @@ export function MembersScreen() {
                       <span className="text-[10px] uppercase tracking-wide bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
                         Propietario
                       </span>
+                    )}
+                    {memberTeams.length > 0 ? (
+                      <span className="text-xs text-slate-500 truncate" title={memberTeams.join(', ')}>
+                        · {memberTeams.join(', ')}
+                      </span>
+                    ) : (
+                      !isOwner && <span className="text-xs text-slate-400 italic">· sin equipos asignados</span>
                     )}
                   </div>
                 </div>

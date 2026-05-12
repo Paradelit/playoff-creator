@@ -9,9 +9,27 @@ export const TEAM_COLORS = [
   'bg-blue-800 text-white',
 ];
 
+// Equivalente a TEAM_COLORS pero como border-l-... para usar como acento de
+// equipo cuando el bg- ya está usado por el tipo de sesión (rose=partido,
+// amber=playoff). Mismo orden de paleta que TEAM_COLORS.
+export const TEAM_BORDER_COLORS = [
+  'border-blue-600',
+  'border-orange-500',
+  'border-amber-500',
+  'border-rose-500',
+  'border-emerald-500',
+  'border-blue-400',
+  'border-pink-500',
+  'border-blue-800',
+];
+
 export function teamColorIndex(teamId) {
   if (!teamId) return 0;
   return teamId.charCodeAt(0) % TEAM_COLORS.length;
+}
+
+export function teamBorderClass(teamId) {
+  return TEAM_BORDER_COLORS[teamColorIndex(teamId)];
 }
 
 export const MONTH_NAMES = [

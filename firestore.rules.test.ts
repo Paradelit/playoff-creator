@@ -594,6 +594,70 @@ describe('sub-proyecto 3 — team metadata visibility scoping', () => {
   });
 });
 
+describe('sub-proyecto 4 — owner bypass para brackets + calendarSessions', () => {
+  // Sub-4: club owner debe ver TODAS las brackets y calendarSessions del
+  // workspace sin necesidad de auto-asignación a cada team.
+  const WS = 'WS_OWNER_BYPASS';
+  const OWNER = 'OB_OWNER';
+  const COACH_T1 = 'OB_COACH_T1';
+
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await db.doc(`artifacts/${APP_ID}/workspaces/${WS}`).set({ type: 'club', ownerId: OWNER });
+      // Owner está SIN auto-asignar a ningún team (caso del DT principal del
+      // club que NO entrenam personalmente).
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${OWNER}`)
+        .set({ role: 'dt', assignedTeamIds: [] });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/members/${COACH_T1}`)
+        .set({ role: 'coach', assignedTeamIds: ['t1'] });
+      await db.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t1`).set({ name: 'T1' });
+      await db.doc(`artifacts/${APP_ID}/workspaces/${WS}/teams/t2`).set({ name: 'T2' });
+      // Creator es un user random, no el COACH_T1 ni el OWNER, para que las
+      // assertions sobre coach se basen sólo en isAssignedToTeam y las del
+      // owner se basen sólo en isWorkspaceOwner (no en isCreator).
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/brackets/b1`)
+        .set({ teamId: 't1', createdBy: 'OB_RANDOM' });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/brackets/b2`)
+        .set({ teamId: 't2', createdBy: 'OB_RANDOM' });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/calendarSessions/s1`)
+        .set({ teamId: 't1', fecha: '2026-05-04', createdBy: 'OB_RANDOM' });
+      await db
+        .doc(`artifacts/${APP_ID}/workspaces/${WS}/calendarSessions/s2`)
+        .set({ teamId: 't2', fecha: '2026-05-05', createdBy: 'OB_RANDOM' });
+    });
+  });
+
+  it('owner sin auto-asignación lee CUALQUIER bracket del club', async () => {
+    const o = testEnv.authenticatedContext(OWNER).firestore();
+    await assertSucceeds(o.doc(`artifacts/${APP_ID}/workspaces/${WS}/brackets/b1`).get());
+    await assertSucceeds(o.doc(`artifacts/${APP_ID}/workspaces/${WS}/brackets/b2`).get());
+  });
+
+  it('owner sin auto-asignación lee CUALQUIER calendarSession del club', async () => {
+    const o = testEnv.authenticatedContext(OWNER).firestore();
+    await assertSucceeds(o.doc(`artifacts/${APP_ID}/workspaces/${WS}/calendarSessions/s1`).get());
+    await assertSucceeds(o.doc(`artifacts/${APP_ID}/workspaces/${WS}/calendarSessions/s2`).get());
+  });
+
+  it('coach sigue limitado a calendarSessions de teams asignados', async () => {
+    const c = testEnv.authenticatedContext(COACH_T1).firestore();
+    await assertSucceeds(c.doc(`artifacts/${APP_ID}/workspaces/${WS}/calendarSessions/s1`).get());
+    await assertFails(c.doc(`artifacts/${APP_ID}/workspaces/${WS}/calendarSessions/s2`).get());
+  });
+
+  it('coach sigue limitado a brackets de teams asignados', async () => {
+    const c = testEnv.authenticatedContext(COACH_T1).firestore();
+    await assertSucceeds(c.doc(`artifacts/${APP_ID}/workspaces/${WS}/brackets/b1`).get());
+    await assertFails(c.doc(`artifacts/${APP_ID}/workspaces/${WS}/brackets/b2`).get());
+  });
+});
+
 describe('sub-proyecto 2 — Cat C sharing primitive (grants)', () => {
   const WS = 'WS_CLUB_G';
   const DT = 'G_DT';

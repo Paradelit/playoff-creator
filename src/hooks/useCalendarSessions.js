@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { onSnapshot } from 'firebase/firestore';
+import { onSnapshot, query, where } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
@@ -43,7 +43,7 @@ export function getMonday(date) {
 export function useCalendarSessions(currentDate, viewMode) {
   const { user } = useAuth();
   const { db, appId } = useFirebase();
-  const { activeWsId } = useWorkspace();
+  const { activeWsId, activeWorkspace, activeMember } = useWorkspace();
   const { teams } = useTeams();
   const trainingNumbers = useTrainingNumbers();
 
@@ -51,8 +51,18 @@ export function useCalendarSessions(currentDate, viewMode) {
   const [brackets, setBrackets] = useState([]);
   const [loadedSubscriptionKey, setLoadedSubscriptionKey] = useState('');
   const [start, end] = useMemo(() => getDateRange(currentDate, viewMode), [currentDate, viewMode]);
-  const subscriptionKey = `${user?.uid || 'guest'}:${activeWsId || 'no-ws'}:${appId}:${start}:${end}`;
-  const loading = Boolean(user && db && activeWsId) && loadedSubscriptionKey !== subscriptionKey;
+
+  const isOwner = !!user && !!activeWorkspace && activeWorkspace.ownerId === user.uid;
+  const rawIds = activeMember?.assignedTeamIds;
+  const assignedKey = Array.isArray(rawIds) ? rawIds.join(',') : '';
+
+  // Sub-4: el caller necesita activeMember resuelto si NO es owner para evitar
+  // queries collection-wide que fallan con permission-denied.
+  const ready = !!user && !!db && !!activeWsId && !!activeWorkspace && (isOwner || !!activeMember);
+
+  const subscriptionKey = `${user?.uid || 'guest'}:${activeWsId || 'no-ws'}:${appId}:${start}:${end}:${isOwner ? 'all' : assignedKey || 'none'}`;
+  const loading = ready && loadedSubscriptionKey !== subscriptionKey;
+
   const mergeBracketSnapshot = useCallback(
     (fetchedBrackets, previousBrackets) =>
       mergeBracketsWithPrevious(fetchedBrackets, previousBrackets, (bracket, existing) => {
@@ -69,23 +79,56 @@ export function useCalendarSessions(currentDate, viewMode) {
 
   // Subscribe to workspace bracket docs
   useEffect(() => {
-    if (!user || !db || !activeWsId) return undefined;
-    return onSnapshot(workspaceColRef(db, appId, activeWsId, 'brackets'), (snap) => {
-      const fetched = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
-      setBrackets((prev) => mergeBracketSnapshot(fetched, prev));
-    });
-  }, [appId, db, mergeBracketSnapshot, user, activeWsId]);
+    if (!ready) return undefined;
+    let q = workspaceColRef(db, appId, activeWsId, 'brackets');
+    if (!isOwner) {
+      const ids = assignedKey ? assignedKey.split(',') : [];
+      if (ids.length === 0) {
+        // Non-owner sin assignments → no subscribir, brackets queda en [].
+        setBrackets([]);
+        return undefined;
+      }
+      q = query(q, where('teamId', 'in', ids));
+    }
+    return onSnapshot(
+      q,
+      (snap) => {
+        const fetched = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+        setBrackets((prev) => mergeBracketSnapshot(fetched, prev));
+      },
+      (err) => {
+        console.error('[useCalendarSessions] brackets subscription error', err);
+        setBrackets([]);
+      },
+    );
+  }, [appId, db, mergeBracketSnapshot, user, activeWsId, ready, isOwner, assignedKey]);
 
   const shareCodes = useMemo(() => brackets.filter((b) => b.shareCode).map((b) => b.shareCode), [brackets]);
   useSharedBracketSubscriptions({ db, appId, shareCodes, onSharedSnapshot: handleSharedSnapshot });
 
   useEffect(() => {
-    if (!user || !db || !activeWsId) return undefined;
-    return subscribeToCalendarSessions(activeWsId, db, appId, start, end, (data) => {
-      setSessions(data);
-      setLoadedSubscriptionKey(subscriptionKey);
-    });
-  }, [appId, db, end, start, subscriptionKey, user, activeWsId]);
+    if (!ready) return undefined;
+    const scope = isOwner
+      ? { scope: 'all' }
+      : { scope: 'assigned', assignedTeamIds: assignedKey ? assignedKey.split(',') : [] };
+    return subscribeToCalendarSessions(
+      activeWsId,
+      db,
+      appId,
+      start,
+      end,
+      (data) => {
+        setSessions(data);
+        setLoadedSubscriptionKey(subscriptionKey);
+      },
+      scope,
+      () => {
+        // Aún en error, marcar la subscription como "resuelta" para que la UI no
+        // se quede cargando indefinidamente. Mostrará lista vacía.
+        setLoadedSubscriptionKey(subscriptionKey);
+      },
+    );
+  }, [appId, db, end, start, subscriptionKey, user, activeWsId, ready, isOwner, assignedKey]);
 
   const playoffSessions = useMemo(() => buildPlayoffSessions(brackets, teams), [brackets, teams]);
   const teamIds = useMemo(() => new Set(teams.map((t) => t.id)), [teams]);

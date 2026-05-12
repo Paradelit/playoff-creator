@@ -15,16 +15,57 @@ function calendarSessionsCol(wsId, db, appId) {
   return collection(db, 'artifacts', appId, 'workspaces', wsId, 'calendarSessions');
 }
 
-export function subscribeToCalendarSessions(wsId, db, appId, startDate, endDate, callback) {
-  const q = query(
-    calendarSessionsCol(wsId, db, appId),
-    where('fecha', '>=', startDate),
-    where('fecha', '<=', endDate),
-    orderBy('fecha', 'asc'),
+export function subscribeToCalendarSessions(
+  wsId,
+  db,
+  appId,
+  startDate,
+  endDate,
+  callback,
+  scope = { scope: 'all' },
+  onError,
+) {
+  // Sub-3/4: collection queries fallan cross-collection si las rules bloquean
+  // algún doc. Para non-owners en clubs, filtrar por teamId in assignedTeamIds.
+  const baseFilters = [where('fecha', '>=', startDate), where('fecha', '<=', endDate)];
+  if (scope.scope === 'assigned') {
+    const ids = Array.isArray(scope.assignedTeamIds) ? scope.assignedTeamIds : [];
+    if (ids.length === 0) {
+      // Sin teams asignados → nada que mostrar. Llamar callback inmediato sin
+      // suscribir (Firestore rechaza 'in' con array vacío).
+      callback([]);
+      return () => undefined;
+    }
+    const q = query(
+      calendarSessionsCol(wsId, db, appId),
+      ...baseFilters,
+      where('teamId', 'in', ids),
+      orderBy('fecha', 'asc'),
+    );
+    return onSnapshot(
+      q,
+      (snap) => {
+        callback(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
+      },
+      (err) => {
+        console.error('[subscribeToCalendarSessions] error', err);
+        callback([]);
+        if (onError) onError(err);
+      },
+    );
+  }
+  const q = query(calendarSessionsCol(wsId, db, appId), ...baseFilters, orderBy('fecha', 'asc'));
+  return onSnapshot(
+    q,
+    (snap) => {
+      callback(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
+    },
+    (err) => {
+      console.error('[subscribeToCalendarSessions] error', err);
+      callback([]);
+      if (onError) onError(err);
+    },
   );
-  return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
-  });
 }
 
 export async function saveCalendarSession(session, { wsId, db, appId }) {

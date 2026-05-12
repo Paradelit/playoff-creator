@@ -12,11 +12,15 @@ import {
 } from 'lucide-react';
 import { useHomeDashboard } from '../hooks/useHomeDashboard';
 import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
+import { useWorkspace } from '../contexts/WorkspaceContext';
+import { useMembers } from '../hooks/useMembers';
 import { teamDisplayName, teamGradient } from '../utils/teamUtils';
 import { EmptyTeamCard, ActionEventRow, MONTHS } from '../components/home/HomeComponents';
 import BibliotecaPreview from '../components/home/BibliotecaPreview';
 import NextActionHero from '../components/home/NextActionHero';
 import PendingActionsList from '../components/home/PendingActionsList';
+import StaffSection from '../components/home/StaffSection';
+import ClubKpiStrip from '../components/home/ClubKpiStrip';
 import ConvocatoriaModal from '../components/calendar/ConvocatoriaModal';
 import CumpleañosModal from '../components/home/CumpleañosModal';
 import { useCompetitions } from '../hooks/useCompetitions';
@@ -258,7 +262,18 @@ export default function HomeScreen() {
     pendingActionsTotal,
     newsItems,
     weekStrip,
+    allSessions,
   } = useHomeDashboard();
+
+  // Sub-4: blocks "Staff" + "KPI strip" en HomeScreen sólo cuando el caller
+  // es DT (owner o role='dt') en un workspace de tipo club. Para coach o
+  // personal-workspace, HomeScreen sigue igual que antes.
+  const { activeWsId, activeWorkspace, activeMember } = useWorkspace();
+  const { members } = useMembers(activeWsId);
+  const isClub = activeWorkspace?.type === 'club';
+  const callerIsOwner = !!user && activeWorkspace?.ownerId === user.uid;
+  const callerIsDt = activeMember?.role === 'dt';
+  const showClubBlocks = isClub && (callerIsOwner || callerIsDt);
 
   useRegisterScreenContext({
     todayEventsCount: todayEvents.length,
@@ -384,6 +399,12 @@ export default function HomeScreen() {
         </div>
         <QuotaWarningBanner />
 
+        {showClubBlocks && (
+          <div className="mb-4">
+            <ClubKpiStrip teams={teams} allSessions={allSessions} activePlayoffs={activePlayoffs} members={members} />
+          </div>
+        )}
+
         {/* Mobile-only: Pendientes lifted just below Hero so the formativo coach
             opening the app at 23h sees their queue immediately, before the team
             carousel. Desktop keeps Pendientes in the aside (right column). */}
@@ -438,6 +459,14 @@ export default function HomeScreen() {
             </div>
             <WeekStrip days={weekStrip} navigate={navigate} />
             <WeeklySummaryChip weeklySummary={weeklySummary} />
+            {showClubBlocks && (
+              <StaffSection
+                members={members}
+                currentUid={user?.uid}
+                ownerUid={activeWorkspace?.ownerId}
+                navigate={navigate}
+              />
+            )}
             {activePlayoffs.length > 0 && (
               <section aria-labelledby="tournaments-heading">
                 <h2
