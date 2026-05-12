@@ -27,12 +27,15 @@ export function InviteMemberModal({ teams, onClose, onSubmit, submitting }) {
       className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
+      aria-labelledby="invite-member-modal-title"
     >
       <form onSubmit={submit} className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
         <div className="flex justify-between mb-4">
-          <h2 className="text-lg font-semibold">Invitar al staff</h2>
+          <h2 id="invite-member-modal-title" className="text-lg font-semibold">
+            Invitar al staff
+          </h2>
           <button type="button" aria-label="Cerrar" onClick={onClose}>
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
         <fieldset className="mb-3">
