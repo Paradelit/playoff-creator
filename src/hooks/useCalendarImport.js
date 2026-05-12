@@ -72,12 +72,37 @@ export function useCalendarImport(teams, getTrainingNum) {
     setImportPreview(null);
     setImportStatus('Leyendo el archivo Excel...');
     try {
-      const XLSX = await import('xlsx');
+      // Reemplazo de xlsx (HIGH CVE sin fix upstream + paquete movido fuera de
+      // npm) por ExcelJS, que ya está como dep para exports y cubre el caso de
+      // sheet→CSV manualmente. Conversión: iterar hojas, formatear filas como
+      // CSV separado por comas, escapar valores con comas o comillas.
+      const ExcelJS = (await import('exceljs')).default;
       const buffer = await file.arrayBuffer();
-      const wb = XLSX.read(buffer, { type: 'array' });
-      const csvParts = wb.SheetNames.map(
-        (name) => `--- HOJA: ${name} ---\n${XLSX.utils.sheet_to_csv(wb.Sheets[name])}`,
-      );
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(buffer);
+      const escapeCsv = (v) => {
+        if (v === null || v === undefined) return '';
+        const s = String(v);
+        if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+          return `"${s.replace(/"/g, '""')}"`;
+        }
+        return s;
+      };
+      const csvParts = [];
+      wb.eachSheet((sheet) => {
+        const rows = [];
+        sheet.eachRow({ includeEmpty: true }, (row) => {
+          const cells = [];
+          row.eachCell({ includeEmpty: true }, (cell) => {
+            // Cell.text aplica formato (fechas, fórmulas resueltas). Cell.value
+            // es el dato crudo. Usamos text para que la IA vea el contenido
+            // como lo ve el usuario en Excel.
+            cells.push(escapeCsv(cell.text ?? cell.value));
+          });
+          rows.push(cells.join(','));
+        });
+        csvParts.push(`--- HOJA: ${sheet.name} ---\n${rows.join('\n')}`);
+      });
       const teamList = teams.map((t) => ({ id: t.id, teamName: teamDisplayName(t) }));
       setImportStatus('La IA está analizando el cuadrante...');
       const { result } = await runAgent('calendar', {

@@ -2,7 +2,9 @@ let pdfjsLib = null;
 async function getPdfjs() {
   if (!pdfjsLib) {
     pdfjsLib = await import('pdfjs-dist');
-    const { default: workerUrl } = await import('pdfjs-dist/build/pdf.worker.min.js?url');
+    // pdfjs-dist v4+ migró a ESM: el worker es ahora .mjs (v3 era .js). El
+    // bump v3→v5 cierra HIGH CVE de arbitrary JS exec al abrir PDFs maliciosos.
+    const { default: workerUrl } = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
     pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
   }
   return pdfjsLib;
