@@ -53,7 +53,13 @@ service cloud.firestore {
     function isCreator(data) { return data.createdBy == request.auth.uid; }
 
     function workspaceMetaProtected(diff) {
-      return diff.affectedKeys().hasAny(['ownerId', 'plan', 'billing']) == false;
+      // Campos que NO se pueden editar desde el cliente bajo ninguna circunstancia:
+      // - ownerId, plan, billing: solo callables/webhooks (transferOwnership, Stripe).
+      // - type: flipear de 'club' a 'personal' bypasea seat billing (audit hallazgo HIGH).
+      // - createdAt, migrationCompleteAt: invariantes históricos, no se reescriben.
+      return diff.affectedKeys().hasAny([
+        'ownerId', 'plan', 'billing', 'type', 'createdAt', 'migrationCompleteAt'
+      ]) == false;
     }
 
     // ============ HELPERS — SHARED LEGACY ============
@@ -339,7 +345,16 @@ service cloud.firestore {
 
     match /artifacts/{appId}/shared-exercises/{shareCode} {
       allow read:  if true;
-      allow write: if isSignedIn();
+      // create: cualquier user autenticado puede compartir un ejercicio propio
+      // (must declarar sharedBy.uid como sí mismo para evitar suplantación).
+      allow create: if isSignedIn()
+        && request.resource.data.sharedBy != null
+        && request.resource.data.sharedBy.uid == request.auth.uid;
+      // update/delete: solo quien lo compartió originalmente puede modificarlo
+      // o borrarlo. Pre-sub-7 cualquier user podía sobrescribir shares ajenos.
+      allow update, delete: if isSignedIn()
+        && resource.data.sharedBy != null
+        && resource.data.sharedBy.uid == request.auth.uid;
     }
   }
 }

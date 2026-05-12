@@ -30,6 +30,7 @@ import {
   AutoEvaluator,
 } from "./ai";
 import { assertWithinQuota } from "./billing/quota";
+import { assertWorkspaceMembership } from "./common/assertWorkspaceMembership";
 
 if (getApps().length === 0) initializeApp();
 
@@ -155,6 +156,10 @@ export const runAgent = onCall(
     if (!wsId) throw new HttpsError("invalid-argument", "Missing wsId");
 
     const db = getFirestore();
+    // Verify membership BEFORE consuming quota — sin este check, un atacante
+    // podía pasar cualquier wsId conocido y agotar la cuota de otro workspace.
+    // Espejo del check que aiChat ya hacía in-line.
+    await assertWorkspaceMembership(db, appId as string, wsId as string, request.auth.uid);
     // Quota gate — same as aiChat. Increments counter atomically; throws resource-exhausted when free + over.
     await assertWithinQuota(db, { wsId: wsId as string, appId: appId as string });
 
@@ -375,9 +380,39 @@ export const cleanupUserData = onCall(
     }
     // deleteAllUserData iterates memberships server-side and doesn't need wsId from client.
 
+    const db = getFirestore();
+
+    // Authorization por acción. Pre-batch-security, este callable solo verificaba
+    // auth.uid presente y pasaba cualquier (wsId, teamId/bracketId) a la lógica
+    // de borrado — un atacante podía borrar teams/brackets de cualquier workspace
+    // pasando los IDs (descubrir IDs es trivial vía screenshots, share-codes, etc.).
+    if (action === "deleteTeam" || action === "deleteBracket") {
+      // Borrados de team/bracket requieren ser DT (o owner) del workspace —
+      // misma matriz que firestore.rules para `allow delete` en /teams.
+      const ctx = await assertWorkspaceMembership(
+        db,
+        appId,
+        wsId as string,
+        request.auth.uid,
+      );
+      if (!ctx.isOwner && !ctx.isDT) {
+        throw new HttpsError(
+          "permission-denied",
+          "Solo el owner o DT pueden borrar teams/brackets.",
+        );
+      }
+    } else if (action === "deleteConversation") {
+      // La conversación vive bajo users/{uid}/pickHistory/{wsId}/... — el path
+      // ya scopea al uid del caller; aún así verificamos membership para no
+      // permitir crear basura en wsId que el caller nunca ha usado.
+      await assertWorkspaceMembership(db, appId, wsId as string, request.auth.uid);
+    }
+    // deleteAllUserData scopea a request.auth.uid en todas las queries internas;
+    // no necesita check adicional.
+
     try {
       const result = await runCleanupUserData({
-        db: getFirestore(),
+        db,
         appId,
         userId: request.auth.uid,
         wsId,
@@ -389,7 +424,17 @@ export const cleanupUserData = onCall(
       return { success: true, result };
     } catch (err) {
       const error = err as Error;
-      throw new HttpsError("internal", error.message || "Cleanup failed");
+      // Si la lógica interna ya lanzó HttpsError, propagarlo tal cual; si fue
+      // Error genérico, envolverlo como internal sin filtrar el mensaje (puede
+      // incluir paths Firestore con IDs sensibles).
+      if (error instanceof HttpsError) throw error;
+      console.error("[cleanupUserData] internal error", {
+        uid: request.auth.uid,
+        action,
+        wsId,
+        err: error.message,
+      });
+      throw new HttpsError("internal", "Cleanup failed");
     }
   }
 );
