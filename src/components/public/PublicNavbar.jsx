@@ -6,6 +6,8 @@ import { usePublicTheme } from '../../hooks/usePublicTheme';
 
 const NAV_LINKS = [
   { to: '/', label: 'Inicio', end: true },
+  { to: '/precios', label: 'Precios', end: true },
+  { to: '/para-clubes', label: 'Clubes', end: true },
   { to: '/ayuda', label: 'Centro de ayuda', end: false },
 ];
 

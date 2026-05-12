@@ -11,6 +11,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import LandingScreen from '../screens/LandingScreen';
 import HelpIndexScreen from '../screens/HelpIndexScreen';
 import HelpArticleScreen from '../screens/HelpArticleScreen';
+// sub-proyecto 7 — marketing público de precios y B2B.
+import PricingScreen from '../screens/PricingScreen';
+import ParaClubesScreen from '../screens/ParaClubesScreen';
 import PublicNavbar from '../components/public/PublicNavbar';
 import { PublicThemeProvider } from '../contexts/PublicThemeContext';
 
@@ -47,6 +50,23 @@ export const PUBLIC_ROUTE_DEFS = [
     element: (
       <PublicLayout>
         <HelpArticleScreen />
+      </PublicLayout>
+    ),
+  },
+  // sub-proyecto 7 — funnel B2C/B2B.
+  {
+    path: '/precios',
+    element: (
+      <PublicLayout>
+        <PricingScreen />
+      </PublicLayout>
+    ),
+  },
+  {
+    path: '/para-clubes',
+    element: (
+      <PublicLayout>
+        <ParaClubesScreen />
       </PublicLayout>
     ),
   },
