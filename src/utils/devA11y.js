@@ -1,3 +1,4 @@
+/* eslint-disable no-console -- todo este archivo es dev tooling que printea axe results al DevTools console; los console.log son intencionales y nunca llegan a prod (gate de import.meta.env.DEV en main.jsx). */
 // Auditor de accesibilidad en dev.
 //
 // Instala dos hooks:

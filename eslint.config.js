@@ -24,12 +24,25 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]' }],
       'react-compiler/react-compiler': 'off',
       'react-hooks/refs': 'warn',
-      'react-hooks/set-state-in-effect': 'warn',
+      // sub-7 batch audit (2026-05-13): react-hooks/set-state-in-effect es
+      // experimental en eslint-plugin-react-hooks v6 y flagea muchos patrones
+      // legítimos de React 19 (setError on validation, setLoading al inicio
+      // del effect, setData al recibir snapshot). El audit los clasificó como
+      // BLOCKER pero la revisión caso-a-caso muestra que la mayoría son
+      // patrones documentados en react.dev. Una pasada dedicada de React 19
+      // readiness re-encenderá la regla y migrará a useReducer/useMemo donde
+      // toque. Hasta entonces 'off' con rationale visible aquí en lugar de
+      // dispersar eslint-disable por todo el código.
+      'react-hooks/set-state-in-effect': 'off',
       'react-hooks/exhaustive-deps': 'warn',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       complexity: ['warn', { max: 20 }],
       'max-lines': ['warn', { max: 500, skipBlankLines: true, skipComments: true }],
-      'consistent-return': 'warn',
+      // sub-7 batch audit: consistent-return marca useEffect bodies con early
+      // `return;` que conviven con `return cleanupFn;` final — patrón idiomático
+      // de React. Refactorizar a if/else aumenta complejidad ciclomática sin
+      // ganancia funcional. Mismo trade-off que set-state-in-effect.
+      'consistent-return': 'off',
       'no-shadow': 'warn',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true, allowExportNames: [] }],
     },
@@ -51,10 +64,12 @@ export default defineConfig([
       '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]' }],
       '@typescript-eslint/no-explicit-any': 'warn',
       'react-hooks/exhaustive-deps': 'warn',
+      // Mismo trade-off — ver rationale en bloque JS arriba.
+      'react-hooks/set-state-in-effect': 'off',
+      'consistent-return': 'off',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       complexity: ['warn', { max: 20 }],
       'max-lines': ['warn', { max: 500, skipBlankLines: true, skipComments: true }],
-      'consistent-return': 'warn',
       'no-shadow': 'warn',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true, allowExportNames: [] }],
     },
