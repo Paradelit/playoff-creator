@@ -16,13 +16,18 @@ import PricingScreen from '../screens/PricingScreen';
 import ParaClubesScreen from '../screens/ParaClubesScreen';
 import PublicNavbar from '../components/public/PublicNavbar';
 import { PublicThemeProvider } from '../contexts/PublicThemeContext';
+import ModuleBoundary from '../components/ModuleBoundary';
 
-function PublicLayout({ children }) {
+function PublicLayout({ children, name }) {
+  // ErrorBoundary añadido en sub-7 batch CI — antes un fallo en Hero o en
+  // cualquier screen pública blanqueaba la página sin feedback. Ahora
+  // ModuleBoundary captura y muestra un fallback usable, manteniendo el
+  // navbar para que el usuario pueda navegar a otra ruta.
   return (
     <PublicThemeProvider>
       <div className="min-h-screen bg-white text-slate-900 transition-colors dark:bg-[#05050d] dark:text-white">
         <PublicNavbar />
-        {children}
+        <ModuleBoundary name={name}>{children}</ModuleBoundary>
       </div>
     </PublicThemeProvider>
   );
@@ -32,7 +37,7 @@ export const PUBLIC_ROUTE_DEFS = [
   {
     path: '/',
     element: (
-      <PublicLayout>
+      <PublicLayout name="Landing">
         <LandingScreen />
       </PublicLayout>
     ),
@@ -40,7 +45,7 @@ export const PUBLIC_ROUTE_DEFS = [
   {
     path: '/ayuda',
     element: (
-      <PublicLayout>
+      <PublicLayout name="Ayuda">
         <HelpIndexScreen />
       </PublicLayout>
     ),
@@ -48,7 +53,7 @@ export const PUBLIC_ROUTE_DEFS = [
   {
     path: '/ayuda/:slug',
     element: (
-      <PublicLayout>
+      <PublicLayout name="Artículo de ayuda">
         <HelpArticleScreen />
       </PublicLayout>
     ),
@@ -57,7 +62,7 @@ export const PUBLIC_ROUTE_DEFS = [
   {
     path: '/precios',
     element: (
-      <PublicLayout>
+      <PublicLayout name="Precios">
         <PricingScreen />
       </PublicLayout>
     ),
@@ -65,7 +70,7 @@ export const PUBLIC_ROUTE_DEFS = [
   {
     path: '/para-clubes',
     element: (
-      <PublicLayout>
+      <PublicLayout name="Para clubes">
         <ParaClubesScreen />
       </PublicLayout>
     ),

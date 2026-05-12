@@ -70,10 +70,10 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           projectId: playoff-creator
 
-      # Functions are deployed only on push to main, not on PRs (which already
+      # Functions + rules are deployed only on push to main, not on PRs (which already
       # cover Hosting via the preview channel above). The service account in
       # FIREBASE_SERVICE_ACCOUNT must have Cloud Functions Developer +
-      # Service Account User roles for this step to succeed.
+      # Service Account User + Cloud Datastore Owner roles for these steps.
       - name: Install Firebase CLI
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: npm install -g firebase-tools
@@ -84,6 +84,24 @@ jobs:
         # step, the firebase predeploy hook (`npm --prefix functions run
         # build`) falls back to a global tsc that fails with TS5011.
         run: npm ci --prefix functions
+
+      - name: Deploy Firestore rules
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        # Antes (pre sub-7 batch CI): rules se desplegaban a mano. Ahora se
+        # despliegan en cada push a main. Mismo soft-fail pattern que functions
+        # — si la SA no tiene Cloud Datastore Owner, no rompe el hosting deploy
+        # pero deja warning visible.
+        continue-on-error: true
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/sa-key-rules.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa-key-rules.json"
+          firebase deploy --only firestore:rules --project playoff-creator --force --non-interactive
+          STATUS=$?
+          rm -f "$RUNNER_TEMP/sa-key-rules.json"
+          if [ $STATUS -ne 0 ]; then
+            echo "::warning::Firestore rules deploy failed (exit $STATUS). Grant the service account Cloud Datastore Owner. Hosting deploy is unaffected."
+          fi
+          exit $STATUS
 
       - name: Deploy Cloud Functions
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -109,3 +127,26 @@ jobs:
             echo "::warning::Cloud Functions deploy failed (exit $STATUS). If this is a permissions error, grant the service account Cloud Functions Developer + Service Account User + Service Usage Consumer roles. Hosting deploy is unaffected."
           fi
           exit $STATUS
+
+      # Limpieza periódica de preview channels (uno por PR) — Firebase Hosting
+      # acumula uno por PR indefinidamente sin esta etapa. Lista todos los
+      # channels excepto 'live' y borra los con más de 7 días de antigüedad.
+      - name: Cleanup stale preview channels
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/sa-cleanup.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa-cleanup.json"
+          CUTOFF=$(date -u -d '7 days ago' --iso-8601=seconds 2>/dev/null || date -u -v-7d -Iseconds)
+          firebase hosting:channel:list --project playoff-creator --json 2>/dev/null \
+            | node -e "
+              const data = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+              const channels = (data?.result?.channels || []).filter(c => c.name && !c.name.endsWith('/live') && c.updateTime < '$CUTOFF');
+              for (const c of channels) {
+                const id = c.name.split('/').pop();
+                console.log('Deleting stale channel:', id, 'last update:', c.updateTime);
+                require('child_process').execSync('firebase hosting:channel:delete ' + id + ' --project playoff-creator --force', { stdio: 'inherit' });
+              }
+              if (channels.length === 0) console.log('No stale preview channels to clean.');
+            " || echo "::warning::Preview channel cleanup encountered an error (non-fatal)."
+          rm -f "$RUNNER_TEMP/sa-cleanup.json"
