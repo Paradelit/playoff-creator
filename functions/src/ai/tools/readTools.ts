@@ -9,6 +9,14 @@ function userCol(ctx: ToolContext, collectionName: string) {
     .collection(collectionName);
 }
 
+function workspaceRoot(ctx: ToolContext) {
+  return ctx.db.doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}`);
+}
+
+function teamDoc(ctx: ToolContext, teamId: string) {
+  return workspaceRoot(ctx).collection("teams").doc(teamId);
+}
+
 function teamSubCol(ctx: ToolContext, teamId: string, collectionName: string) {
   return ctx.db
     .collection("artifacts").doc(ctx.appId)
@@ -79,8 +87,7 @@ export function createReadTools(): ToolDefinition[] {
       handler: async (args, ctx) => {
         const teamId = resolveId(args, ctx, "teamId");
         if (!teamId) return { error: "Falta teamId. Llama a list_teams primero o pregunta al usuario." };
-        const teamSnap = await ctx.db
-          .doc(`artifacts/${ctx.appId}/workspaces/${ctx.wsId}/teams/${teamId}`).get();
+        const teamSnap = await teamDoc(ctx, teamId).get();
         if (!teamSnap.exists) return { error: "Equipo no encontrado" };
         const memSnap = await teamSubCol(ctx, teamId, "members").get();
         const members = memSnap.docs.map((d) => {

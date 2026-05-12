@@ -15,7 +15,7 @@ export default function ActionButton({ action, onExecute }: Props) {
       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full hover:bg-blue-100 active:bg-blue-200 transition-colors"
     >
       {action.label}
-      <Icon size={12} />
+      <Icon size={12} aria-hidden="true" />
     </button>
   );
 }
