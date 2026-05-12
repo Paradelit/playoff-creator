@@ -243,6 +243,75 @@ describe('firestore.rules — shared (unchanged)', () => {
   });
 });
 
+// Sub-7 security batch — shared-exercises write rule restringido (antes
+// cualquier signed-in user podía sobrescribir docs ajenos).
+describe('firestore.rules — shared-exercises (sub-7 security batch)', () => {
+  it('autor original puede actualizar y borrar su shared-exercise', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx
+        .firestore()
+        .doc(`artifacts/${APP_ID}/shared-exercises/EX_SHARE_A`)
+        .set({ sharedBy: { uid: 'U_AUTHOR' }, exercise: { name: 'Original' } });
+    });
+    const author = testEnv.authenticatedContext('U_AUTHOR').firestore();
+    await assertSucceeds(
+      author
+        .doc(`artifacts/${APP_ID}/shared-exercises/EX_SHARE_A`)
+        .update({ exercise: { name: 'Edited' } }),
+    );
+    await assertSucceeds(
+      author.doc(`artifacts/${APP_ID}/shared-exercises/EX_SHARE_A`).delete(),
+    );
+  });
+
+  it('otro user autenticado NO puede sobrescribir ni borrar shared-exercise ajeno', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx
+        .firestore()
+        .doc(`artifacts/${APP_ID}/shared-exercises/EX_SHARE_B`)
+        .set({ sharedBy: { uid: 'U_AUTHOR' }, exercise: { name: 'Mine' } });
+    });
+    const attacker = testEnv.authenticatedContext('U_ATTACKER').firestore();
+    await assertFails(
+      attacker
+        .doc(`artifacts/${APP_ID}/shared-exercises/EX_SHARE_B`)
+        .update({ exercise: { name: 'Hijacked' } }),
+    );
+    await assertFails(
+      attacker.doc(`artifacts/${APP_ID}/shared-exercises/EX_SHARE_B`).delete(),
+    );
+  });
+
+  it('create requiere sharedBy.uid igual a auth.uid (anti-suplantación)', async () => {
+    const user = testEnv.authenticatedContext('U_A').firestore();
+    // sharedBy.uid coincide — OK
+    await assertSucceeds(
+      user
+        .doc(`artifacts/${APP_ID}/shared-exercises/EX_NEW_OK`)
+        .set({ sharedBy: { uid: 'U_A' }, exercise: { name: 'My share' } }),
+    );
+    // sharedBy.uid no coincide — DENY
+    await assertFails(
+      user
+        .doc(`artifacts/${APP_ID}/shared-exercises/EX_NEW_FAKE`)
+        .set({ sharedBy: { uid: 'U_OTHER' }, exercise: { name: 'Fake share' } }),
+    );
+  });
+
+  it('read sigue siendo público (compartir es gratis)', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx
+        .firestore()
+        .doc(`artifacts/${APP_ID}/shared-exercises/EX_SHARE_PUB`)
+        .set({ sharedBy: { uid: 'U_A' }, exercise: { name: 'Public' } });
+    });
+    const anon = testEnv.unauthenticatedContext().firestore();
+    await assertSucceeds(
+      anon.doc(`artifacts/${APP_ID}/shared-exercises/EX_SHARE_PUB`).get(),
+    );
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────
 // Sub-proyecto 2 — permisos y scoping (rules sub-2)
 // ─────────────────────────────────────────────────────────────────────────
@@ -324,6 +393,24 @@ describe('sub-proyecto 2 — Cat A workspace meta (club)', () => {
     const owner = testEnv.authenticatedContext(OWNER).firestore();
     await assertFails(
       owner.doc(`artifacts/${APP_ID}/workspaces/${WS}`).update({ ownerId: STRANGER }),
+    );
+  });
+
+  // Sub-7 security batch — workspaceMetaProtected extendido con type + createdAt + migrationCompleteAt.
+  it('DT no-owner NO puede flipear type=club → type=personal (bypass billing)', async () => {
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    await assertFails(
+      dt.doc(`artifacts/${APP_ID}/workspaces/${WS}`).update({ type: 'personal' }),
+    );
+  });
+
+  it('DT no-owner NO puede tocar createdAt / migrationCompleteAt (invariantes históricos)', async () => {
+    const dt = testEnv.authenticatedContext(DT).firestore();
+    await assertFails(
+      dt.doc(`artifacts/${APP_ID}/workspaces/${WS}`).update({ createdAt: new Date() }),
+    );
+    await assertFails(
+      dt.doc(`artifacts/${APP_ID}/workspaces/${WS}`).update({ migrationCompleteAt: new Date() }),
     );
   });
 });

@@ -41,14 +41,24 @@ export async function handleAcceptInvite({ db, appId, auth, data }: HandlerArgs)
 
     const displayName = auth.displayName ?? "";
     const email = auth.email ?? "";
-    const mismatchedEmailHint = invite.inviteEmail && invite.inviteEmail !== email ? { mismatchedEmailHint: true as const } : {};
+    // Si la invitación tiene email destinatario, bloqueamos a quien autenticó
+    // con un email distinto. Sin esto, el invite link es bearer-token completo
+    // (cualquiera con la URL podía aceptarla); con esto solo el destinatario
+    // declarado puede consumirla. Para link-share sin destinatario (inviteEmail
+    // null) seguimos permitiendo cualquier auth (caso "comparte un link en
+    // privado" intencional).
+    if (invite.inviteEmail && invite.inviteEmail !== email) {
+      throw new HttpsError(
+        "permission-denied",
+        "Esta invitación es para otra cuenta. Entra con el email al que te invitaron.",
+      );
+    }
 
     tx.set(memberRef, {
       role: invite.role, assignedTeamIds: invite.assignedTeamIds ?? [],
       displayName, email,
       joinedAt: FieldValue.serverTimestamp(),
       invitedBy: invite.invitedBy ?? null,
-      ...mismatchedEmailHint,
     });
     tx.set(membershipRef, {
       workspaceType: ws.type === "club" ? "club" : "personal",

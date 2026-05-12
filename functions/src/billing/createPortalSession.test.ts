@@ -23,13 +23,54 @@ describe("handleCreatePortalSession", () => {
     const result = await handleCreatePortalSession({
       db,
       auth: { uid: "uid-1" },
-      data: { wsId: "ws-1", appId: "app-1", returnUrl: "https://app/home" },
+      data: { wsId: "ws-1", appId: "app-1", returnUrl: "https://playoff-creator.web.app/area-privada/settings" },
     });
     expect(result).toEqual({ url: "https://billing.stripe.com/p/session/abc" });
     expect(mockPortalCreate).toHaveBeenCalledWith({
       customer: "cus_xyz",
-      return_url: "https://app/home",
+      return_url: "https://playoff-creator.web.app/area-privada/settings",
     });
+  });
+
+  it("rechaza returnUrl con origen fuera del allowlist (phishing guard)", async () => {
+    const db = mockDb({ ownerId: "uid-1", billing: { stripeCustomerId: "cus_xyz" } });
+    try {
+      await handleCreatePortalSession({
+        db,
+        auth: { uid: "uid-1" },
+        data: { wsId: "ws-1", appId: "app-1", returnUrl: "https://phish.example/looks-like-stripe-return" },
+      });
+      throw new Error("should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(HttpsError);
+      expect((err as HttpsError).code).toBe("invalid-argument");
+      expect((err as HttpsError).message).toMatch(/returnUrl origin not allowed/);
+    }
+    expect(mockPortalCreate).not.toHaveBeenCalled();
+  });
+
+  it("acepta returnUrl con localhost (dev)", async () => {
+    const db = mockDb({ ownerId: "uid-1", billing: { stripeCustomerId: "cus_xyz" } });
+    const result = await handleCreatePortalSession({
+      db,
+      auth: { uid: "uid-1" },
+      data: { wsId: "ws-1", appId: "app-1", returnUrl: "http://localhost:5173/area-privada" },
+    });
+    expect(result.url).toBeDefined();
+  });
+
+  it("acepta returnUrl de preview channel (*.web.app con playoff-creator en hostname)", async () => {
+    const db = mockDb({ ownerId: "uid-1", billing: { stripeCustomerId: "cus_xyz" } });
+    const result = await handleCreatePortalSession({
+      db,
+      auth: { uid: "uid-1" },
+      data: {
+        wsId: "ws-1",
+        appId: "app-1",
+        returnUrl: "https://playoff-creator--pr42-some-feature-abc123.web.app/",
+      },
+    });
+    expect(result.url).toBeDefined();
   });
 
   it("throws failed-precondition when no Stripe customer", async () => {
@@ -38,7 +79,7 @@ describe("handleCreatePortalSession", () => {
       await handleCreatePortalSession({
         db,
         auth: { uid: "uid-1" },
-        data: { wsId: "ws-1", appId: "app-1", returnUrl: "https://app/home" },
+        data: { wsId: "ws-1", appId: "app-1", returnUrl: "https://playoff-creator.web.app/area-privada/settings" },
       });
       throw new Error("should have thrown");
     } catch (err) {
@@ -56,7 +97,7 @@ describe("handleCreatePortalSession", () => {
       await handleCreatePortalSession({
         db,
         auth: { uid: "uid-2" },
-        data: { wsId: "ws-1", appId: "app-1", returnUrl: "https://app/home" },
+        data: { wsId: "ws-1", appId: "app-1", returnUrl: "https://playoff-creator.web.app/area-privada/settings" },
       });
       throw new Error("should have thrown");
     } catch (err) {
@@ -72,7 +113,7 @@ describe("handleCreatePortalSession", () => {
       await handleCreatePortalSession({
         db,
         auth: { uid: "uid-1" },
-        data: { wsId: "missing", appId: "app-1", returnUrl: "https://app/home" },
+        data: { wsId: "missing", appId: "app-1", returnUrl: "https://playoff-creator.web.app/area-privada/settings" },
       });
       throw new Error("should have thrown");
     } catch (err) {
@@ -87,7 +128,7 @@ describe("handleCreatePortalSession", () => {
       await handleCreatePortalSession({
         db,
         auth: { uid: "uid-1" },
-        data: { wsId: "ws-1", appId: "", returnUrl: "https://app/home" },
+        data: { wsId: "ws-1", appId: "", returnUrl: "https://playoff-creator.web.app/area-privada/settings" },
       });
       throw new Error("should have thrown");
     } catch (err) {

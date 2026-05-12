@@ -106,10 +106,26 @@ describe("handleAcceptInvite", () => {
     expect(member.data!.mismatchedEmailHint).toBeUndefined();
   });
 
-  it("email mismatch sets mismatchedEmailHint flag", async () => {
-    const { db, ops } = makeDb({
+  it("email mismatch lanza permission-denied (post sub-7 security batch)", async () => {
+    // Pre-batch: el handler grababa un mismatchedEmailHint:true y dejaba pasar.
+    // Eso convertía el invite en bearer-token (cualquiera con la URL aceptaba).
+    // Ahora: si invite.inviteEmail está set y no coincide con auth.email, throw.
+    const { db } = makeDb({
       invite: { role: "coach", assignedTeamIds: ["team-A"], invitedBy: "uid-dt",
                 inviteEmail: "pepe@x.com", expiresAt: tsFromMs(NOW_MS + 60_000) },
+      workspace: { name: "Club", type: "club" },
+    });
+    await expect(handleAcceptInvite({
+      db, appId: APP_ID,
+      auth: { uid: "uid-claimer", displayName: "Juan", email: "juan@x.com" },
+      data: { wsId: WS_ID, inviteId: INVITE_ID },
+    })).rejects.toMatchObject({ code: "permission-denied" });
+  });
+
+  it("invite sin inviteEmail (link-share intencional) sigue aceptando cualquier auth", async () => {
+    const { db, ops } = makeDb({
+      invite: { role: "coach", assignedTeamIds: ["team-A"], invitedBy: "uid-dt",
+                inviteEmail: null, expiresAt: tsFromMs(NOW_MS + 60_000) },
       workspace: { name: "Club", type: "club" },
     });
     await handleAcceptInvite({
@@ -117,8 +133,8 @@ describe("handleAcceptInvite", () => {
       auth: { uid: "uid-claimer", displayName: "Juan", email: "juan@x.com" },
       data: { wsId: WS_ID, inviteId: INVITE_ID },
     });
-    const member = ops.find(o => o.path.endsWith("/members/uid-claimer"))!;
-    expect(member.data!.mismatchedEmailHint).toBe(true);
+    const member = ops.find(o => o.path.endsWith("/members/uid-claimer"));
+    expect(member).toBeDefined();
   });
 
   it("transaction atomicity: tx.set + tx.delete are queued, no direct writes", async () => {
