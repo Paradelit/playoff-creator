@@ -23,24 +23,51 @@ Basketball coaching SPA: React 19 + Vite + Firebase (Auth, Firestore, Storage) +
 
 ### Provider stack (nesting order matters)
 
-`BrowserRouter → FirebaseProvider → AuthProvider → ToastProvider → AppRouter`
+Stack actual post sub-3 (CoachesApp.jsx):
 
-- **FirebaseContext**: inits app from `VITE_FIREBASE_*` env vars; exposes `db`, `appId`, `auth`, `storage`
-- **AuthContext**: Firebase Auth (Google OAuth + anonymous login + email linking)
-- **BracketContext** (module-level, only inside `/playoffs` route): composes `useBracketSync` + `useBracketEditor` + `useBracketCreation` + `useSharing`
+`HelmetProvider → BrowserRouter → FirebaseProvider → AuthProvider → WorkspaceProvider → ScreenContextProvider → PickProvider → ToastProvider → ErrorBoundary → SidebarProvider → AppShell + AppRouter`
+
+- **FirebaseContext**: inits app from `VITE_FIREBASE_*` env vars; exposes `db`, `appId`, `auth`, `storage`.
+- **AuthContext**: Firebase Auth (Google OAuth + anonymous login + email linking).
+- **WorkspaceContext**: expone `activeWsId`, `activeWorkspace`, `activeMember`, `memberships`. Subscribe a `members/{uid}` para conocer role + assignedTeamIds.
+- **PickProvider**: contexto del AI agent (conversación, screen context). Depende de Workspace.
+- **BracketContext** (module-level, sólo dentro de `/area-privada/playoffs`): composes `useBracketSync` + `useBracketEditor` + `useBracketCreation` + `useSharing`.
 
 ### Firestore data model
 
+Post sub-proyecto 1 (workspace-as-entity, 2026-05-03):
+
 ```
-artifacts/{appId}/users/{uid}/
-  brackets/{bracketId}         # Playoff brackets (linked to team via teamId field)
-  teams/{teamId}/
-    members/, trainings/, cuaderno/ (jugadores, test-tiro, notas, pilares, normas)
-  calendarSessions/{sessionId} # Training/match calendar events
-artifacts/{appId}/shared/{shareCode}  # Shared bracket (public read, authenticated write)
+artifacts/{appId}/
+  workspaces/{wsId}/                    # type: 'personal' | 'club'
+    members/{uid}                       # role, assignedTeamIds (server-written via callables)
+    invites/{inviteId}                  # bearer + email-gated (post sub-7 batch security)
+    grants/{collectionType}/grantees/{uid}  # sharing primitive (asistencia, informe-jugadores)
+    teams/{teamId}/
+      members/{teamMemberDocId}, trainings/, cuaderno/{section}
+      grants/{collectionType}/grantees/{uid}
+    brackets/{bracketId}                # linked to team via teamId field
+    calendarSessions/{sessionId}        # entrenamiento, partido, playoff
+    exercises/, cuadernoTemplate/, competitions/, recurringSessions/
+    usage/{monthId}                     # AI quota counter, server-written
+  users/{uid}/                          # PRIVATE user state (no shared workspace data)
+    memberships/{wsId}                  # cache de memberships, espejo de workspaces/{wsId}/members/{uid}
+    pickHistory/{wsId}/conversations/   # historial AI por workspace
+    preferences/, ...                   # UI prefs personales
+  shared/{shareCode}                    # legacy share (bracket sharing público)
+  shared-exercises/{shareCode}          # exercise sharing (autor-gated post sub-7)
+  stripeEvents/{eventId}                # webhook idempotency marker (admin-only)
+  presence/{shareCode}/...              # cursor/edit presence en shared bracket
 ```
 
-Security: user docs private (`request.auth.uid == uid`), shared docs require auth only.
+Security model (firestore.rules ~345 LOC):
+
+- Cat A — workspace meta: solo owner edita plan/billing/ownerId/type. DT puede editar settings excepto los anteriores.
+- Cat B — workspace-wide curated (exercises, cuadernoTemplate): DT escribe, todos leen.
+- Cat C — team-scoped strict: owner/DT/assigned-coach por team.
+- `workspaceMetaProtected` extendido en sub-7: bloquea `[ownerId, plan, billing, type, createdAt, migrationCompleteAt]` para clientes.
+- `shared-exercises` writes: solo el autor (`sharedBy.uid == auth.uid`).
+- Members writes: cerrados (`if false`) — todo via callables.
 
 ### Playoff bracket system
 
@@ -80,7 +107,7 @@ Security: user docs private (`request.auth.uid == uid`), shared docs require aut
 Strategic + visual context lives in **`PRODUCT.md`** (and **`DESIGN.md`** once generated) at the project root. Read PRODUCT.md before any UI work. Quick map:
 
 - **Register**: `product` (the private app under `/area-privada` is the default; `/` and `/ayuda` are brand-register surfaces).
-- **AI persona**: the copilot is named **Pick**. Voice: tutea, baloncesto-nativo, *"Tú entrenas. Pick trabaja."*
+- **AI persona**: the copilot is named **Pick**. Voice: tutea, baloncesto-nativo, _"Tú entrenas. Pick trabaja."_
 - **Vibe**: sports-broadcast energy. Anti-references: generic SaaS templates, legacy coaching tools (FastModel-era), consumer fitness/social apps, plain AI chat shells.
 - **Five design principles** (full text in PRODUCT.md):
   1. Pick es un compañero, no una pestaña.
