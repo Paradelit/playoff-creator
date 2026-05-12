@@ -1,3 +1,4 @@
+/* eslint-disable no-console -- este archivo ES el logger; console.log/warn/error son la implementación de logger.info/warn/error y no se usan en ningún otro sitio del codebase. */
 const MAX_BUFFER = 50;
 const isDev = import.meta.env.DEV;
 
