@@ -1,6 +1,8 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
 import type { Firestore } from "firebase-admin/firestore";
+import { syncClubSeatCount } from "../billing/syncClubSeatCount";
+import { stripeSecretKey } from "../billing/stripeClient";
 
 interface HandlerArgs {
   db: Firestore;
@@ -61,10 +63,17 @@ export async function handleAcceptInvite({ db, appId, auth, data }: HandlerArgs)
   if ((result as ExpiredFlag).expired) {
     throw new HttpsError("failed-precondition", "Invitación caducada. Pide una nueva.");
   }
+
+  // Best-effort: si el workspace es un club B2B activo, sincroniza quantity en
+  // Stripe. No bloquea la respuesta — el coach ya es miembro independientemente
+  // de si Stripe responde. Webhook eventual escribirá el nuevo seatCount.
+  // Cualquier fallo queda en logs para reconciliación posterior.
+  await syncClubSeatCount(db, appId, wsId);
+
   return { ok: true, wsId };
 }
 
-export const acceptInvite = onCall({ region: "europe-west1" }, async (request) => {
+export const acceptInvite = onCall({ region: "europe-west1", secrets: [stripeSecretKey] }, async (request) => {
   if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
   const appId = process.env.PICK_APP_ID;
   if (!appId) throw new HttpsError("failed-precondition", "PICK_APP_ID missing");

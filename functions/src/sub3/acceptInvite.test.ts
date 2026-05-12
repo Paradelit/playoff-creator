@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Timestamp } from "firebase-admin/firestore";
+
+// syncClubSeatCount es side-effect post-commit; los tests del handler verifican
+// la transacción de membership, no la sincronización de Stripe. Cobertura propia
+// vive en syncClubSeatCount.test.ts.
+vi.mock("../billing/syncClubSeatCount", () => ({
+  syncClubSeatCount: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { handleAcceptInvite } from "./acceptInvite";
 
 const APP_ID = "app-test"; const WS_ID = "ws-1"; const INVITE_ID = "inv-1";

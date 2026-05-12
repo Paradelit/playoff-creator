@@ -1,6 +1,8 @@
 import { onDocumentDeleted } from "firebase-functions/v2/firestore";
 import { getFirestore } from "firebase-admin/firestore";
 import type { Firestore } from "firebase-admin/firestore";
+import { syncClubSeatCount } from "../billing/syncClubSeatCount";
+import { stripeSecretKey } from "../billing/stripeClient";
 
 interface CleanupArgs { db: Firestore; appId: string; wsId: string; memberUid: string; }
 
@@ -19,10 +21,14 @@ export async function cleanupAfterMemberDelete({ db, appId, wsId, memberUid }: C
   await Promise.all(all.map(d => d.ref.delete()));
 
   console.log(`[onMemberDelete] wsId=${wsId} uid=${memberUid} cleaned grantsTo=${granteesAsTo.docs.length} grantsBy=${granteesAsBy.docs.length} invites=${invites.docs.length}`);
+
+  // Si el club tiene suscripción B2B activa, ajusta quantity (best-effort).
+  // Cubre tanto revokeMember como cualquier delete directo de membership.
+  await syncClubSeatCount(db, appId, wsId);
 }
 
 export const onMemberDelete = onDocumentDeleted(
-  { region: "europe-west1", document: "artifacts/{appId}/workspaces/{wsId}/members/{memberUid}" },
+  { region: "europe-west1", document: "artifacts/{appId}/workspaces/{wsId}/members/{memberUid}", secrets: [stripeSecretKey] },
   async (event) => {
     const { appId, wsId, memberUid } = event.params as { appId: string; wsId: string; memberUid: string };
     try {

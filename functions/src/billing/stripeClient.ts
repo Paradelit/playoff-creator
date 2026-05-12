@@ -6,6 +6,7 @@ export const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 export const stripeWebhookSigningSecret = defineSecret("STRIPE_WEBHOOK_SIGNING_SECRET");
 export const stripePriceMonthly = defineSecret("STRIPE_PRICE_MONTHLY");
 export const stripePriceAnnual = defineSecret("STRIPE_PRICE_ANNUAL");
+export const stripePricePerSeat = defineSecret("STRIPE_PRICE_B2B_PER_SEAT");
 
 let cached: Stripe | null = null;
 

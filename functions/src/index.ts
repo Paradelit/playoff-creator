@@ -467,6 +467,8 @@ export { resolveMapsUrl } from "./locations/resolveMapsUrl";
 export { createCheckoutSession } from "./billing/createCheckoutSession";
 export { createPortalSession } from "./billing/createPortalSession";
 export { stripeWebhook } from "./billing/webhook";
+// Sub-proyecto 6 — B2B per-seat billing.
+export { createClubSubscription } from "./billing/createClubSubscription";
 
 // Sub-proyecto 3 — invitaciones y licencias.
 export { createClub } from "./sub3/createClub";

@@ -72,4 +72,30 @@ describe('PaymentFailedBanner', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     await expectNoA11yViolations(container);
   });
+
+  it('owner de club ve copy B2B con "staff" y "club"', () => {
+    useAuth.mockReturnValue({ user: { uid: 'uid-dt' } });
+    useWorkspace.mockReturnValue({
+      activeWsId: 'ws-1',
+      activeWorkspace: { ownerId: 'uid-dt', type: 'club' },
+    });
+    useWorkspacePlan.mockReturnValue({ isPro: true, isPastDue: true, tier: 'b2b' });
+
+    render(<PaymentFailedBanner />);
+    expect(screen.getByText(/El pago del club ha fallado/i)).toBeInTheDocument();
+    expect(screen.getByText(/staff/i)).toBeInTheDocument();
+  });
+
+  it('coach de club ve "Avisa al DT" en lugar del copy B2C', () => {
+    useAuth.mockReturnValue({ user: { uid: 'uid-coach' } });
+    useWorkspace.mockReturnValue({
+      activeWsId: 'ws-1',
+      activeWorkspace: { ownerId: 'uid-dt', type: 'club' },
+    });
+    useWorkspacePlan.mockReturnValue({ isPro: true, isPastDue: true, tier: 'b2b' });
+
+    render(<PaymentFailedBanner />);
+    expect(screen.getByText(/Avisa al DT/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
 });

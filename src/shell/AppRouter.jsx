@@ -36,6 +36,9 @@ const UpgradePage = lazy(() => import('../billing/components/UpgradePage').then(
 const UpgradeSuccessPage = lazy(() =>
   import('../billing/components/UpgradeSuccessPage').then((m) => ({ default: m.UpgradeSuccessPage })),
 );
+const ClubUpgradePage = lazy(() =>
+  import('../billing/components/ClubUpgradePage').then((m) => ({ default: m.ClubUpgradePage })),
+);
 const MembersScreen = lazy(() => import('../screens/settings/MembersScreen'));
 const TransferOwnershipScreen = lazy(() => import('../screens/settings/TransferOwnershipScreen'));
 const InviteLandingScreen = lazy(() => import('../screens/InviteLandingScreen'));
@@ -382,6 +385,15 @@ export default function AppRouter() {
           element={
             <Guarded name="Upgrade">
               <UpgradePage />
+            </Guarded>
+          }
+        />
+        {/* Sub-proyecto 6 — B2B per-seat. Misma return_url que /upgrade. */}
+        <Route
+          path="/upgrade/club"
+          element={
+            <Guarded name="ClubUpgrade">
+              <ClubUpgradePage />
             </Guarded>
           }
         />

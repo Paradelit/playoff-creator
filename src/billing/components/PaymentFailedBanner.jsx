@@ -11,12 +11,13 @@ export function PaymentFailedBanner() {
   const { appId } = useFirebase();
   const { user } = useAuth();
   const { activeWsId, activeWorkspace } = useWorkspace();
-  const { isPro, isPastDue } = useWorkspacePlan(activeWsId);
+  const { isPro, isPastDue, tier } = useWorkspacePlan(activeWsId);
   const [opening, setOpening] = useState(false);
 
   if (!isPro || !isPastDue) return null;
 
   const isOwner = Boolean(activeWorkspace?.ownerId && user?.uid && activeWorkspace.ownerId === user.uid);
+  const isClub = tier === 'b2b' || activeWorkspace?.type === 'club';
 
   const openPortal = async () => {
     setOpening(true);
@@ -39,8 +40,12 @@ export function PaymentFailedBanner() {
   };
 
   const message = isOwner
-    ? 'Tu pago ha fallado. Actualiza tu tarjeta o el equipo se queda sin Pick.'
-    : 'El pago ha fallado. Avisa a quien gestiona el plan para que actualice la tarjeta.';
+    ? isClub
+      ? 'El pago del club ha fallado. Actualiza la tarjeta o el staff se queda sin Pick.'
+      : 'Tu pago ha fallado. Actualiza tu tarjeta o el equipo se queda sin Pick.'
+    : isClub
+      ? 'El pago del club ha fallado. Avisa al DT para que actualice la tarjeta.'
+      : 'El pago ha fallado. Avisa a quien gestiona el plan para que actualice la tarjeta.';
 
   return (
     <div

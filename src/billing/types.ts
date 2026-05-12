@@ -3,6 +3,8 @@ import type { Timestamp } from 'firebase/firestore';
 
 export type WorkspacePlan = 'free' | 'pro';
 
+export type BillingTier = 'b2c' | 'b2b';
+
 export type SubscriptionStatus = 'active' | 'past_due' | 'unpaid' | 'canceled' | 'trialing';
 
 export interface WorkspaceBilling {
@@ -12,6 +14,8 @@ export interface WorkspaceBilling {
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: Timestamp | null;
   priceId: string | null;
+  tier: BillingTier | null;
+  seatCount: number | null;
   lastEventAt: Timestamp;
 }
 

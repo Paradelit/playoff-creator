@@ -20,6 +20,10 @@ export async function handleCheckoutCompleted(
     logger.warn("WEBHOOK_ORPHAN_EVENT", { type: event.type, eventId: event.id });
     return;
   }
+  // tier viene del metadata del checkout (createClubSubscription pasa 'b2b',
+  // createCheckoutSession no pasa nada → asumimos 'b2c'). Forward-compatible
+  // si en el futuro otro callable inicia checkouts.
+  const tier = session.metadata?.tier === "b2b" ? "b2b" : "b2c";
   await db.doc(`artifacts/${appId}/workspaces/${wsId}`).update({
     plan: "pro",
     planUpdatedAt: FieldValue.serverTimestamp(),
@@ -27,6 +31,7 @@ export async function handleCheckoutCompleted(
     "billing.stripeSubscriptionId": session.subscription,
     "billing.status": "active",
     "billing.cancelAtPeriodEnd": false,
+    "billing.tier": tier,
     "billing.lastEventAt": FieldValue.serverTimestamp(),
   });
 }

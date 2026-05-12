@@ -1,4 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// syncClubSeatCount es side-effect post-cleanup; los tests verifican que se
+// borren grants/invites. Cobertura propia en syncClubSeatCount.test.ts.
+vi.mock("../billing/syncClubSeatCount", () => ({
+  syncClubSeatCount: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { cleanupAfterMemberDelete } from "./onMemberDelete";
 
 const APP_ID = "app-test"; const WS_ID = "ws-1";
