@@ -7,6 +7,7 @@ import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { cleanupUserData as runCleanupUserData, type CleanupAction } from "./dataCleanup";
 import { runProactiveBriefing } from "./proactiveEngine";
 import { bootstrapPersonalWorkspace } from "./auth/onUserCreate";
+// Re-export del trigger v1 al final del index.ts para que el deploy lo registre.
 import {
   AgentRouter,
   ObservabilityService,
@@ -507,6 +508,16 @@ export const onUserCreate = functionsV1
   });
 
 export { resolveMapsUrl } from "./locations/resolveMapsUrl";
+
+// Sub-7 batch CI — cleanup automático cuando Firebase Auth borra un user.
+// Sin esto, workspaces/datos del user borrado quedaban como zombies.
+export { onUserDelete } from "./auth/onUserDelete";
+
+// Sub-7 batch CI — backup automatizado diario de Firestore a Cloud Storage.
+// Requiere bucket `gs://playoff-creator-firestore-backups` con permisos
+// Firestore Service Agent. Si el bucket no existe, función falla con log
+// pero no rompe nada. Ver docs/runbooks/firestore-backups.md.
+export { scheduledFirestoreBackup } from "./maintenance/scheduledFirestoreBackup";
 
 // Stripe billing (sub-proyecto 5).
 export { createCheckoutSession } from "./billing/createCheckoutSession";

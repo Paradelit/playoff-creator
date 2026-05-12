@@ -43,7 +43,10 @@ async function followRedirect(shortUrl: string): Promise<string> {
   }
 }
 
-export const resolveMapsUrl = onCall(async (request) => {
+// Region explícita europe-west1 para coherencia con el resto de callables del
+// proyecto (pre-sub-7 batch, esta función defaulteaba a us-central1, generando
+// latencia cross-region desde el frontend europeo).
+export const resolveMapsUrl = onCall({ region: 'europe-west1' }, async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Login requerido.');
   const data = request.data as { shortUrl?: unknown };
   const shortUrl = typeof data.shortUrl === 'string' ? data.shortUrl : '';
