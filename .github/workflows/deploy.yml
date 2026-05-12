@@ -51,6 +51,7 @@ jobs:
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
           VITE_STRIPE_PRICE_MONTHLY: ${{ secrets.VITE_STRIPE_PRICE_MONTHLY }}
           VITE_STRIPE_PRICE_ANNUAL: ${{ secrets.VITE_STRIPE_PRICE_ANNUAL }}
+          VITE_STRIPE_PRICE_B2B_PER_SEAT: ${{ secrets.VITE_STRIPE_PRICE_B2B_PER_SEAT }}
 
       - name: Deploy to live (production)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

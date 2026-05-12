@@ -56,6 +56,12 @@ export function useWorkspacePlan(wsId) {
     isPastDue: data.billing?.status === 'past_due',
     cancelAtPeriodEnd: data.billing?.cancelAtPeriodEnd ?? false,
     currentPeriodEnd: data.billing?.currentPeriodEnd?.toDate?.() ?? null,
+    // tier distingue B2C (personal Pro) de B2B (club Pro per-seat). null en
+    // workspaces free o legacy sin tier seteado.
+    tier: data.billing?.tier ?? null,
+    // seatCount sólo es no-null en tier='b2b'. Refleja la cantidad sincronizada
+    // con Stripe (subscription.items[0].quantity).
+    seatCount: data.billing?.seatCount ?? null,
     loading,
   };
 }

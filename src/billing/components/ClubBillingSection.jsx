@@ -1,36 +1,30 @@
-// src/billing/components/BillingSection.jsx
+// src/billing/components/ClubBillingSection.jsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { httpsCallable } from 'firebase/functions';
-import { CreditCard, AlertTriangle } from 'lucide-react';
+import { Building2, AlertTriangle, Users } from 'lucide-react';
 import { useFirebase } from '../../contexts/FirebaseContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
 import { useWorkspacePlan } from '../useWorkspacePlan';
 import { getRegionalFunctions } from '../../services/functionsClient';
-import { ClubBillingSection } from './ClubBillingSection';
 
 /**
- * Dispatcher de la sección de facturación en Settings:
- * - workspaces type='club' → render del flujo B2B per-seat (ClubBillingSection).
- * - workspaces type='personal' (o sin tipo) → flujo B2C clásico (este mismo componente).
+ * Billing section para workspaces type='club'. Sólo visible al owner del club.
  *
- * Ambos cubren el case de owner (gestión total) y miembros (oculto). Mantener
- * un único punto de mount en SettingsScreen reduce el riesgo de duplicación.
+ * Estados:
+ * - Free: CTA "Activar Pro Club" → /upgrade/club. Preview del coste por seat.
+ * - Pro: detalle de seats activos + botón "Gestionar suscripción" (Customer Portal).
+ * - past_due: badge + botón directo a portal para actualizar tarjeta.
+ *
+ * La info de seats se lee en vivo de Stripe vía billing.seatCount (sincronizado
+ * por el webhook customer.subscription.updated tras cada cambio de quantity).
  */
-export function BillingSection() {
-  const { activeWorkspace } = useWorkspace();
-  if (activeWorkspace?.type === 'club') {
-    return <ClubBillingSection />;
-  }
-  return <PersonalBillingSection />;
-}
-
-function PersonalBillingSection() {
+export function ClubBillingSection() {
   const { appId } = useFirebase();
   const { user } = useAuth();
   const { activeWsId, activeWorkspace } = useWorkspace();
-  const { plan, billing, cancelAtPeriodEnd, currentPeriodEnd, loading } = useWorkspacePlan(activeWsId);
+  const { plan, billing, seatCount, cancelAtPeriodEnd, currentPeriodEnd, loading } = useWorkspacePlan(activeWsId);
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState(null);
 
@@ -62,36 +56,45 @@ function PersonalBillingSection() {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
       <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
-        <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
-          <CreditCard size={18} className="text-emerald-700" aria-hidden="true" />
+        <div className="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
+          <Building2 size={18} className="text-indigo-700" aria-hidden="true" />
         </div>
-        <p className="font-bold text-slate-800">Plan y suscripción</p>
+        <p className="font-bold text-slate-800">Plan del club</p>
       </div>
       <div className="px-5 py-4">
         {loading ? (
           <p className="text-sm text-slate-500">Cargando…</p>
         ) : plan === 'free' ? (
           <div>
-            <p className="text-sm text-slate-600 mb-3">Estás en plan Free. 50 acciones de IA al mes.</p>
+            <p className="text-sm text-slate-600 mb-1">
+              Tu club está en plan Free. Pick comparte 50 acciones/mes entre todos los miembros.
+            </p>
+            <p className="text-xs text-slate-500 mb-3">
+              Activa Pro Club y cada miembro tendrá Pick ilimitado en este workspace.
+            </p>
             <Link
-              to="/upgrade"
-              className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+              to="/upgrade/club"
+              className="inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition"
             >
-              Hazte Pro
+              Activar Pro Club
             </Link>
           </div>
         ) : (
           <div>
             <p className="text-sm text-slate-700 mb-1">
-              <strong>Pro</strong>
+              <strong>Pro Club</strong>
               {cancelAtPeriodEnd && currentPeriodEnd
                 ? ` · activo hasta ${currentPeriodEnd.toLocaleDateString('es-ES')}`
                 : ' · activo'}
             </p>
+            <p className="text-xs text-slate-500 mb-3 flex items-center gap-1.5">
+              <Users size={12} aria-hidden="true" />
+              {seatCount ?? '—'} {seatCount === 1 ? 'asiento' : 'asientos'} facturándose actualmente
+            </p>
             {billing?.status === 'past_due' && (
               <p className="text-amber-700 text-xs mb-3 flex items-center gap-1.5">
                 <AlertTriangle size={14} aria-hidden="true" />
-                Tu pago ha fallado. Actualiza tu tarjeta para que Pick siga al 100%.
+                El pago ha fallado. Actualiza la tarjeta para que Pick siga funcionando para el club.
               </p>
             )}
             <button
