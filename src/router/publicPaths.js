@@ -8,6 +8,8 @@ export function isPublicPath(pathname) {
   if (pathname === '/login') return true;
   if (pathname === '/ayuda') return true;
   if (pathname.startsWith('/ayuda/')) return true;
+  if (pathname === '/precios') return true;
+  if (pathname === '/para-clubes') return true;
   if (pathname.startsWith('/s/')) return true;
   if (pathname.startsWith('/exercise/')) return true;
   return false;

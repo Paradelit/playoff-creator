@@ -40,6 +40,9 @@ async function main() {
   const entries = [
     { loc: '/', lastmod: TODAY, changefreq: 'weekly', priority: 1.0 },
     { loc: '/ayuda', lastmod: TODAY, changefreq: 'weekly', priority: 0.8 },
+    // sub-proyecto 7 — funnel B2C/B2B. Alta prioridad para SEO comercial.
+    { loc: '/precios', lastmod: TODAY, changefreq: 'monthly', priority: 0.9 },
+    { loc: '/para-clubes', lastmod: TODAY, changefreq: 'monthly', priority: 0.9 },
     ...ssr.helpArticles.map((a) => ({
       loc: `/ayuda/${a.slug}`,
       lastmod: (a.updatedAt || TODAY).slice(0, 10),

@@ -7,7 +7,14 @@ import { HELP_ARTICLES } from './content/helpArticles';
 
 // Routes prerendered at build time. Exported so scripts/prerender.mjs can stay TS-free
 // and load everything it needs from this single SSR bundle (no tsx dependency).
-export const publicRoutes = ['/', '/ayuda', ...HELP_ARTICLES.map((a) => `/ayuda/${a.slug}`)];
+export const publicRoutes = [
+  '/',
+  '/ayuda',
+  ...HELP_ARTICLES.map((a) => `/ayuda/${a.slug}`),
+  // sub-proyecto 7 — marketing público B2C/B2B.
+  '/precios',
+  '/para-clubes',
+];
 
 // Article metadata used by scripts/buildSitemap.mjs. Re-exported from this bundle so
 // the sitemap script can read TS content (HELP_ARTICLES) without needing a TS loader.
