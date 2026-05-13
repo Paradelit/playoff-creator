@@ -156,7 +156,11 @@ export default function PickColumn() {
                 <div key={msg.id} className="flex justify-start">
                   <div className="max-w-[85%] space-y-2">
                     {hasBlocks ? (
-                      <BlockRenderer blocks={msg.blocks!} onConfirmProposal={confirmProposal} />
+                      <BlockRenderer
+                        blocks={msg.blocks!}
+                        onConfirmProposal={confirmProposal}
+                        onPickChoice={(c, intent) => sendMessage(`${intent} → ${c.label}`)}
+                      />
                     ) : (
                       <div className="rounded-2xl rounded-bl-md px-3.5 py-2.5 bg-slate-100 text-slate-800">
                         <TextBlock markdown={msg.content} />

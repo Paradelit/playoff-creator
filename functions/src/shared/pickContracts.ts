@@ -1,4 +1,4 @@
-import type { TeamRecord } from "./teamDomain";
+import type { TeamRecord } from './teamDomain';
 
 export interface TeamListEntry {
   id: string;
@@ -63,18 +63,18 @@ export interface BracketRecord {
 export type PickTeamRecord = TeamRecord;
 
 export type WriteProposalKind =
-  | "create_training"
-  | "create_calendar_session"
-  | "update_bracket_scores"
-  | "save_note"
-  | "create_bracket"
-  | "save_attendance"
-  | "save_player_report"
-  | "save_shooting_test"
-  | "save_scouting"
-  | "save_analysis"
-  | "create_exercise"
-  | "create_exercises";
+  | 'create_training'
+  | 'create_calendar_session'
+  | 'update_bracket_scores'
+  | 'save_note'
+  | 'create_bracket'
+  | 'save_attendance'
+  | 'save_player_report'
+  | 'save_shooting_test'
+  | 'save_scouting'
+  | 'save_analysis'
+  | 'create_exercise'
+  | 'create_exercises';
 
 export interface WriteProposal {
   proposalId: string;
@@ -83,17 +83,32 @@ export interface WriteProposal {
   payload: Record<string, unknown>;
 }
 
+export interface AmbiguityCandidate {
+  id: string;
+  label: string;
+  kind: 'team' | 'session' | 'player' | 'bracket' | 'other';
+}
+
 export type ContentBlock =
-  | { type: "text"; markdown: string }
-  | { type: "status"; text: string }
-  | { type: "team_list"; teams: TeamListEntry[] }
-  | { type: "training_preview"; training: TrainingPreviewData }
-  | { type: "bracket_preview"; bracket: BracketPreviewData }
-  | { type: "session_preview"; session: CalendarSessionRecord | Record<string, unknown> }
-  | { type: "score_update"; updates: ScoreUpdateEntry[] }
-  | { type: "exercise_preview"; exercises: ExercisePreviewData[] }
-  | { type: "convocatoria_preview"; convocatoria: ConvocatoriaPreviewData }
-  | { type: "confirm_write"; proposal: WriteProposal };
+  | { type: 'text'; markdown: string }
+  | { type: 'status'; text: string }
+  | { type: 'team_list'; teams: TeamListEntry[] }
+  | { type: 'training_preview'; training: TrainingPreviewData }
+  | { type: 'bracket_preview'; bracket: BracketPreviewData }
+  | { type: 'session_preview'; session: CalendarSessionRecord | Record<string, unknown> }
+  | { type: 'score_update'; updates: ScoreUpdateEntry[] }
+  | { type: 'exercise_preview'; exercises: ExercisePreviewData[] }
+  | { type: 'convocatoria_preview'; convocatoria: ConvocatoriaPreviewData }
+  | { type: 'confirm_write'; proposal: WriteProposal }
+  | {
+      type: 'confirm_choice';
+      prompt: string;
+      candidates: AmbiguityCandidate[];
+      /** The original user message that triggered the ambiguity check.
+       *  When the user picks a candidate, the frontend re-sends this intent
+       *  plus the selected label so the LLM has full context. */
+      intent: string;
+    };
 
 export interface ExercisePreviewData {
   nombre: string;
@@ -107,7 +122,7 @@ export interface ExercisePreviewData {
 
 export interface ConvocatoriaPreviewData {
   sessionId: string;
-  tipo: "partido" | "playoff";
+  tipo: 'partido' | 'playoff';
   fecha?: string;
   horaInicio?: string;
   rival?: string;
@@ -125,7 +140,7 @@ export interface ConvocatoriaPreviewData {
 
 /** Acción ejecutable en el cliente (p. ej. navegación SPA). */
 export interface PickNavigateAction {
-  type: "navigate";
+  type: 'navigate';
   label: string;
   path: string;
 }

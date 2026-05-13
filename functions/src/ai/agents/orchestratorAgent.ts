@@ -7,6 +7,7 @@ import { digestToPromptText, UserDigest } from '../userDigest';
 import { PromptManager } from '../promptManager';
 import { compressHistoryV2 } from '../history/compressHistoryV2';
 import * as historyCache from '../history/cache';
+import { classifyAmbiguity } from '../ambiguity/classifier';
 
 const MAX_TOOL_ITERATIONS = 8;
 
@@ -144,6 +145,40 @@ export class OrchestratorAgent {
     const toolDecls = this.deps.toolRegistry.toGeminiDeclarations();
     const systemInstruction = await this.buildSystemPrompt(input.screenContext, input.userDigest);
     const traceId = (traceContext.trace as { id?: string })?.id || '';
+
+    // Ambiguity check (sub-B.3). Pre-LLM pass that detects messages with
+    // multiple plausible referents in the digest. When ambiguous, we emit a
+    // ConfirmChoice block *without* paying for an LLM turn — the coach picks
+    // one option, the frontend re-sends the resolved phrasing.
+    const ambResult = await classifyAmbiguity({}, input.userMessage, input.userDigest, input.screenContext || null);
+    if (ambResult.kind === 'ambiguous') {
+      if (traceId) {
+        this.deps.observability.logScore(traceId, { name: 'ambiguity_detected', value: 1 });
+      }
+      return {
+        blocks: [
+          {
+            type: 'confirm_choice',
+            prompt: ambResult.clarification || '¿A cuál te refieres?',
+            candidates: ambResult.candidates || [],
+            intent: input.userMessage,
+          },
+        ],
+        traceId,
+      };
+    }
+    if (ambResult.kind === 'out-of-scope') {
+      if (traceId) {
+        this.deps.observability.logScore(traceId, { name: 'out_of_scope_detected', value: 1 });
+      }
+      const text = [ambResult.reason, ambResult.suggestedAlternative]
+        .filter((s): s is string => typeof s === 'string' && s.length > 0)
+        .join(' ');
+      return {
+        blocks: [{ type: 'text', markdown: text || 'Eso queda fuera del alcance de Pick.' }],
+        traceId,
+      };
+    }
 
     // Compress old history into topic-aware chunks (sub-B.2). Recent turns
     // pass through verbatim; older spans are summarized via fast LLM and
