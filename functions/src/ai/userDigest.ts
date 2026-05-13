@@ -1,26 +1,18 @@
 import type { Firestore } from "firebase-admin/firestore";
-import { fetchMemoriesForDigest, MemoryType } from "./tools/memoryTools";
-import { formatTeamDisplayName } from "../shared/teamDomain";
+import { fetchMemoriesForDigest } from "./tools/memoryTools";
+import { buildTeamsDigest } from "./digest/teamsDigest";
+import { buildBracketsDigest } from "./digest/bracketsDigest";
+import { buildUpcomingSessionsDigest } from "./digest/calendarDigest";
+import type { UserDigest } from "./digest/types";
 
-export interface UserDigest {
-  teams: Array<{ id: string; name: string; categoria?: string; nivel?: string; memberCount: number }>;
-  activeBrackets: Array<{ id: string; name: string; teamId?: string | null }>;
-  upcomingSessions: Array<{
-    id: string;
-    fecha: string;
-    horaInicio?: string;
-    tipo?: string;
-    teamName?: string;
-    rival?: string;
-    lugar?: string;
-  }>;
-  preferences: {
-    proactivityMode?: string;
-    defaultTrainingDuration?: number;
-  };
-  memories: Array<{ id: string; type: MemoryType; content: string }>;
-  todayISO: string;
-}
+export type {
+  UserDigest,
+  DigestTeam,
+  DigestBracket,
+  DigestSession,
+  DigestMemory,
+  DigestPreferences,
+} from "./digest/types";
 
 /**
  * Build a compact snapshot of the workspace's state for injection into the
@@ -30,6 +22,11 @@ export interface UserDigest {
  * `workspaces/{wsId}/...`. User preferences persist on `profile/main` under
  * the user-private namespace `users/{uid}/profile/main` and are read from
  * there — they were never migrated to the workspace.
+ *
+ * Cada builder vive en su propio archivo (`digest/teamsDigest.ts`,
+ * `digest/bracketsDigest.ts`, `digest/calendarDigest.ts`) tras el split de
+ * sub-A.1. Este orquestador compone los 5 reads en paralelo y une
+ * teams ↔ sessions via `teamsById`.
  */
 export async function buildUserDigest(deps: {
   db: Firestore;
@@ -39,71 +36,20 @@ export async function buildUserDigest(deps: {
   clientDate?: string;
 }): Promise<UserDigest> {
   const { db, userId, wsId, appId, clientDate } = deps;
-  const base = db.collection("artifacts").doc(appId).collection("workspaces").doc(wsId);
   const userRoot = db.collection("artifacts").doc(appId).collection("users").doc(userId);
 
   const todayISO = clientDate || new Date().toISOString().slice(0, 10);
-  const sevenDaysFromNow = new Date(todayISO);
-  sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-  const toISO = sevenDaysFromNow.toISOString().slice(0, 10);
 
-  const [teamsSnap, bracketsSnap, sessionsSnap, profileSnap, memories] = await Promise.all([
-    base.collection("teams").get(),
-    base.collection("brackets").get(),
-    base
-      .collection("calendarSessions")
-      .where("fecha", ">=", todayISO)
-      .where("fecha", "<=", toISO)
-      .orderBy("fecha", "asc")
-      .get(),
+  // Teams first so we can build teamsById for the calendar join.
+  const teams = await buildTeamsDigest({ db, appId, wsId });
+  const teamsById = new Map(teams.map((t) => [t.id, t.name]));
+
+  const [activeBrackets, upcomingSessions, profileSnap, memories] = await Promise.all([
+    buildBracketsDigest({ db, appId, wsId }),
+    buildUpcomingSessionsDigest({ db, appId, wsId, todayISO, teamsById }),
     userRoot.collection("profile").doc("main").get(),
     fetchMemoriesForDigest(db, appId, wsId, 15),
   ]);
-
-  const teams = await Promise.all(
-    teamsSnap.docs.map(async (d) => {
-      const memSnap = await d.ref.collection("members").count().get();
-      const data = d.data();
-      return {
-        id: d.id,
-        name:
-          formatTeamDisplayName({
-            teamName: (data.teamName as string | undefined) || null,
-            categoria: (data.categoria as string | undefined) || null,
-            "año": (data["año"] as string | undefined) || null,
-            letra: (data.letra as string | undefined) || null,
-            genero: (data.genero as string | undefined) || null,
-            division: (data.division as string | undefined) || null,
-          }) || "(sin nombre)",
-        categoria: data.categoria as string | undefined,
-        nivel: data.nivel as string | undefined,
-        memberCount: memSnap.data().count,
-      };
-    })
-  );
-
-  const activeBrackets = bracketsSnap.docs.map((d) => {
-    const data = d.data();
-    return {
-      id: d.id,
-      name: (data.name as string) || (data.tournamentName as string) || "Playoff",
-      teamId: (data.teamId as string | undefined) || null,
-    };
-  });
-
-  const teamsById = new Map(teams.map((t) => [t.id, t.name]));
-  const upcomingSessions = sessionsSnap.docs.slice(0, 15).map((d) => {
-    const data = d.data();
-    return {
-      id: d.id,
-      fecha: (data.fecha as string) || "",
-      horaInicio: (data.horaInicio as string) || undefined,
-      tipo: (data.tipo as string) || undefined,
-      teamName: data.teamId ? teamsById.get(data.teamId as string) : undefined,
-      rival: (data.rival as string) || undefined,
-      lugar: (data.lugar as string) || undefined,
-    };
-  });
 
   const profile = profileSnap.exists ? profileSnap.data() || {} : {};
 
