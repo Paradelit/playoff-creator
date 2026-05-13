@@ -23,6 +23,18 @@ export interface UserDigest {
 }
 
 /**
+ * Optional observability hook accepted by `buildUserDigest`. Matches the
+ * shape of `ObservabilityService.logScore` so callers can pass the service
+ * directly (or a stub in tests).
+ */
+export interface DigestObservability {
+  logScore: (
+    traceId: string,
+    score: { name: string; value: number; comment?: string }
+  ) => void;
+}
+
+/**
  * Build a compact snapshot of the workspace's state for injection into the
  * orchestrator system prompt. Size target: ~1KB for typical accounts.
  *
@@ -30,6 +42,11 @@ export interface UserDigest {
  * `workspaces/{wsId}/...`. User preferences persist on `profile/main` under
  * the user-private namespace `users/{uid}/profile/main` and are read from
  * there — they were never migrated to the workspace.
+ *
+ * When `observability` and `traceId` are provided, two baseline scores are
+ * logged per call: `digest_build_ms` (wall-clock duration) and
+ * `digest_size_tokens` (~chars/4 of the rendered prompt text). These feed
+ * the sub-A.0 baseline used to measure the AI chat priority program.
  */
 export async function buildUserDigest(deps: {
   db: Firestore;
@@ -37,8 +54,11 @@ export async function buildUserDigest(deps: {
   wsId: string;
   appId: string;
   clientDate?: string;
+  observability?: DigestObservability;
+  traceId?: string;
 }): Promise<UserDigest> {
-  const { db, userId, wsId, appId, clientDate } = deps;
+  const { db, userId, wsId, appId, clientDate, observability, traceId } = deps;
+  const t0 = Date.now();
   const base = db.collection("artifacts").doc(appId).collection("workspaces").doc(wsId);
   const userRoot = db.collection("artifacts").doc(appId).collection("users").doc(userId);
 
@@ -107,7 +127,7 @@ export async function buildUserDigest(deps: {
 
   const profile = profileSnap.exists ? profileSnap.data() || {} : {};
 
-  return {
+  const digest: UserDigest = {
     teams,
     activeBrackets,
     upcomingSessions,
@@ -118,6 +138,22 @@ export async function buildUserDigest(deps: {
     memories,
     todayISO,
   };
+
+  if (observability && traceId) {
+    observability.logScore(traceId, {
+      name: "digest_build_ms",
+      value: Date.now() - t0,
+    });
+    // ~chars/4 is a rough but stable proxy for tokens — good enough for
+    // tracking distribution + alerting on bloat. We avoid a real tokenizer
+    // here to keep buildUserDigest dependency-free.
+    observability.logScore(traceId, {
+      name: "digest_size_tokens",
+      value: Math.ceil(digestToPromptText(digest).length / 4),
+    });
+  }
+
+  return digest;
 }
 
 /** Render digest as a compact text block for the system prompt. */

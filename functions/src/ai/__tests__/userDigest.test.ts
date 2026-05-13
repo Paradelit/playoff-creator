@@ -96,3 +96,64 @@ describe('buildUserDigest — preferences come from user profile', () => {
     expect(digest.todayISO).toBe('2026-05-03');
   });
 });
+
+describe('buildUserDigest — observability instrumentation (sub-A.0)', () => {
+  it('logs digest_build_ms and digest_size_tokens scores when observability + traceId are provided', async () => {
+    const { db } = makeFakeDb(null);
+    const logScore = vi.fn();
+    const observability = { logScore };
+
+    await buildUserDigest({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      db: db as any,
+      userId: 'u1',
+      wsId: 'w1',
+      appId: 'app1',
+      clientDate: '2026-05-03',
+      observability,
+      traceId: 'trace-abc',
+    });
+
+    const calls = logScore.mock.calls;
+    const names = calls.map((c: unknown[]) => (c[1] as { name: string }).name);
+    expect(names).toContain('digest_build_ms');
+    expect(names).toContain('digest_size_tokens');
+
+    const buildMsCall = calls.find((c: unknown[]) => (c[1] as { name: string }).name === 'digest_build_ms');
+    expect(buildMsCall?.[0]).toBe('trace-abc');
+    expect((buildMsCall?.[1] as { value: number }).value).toBeGreaterThanOrEqual(0);
+
+    const sizeCall = calls.find((c: unknown[]) => (c[1] as { name: string }).name === 'digest_size_tokens');
+    expect((sizeCall?.[1] as { value: number }).value).toBeGreaterThan(0);
+  });
+
+  it('does not call logScore when observability or traceId are missing', async () => {
+    const { db } = makeFakeDb(null);
+    const logScore = vi.fn();
+    const observability = { logScore };
+
+    // Missing traceId
+    await buildUserDigest({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      db: db as any,
+      userId: 'u1',
+      wsId: 'w1',
+      appId: 'app1',
+      clientDate: '2026-05-03',
+      observability,
+    });
+    expect(logScore).not.toHaveBeenCalled();
+
+    // Missing observability
+    await buildUserDigest({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      db: db as any,
+      userId: 'u1',
+      wsId: 'w1',
+      appId: 'app1',
+      clientDate: '2026-05-03',
+      traceId: 'trace-xyz',
+    });
+    expect(logScore).not.toHaveBeenCalled();
+  });
+});
