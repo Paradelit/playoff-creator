@@ -39,13 +39,32 @@ class FakePromptManager {
 /**
  * Fake LLMProvider whose generateWithTools returns a pre-scripted
  * sequence of parts per call — lets us drive the tool loop deterministically.
- * Tracks call count so tests can assert ambiguity short-circuits before LLM.
+ *
+ * Auxiliary classifier calls (sub-B.4 ambiguity LLM fallback) are identified
+ * by `tools: []` + `modelHint: 'fast'` and short-circuited with a default
+ * `{"kind":"clear"}` response so they don't consume slots from the main
+ * tool-loop script. Tests that want to drive a non-clear classifier response
+ * can set `mainFlowOnly: false` and provide a JSON response in the script.
+ *
+ * `callCount` counts only main-flow calls (not classifier short-circuits) so
+ * existing assertions about "skipped LLM" still mean "skipped main turn".
  */
 class FakeLLMProvider {
   private callIndex = 0;
   callCount = 0;
+  classifierCallCount = 0;
   constructor(private script: GeminiPart[][]) {}
-  async generateWithTools(_req: GenerateWithToolsRequest): Promise<GenerateWithToolsResult> {
+  async generateWithTools(req: GenerateWithToolsRequest): Promise<GenerateWithToolsResult> {
+    const isClassifierCall = req.modelHint === 'fast' && Array.isArray(req.tools) && req.tools.length === 0;
+    if (isClassifierCall) {
+      this.classifierCallCount += 1;
+      return {
+        parts: [{ text: '{"kind":"clear"}' }],
+        finishReason: 'STOP',
+        model: 'fake-classifier',
+        latencyMs: 1,
+      };
+    }
     this.callCount += 1;
     const parts = this.script[this.callIndex] || [{ text: 'fin' }];
     this.callIndex += 1;
