@@ -101,6 +101,30 @@ function randomId(): string {
   return "p_" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
 }
 
+/**
+ * Render the "PANTALLA ACTUAL" section for the system prompt. Prefers the
+ * semantic snapshot (sub-A.5) when present — más legible para el LLM y
+ * con referableIds explícitos. Cae al render bruto (screen + route + ids)
+ * cuando el frontend aún no envía `screenContext.semantic`.
+ *
+ * Exportado para tests unitarios; el orchestrator lo usa internamente.
+ */
+export function renderScreenInfo(screen: ScreenContextData): string {
+  if (screen.semantic) {
+    const refs = screen.semantic.referableIds || {};
+    const refsLines = Object.entries(refs)
+      .map(([phrase, id]) => `  · "${phrase}" → ${id}`)
+      .join("\n");
+    return `\nPANTALLA ACTUAL (${screen.semantic.surface}): ${screen.semantic.label}${
+      refsLines ? `\nReferencias resolubles:\n${refsLines}` : ""
+    }`;
+  }
+  // Fallback al render bruto (pre sub-A.5).
+  return `\nPANTALLA ACTUAL: ${screen.screen} (ruta: ${screen.route})${
+    screen.entityId ? `\nEntidad enfocada: ${screen.entityType} id=${screen.entityId}` : ""
+  }${screen.data && Object.keys(screen.data).length > 0 ? `\nDatos visibles: ${JSON.stringify(screen.data)}` : ""}`;
+}
+
 export interface OrchestratorInput {
   userMessage: string;
   screenContext?: ScreenContextData;
@@ -345,11 +369,7 @@ export class OrchestratorAgent {
   }
 
   private async buildSystemPrompt(screen: ScreenContextData | undefined, digest: UserDigest): Promise<string> {
-    const screenInfo = screen
-      ? `\nPANTALLA ACTUAL: ${screen.screen} (ruta: ${screen.route})${
-          screen.entityId ? `\nEntidad enfocada: ${screen.entityType} id=${screen.entityId}` : ""
-        }${screen.data && Object.keys(screen.data).length > 0 ? `\nDatos visibles: ${JSON.stringify(screen.data)}` : ""}`
-      : "";
+    const screenInfo = screen ? renderScreenInfo(screen) : "";
 
     const compiled = await this.deps.promptManager.compile("orchestrator-system", {
       digestText: digestToPromptText(digest),

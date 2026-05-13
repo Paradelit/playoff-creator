@@ -42,6 +42,24 @@ export interface LLMGenerateRequest {
   onStatus?: (status: string) => void;
 }
 
+/**
+ * Snapshot semántico de lo que el coach está viendo. Lo computa el frontend
+ * (cada screen relevante registra su helper) y viaja por el callable hasta
+ * el system prompt. Permite a Pick resolver referencias como "este equipo"
+ * o "este partido" sin tool calls.
+ *
+ * Sub-A.5 — fase frontend pendiente. Hoy el campo es opcional y, si no
+ * llega, el system prompt cae al render bruto (screen + route + entityId).
+ */
+export interface ScreenSemantic {
+  /** Código semántico estable: "team-detail", "calendar", "bracket-editor", etc. */
+  surface: string;
+  /** Frase legible para el LLM: "Visualizando equipo Juniors B, 12 jugadores...". */
+  label: string;
+  /** Map de frases referenciales → entityId. Ej: { "este equipo": "team-abc" }. */
+  referableIds?: Record<string, string>;
+}
+
 /** Screen context from the frontend */
 export interface ScreenContextData {
   screen: string;
@@ -50,6 +68,9 @@ export interface ScreenContextData {
   entityType?: string;
   entityId?: string;
   data?: Record<string, unknown>;
+  /** Snapshot semántico opcional. Si presente, el orchestrator lo prefiere
+   *  sobre el render bruto de screen/route/entityId. */
+  semantic?: ScreenSemantic;
 }
 
 /** Action the agent can suggest */
