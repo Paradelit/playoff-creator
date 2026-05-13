@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useRegisterScreenSemantic } from '../hooks/useRegisterScreenSemantic';
+import { buildTeamTrainingsSemantic } from '../utils/screenSemantic/training';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, ArrowRight, ClipboardList, BookOpen, FolderOpen, ShieldHalf } from 'lucide-react';
 import { useFirebase } from '../contexts/FirebaseContext';
@@ -20,6 +22,10 @@ export default function TeamTrainingsScreen() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+
+  // Sub-A.5 — semantic para Pick.
+  const semantic = useMemo(() => buildTeamTrainingsSemantic({ teamId, team, trainings }), [teamId, team, trainings]);
+  useRegisterScreenSemantic(semantic);
 
   useEffect(() => {
     if (!db || !activeWsId) return;
