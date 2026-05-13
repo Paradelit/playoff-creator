@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useRegisterScreenSemantic } from '../hooks/useRegisterScreenSemantic';
+import { buildTrainingEditorSemantic } from '../utils/screenSemantic/training';
 import { ArrowLeft, Plus, Minus, BookOpen, Save, Trash2, Maximize2, Printer } from 'lucide-react';
 import { teamDisplayName } from '../utils/teamUtils';
 import MentionTextarea from '../components/MentionTextarea';
@@ -60,6 +62,13 @@ export default function TrainingEditorScreen() {
   } = editor;
 
   useRegisterScreenContext({ teamName: training?.meta?.equipo, fecha: training?.meta?.fecha });
+
+  // Sub-A.5 — semantic para Pick.
+  const trainingSemantic = useMemo(
+    () => buildTrainingEditorSemantic({ teamId, team, training }),
+    [teamId, team, training],
+  );
+  useRegisterScreenSemantic(trainingSemantic);
 
   if (loading) {
     return (
