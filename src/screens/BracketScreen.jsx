@@ -1,5 +1,5 @@
 /* eslint-disable max-lines -- BracketScreen es el screen orquestador del módulo de brackets (~30 botones + 3 modales + render del cuadro entero). Split pendiente con diseño; tracking en sub-7 quality batch. Hasta entonces file-disable. */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
@@ -28,6 +28,8 @@ import BracketNode from '../components/BracketNode';
 import TeamSearchableSelect from '../components/TeamSearchableSelect';
 import { useBracket } from '../contexts/BracketContext';
 import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
+import { useRegisterScreenSemantic } from '../hooks/useRegisterScreenSemantic';
+import { buildBracketSemantic } from '../utils/screenSemantic/bracket';
 import BracketShareModal from '../components/bracket/BracketShareModal';
 import BracketMobileTools from '../components/bracket/BracketMobileTools';
 import ToolbarButton from '../components/bracket/ToolbarButton';
@@ -91,6 +93,27 @@ export default function BracketScreen() {
   const { activeWsId } = useWorkspace();
 
   useRegisterScreenContext({ bracketName: activeBracket?.name, myTeam: activeBracket?.myTeam });
+
+  // Sub-A.5 — semantic snapshot del bracket. referableIds resolve
+  // "este bracket"/"este cuadro"/"este playoff" → activeBracketId sin
+  // tool calls. "este equipo" sólo si el bracket está linkeado a un team.
+  const bracketSemantic = useMemo(
+    () =>
+      buildBracketSemantic({
+        activeBracketId,
+        activeBracket,
+        canEdit,
+      }),
+    [
+      activeBracketId,
+      activeBracket?.name,
+      activeBracket?.tournamentName,
+      activeBracket?.myTeam,
+      activeBracket?.teamId,
+      canEdit,
+    ],
+  );
+  useRegisterScreenSemantic(bracketSemantic);
 
   const navigate = useNavigate();
   const [showLinkDropdown, setShowLinkDropdown] = useState(false);
