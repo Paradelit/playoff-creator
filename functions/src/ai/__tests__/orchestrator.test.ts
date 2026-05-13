@@ -70,7 +70,7 @@ const EMPTY_DIGEST: UserDigest = {
 
 function makeOrchestrator(
   tool: ToolDefinition,
-  script: GeminiPart[][]
+  script: GeminiPart[][],
 ): { orchestrator: OrchestratorAgent; observability: FakeObservability } {
   const registry = new ToolRegistry();
   registry.register(tool);
@@ -79,9 +79,7 @@ function makeOrchestrator(
     llmProvider: new FakeLLMProvider(script) as unknown as ConstructorParameters<
       typeof OrchestratorAgent
     >[0]['llmProvider'],
-    observability: observability as unknown as ConstructorParameters<
-      typeof OrchestratorAgent
-    >[0]['observability'],
+    observability: observability as unknown as ConstructorParameters<typeof OrchestratorAgent>[0]['observability'],
     toolRegistry: registry,
     promptManager: new FakePromptManager() as unknown as ConstructorParameters<
       typeof OrchestratorAgent
@@ -126,7 +124,7 @@ describe('OrchestratorAgent smoke tests', () => {
       { userMessage: 'lista mis equipos', userDigest: EMPTY_DIGEST },
       EMPTY_TOOL_CTX,
       TRACE_CTX,
-      AGENT_OPTS
+      AGENT_OPTS,
     );
 
     const types = res.blocks.map((b) => b.type);
@@ -160,7 +158,7 @@ describe('OrchestratorAgent smoke tests', () => {
       { userMessage: 'crea un entrenamiento', userDigest: EMPTY_DIGEST },
       EMPTY_TOOL_CTX,
       TRACE_CTX,
-      AGENT_OPTS
+      AGENT_OPTS,
     );
 
     const confirm = res.blocks.find((b) => b.type === 'confirm_write');
@@ -196,7 +194,7 @@ describe('OrchestratorAgent smoke tests', () => {
       { userMessage: 'genera un entrenamiento defensivo', userDigest: EMPTY_DIGEST },
       EMPTY_TOOL_CTX,
       TRACE_CTX,
-      AGENT_OPTS
+      AGENT_OPTS,
     );
 
     const preview = res.blocks.find((b) => b.type === 'training_preview');
@@ -218,7 +216,7 @@ describe('OrchestratorAgent smoke tests', () => {
       { userMessage: 'llévame al calendario', userDigest: EMPTY_DIGEST },
       EMPTY_TOOL_CTX,
       TRACE_CTX,
-      AGENT_OPTS
+      AGENT_OPTS,
     );
 
     expect(res.actions).toBeDefined();
@@ -242,7 +240,7 @@ describe('OrchestratorAgent smoke tests', () => {
       { userMessage: 'hola', userDigest: EMPTY_DIGEST },
       EMPTY_TOOL_CTX,
       TRACE_CTX,
-      AGENT_OPTS
+      AGENT_OPTS,
     );
 
     expect(res.blocks.length).toBeGreaterThan(0);
@@ -260,20 +258,55 @@ describe('OrchestratorAgent smoke tests', () => {
     // LLM returns zero parts → orchestrator's safety block emits "He terminado."
     const { orchestrator, observability } = makeOrchestrator(tool, [[]]);
 
-    await orchestrator.run(
-      { userMessage: 'hola', userDigest: EMPTY_DIGEST },
-      EMPTY_TOOL_CTX,
-      TRACE_CTX,
-      AGENT_OPTS
-    );
+    await orchestrator.run({ userMessage: 'hola', userDigest: EMPTY_DIGEST }, EMPTY_TOOL_CTX, TRACE_CTX, AGENT_OPTS);
 
     const calls = observability.logScore.mock.calls;
     const names = calls.map((c: unknown[]) => (c[1] as { name: string }).name);
     expect(names).toContain('fallback_message_emitted');
-    const fallbackCall = calls.find(
-      (c: unknown[]) => (c[1] as { name: string }).name === 'fallback_message_emitted'
-    );
+    const fallbackCall = calls.find((c: unknown[]) => (c[1] as { name: string }).name === 'fallback_message_emitted');
     expect((fallbackCall?.[1] as { value: number }).value).toBe(1);
+  });
+
+  it('logs history_compression_ms when conversationHistory is non-empty (sub-B.2)', async () => {
+    const tool: ToolDefinition = {
+      name: 'noop',
+      description: 'noop',
+      parameters: { type: 'object', properties: {} },
+      handler: async () => ({}),
+    };
+    const { orchestrator, observability } = makeOrchestrator(tool, [[{ text: 'ok' }]]);
+
+    await orchestrator.run(
+      {
+        userMessage: 'hola',
+        userDigest: EMPTY_DIGEST,
+        conversationHistory: [
+          { role: 'user', content: 'turno 1' },
+          { role: 'assistant', content: 'turno 2' },
+        ],
+      },
+      EMPTY_TOOL_CTX,
+      TRACE_CTX,
+      AGENT_OPTS,
+    );
+
+    const names = observability.logScore.mock.calls.map((c: unknown[]) => (c[1] as { name: string }).name);
+    expect(names).toContain('history_compression_ms');
+  });
+
+  it('does NOT log history_compression_ms when conversationHistory is empty', async () => {
+    const tool: ToolDefinition = {
+      name: 'noop',
+      description: 'noop',
+      parameters: { type: 'object', properties: {} },
+      handler: async () => ({}),
+    };
+    const { orchestrator, observability } = makeOrchestrator(tool, [[{ text: 'ok' }]]);
+
+    await orchestrator.run({ userMessage: 'hola', userDigest: EMPTY_DIGEST }, EMPTY_TOOL_CTX, TRACE_CTX, AGENT_OPTS);
+
+    const names = observability.logScore.mock.calls.map((c: unknown[]) => (c[1] as { name: string }).name);
+    expect(names).not.toContain('history_compression_ms');
   });
 
   it('does NOT log fallback_message_emitted when meaningful blocks are emitted', async () => {
@@ -296,7 +329,7 @@ describe('OrchestratorAgent smoke tests', () => {
       { userMessage: 'lista mis equipos', userDigest: EMPTY_DIGEST },
       EMPTY_TOOL_CTX,
       TRACE_CTX,
-      AGENT_OPTS
+      AGENT_OPTS,
     );
 
     const calls = observability.logScore.mock.calls;
@@ -377,7 +410,7 @@ describe('OrchestratorAgent smoke tests', () => {
       { userMessage: 'ejecuta', userDigest: EMPTY_DIGEST },
       EMPTY_TOOL_CTX,
       TRACE_CTX,
-      AGENT_OPTS
+      AGENT_OPTS,
     );
 
     expect(res.blocks.some((b) => b.type === 'text')).toBe(true);

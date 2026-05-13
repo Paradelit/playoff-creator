@@ -94,34 +94,47 @@ Security model (firestore.rules ~345 LOC):
 - `callGeminiForResults()` — extract scores from game reports
 - `callGeminiForCalendar()` — suggest calendar events from text
 
-### Pick context system (sub-proyecto A — en curso 2026-05-13)
+### Pick context system (sub-proyecto A — cerrado funcionalmente 2026-05-13)
 
-El digest que se inyecta en el system prompt de Pick (`functions/src/ai/userDigest.ts`) se construye en capas. Estado actual:
+El digest que se inyecta en el system prompt de Pick (`functions/src/ai/userDigest.ts`) se construye en capas:
 
 - **Layer 1 — Digest base** (`functions/src/ai/digest/`):
   - `types.ts` — `UserDigest`, `DigestTeam`, `DigestBracket`, `DigestSession`, `PendingConvocatoria`, etc.
   - `teamsDigest.ts` — `buildTeamsDigest`: id, name, categoria, memberCount, `rosterSnapshot` (hasta 12 jugadores), `nextSession`, `lastResult` per team.
-  - `bracketsDigest.ts` — `buildBracketsDigest`: id, name, teamId. Enriquecimientos (currentRound, nextMatch, pendingScores) diferidos a PR follow-up.
+  - `bracketsDigest.ts` — `buildBracketsDigest`: id, name, teamId, `currentRound`, `nextMatch`, `pendingScores`.
   - `calendarDigest.ts` — `buildUpcomingSessionsDigest` (próximas 7d, max 15) + `buildRecentPastSessionsDigest` (últimas 7d con `result` normalizado al PoV del coach via `esLocal`).
   - `scoping.ts` — `resolveScopedTeamIds(role + assignedTeamIds)`: owner/coach ven todo, assistant sólo sus `assignedTeamIds`. Filtro aplicado en teams/brackets/sessions/pendings.
-  - `pendingConvocatorias.ts` — partidos próximos sin convocatoria mandada. On-demand, sin cache (sub-A.4a).
+  - `pendingConvocatorias.ts` + `pendingAnalyses.ts` + `pendingScoutings.ts` + `pendingPlayerReports.ts` — partidos próximos/pasados sin convocatoria/análisis/scouting + jugadores sin informe del trimestre. On-demand, sin cache (sub-A.4a).
 
-- **Layer 2 — Read tools lazy** (`functions/src/ai/tools/readTools.ts` + futuro `aggregates.ts`): 22 read tools existentes + 5 nuevos pendientes (sub-A.6) para get_recent_results, get_attendance_summary, get_player_status, get_team_health, get_pending_actions_detail.
+- **Layer 2 — Read tools lazy** (`functions/src/ai/tools/aggregateTools.ts`): 3 aggregate tools shipped — `get_recent_results`, `get_attendance_summary`, `get_player_status`. Las 2 restantes (`get_pending_actions_detail`, `get_team_health`) **dependen del cache L3** y siguen diferidas hasta que el deploy de triggers se desbloquee.
 
-- **Layer 3 — Insights cache**: diferido (sub-A.4b). Requiere deploy de Firestore triggers que hoy está bloqueado por IAM. Cuando el deploy se desbloquee, el cache `pickInsights/{date}` evitará recomputar pending/anomalies cada turno.
+- **Layer 3 — Insights cache**: diferido (sub-A.4b). Requiere deploy de Firestore triggers que sigue bloqueado por IAM (ver `feedback_ci_functions_deploy_iam.md`). Mientras tanto el on-demand de A.4a cubre la funcionalidad principal.
 
 - **Layer 4 — Screen semantic** (`src/utils/screenSemantic/*` + `src/contexts/ScreenContextProvider.tsx`):
   - Frontend computa `{ surface, label, referableIds }` por screen.
   - Backend renderiza via `renderScreenInfo()` en `orchestratorAgent.ts`. Si `screenContext.semantic` está presente, prefiere ese render sobre el bruto.
-  - Helpers wired: TeamDetail, Calendar, Bracket. Pendientes: Asistencia, InformeJugador, Scouting, Analysis.
+  - Helpers wired: TeamDetail, Calendar, Bracket, Asistencia, InformeJugadores, Scouting, Analysis, TrainingEditor, TeamTrainings.
 
-- **Métricas baseline (sub-A.0)** logueadas a Langfuse cada turno: `digest_build_ms`, `digest_size_tokens`, `fallback_message_emitted`, además de las existentes `tool_calls`, `iteration_count`, `tool_errors_total`.
+- **Métricas baseline (sub-A.0 + sub-B.0)** logueadas a Langfuse cada turno: `digest_build_ms`, `digest_size_tokens`, `fallback_message_emitted`, `history_compression_ms`, además de las existentes `tool_calls`, `iteration_count`, `tool_errors_total`.
 
 **Scoping bug fix** (sub-A.3): antes el digest ignoraba `members/{uid}.assignedTeamIds` y un asistente veía todos los teams del workspace. Tras sub-A.3, scoping role-aware aplicado en `buildUserDigest`. Tests cubren los 3 paths (owner/coach/assistant scoped/assistant sin teams).
 
 **Token budget**: digest típico actual ~1.5–2.5KB. Caps duros pendientes para workspaces grandes (ver risk en sub-A spec).
 
 **Spec + plan**: `docs/superpowers/specs/2026-05-13-ai-chat-priority-master-design.md` + `sub-proyecto-A-contexto-completo-design.md` + plan TDD en `docs/superpowers/plans/2026-05-13-sub-proyecto-A-contexto-completo.md`.
+
+### Pick conversational layer (sub-proyecto B — en curso 2026-05-13)
+
+Sobre el contexto rico de sub-A, sub-B añade 4 capas para conversación natural. Estado actual:
+
+- **B.1 — System prompt redesign** ✅ (PR #57): persona reforzada, ambigüedad protocol, proactividad cues — todo en `functions/src/ai/promptManager.ts → orchestrator-system`.
+- **B.2 — History compression v2** ✅ (este PR): `functions/src/ai/history/{cache, summarizer, compressHistoryV2}.ts`. Reemplaza el truncado flat a 130 chars por chunks topic-aware (4 turnos) resumidos vía LLM fast + cache Firestore por `(conversationId, chunkEndIndex)` en `users/{uid}/historySummaries/`. Si el summarizer falla, fallback a líneas flat.
+- **B.3+B.4 — Ambiguity classifier** ⏳ pendiente: pre-LLM step que emite `confirm_choice` block cuando hay >1 candidato plausible.
+- **B.5 — Proactive engine** ⏳ pendiente (`functions/src/proactiveEngine.ts` ya existe como daily-briefing — se extenderá para on-open).
+- **B.6 — Frontend blocks** ⏳ pendiente: `ConfirmChoice` + `ProactiveCard` render.
+- **B.7+B.8 — Eval multi-turn + docs** ⏳ pendiente.
+
+**Spec + plan**: `docs/superpowers/specs/2026-05-13-sub-proyecto-B-paridad-conversacional-design.md` + plan TDD en `docs/superpowers/plans/2026-05-13-sub-proyecto-B-paridad-conversacional.md`.
 
 ### Key conventions
 
