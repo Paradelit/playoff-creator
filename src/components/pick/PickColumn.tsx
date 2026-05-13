@@ -6,6 +6,7 @@ import ActionButton from './ActionButton';
 import PickFeedback from './PickFeedback';
 import ConversationList from './ConversationList';
 import BlockRenderer from './blocks/BlockRenderer';
+import ProactiveCard from './blocks/ProactiveCard';
 import TextBlock from './blocks/TextBlock';
 
 const SCREEN_LABELS: Record<string, string> = {
@@ -35,6 +36,9 @@ export default function PickColumn() {
     conversations,
     conversationId,
     loadConversation,
+    proactiveMessage,
+    acceptProactive,
+    dismissProactive,
   } = usePick();
   const { screenContext } = useScreenContext();
   const [input, setInput] = useState('');
@@ -134,6 +138,9 @@ export default function PickColumn() {
         <>
           {/* Messages */}
           <div className="flex-1 overflow-y-auto min-h-0 px-4 py-3 space-y-3">
+            {proactiveMessage && (
+              <ProactiveCard message={proactiveMessage} onAccept={acceptProactive} onDismiss={dismissProactive} />
+            )}
             {messages.length === 0 && (
               <div className="text-center text-slate-400 text-sm py-12">
                 <p className="font-medium">¡Hola! Soy Pick.</p>
