@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, Sparkles } from 'lucide-react';
 import { useCalendarSessions, getMonday } from '../hooks/useCalendarSessions';
 import { useSessionEditor } from '../hooks/useSessionEditor';
 import { useCalendarImport } from '../hooks/useCalendarImport';
 import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
+import { useRegisterScreenSemantic } from '../hooks/useRegisterScreenSemantic';
+import { buildCalendarSemantic } from '../utils/screenSemantic/calendar';
 import RecurrenceChoiceDialog from '../components/RecurrenceChoiceDialog';
 import MonthGrid, { buildCalendarDays } from '../components/calendar/MonthGrid';
 import WeekView from '../components/calendar/WeekView';
@@ -75,6 +77,22 @@ export default function CalendarScreen() {
   const weekDays = viewMode === 'week' ? buildWeekDays(currentDate, visibleSessions) : [];
   const daySessionList = viewMode === 'day' ? visibleSessions.filter((s) => s.fecha === toYMD(currentDate)) : [];
   const todayYMD = toYMD(today);
+
+  // Sub-A.5 — registra semantic para que Pick resuelva "esta sesión" /
+  // "este equipo" sin tool calls. visibleSessions.length entra en deps
+  // como proxy estable; daySessionList[0].id solo cuando hay 1 visible.
+  const calendarSemantic = useMemo(
+    () =>
+      buildCalendarSemantic({
+        currentDate,
+        viewMode,
+        visibleSessions,
+        daySessionList,
+        filterTeam,
+      }),
+    [currentDate, viewMode, visibleSessions.length, daySessionList.length, daySessionList[0]?.id, filterTeam?.id],
+  );
+  useRegisterScreenSemantic(calendarSemantic);
 
   function goBack() {
     setCurrentDate((d) => {
