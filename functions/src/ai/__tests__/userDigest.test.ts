@@ -96,3 +96,107 @@ describe('buildUserDigest — preferences come from user profile', () => {
     expect(digest.todayISO).toBe('2026-05-03');
   });
 });
+
+describe('buildUserDigest — sub-A.2/A.3 (workspace + day of week + scoping integration)', () => {
+  it('exposes workspace.name + workspace.type + userRole from members doc', async () => {
+    // Build a fake DB that returns workspace + member docs with concrete data.
+    const accessedPaths: string[] = [];
+    function makeDocRef(path: string): unknown {
+      return {
+        get: async () => {
+          accessedPaths.push(path);
+          if (path === 'artifacts/app1/workspaces/w1') {
+            return { exists: true, data: () => ({ name: 'Club ABC', type: 'club' }) };
+          }
+          if (path === 'artifacts/app1/workspaces/w1/members/u1') {
+            return { exists: true, data: () => ({ role: 'owner' }) };
+          }
+          return { exists: false, data: () => undefined };
+        },
+        collection: (name: string) => makeColRef(`${path}/${name}`),
+      };
+    }
+    function makeColRef(path: string): unknown {
+      const query = {
+        where: () => query,
+        orderBy: () => query,
+        get: async () => ({ docs: [] }),
+      };
+      return {
+        doc: (id: string) => makeDocRef(`${path}/${id}`),
+        get: async () => ({ docs: [] }),
+        where: () => query,
+        orderBy: () => query,
+      };
+    }
+    const db = { collection: (n: string) => makeColRef(n) };
+
+    const digest = await buildUserDigest({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      db: db as any,
+      userId: 'u1',
+      wsId: 'w1',
+      appId: 'app1',
+      clientDate: '2026-05-13',
+    });
+
+    expect(digest.workspace).toEqual({
+      id: 'w1',
+      name: 'Club ABC',
+      type: 'club',
+      userRole: 'owner',
+    });
+    expect(digest.todayISO).toBe('2026-05-13');
+    // 2026-05-13 fue miércoles (verificación leve).
+    expect(digest.todayLocalDayOfWeek).toBe('miércoles');
+  });
+
+  it('defaults role to "assistant" when members doc is missing', async () => {
+    function makeDocRef(_path: string): unknown {
+      return {
+        get: async () => ({ exists: false, data: () => undefined }),
+        collection: (n: string) => makeColRef(`${_path}/${n}`),
+      };
+    }
+    function makeColRef(path: string): unknown {
+      const query = {
+        where: () => query,
+        orderBy: () => query,
+        get: async () => ({ docs: [] }),
+      };
+      return {
+        doc: (id: string) => makeDocRef(`${path}/${id}`),
+        get: async () => ({ docs: [] }),
+        where: () => query,
+        orderBy: () => query,
+      };
+    }
+    const db = { collection: (n: string) => makeColRef(n) };
+
+    const digest = await buildUserDigest({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      db: db as any,
+      userId: 'u1',
+      wsId: 'w1',
+      appId: 'app1',
+      clientDate: '2026-05-13',
+    });
+    expect(digest.workspace.userRole).toBe('assistant');
+    // Sin assignedTeamIds, el assistant no ve ningún team.
+    expect(digest.teams).toEqual([]);
+    expect(digest.activeBrackets).toEqual([]);
+  });
+
+  it('returns recentPastSessions: [] when no past sessions match', async () => {
+    const { db } = makeFakeDb(null);
+    const digest = await buildUserDigest({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      db: db as any,
+      userId: 'u1',
+      wsId: 'w1',
+      appId: 'app1',
+      clientDate: '2026-05-13',
+    });
+    expect(digest.recentPastSessions).toEqual([]);
+  });
+});

@@ -57,12 +57,15 @@ class FakeLLMProvider {
 }
 
 const EMPTY_DIGEST: UserDigest = {
+  todayISO: '2026-04-16',
+  todayLocalDayOfWeek: 'jueves',
+  workspace: { id: 'ws1', name: 'Test workspace', type: 'personal', userRole: 'owner' },
   teams: [],
   activeBrackets: [],
   upcomingSessions: [],
+  recentPastSessions: [],
   preferences: {},
   memories: [],
-  todayISO: '2026-04-16',
 };
 
 function makeOrchestrator(
