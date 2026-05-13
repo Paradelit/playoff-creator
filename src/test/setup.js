@@ -1,6 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { vi } from 'vitest';
-import { afterEach, beforeAll } from 'vitest';
+import { vi, afterEach, beforeAll } from 'vitest';
 import { installLandingBrowserMocks, resetLandingBrowserMocks } from './landingHelpers';
 
 // Global Firebase mocks to prevent the heavy SDK from loading

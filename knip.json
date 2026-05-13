@@ -1,0 +1,35 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/main.jsx",
+    "src/entry-prerender.jsx",
+    "scripts/**/*.{js,mjs}",
+    "vite.config.js",
+    "eslint.config.js",
+    "vitest.config.{js,ts}",
+    "vitest.*.config.{js,ts}",
+    "**/*.test.{js,jsx,ts,tsx}",
+    "functions/src/index.ts"
+  ],
+  "project": ["src/**/*.{js,jsx,ts,tsx}", "scripts/**/*.{js,mjs}", "functions/src/**/*.ts"],
+  "ignore": [
+    "dist/**",
+    "dist-ssr/**",
+    "node_modules/**",
+    "functions/lib/**",
+    "functions/node_modules/**",
+    ".claude/**"
+  ],
+  "ignoreDependencies": [
+    "@testing-library/jest-dom",
+    "@testing-library/user-event",
+    "axe-core",
+    "babel-plugin-react-compiler",
+    "eslint-plugin-react-compiler",
+    "globals",
+    "happy-dom",
+    "husky",
+    "lint-staged",
+    "prettier"
+  ]
+}
