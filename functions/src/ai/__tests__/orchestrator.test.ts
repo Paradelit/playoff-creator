@@ -39,11 +39,14 @@ class FakePromptManager {
 /**
  * Fake LLMProvider whose generateWithTools returns a pre-scripted
  * sequence of parts per call — lets us drive the tool loop deterministically.
+ * Tracks call count so tests can assert ambiguity short-circuits before LLM.
  */
 class FakeLLMProvider {
   private callIndex = 0;
+  callCount = 0;
   constructor(private script: GeminiPart[][]) {}
   async generateWithTools(_req: GenerateWithToolsRequest): Promise<GenerateWithToolsResult> {
+    this.callCount += 1;
     const parts = this.script[this.callIndex] || [{ text: 'fin' }];
     this.callIndex += 1;
     return {
@@ -71,21 +74,20 @@ const EMPTY_DIGEST: UserDigest = {
 function makeOrchestrator(
   tool: ToolDefinition,
   script: GeminiPart[][],
-): { orchestrator: OrchestratorAgent; observability: FakeObservability } {
+): { orchestrator: OrchestratorAgent; observability: FakeObservability; llm: FakeLLMProvider } {
   const registry = new ToolRegistry();
   registry.register(tool);
   const observability = new FakeObservability();
+  const llm = new FakeLLMProvider(script);
   const orchestrator = new OrchestratorAgent({
-    llmProvider: new FakeLLMProvider(script) as unknown as ConstructorParameters<
-      typeof OrchestratorAgent
-    >[0]['llmProvider'],
+    llmProvider: llm as unknown as ConstructorParameters<typeof OrchestratorAgent>[0]['llmProvider'],
     observability: observability as unknown as ConstructorParameters<typeof OrchestratorAgent>[0]['observability'],
     toolRegistry: registry,
     promptManager: new FakePromptManager() as unknown as ConstructorParameters<
       typeof OrchestratorAgent
     >[0]['promptManager'],
   });
-  return { orchestrator, observability };
+  return { orchestrator, observability, llm };
 }
 
 const EMPTY_TOOL_CTX = {
@@ -414,5 +416,78 @@ describe('OrchestratorAgent smoke tests', () => {
     );
 
     expect(res.blocks.some((b) => b.type === 'text')).toBe(true);
+  });
+
+  it('emits confirm_choice + skips LLM when message is ambiguous (sub-B.3)', async () => {
+    const tool: ToolDefinition = {
+      name: 'noop',
+      description: 'noop',
+      parameters: { type: 'object', properties: {} },
+      handler: async () => ({}),
+    };
+
+    // Two upcoming partidos → "la convocatoria del partido" is ambiguous.
+    const ambiguousDigest: UserDigest = {
+      ...EMPTY_DIGEST,
+      upcomingSessions: [
+        { id: 's1', fecha: '2026-05-16', tipo: 'partido', teamName: 'Cadete A', rival: 'Hispano' },
+        { id: 's2', fecha: '2026-05-17', tipo: 'partido', teamName: 'Juniors B', rival: 'Olímpico' },
+      ],
+    };
+    const { orchestrator, observability, llm } = makeOrchestrator(tool, [[{ text: 'should not fire' }]]);
+
+    const res = await orchestrator.run(
+      { userMessage: 'mándame la convocatoria del partido', userDigest: ambiguousDigest },
+      EMPTY_TOOL_CTX,
+      TRACE_CTX,
+      AGENT_OPTS,
+    );
+
+    expect(llm.callCount).toBe(0);
+    const choice = res.blocks.find((b) => b.type === 'confirm_choice');
+    expect(choice).toBeDefined();
+    if (choice && choice.type === 'confirm_choice') {
+      expect(choice.candidates).toHaveLength(2);
+      expect(choice.intent).toBe('mándame la convocatoria del partido');
+      expect(choice.prompt).toMatch(/partido/i);
+    }
+    const names = observability.logScore.mock.calls.map((c: unknown[]) => (c[1] as { name: string }).name);
+    expect(names).toContain('ambiguity_detected');
+  });
+
+  it('emits a single text block + skips LLM when message is out-of-scope (sub-B.3)', async () => {
+    const tool: ToolDefinition = {
+      name: 'noop',
+      description: 'noop',
+      parameters: { type: 'object', properties: {} },
+      handler: async () => ({}),
+    };
+    const { orchestrator, observability, llm } = makeOrchestrator(tool, [[{ text: 'should not fire' }]]);
+
+    const res = await orchestrator.run(
+      { userMessage: 'dame el balance financiero', userDigest: EMPTY_DIGEST },
+      EMPTY_TOOL_CTX,
+      TRACE_CTX,
+      AGENT_OPTS,
+    );
+
+    expect(llm.callCount).toBe(0);
+    expect(res.blocks.find((b) => b.type === 'text')).toBeDefined();
+    const names = observability.logScore.mock.calls.map((c: unknown[]) => (c[1] as { name: string }).name);
+    expect(names).toContain('out_of_scope_detected');
+  });
+
+  it('proceeds normally (calls LLM) when message is clear (sub-B.3 regression)', async () => {
+    const tool: ToolDefinition = {
+      name: 'noop',
+      description: 'noop',
+      parameters: { type: 'object', properties: {} },
+      handler: async () => ({}),
+    };
+    const { orchestrator, llm } = makeOrchestrator(tool, [[{ text: 'hola' }]]);
+
+    await orchestrator.run({ userMessage: 'hola', userDigest: EMPTY_DIGEST }, EMPTY_TOOL_CTX, TRACE_CTX, AGENT_OPTS);
+
+    expect(llm.callCount).toBeGreaterThan(0);
   });
 });
