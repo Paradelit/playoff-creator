@@ -1,4 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { useRegisterScreenSemantic } from '../hooks/useRegisterScreenSemantic';
+import { buildScoutingSemantic } from '../utils/screenSemantic/scouting';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getDoc } from 'firebase/firestore';
 import { ArrowLeft, Printer, RotateCcw, Plus, Trash2, Search, Shield } from 'lucide-react';
@@ -45,6 +47,10 @@ export default function ScoutingScreen() {
 
   const [data, setData] = useState(null);
   const [saveStatus, setSaveStatus] = useState('saved');
+
+  // Sub-A.5 — semantic para Pick.
+  const scoutingSemantic = useMemo(() => buildScoutingSemantic({ session, team }), [session, team]);
+  useRegisterScreenSemantic(scoutingSemantic);
   const [loading, setLoading] = useState(true);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
