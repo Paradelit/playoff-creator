@@ -10,6 +10,7 @@ import {
 import { resolveScopedTeamIds, type MemberScope } from "./digest/scoping";
 import { buildPendingConvocatorias } from "./digest/pendingConvocatorias";
 import { buildPendingAnalysesAndScoutings } from "./digest/pendingAnalysesScoutings";
+import { buildPendingPlayerReports } from "./digest/pendingPlayerReports";
 import type { UserDigest, UserRole } from "./digest/types";
 
 export type {
@@ -140,6 +141,7 @@ export async function buildUserDigest(deps: {
     profileSnap,
     memories,
     pendingAnalysesScoutings,
+    pendingPlayerReports,
   ] = await Promise.all([
     buildBracketsDigest({ db, appId, wsId, scopedTeamIds }),
     buildUpcomingSessionsDigest({ db, appId, wsId, todayISO, teamsById, scopedTeamIds }),
@@ -147,6 +149,7 @@ export async function buildUserDigest(deps: {
     userRoot.collection("profile").doc("main").get(),
     fetchMemoriesForDigest(db, appId, wsId, 15),
     buildPendingAnalysesAndScoutings({ db, appId, wsId, todayISO, teamsById, scopedTeamIds }),
+    buildPendingPlayerReports({ db, appId, wsId, teamsById, scopedTeamIds }),
   ]);
 
   const upcomingByTeam = groupSessionsByTeamId(upcomingSessionsWithTid);
@@ -205,6 +208,7 @@ export async function buildUserDigest(deps: {
       convocatorias: pendingConvocatorias,
       scoutings: pendingAnalysesScoutings.pendingScoutings,
       analyses: pendingAnalysesScoutings.pendingAnalyses,
+      playerReports: pendingPlayerReports,
     },
     preferences: {
       proactivityMode: profile.proactivityMode as string | undefined,
@@ -340,6 +344,17 @@ export function digestToPromptText(digest: UserDigest): string {
     ? digest.pendingActions.analyses.map(formatMatchPending).join("\n")
     : "  (ninguno)";
 
+  const pendingPlayerReportsStr = digest.pendingActions.playerReports.length
+    ? digest.pendingActions.playerReports
+        .map((p) => {
+          const teamLabel = p.teamName ? ` (${p.teamName})` : "";
+          const previewNames =
+            p.missingPlayerNames.length > 0 ? ` — ${p.missingPlayerNames.slice(0, 5).join(", ")}${p.missingPlayerNames.length > 5 ? "..." : ""}` : "";
+          return `  - teamId=${p.teamId}${teamLabel}: ${p.missingForPlayerCount} jugadores${previewNames}`;
+        })
+        .join("\n")
+    : "  (ninguno)";
+
   const wsLine = `${digest.workspace.name} (${digest.workspace.type}, tu rol: ${digest.workspace.userRole})`;
 
   return `
@@ -367,6 +382,9 @@ ${pendingScoutingsStr}
 
 Análisis pendiente (partidos jugados últimos 21d sin análisis):
 ${pendingAnalysesStr}
+
+Informes de jugador pendientes (por team, jugadores sin contenido en informe-jugadores):
+${pendingPlayerReportsStr}
 
 Memorias persistentes del entrenador:
 ${memoriesStr}

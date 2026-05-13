@@ -114,11 +114,19 @@ export interface PendingMatchAction {
   rival?: string;
 }
 
+export interface PendingPlayerReportsTeam {
+  teamId: string;
+  teamName?: string;
+  missingForPlayerCount: number;
+  missingPlayerNames: string[];
+}
+
 export interface PendingActions {
   convocatorias: PendingConvocatoria[];
   scoutings: PendingMatchAction[];
   analyses: PendingMatchAction[];
-  // Próximo kind (futuro PR): playerReports (informe por jugador, no por partido).
+  /** Per team, cuántos jugadores no tienen contenido en el informe. */
+  playerReports: PendingPlayerReportsTeam[];
 }
 
 export interface UserDigest {
