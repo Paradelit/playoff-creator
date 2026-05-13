@@ -1,4 +1,6 @@
 import React, { useMemo } from 'react';
+import { useRegisterScreenSemantic } from '../../hooks/useRegisterScreenSemantic';
+import { buildAsistenciaSemantic } from '../../utils/screenSemantic/asistencia';
 import {
   ArrowLeft,
   Printer,
@@ -243,6 +245,10 @@ export default function AsistenciaScreen() {
 
   const toast = useToast();
   const temporada = getTemporada();
+
+  // Sub-A.5 — semantic snapshot para Pick.
+  const semantic = useMemo(() => buildAsistenciaSemantic({ team, members, activeMonth }), [team, members, activeMonth]);
+  useRegisterScreenSemantic(semantic);
 
   async function handleExportExcel() {
     try {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -23,6 +23,8 @@ import { buildInformeData, exportInformeToPdf, exportInformeToWord } from '../..
 import { subscribeToMembers, subscribeToInformeJugadores, saveInformeJugadores } from '../../services/teamsService';
 import { teamDisplayName } from '../../utils/teamUtils';
 import { getTemporada } from '../../utils/dateUtils';
+import { useRegisterScreenSemantic } from '../../hooks/useRegisterScreenSemantic';
+import { buildInformeJugadoresSemantic } from '../../utils/screenSemantic/informeJugadores';
 
 /* ─── Columnas del informe ──────────────────────────────────────────────── */
 const COLUMNS = [
@@ -137,6 +139,13 @@ export default function InformeJugadoresScreen() {
   const [rows, setRows] = useState([]);
   const [observaciones, setObservaciones] = useState('');
   const [saveStatus, setSaveStatus] = useState('saved');
+
+  // Sub-A.5 — semantic snapshot para Pick.
+  const informeSemantic = useMemo(
+    () => buildInformeJugadoresSemantic({ team, rowCount: rows.length }),
+    [team, rows.length],
+  );
+  useRegisterScreenSemantic(informeSemantic);
   const [showExplicacion, setShowExplicacion] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const debounceRef = useRef(null);
