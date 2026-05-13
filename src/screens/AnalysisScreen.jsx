@@ -1,4 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { useRegisterScreenSemantic } from '../hooks/useRegisterScreenSemantic';
+import { buildAnalysisSemantic } from '../utils/screenSemantic/analysis';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { ArrowLeft, Printer, RotateCcw, Plus, Trash2 } from 'lucide-react';
@@ -65,6 +67,23 @@ export default function AnalysisScreen() {
   const [loading, setLoading] = useState(true);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showStats, setShowStats] = useState(false);
+
+  // Sub-A.5 — semantic para Pick. Si session tiene resultado parseable
+  // (local/visitante numéricos), lo incluimos en la label.
+  const analysisSemantic = useMemo(() => {
+    if (!session) return null;
+    const local = Number(session?.resultado?.local);
+    const visitante = Number(session?.resultado?.visitante);
+    const validResult = Number.isFinite(local) && Number.isFinite(visitante) && session.esLocal !== undefined;
+    const result = validResult
+      ? {
+          ourScore: session.esLocal ? local : visitante,
+          theirScore: session.esLocal ? visitante : local,
+        }
+      : null;
+    return buildAnalysisSemantic({ session, team, result });
+  }, [session, team]);
+  useRegisterScreenSemantic(analysisSemantic);
 
   const debounceRef = useRef(null);
   const initializedRef = useRef(false);
