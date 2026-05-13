@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { OrchestratorAgent } from '../agents/orchestratorAgent';
+import { OrchestratorAgent, renderScreenInfo } from '../agents/orchestratorAgent';
 import { ToolRegistry, ToolDefinition } from '../tools/registry';
 import { createNavigationTools } from '../tools/navigationTools';
 import type { GenerateWithToolsRequest, GenerateWithToolsResult, GeminiPart } from '../llmProvider';
@@ -298,6 +298,60 @@ describe('OrchestratorAgent smoke tests', () => {
     const calls = observability.logScore.mock.calls;
     const names = calls.map((c: unknown[]) => (c[1] as { name: string }).name);
     expect(names).not.toContain('fallback_message_emitted');
+  });
+
+  it('renderScreenInfo prefers semantic.label when present (sub-A.5 infra)', () => {
+    const screen = {
+      screen: 'TeamDetailScreen',
+      route: '/teams/t1',
+      params: { teamId: 't1' },
+      entityType: 'team',
+      entityId: 't1',
+      semantic: {
+        surface: 'team-detail',
+        label: 'Visualizando equipo Juniors B, 12 jugadores. Próximo: sábado vs Hispano.',
+        referableIds: {
+          'este equipo': 't1',
+          'este partido': 's-next',
+        },
+      },
+    };
+    const rendered = renderScreenInfo(screen);
+    expect(rendered).toContain('team-detail');
+    expect(rendered).toContain('Juniors B');
+    expect(rendered).toContain('"este equipo" → t1');
+    expect(rendered).toContain('"este partido" → s-next');
+    // Cuando hay semantic, NO debería incluir el render bruto.
+    expect(rendered).not.toContain('ruta: /teams/t1');
+  });
+
+  it('renderScreenInfo falls back to raw screen+route+entityId when semantic is absent', () => {
+    const screen = {
+      screen: 'TeamDetailScreen',
+      route: '/teams/t1',
+      params: { teamId: 't1' },
+      entityType: 'team',
+      entityId: 't1',
+    };
+    const rendered = renderScreenInfo(screen);
+    expect(rendered).toContain('TeamDetailScreen');
+    expect(rendered).toContain('/teams/t1');
+    expect(rendered).toContain('id=t1');
+  });
+
+  it('renderScreenInfo handles semantic without referableIds', () => {
+    const screen = {
+      screen: 'CalendarScreen',
+      route: '/calendar',
+      params: {},
+      semantic: {
+        surface: 'calendar',
+        label: 'Vista semanal del calendario',
+      },
+    };
+    const rendered = renderScreenInfo(screen);
+    expect(rendered).toContain('Vista semanal del calendario');
+    expect(rendered).not.toContain('Referencias resolubles');
   });
 
   it('captures tool errors without crashing the loop', async () => {
