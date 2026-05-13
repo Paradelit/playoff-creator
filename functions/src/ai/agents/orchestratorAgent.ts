@@ -146,11 +146,23 @@ export class OrchestratorAgent {
     const systemInstruction = await this.buildSystemPrompt(input.screenContext, input.userDigest);
     const traceId = (traceContext.trace as { id?: string })?.id || '';
 
-    // Ambiguity check (sub-B.3). Pre-LLM pass that detects messages with
-    // multiple plausible referents in the digest. When ambiguous, we emit a
-    // ConfirmChoice block *without* paying for an LLM turn — the coach picks
-    // one option, the frontend re-sends the resolved phrasing.
-    const ambResult = await classifyAmbiguity({}, input.userMessage, input.userDigest, input.screenContext || null);
+    // Ambiguity check (sub-B.3 + sub-B.4). Two-stage: regex heuristic first,
+    // then fast-model LLM fallback for cases the regex doesn't encode (e.g.
+    // anaphora). When ambiguous, emit a ConfirmChoice block without paying
+    // for the full LLM turn.
+    const ambT0 = Date.now();
+    const ambResult = await classifyAmbiguity(
+      { llm: this.deps.llmProvider, traceContext },
+      input.userMessage,
+      input.userDigest,
+      input.screenContext || null,
+    );
+    if (traceId) {
+      this.deps.observability.logScore(traceId, {
+        name: 'ambiguity_classifier_ms',
+        value: Date.now() - ambT0,
+      });
+    }
     if (ambResult.kind === 'ambiguous') {
       if (traceId) {
         this.deps.observability.logScore(traceId, { name: 'ambiguity_detected', value: 1 });
