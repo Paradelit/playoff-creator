@@ -16,6 +16,7 @@ export { ToolRegistry } from "./tools/registry";
 export { createReadTools } from "./tools/readTools";
 export { createWriteTools } from "./tools/writeTools";
 export { createAgentTools } from "./tools/agentTools";
+export { createAggregateTools } from "./tools/aggregateTools";
 export { createMemoryTools } from "./tools/memoryTools";
 export { createNavigationTools } from "./tools/navigationTools";
 export { createKnowledgeTools } from "./tools/knowledgeTools";

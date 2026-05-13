@@ -23,6 +23,7 @@ import {
   createReadTools,
   createWriteTools,
   createAgentTools,
+  createAggregateTools,
   createMemoryTools,
   createNavigationTools,
   createKnowledgeTools,
@@ -111,6 +112,7 @@ function getSystem(): System {
   toolRegistry.registerMany(createReadTools());
   toolRegistry.registerMany(createWriteTools());
   toolRegistry.registerMany(createAgentTools());
+  toolRegistry.registerMany(createAggregateTools());
   toolRegistry.registerMany(createMemoryTools());
   toolRegistry.registerMany(createNavigationTools());
   toolRegistry.registerMany(createKnowledgeTools(gKey));
