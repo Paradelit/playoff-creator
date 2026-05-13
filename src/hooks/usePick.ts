@@ -165,6 +165,7 @@ export function usePickInternal(): PickAPI {
             entityType: screenContext.entityType,
             entityId: screenContext.entityId,
             data: screenContext.data,
+            ...(screenContext.semantic ? { semantic: screenContext.semantic } : {}),
           },
           clientDate: new Date().toLocaleDateString('en-CA'), // Format as YYYY-MM-DD local
           conversationHistory: history,

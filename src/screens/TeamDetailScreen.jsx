@@ -4,6 +4,7 @@ import { ArrowLeft, Pencil, Plus, X } from 'lucide-react';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
+import { useRegisterScreenSemantic } from '../hooks/useRegisterScreenSemantic';
 import { saveTeam, subscribeToMembers, saveMember, deleteMember } from '../services/teamsService';
 import { TeamFormFields } from '../components/teams/TeamFormFields';
 import { useHomeDashboard } from '../hooks/useHomeDashboard';
@@ -14,6 +15,7 @@ import Field from './teamDetail/Field';
 import CompetitionsTab from '../components/teams/CompetitionsTab';
 import ConvocatoriasTab from '../components/teams/ConvocatoriasTab';
 import { teamDisplayName, teamGradient } from '../utils/teamUtils';
+import { buildTeamDetailSemantic } from '../utils/screenSemantic/teamDetail';
 
 const ROLES_STAFF = ['Entrenador', 'Entrenador asistente', 'Fisioterapeuta', 'Delegado', 'Médico', 'Otro'];
 const POSICIONES = ['Base', 'Escolta', 'Alero', 'Ala-Pívot', 'Pívot'];
@@ -44,6 +46,19 @@ export default function TeamDetailScreen() {
   const [members, setMembers] = useState([]);
 
   useRegisterScreenContext({ teamName: team?.teamName, categoria: team?.categoria });
+  // Sub-A.5 — semantic snapshot que viaja al system prompt de Pick para que
+  // resuelva "este equipo" / "el próximo partido" sin tool calls.
+  const teamSemantic = useMemo(
+    () =>
+      buildTeamDetailSemantic({
+        team,
+        members,
+        allSessions: allSessions || [],
+        activePlayoff,
+      }),
+    [team, members, allSessions, activePlayoff],
+  );
+  useRegisterScreenSemantic(teamSemantic);
 
   const [editingMember, setEditingMember] = useState(null);
   const [savingMember, setSavingMember] = useState(false);
