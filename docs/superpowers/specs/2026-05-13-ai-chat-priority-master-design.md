@@ -25,7 +25,7 @@ un chat genérico de IA con tools.
 | B   | Paridad conversacional      | Sobre el contexto rico — multi-turn, ambigüedad, persona, proactividad |
 | C   | Tool use coverage + acción  | Pulido — al haber rodado A+B sabemos qué tools faltan de verdad        |
 
-Hoy. **Sub-A** entra en spec inmediatamente (ver `2026-05-13-sub-proyecto-A-contexto-completo-design.md`). Sub-B y sub-C se brainstormean cuando A esté en revisión/implementación.
+En este PR, **sub-A** entra en spec inmediatamente (ver `2026-05-13-sub-proyecto-A-contexto-completo-design.md`). Sub-B y sub-C se brainstormean cuando A esté en revisión/implementación.
 
 ---
 

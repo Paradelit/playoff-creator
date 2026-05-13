@@ -164,12 +164,12 @@ interface UserDigest {
     result?: { ourScore: number; theirScore: number };
   }>;
 
-  // ── Pendientes (NEW) ──
+  // ── Pendientes (NEW — derivado de Layer 3 cache) ──
   pendingActions: {
-    convocatorias: Array<{ sessionId: string; fecha: string; teamName?: string; rival?: string }>; // partidos próximos sin convocatoria
-    analyses: Array<{ sessionId: string; fecha: string; teamName?: string; rival?: string }>; // partidos pasados sin análisis
-    scoutings: Array<{ sessionId: string; fecha: string; teamName?: string; rival?: string }>; // partidos próximos sin scouting de rival
-    playerReports: Array<{ teamId: string; teamName: string; missingForPlayerCount: number }>; // jugadores sin informe trimestre actual
+    convocatorias: Array<{ sessionId: string; fecha: string; teamName?: string; rival?: string }>; // partidos próximos 14d sin convocatoria
+    analyses: Array<{ sessionId: string; fecha: string; teamName?: string; rival?: string }>; // partidos jugados últimos 21d sin análisis
+    scoutings: Array<{ sessionId: string; fecha: string; teamName?: string; rival?: string }>; // partidos próximos 14d sin scouting de rival
+    playerReports: Array<{ teamId: string; teamName: string; missingForPlayerCount: number }>; // jugadores sin informe en trimestre actual
   };
 
   // ── Anomalías (NEW, ligero) ──
@@ -263,6 +263,27 @@ artifacts/{appId}/workspaces/{wsId}/pickInsights/{YYYY-MM-DD}
 - Simplifica TTL.
 - Tamaño manejable.
 
+**Relación L1 ↔ L3:**
+
+El digest L1 (que va al system prompt cada turno) **no recomputa** `pendingActions` ni
+`anomalies` cada vez. Lee el doc `pickInsights/{today}` y copia los campos relevantes
+filtrados por scope del usuario (ver sección "Scoping"). Si el cache no existe o está
+stale (`invalidated == true` o `computedAt < now - 6h`), `buildUserDigest` computa fresh
+y persiste antes de devolver. Esto significa:
+
+- Primer turno del día por workspace: lectura pesada (sin cache) + escritura del cache.
+- Turnos siguientes ese día: lectura ligera del cache.
+- Tras un write que invalida (nuevo partido, scouting subido, etc.): siguiente turno repaga
+  el coste pesado.
+
+**Scoping del cache (importante):**
+
+El doc `pickInsights/{date}` se computa **workspace-wide** (todos los teams). El filtro
+por `assignedTeamIds` ocurre **en código** dentro de `buildUserDigest`, no en Firestore
+rules. Esto evita explosión combinatoria de docs (uno por user×date sería caro y
+duplicado). Trade-off: assistants tienen permiso de _read_ sobre el doc completo, pero
+el digest que llega al LLM ya viene filtrado. Validado por tests.
+
 ### Layer 4 — Screen state semántico
 
 Hoy `screenContext` tiene `{screen, route, entityId, entityType, data}`. El LLM ve JSON crudo.
@@ -284,10 +305,19 @@ también se calcula un **label semántico** y un **map de referables**:
 El digest L1 incluye este screenSemantic. El LLM puede resolver "genera entrenamiento para
 este equipo" sin ambigüedad.
 
-**Trade-off:** lógica de construcción semántica vive en frontend. Cada screen importante
-debe registrar su propia helper (función pura: `(state) => screenSemantic`). Empezamos con
-las 6 screens de mayor uso (TeamDetail, Calendar, BracketEditor, PickPanel-from-pantalla,
-Asistencia, InformeJugador).
+**Wire format (cómo llega del frontend al system prompt):**
+
+1. Frontend, en `ScreenContextProvider`, llama un helper por screen: `getScreenSemantic(state) → ScreenSemantic | null`.
+2. El resultado se merge en `screenContext` antes de pasarlo al `usePick` hook: `{ screen, route, entityId, entityType, data, semantic }`.
+3. El callable `runAgent` recibe `screenContext.semantic` como campo opcional.
+4. `buildUserDigest` lo copia tal cual en `UserDigest.screenSemantic`.
+5. `digestToPromptText` lo renderiza como una sección al final del prompt.
+
+**Trade-off:** lógica de construcción semántica vive en frontend (acceso a state local).
+Cada screen importante debe registrar su propia helper (función pura: `(state) => screenSemantic`).
+Empezamos con las 6 screens de mayor uso (TeamDetail, Calendar, BracketEditor,
+PickPanel-from-pantalla, Asistencia, InformeJugador). Resto cae a `null` (fallback: sin
+sección semántica, el LLM ve solo `screen + route + entityId`).
 
 ---
 
@@ -459,11 +489,15 @@ Tools 1–5 son **read-only** y respetan `assignedTeamIds`.
 | coach (DT) | todos los del workspace              | agregados de todo el workspace |
 | assistant  | solo `members/{uid}.assignedTeamIds` | filtrado por assignedTeamIds   |
 
-Implementación: `buildUserDigest` recibe `userId` y resuelve `assignedTeamIds` desde
-`members/{uid}` antes de leer teams. Si no es null, filtra teams + brackets + sessions
-por `teamId in assignedTeamIds`. Si es null/empty (owner/DT) lee todo.
+Implementación: `buildUserDigest` recibe `userId` y resuelve `members/{uid}` para obtener
+`role` + `assignedTeamIds` antes de leer teams. Reglas concretas:
 
-Tests deben cubrir los 3 paths.
+- **owner / coach (DT):** `assignedTeamIds` se ignora aunque venga, lee todo el workspace.
+- **assistant con `assignedTeamIds = [...]` no vacío:** filtra teams por `id ∈ assignedTeamIds`, brackets por `teamId ∈ assignedTeamIds` (excluye brackets con `teamId == null` para evitar leaks), sessions por `teamId ∈ assignedTeamIds`.
+- **assistant con `assignedTeamIds` vacío o ausente:** devuelve digest sin teams/brackets/sessions (solo memorias propias + preferencias + screenSemantic). El LLM verá "(sin equipos asignados)" — no es un error, es estado válido.
+- El cache `pickInsights/{date}` es workspace-wide, pero las listas `pendingActions.*` se filtran in-memory en `buildUserDigest` por `assignedTeamIds` antes de llegar al prompt.
+
+Tests deben cubrir los 3 paths (owner/DT, assistant scoped, assistant sin scope).
 
 ---
 
@@ -471,12 +505,13 @@ Tests deben cubrir los 3 paths.
 
 Nueva categoría de evals **"context-aware"** — casos que prueban que Pick usa el digest:
 
-1. **"qué tengo el sábado"** sin más contexto → debe mencionar partido + flag convocatoria pendiente si aplica.
-2. **"cómo fue ayer"** → debe leer `recentPastSessions` (no llamar tool, está en digest).
-3. **"genera entrenamiento para este equipo"** desde TeamDetailScreen → debe resolver `screenSemantic.referableIds["este equipo"]` sin llamar `list_teams`.
-4. **"convocatoria del próximo"** → resuelve `pendingActions.convocatorias[0]` y propone generar.
+1. **"qué tengo el sábado"** sin más contexto → debe mencionar partido + flag convocatoria pendiente si aplica (presente en `pendingActions.convocatorias`).
+2. **"cómo fue ayer"** con partido ayer → debe leer `recentPastSessions[]` (no llamar tool — está en digest). Si ayer no hay sesión, responder explícitamente "ayer no tuviste sesión" sin tool call.
+3. **"genera entrenamiento para este equipo"** desde TeamDetailScreen → debe resolver `screenSemantic.referableIds["este equipo"]` sin llamar `list_teams` ni `get_team`.
+4. **"convocatoria del próximo"** → resuelve `pendingActions.convocatorias[0]` y propone generar via `mandar_convocatoria`.
 5. **"qué pendientes tengo"** → enumera `pendingActions` + `anomalies` sin tool call.
-6. **(scoping)** assistant con assignedTeamIds=[A,B] pregunta "qué equipos tengo" → solo A,B.
+6. **(scoping)** assistant con `assignedTeamIds=[A,B]` pregunta "qué equipos tengo" → solo A,B (otro team C del workspace NO aparece en el response del LLM).
+7. **(cache freshness)** tras `propose_save_scouting` aceptado en partido X, siguiente turno preguntando "qué scoutings pendientes" → X **no** aparece en `pendingActions.scoutings` (cache invalidado).
 
 Métricas a trackear:
 
