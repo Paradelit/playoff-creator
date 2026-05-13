@@ -168,6 +168,20 @@ export default defineConfig([
       'no-shadow': 'off', // shadow de variables locales en describes es idiomático
     },
   },
+  // Sub-7 quality batch — archivos de contenido (markdown inline, AI tool
+  // registries): los array de objetos editorialmente densos no son code smell.
+  // Split por categoría perdería source-of-truth única y aumentaría coste de
+  // mantener. Override max-lines.
+  {
+    files: [
+      'src/content/**/*.{js,ts}',
+      'functions/src/ai/tools/**/*.ts',
+      'src/components/landing/**/*.{js,jsx}', // landing tiene mucho inline JSX + data por design
+    ],
+    rules: {
+      'max-lines': 'off',
+    },
+  },
   // Node-side migration / cleanup scripts: run via `node`, need
   // process / console / etc.
   {

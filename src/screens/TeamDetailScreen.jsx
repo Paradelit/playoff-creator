@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Pencil, Trash2, X, User, Users } from 'lucide-react';
+import { ArrowLeft, Pencil, Plus, X } from 'lucide-react';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
@@ -8,6 +8,9 @@ import { saveTeam, subscribeToMembers, saveMember, deleteMember } from '../servi
 import { TeamFormFields } from '../components/teams/TeamFormFields';
 import { useHomeDashboard } from '../hooks/useHomeDashboard';
 import TeamDashboard from '../components/teams/TeamDashboard';
+import MemberRow from './teamDetail/MemberRow';
+import EmptySection from './teamDetail/EmptySection';
+import Field from './teamDetail/Field';
 import CompetitionsTab from '../components/teams/CompetitionsTab';
 import ConvocatoriasTab from '../components/teams/ConvocatoriasTab';
 import { teamDisplayName, teamGradient } from '../utils/teamUtils';
@@ -520,56 +523,6 @@ export default function TeamDetailScreen() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function MemberRow({ primary, secondary, onEdit, onDelete }) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 last:border-0">
-      <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center shrink-0">
-        <User size={15} className="text-slate-500" aria-hidden="true" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-slate-800 text-sm truncate">{primary}</p>
-        <p className="text-xs text-slate-500 truncate">{secondary}</p>
-      </div>
-      <div className="flex items-center gap-1 shrink-0">
-        <button
-          onClick={onEdit}
-          className="text-slate-400 hover:text-blue-600 p-2 hover:bg-blue-50 rounded-lg transition-colors"
-          title="Editar"
-        >
-          <Pencil size={15} aria-hidden="true" />
-        </button>
-        <button
-          onClick={onDelete}
-          className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors"
-          title="Eliminar"
-        >
-          <Trash2 size={15} aria-hidden="true" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function EmptySection({ text }) {
-  return (
-    <div className="flex items-center justify-center py-10 text-slate-400 text-sm gap-2">
-      <Users size={16} aria-hidden="true" /> {text}
-    </div>
-  );
-}
-
-function Field({ label, htmlFor, error, children }) {
-  return (
-    <div>
-      <label htmlFor={htmlFor} className="block text-xs font-semibold text-slate-600 mb-1.5">
-        {label}
-      </label>
-      {children}
-      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
   );
 }
