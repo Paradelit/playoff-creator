@@ -9,6 +9,7 @@ import {
 } from "./digest/calendarDigest";
 import { resolveScopedTeamIds, type MemberScope } from "./digest/scoping";
 import { buildPendingConvocatorias } from "./digest/pendingConvocatorias";
+import { buildPendingAnalysesAndScoutings } from "./digest/pendingAnalysesScoutings";
 import type { UserDigest, UserRole } from "./digest/types";
 
 export type {
@@ -23,6 +24,7 @@ export type {
   RosterPlayer,
   MatchResult,
   PendingConvocatoria,
+  PendingMatchAction,
   PendingActions,
 } from "./digest/types";
 
@@ -130,15 +132,22 @@ export async function buildUserDigest(deps: {
   const teamsBare = await buildTeamsDigest({ db, appId, wsId, scopedTeamIds });
   const teamsById = new Map(teamsBare.map((t) => [t.id, t.name]));
 
-  // PASS 2: sessions + brackets + profile + memorias paralelamente.
-  const [activeBrackets, upcomingSessionsWithTid, recentPastSessionsWithTid, profileSnap, memories] =
-    await Promise.all([
-      buildBracketsDigest({ db, appId, wsId, scopedTeamIds }),
-      buildUpcomingSessionsDigest({ db, appId, wsId, todayISO, teamsById, scopedTeamIds }),
-      buildRecentPastSessionsDigest({ db, appId, wsId, todayISO, teamsById, scopedTeamIds }),
-      userRoot.collection("profile").doc("main").get(),
-      fetchMemoriesForDigest(db, appId, wsId, 15),
-    ]);
+  // PASS 2: sessions + brackets + profile + memorias + pending kinds en paralelo.
+  const [
+    activeBrackets,
+    upcomingSessionsWithTid,
+    recentPastSessionsWithTid,
+    profileSnap,
+    memories,
+    pendingAnalysesScoutings,
+  ] = await Promise.all([
+    buildBracketsDigest({ db, appId, wsId, scopedTeamIds }),
+    buildUpcomingSessionsDigest({ db, appId, wsId, todayISO, teamsById, scopedTeamIds }),
+    buildRecentPastSessionsDigest({ db, appId, wsId, todayISO, teamsById, scopedTeamIds }),
+    userRoot.collection("profile").doc("main").get(),
+    fetchMemoriesForDigest(db, appId, wsId, 15),
+    buildPendingAnalysesAndScoutings({ db, appId, wsId, todayISO, teamsById, scopedTeamIds }),
+  ]);
 
   const upcomingByTeam = groupSessionsByTeamId(upcomingSessionsWithTid);
   const recentByTeam = groupSessionsByTeamId(recentPastSessionsWithTid);
@@ -192,7 +201,11 @@ export async function buildUserDigest(deps: {
     activeBrackets,
     upcomingSessions,
     recentPastSessions,
-    pendingActions: { convocatorias: pendingConvocatorias },
+    pendingActions: {
+      convocatorias: pendingConvocatorias,
+      scoutings: pendingAnalysesScoutings.pendingScoutings,
+      analyses: pendingAnalysesScoutings.pendingAnalyses,
+    },
     preferences: {
       proactivityMode: profile.proactivityMode as string | undefined,
       defaultTrainingDuration: profile.defaultTrainingDuration as number | undefined,
@@ -300,6 +313,18 @@ export function digestToPromptText(digest: UserDigest): string {
         .join("\n")
     : "  (ninguna)";
 
+  const formatMatchPending = (p: { sessionId: string; fecha: string; teamName?: string; rival?: string }) => {
+    const rivalSuffix = p.rival ? ` vs ${p.rival}` : "";
+    const teamSuffix = p.teamName ? ` (${p.teamName})` : "";
+    return `  - sessionId=${p.sessionId} ${p.fecha}${rivalSuffix}${teamSuffix}`.trim();
+  };
+  const pendingScoutingsStr = digest.pendingActions.scoutings.length
+    ? digest.pendingActions.scoutings.map(formatMatchPending).join("\n")
+    : "  (ninguno)";
+  const pendingAnalysesStr = digest.pendingActions.analyses.length
+    ? digest.pendingActions.analyses.map(formatMatchPending).join("\n")
+    : "  (ninguno)";
+
   const wsLine = `${digest.workspace.name} (${digest.workspace.type}, tu rol: ${digest.workspace.userRole})`;
 
   return `
@@ -321,6 +346,12 @@ ${recentStr}
 
 Convocatorias pendientes (partidos próximos sin convocatoria mandada):
 ${pendingConvocatoriasStr}
+
+Scouting pendiente (próximos partidos en 14d sin scouting de rival):
+${pendingScoutingsStr}
+
+Análisis pendiente (partidos jugados últimos 21d sin análisis):
+${pendingAnalysesStr}
 
 Memorias persistentes del entrenador:
 ${memoriesStr}

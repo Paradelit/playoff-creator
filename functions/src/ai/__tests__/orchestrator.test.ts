@@ -63,7 +63,7 @@ const EMPTY_DIGEST: UserDigest = {
   activeBrackets: [],
   upcomingSessions: [],
   recentPastSessions: [],
-  pendingActions: { convocatorias: [] },
+  pendingActions: { convocatorias: [], scoutings: [], analyses: [] },
   preferences: {},
   memories: [],
 };
