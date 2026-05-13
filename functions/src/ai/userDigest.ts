@@ -8,6 +8,7 @@ import {
   groupSessionsByTeamId,
 } from "./digest/calendarDigest";
 import { resolveScopedTeamIds, type MemberScope } from "./digest/scoping";
+import { buildPendingConvocatorias } from "./digest/pendingConvocatorias";
 import type { UserDigest, UserRole } from "./digest/types";
 
 export type {
@@ -21,6 +22,8 @@ export type {
   UserRole,
   RosterPlayer,
   MatchResult,
+  PendingConvocatoria,
+  PendingActions,
 } from "./digest/types";
 
 const DAY_OF_WEEK_ES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
@@ -159,9 +162,20 @@ export async function buildUserDigest(deps: {
           recentPastSessionsByTeam: recentByTeam,
         });
 
-  // Strip teamId from session objects before exposing in UserDigest.
-  const upcomingSessions = upcomingSessionsWithTid.map(stripTeamId);
-  const recentPastSessions = recentPastSessionsWithTid.map(stripTeamId);
+  // Pending convocatorias on-demand (sub-A.4a). Computa sobre los raw
+  // sessions ya leídos — sin lectura extra de Firestore. Usa default 72h
+  // de ventana porque convocatoriaReminderHours per-team es un edge case
+  // que se difiere a un follow-up (YAGNI).
+  const pendingConvocatorias = buildPendingConvocatorias({
+    sessions: upcomingSessionsWithTid,
+    reminderHoursByTeam: new Map(),
+    now: new Date(),
+  });
+
+  // Strip teamId + convocatoriaSentAt from session objects before
+  // exposing en UserDigest (no van al prompt).
+  const upcomingSessions = upcomingSessionsWithTid.map(stripInternalFields);
+  const recentPastSessions = recentPastSessionsWithTid.map(stripInternalFields);
 
   const profile = profileSnap.exists ? profileSnap.data() || {} : {};
 
@@ -178,6 +192,7 @@ export async function buildUserDigest(deps: {
     activeBrackets,
     upcomingSessions,
     recentPastSessions,
+    pendingActions: { convocatorias: pendingConvocatorias },
     preferences: {
       proactivityMode: profile.proactivityMode as string | undefined,
       defaultTrainingDuration: profile.defaultTrainingDuration as number | undefined,
@@ -202,9 +217,12 @@ export async function buildUserDigest(deps: {
   return digest;
 }
 
-function stripTeamId<T extends { teamId?: string }>(s: T): Omit<T, "teamId"> {
-  const { teamId: _teamId, ...rest } = s;
+function stripInternalFields<T extends { teamId?: string; convocatoriaSentAt?: unknown }>(
+  s: T
+): Omit<T, "teamId" | "convocatoriaSentAt"> {
+  const { teamId: _teamId, convocatoriaSentAt: _cs, ...rest } = s;
   void _teamId;
+  void _cs;
   return rest;
 }
 
@@ -271,6 +289,17 @@ export function digestToPromptText(digest: UserDigest): string {
     ? digest.memories.map((m) => `  - [${m.type}] ${m.content}`).join("\n")
     : "  (sin memorias guardadas)";
 
+  const pendingConvocatoriasStr = digest.pendingActions.convocatorias.length
+    ? digest.pendingActions.convocatorias
+        .map((p) => {
+          const urgency = p.severity === "high" ? " ⚠️ <24h" : "";
+          const rivalSuffix = p.rival ? ` vs ${p.rival}` : "";
+          const teamSuffix = p.teamName ? ` (${p.teamName})` : "";
+          return `  - sessionId=${p.sessionId} ${p.fecha} ${p.horaInicio || ""}${rivalSuffix}${teamSuffix}${urgency}`.trim();
+        })
+        .join("\n")
+    : "  (ninguna)";
+
   const wsLine = `${digest.workspace.name} (${digest.workspace.type}, tu rol: ${digest.workspace.userRole})`;
 
   return `
@@ -289,6 +318,9 @@ ${sessionsStr}
 
 Sesiones pasadas recientes (7 días):
 ${recentStr}
+
+Convocatorias pendientes (partidos próximos sin convocatoria mandada):
+${pendingConvocatoriasStr}
 
 Memorias persistentes del entrenador:
 ${memoriesStr}
