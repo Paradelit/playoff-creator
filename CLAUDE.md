@@ -94,6 +94,35 @@ Security model (firestore.rules ~345 LOC):
 - `callGeminiForResults()` — extract scores from game reports
 - `callGeminiForCalendar()` — suggest calendar events from text
 
+### Pick context system (sub-proyecto A — en curso 2026-05-13)
+
+El digest que se inyecta en el system prompt de Pick (`functions/src/ai/userDigest.ts`) se construye en capas. Estado actual:
+
+- **Layer 1 — Digest base** (`functions/src/ai/digest/`):
+  - `types.ts` — `UserDigest`, `DigestTeam`, `DigestBracket`, `DigestSession`, `PendingConvocatoria`, etc.
+  - `teamsDigest.ts` — `buildTeamsDigest`: id, name, categoria, memberCount, `rosterSnapshot` (hasta 12 jugadores), `nextSession`, `lastResult` per team.
+  - `bracketsDigest.ts` — `buildBracketsDigest`: id, name, teamId. Enriquecimientos (currentRound, nextMatch, pendingScores) diferidos a PR follow-up.
+  - `calendarDigest.ts` — `buildUpcomingSessionsDigest` (próximas 7d, max 15) + `buildRecentPastSessionsDigest` (últimas 7d con `result` normalizado al PoV del coach via `esLocal`).
+  - `scoping.ts` — `resolveScopedTeamIds(role + assignedTeamIds)`: owner/coach ven todo, assistant sólo sus `assignedTeamIds`. Filtro aplicado en teams/brackets/sessions/pendings.
+  - `pendingConvocatorias.ts` — partidos próximos sin convocatoria mandada. On-demand, sin cache (sub-A.4a).
+
+- **Layer 2 — Read tools lazy** (`functions/src/ai/tools/readTools.ts` + futuro `aggregates.ts`): 22 read tools existentes + 5 nuevos pendientes (sub-A.6) para get_recent_results, get_attendance_summary, get_player_status, get_team_health, get_pending_actions_detail.
+
+- **Layer 3 — Insights cache**: diferido (sub-A.4b). Requiere deploy de Firestore triggers que hoy está bloqueado por IAM. Cuando el deploy se desbloquee, el cache `pickInsights/{date}` evitará recomputar pending/anomalies cada turno.
+
+- **Layer 4 — Screen semantic** (`src/utils/screenSemantic/*` + `src/contexts/ScreenContextProvider.tsx`):
+  - Frontend computa `{ surface, label, referableIds }` por screen.
+  - Backend renderiza via `renderScreenInfo()` en `orchestratorAgent.ts`. Si `screenContext.semantic` está presente, prefiere ese render sobre el bruto.
+  - Helpers wired: TeamDetail, Calendar, Bracket. Pendientes: Asistencia, InformeJugador, Scouting, Analysis.
+
+- **Métricas baseline (sub-A.0)** logueadas a Langfuse cada turno: `digest_build_ms`, `digest_size_tokens`, `fallback_message_emitted`, además de las existentes `tool_calls`, `iteration_count`, `tool_errors_total`.
+
+**Scoping bug fix** (sub-A.3): antes el digest ignoraba `members/{uid}.assignedTeamIds` y un asistente veía todos los teams del workspace. Tras sub-A.3, scoping role-aware aplicado en `buildUserDigest`. Tests cubren los 3 paths (owner/coach/assistant scoped/assistant sin teams).
+
+**Token budget**: digest típico actual ~1.5–2.5KB. Caps duros pendientes para workspaces grandes (ver risk en sub-A spec).
+
+**Spec + plan**: `docs/superpowers/specs/2026-05-13-ai-chat-priority-master-design.md` + `sub-proyecto-A-contexto-completo-design.md` + plan TDD en `docs/superpowers/plans/2026-05-13-sub-proyecto-A-contexto-completo.md`.
+
 ### Key conventions
 
 - `teamDisplayName(team)` (from `utils/teamUtils.js`) is the canonical way to format team names for display.
