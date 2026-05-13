@@ -1,6 +1,21 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 
+/**
+ * Snapshot semántico que un screen registra para que Pick pueda resolver
+ * referencias como "este equipo" o "este partido" sin tool calls. Se envía
+ * al backend dentro de `screenContext.semantic` y el orchestrator lo
+ * renderiza estructuralmente en el system prompt (sub-A.5).
+ */
+export interface ScreenSemantic {
+  /** Código semántico estable (team-detail, calendar, bracket-editor...). */
+  surface: string;
+  /** Frase legible para el LLM con el resumen de lo visible. */
+  label: string;
+  /** Map de frases referenciales → entityId. */
+  referableIds?: Record<string, string>;
+}
+
 export interface ScreenContext {
   screen: string;
   route: string;
@@ -8,16 +23,23 @@ export interface ScreenContext {
   entityType?: string;
   entityId?: string;
   data?: Record<string, unknown>;
+  semantic?: ScreenSemantic;
 }
 
 interface ScreenContextAPI {
   screenContext: ScreenContext;
   registerScreenData: (data: Record<string, unknown>) => void;
+  registerScreenSemantic: (semantic: ScreenSemantic | null) => void;
 }
 
 interface DataState {
   path: string;
   data: Record<string, unknown>;
+}
+
+interface SemanticState {
+  path: string;
+  semantic: ScreenSemantic | null;
 }
 
 const ScreenCtx = createContext<ScreenContextAPI | null>(null);
@@ -94,9 +116,14 @@ function resolveScreen(pathname: string): {
 export function ScreenContextProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [dataState, setDataState] = useState<DataState>({ path: location.pathname, data: {} });
+  const [semanticState, setSemanticState] = useState<SemanticState>({
+    path: location.pathname,
+    semantic: null,
+  });
 
-  // Auto-clear custom data on route change: derive effective data from path match
+  // Auto-clear custom data + semantic on route change.
   const customData = dataState.path === location.pathname ? dataState.data : {};
+  const customSemantic = semanticState.path === location.pathname ? semanticState.semantic : null;
 
   const resolved = resolveScreen(location.pathname);
 
@@ -107,6 +134,7 @@ export function ScreenContextProvider({ children }: { children: React.ReactNode 
     entityType: resolved.entityType,
     entityId: resolved.entityId,
     data: customData,
+    ...(customSemantic ? { semantic: customSemantic } : {}),
   };
 
   const registerScreenData = useCallback(
@@ -119,7 +147,18 @@ export function ScreenContextProvider({ children }: { children: React.ReactNode 
     [location.pathname],
   );
 
-  return <ScreenCtx.Provider value={{ screenContext, registerScreenData }}>{children}</ScreenCtx.Provider>;
+  const registerScreenSemantic = useCallback(
+    (semantic: ScreenSemantic | null) => {
+      setSemanticState({ path: location.pathname, semantic });
+    },
+    [location.pathname],
+  );
+
+  return (
+    <ScreenCtx.Provider value={{ screenContext, registerScreenData, registerScreenSemantic }}>
+      {children}
+    </ScreenCtx.Provider>
+  );
 }
 
 export function useScreenContext(): ScreenContextAPI {
