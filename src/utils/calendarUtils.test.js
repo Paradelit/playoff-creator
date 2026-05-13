@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseDateToISO, buildPlayoffSessions } from './calendarUtils';
+import { parseDateToISO, buildPlayoffSessions, readJugadoresConvocados } from './calendarUtils';
 
 describe('parseDateToISO', () => {
   it('returns ISO date from YYYY-MM-DD input', () => {
@@ -137,8 +137,6 @@ describe('buildPlayoffSessions', () => {
     expect(buildPlayoffSessions(brackets, teams)).toEqual([]);
   });
 });
-
-import { readJugadoresConvocados } from './calendarUtils';
 
 describe('readJugadoresConvocados', () => {
   it('returns jugadoresConvocados when present', () => {
