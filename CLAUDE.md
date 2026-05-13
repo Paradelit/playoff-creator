@@ -98,9 +98,46 @@ Security model (firestore.rules ~345 LOC):
 
 - `teamDisplayName(team)` (from `utils/teamUtils.js`) is the canonical way to format team names for display.
 - Calendar/date constants (`TEAM_COLORS`, `MONTH_NAMES`, `DAY_HEADERS`, etc.) live in `utils/constants.js`.
-- Firestore helpers: `userDocRef(db, appId, uid, collection, docId)` and `userColRef(db, appId, uid, collection)` abstract the nested path.
+- Firestore helpers post-sub-1: `workspaceDocRef` / `workspaceColRef` (`src/utils/firestorePaths.js`). Funciones equivalentes en `functions/src/`. **Nunca paths raw `artifacts/...` en código nuevo.** Legacy `userDocRef` / `userColRef` siguen vivos para `users/{uid}/...` (preferencias personales, pickHistory cache).
 - `isMinibasketSextos(team)` gates minibasket-specific features (Planilla de Sextos).
 - Multiple brackets can link to the same team via `bracket.teamId` — this is how multiple tournaments per team works.
+
+### Quality gates
+
+Pre-commit (husky/lint-staged): prettier + eslint --fix sobre staged files.
+Pre-push: `npm test` completo.
+
+CI bloquea PR si:
+
+- Lint reporta **errores** (warnings se ven pero no bloquean; ver baseline abajo).
+- Format check falla.
+- Tests fallan.
+- Build falla.
+- Knip detecta dead code (con `continue-on-error` mientras se baseline-iza).
+
+**Reglas ESLint as ERROR** (bloquean CI):
+
+- `import/no-cycle` — arquitecturalmente prohibido (rompe tree-shaking, acoplamiento implícito).
+- `import/no-duplicates` — code smell puro.
+- `jsx-a11y/aria-props`, `aria-role`, `aria-unsupported-elements`, `role-has-required-aria-props`, `role-supports-aria-props` — a11y críticos.
+- `no-unused-vars` — basura.
+
+**Reglas as WARN** (tech debt visible, no bloqueante):
+
+- `complexity` ≥20 (~38 fns actualmente).
+- `max-lines` ≥500 (~2 files con file-disable explícito + override en categorías sensatas: tests, content, AI tools, landing).
+- `react-refresh/only-export-components` (~11 — JSX files mixing exports).
+- `react-hooks/exhaustive-deps` (~5 — falsos positivos comunes).
+- `jsx-a11y/label-has-associated-control`, `no-autofocus` (~21 — UX-tradeoffs).
+- `no-shadow` (~2).
+
+Total warning baseline: ~82. PR que añade warnings nuevos no bloquea CI hoy, pero queda visible. Para activar `--max-warnings 0`: fix incremental de los 82 primero.
+
+**Reglas OFF con rationale** (en eslint.config.js):
+
+- `react-hooks/set-state-in-effect` — experimental, ruidoso sobre patterns legítimos React 19.
+- `consistent-return` — useEffect early-return + cleanup-fn es idiomático React.
+- `import/no-unresolved` + `named` + `namespace` — resolver issues con ESM-modern (firebase v12, vitest, vite 8).
 
 ## Design Context
 

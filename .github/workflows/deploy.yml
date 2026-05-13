@@ -29,10 +29,23 @@ jobs:
         run: npm ci
 
       - name: Lint
+        # ESLint blocks CI on ERRORS. Warnings (currently ~82 — complexity,
+        # label-has-associated-control, react-refresh, etc.) son tech-debt
+        # visible pero no bloqueante. Las reglas que importan (import/no-cycle,
+        # import/no-duplicates, jsx-a11y/aria-*, no-unused-vars) están como
+        # error y SÍ bloquean. Documentado en eslint.config.js y CLAUDE.md.
         run: npm run lint
 
       - name: Format check
         run: npm run format:check
+
+      - name: Dead code check (knip)
+        # Falla CI si aparecen exports/files/deps muertos. Pre-commit (lint-staged)
+        # no cubre esto porque knip mira el grafo completo, no archivos staged.
+        # continue-on-error mientras se establece baseline; quitar tras primer
+        # cleanup pass si conviene.
+        continue-on-error: true
+        run: npm run knip:production
 
       - name: Run tests
         run: npm test

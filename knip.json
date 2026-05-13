@@ -1,17 +1,25 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": [
-    "src/main.jsx",
-    "src/entry-prerender.jsx",
-    "scripts/**/*.{js,mjs}",
-    "vite.config.js",
-    "eslint.config.js",
-    "vitest.config.{js,ts}",
-    "vitest.*.config.{js,ts}",
-    "**/*.test.{js,jsx,ts,tsx}",
-    "functions/src/index.ts"
-  ],
-  "project": ["src/**/*.{js,jsx,ts,tsx}", "scripts/**/*.{js,mjs}", "functions/src/**/*.ts"],
+  "workspaces": {
+    ".": {
+      "entry": [
+        "src/main.jsx",
+        "src/entry-prerender.jsx",
+        "scripts/**/*.{js,mjs}",
+        "vite.config.js",
+        "eslint.config.js",
+        "vitest.config.{js,ts}",
+        "vitest.*.config.{js,ts}",
+        "**/*.test.{js,jsx,ts,tsx}",
+        "firestore.rules.test.ts"
+      ],
+      "project": ["src/**/*.{js,jsx,ts,tsx}", "scripts/**/*.{js,mjs}"]
+    },
+    "functions": {
+      "entry": ["src/index.ts", "src/**/*.test.ts"],
+      "project": ["src/**/*.ts"]
+    }
+  },
   "ignore": [
     "dist/**",
     "dist-ssr/**",
@@ -26,10 +34,28 @@
     "axe-core",
     "babel-plugin-react-compiler",
     "eslint-plugin-react-compiler",
+    "eslint-plugin-import",
+    "eslint-plugin-jsx-a11y",
     "globals",
     "happy-dom",
     "husky",
+    "knip",
     "lint-staged",
-    "prettier"
-  ]
+    "prettier",
+    "vite",
+    "typescript-eslint",
+    "@firebase/rules-unit-testing",
+    "@vitejs/plugin-react",
+    "vitest",
+    "@firebase/util",
+    "@types/node",
+    "@types/react",
+    "@types/react-dom",
+    "firebase-functions-test",
+    "firebase-tools"
+  ],
+  "ignoreBinaries": ["firebase"],
+  "compilers": {
+    "css": false
+  }
 }
