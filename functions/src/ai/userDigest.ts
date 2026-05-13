@@ -273,7 +273,22 @@ export function digestToPromptText(digest: UserDigest): string {
     : "  (sin equipos)";
 
   const bracketsStr = digest.activeBrackets.length
-    ? digest.activeBrackets.map((b) => `  - ${b.name} (id: ${b.id}, teamId: ${b.teamId || "?"})`).join("\n")
+    ? digest.activeBrackets
+        .map((b) => {
+          const lines = [`  - ${b.name} (id: ${b.id}, teamId: ${b.teamId || "?"})`];
+          if (b.currentRound) {
+            const pendingNote = b.pendingScores ? ` — ${b.pendingScores} sin decidir` : "";
+            lines.push(`      Ronda actual: ${b.currentRound}${pendingNote}`);
+          }
+          if (b.nextMatch) {
+            const dateSuffix = b.nextMatch.scheduled ? ` (${b.nextMatch.scheduled})` : "";
+            lines.push(
+              `      Siguiente: matchId=${b.nextMatch.id} ${b.nextMatch.teamA} vs ${b.nextMatch.teamB}${dateSuffix}`
+            );
+          }
+          return lines.join("\n");
+        })
+        .join("\n")
     : "  (sin brackets activos)";
 
   const sessionsStr = digest.upcomingSessions.length

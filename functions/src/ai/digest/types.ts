@@ -51,8 +51,17 @@ export interface DigestBracket {
   id: string;
   name: string;
   teamId?: string | null;
-  // Enriquecimientos (currentRound, nextMatch, pendingScores) diferidos a
-  // un PR follow-up — requieren walk del tree del bracket.
+  /** Nombre de la ronda actual (la más temprana con matches sin winner). */
+  currentRound?: string;
+  /** Siguiente match a decidir en la ronda actual. */
+  nextMatch?: {
+    id: string;
+    teamA: string;
+    teamB: string;
+    scheduled?: string;
+  };
+  /** Matches en la ronda actual con ambos teams definidos pero sin winner. */
+  pendingScores?: number;
 }
 
 export interface DigestSession {
