@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- BracketScreen es el screen orquestador del módulo de brackets (~30 botones + 3 modales + render del cuadro entero). Split pendiente con diseño; tracking en sub-7 quality batch. Hasta entonces file-disable. */
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
