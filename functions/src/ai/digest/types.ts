@@ -86,6 +86,22 @@ export interface DigestWorkspace {
   userRole: UserRole;
 }
 
+export interface PendingConvocatoria {
+  sessionId: string;
+  fecha: string;
+  horaInicio?: string;
+  teamId?: string;
+  teamName?: string;
+  rival?: string;
+  severity: "high" | "normal";
+  hoursUntil: number;
+}
+
+export interface PendingActions {
+  convocatorias: PendingConvocatoria[];
+  // Próximos kinds (futuros PRs): analyses, scoutings, playerReports.
+}
+
 export interface UserDigest {
   todayISO: string;
   todayLocalDayOfWeek: string;
@@ -94,6 +110,7 @@ export interface UserDigest {
   activeBrackets: DigestBracket[];
   upcomingSessions: DigestSession[];
   recentPastSessions: DigestSession[];
+  pendingActions: PendingActions;
   preferences: DigestPreferences;
   memories: DigestMemory[];
 }

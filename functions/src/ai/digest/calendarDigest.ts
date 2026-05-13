@@ -56,6 +56,11 @@ export async function buildUpcomingSessionsDigest(deps: {
       rival: (data.rival as string) || undefined,
       lugar: (data.lugar as string) || undefined,
       teamId: (data.teamId as string | undefined) || undefined,
+      // Bandera de pendingConvocatorias (sub-A.4a). El orquestador del
+      // digest la usa para computar pendientes sin re-leer Firestore.
+      // Propagada pero NO renderizada — vive en SessionWithTeamId, no
+      // en DigestSession.
+      convocatoriaSentAt: data.convocatoriaSentAt,
     };
   });
 }
@@ -134,7 +139,12 @@ export async function buildRecentPastSessionsDigest(deps: {
 // by team without a second pass over the docs. Used by `buildUserDigest`
 // to compose the `upcomingSessionsByTeam` / `recentPastSessionsByTeam`
 // maps that feed `buildTeamsDigest`.
-export type SessionWithTeamId<T extends DigestSession = DigestSession> = T & { teamId?: string };
+export type SessionWithTeamId<T extends DigestSession = DigestSession> = T & {
+  teamId?: string;
+  /** Sub-A.4a: presente en upcomingSessions raw para computar pending
+   *  convocatorias. NO viaja al digest renderizado. */
+  convocatoriaSentAt?: unknown;
+};
 
 export function groupSessionsByTeamId(sessions: SessionWithTeamId[]): Map<string, DigestSession[]> {
   const map = new Map<string, DigestSession[]>();
