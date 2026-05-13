@@ -292,6 +292,8 @@ export async function aiChatHandler(request: AiChatRequest, system: System, db: 
         toolCalls: response._autoEvalMetrics.toolCalls,
         loopDetected: response._autoEvalMetrics.loopDetected,
         contentBlocks: response.blocks,
+        userDigest,
+        screenSemantic: screenContext?.semantic || null,
       });
     }
 
