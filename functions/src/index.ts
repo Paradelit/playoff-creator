@@ -228,7 +228,17 @@ export async function aiChatHandler(request: AiChatRequest, system: System, db: 
   const agentOptions = { userId, sessionId: conversationId };
 
   try {
-    const userDigest = await buildUserDigest({ db, userId, wsId, appId, clientDate });
+    const userDigest = await buildUserDigest({
+      db,
+      userId,
+      wsId,
+      appId,
+      clientDate,
+      // Pass observability + traceId so buildUserDigest logs baseline
+      // metrics (digest_build_ms, digest_size_tokens) — sub-A.0 baseline.
+      observability: system.observability,
+      traceId,
+    });
 
     // Infer default IDs from the current screen so tools can fallback
     // when the LLM forgets to pass an explicit id arg.

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { OrchestratorAgent } from '../agents/orchestratorAgent';
 import { ToolRegistry, ToolDefinition } from '../tools/registry';
 import { createNavigationTools } from '../tools/navigationTools';
@@ -9,6 +9,8 @@ import type { CompiledPrompt } from '../promptManager';
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
 class FakeObservability {
+  // Spy so tests can assert which scores were emitted (sub-A.0 baseline).
+  logScore = vi.fn();
   createSpan() {
     return { id: 'span' };
   }
@@ -16,9 +18,6 @@ class FakeObservability {
     /* no-op */
   }
   logGeneration() {
-    /* no-op */
-  }
-  logScore() {
     /* no-op */
   }
   async flush() {
@@ -68,22 +67,23 @@ const EMPTY_DIGEST: UserDigest = {
 function makeOrchestrator(
   tool: ToolDefinition,
   script: GeminiPart[][]
-): OrchestratorAgent {
+): { orchestrator: OrchestratorAgent; observability: FakeObservability } {
   const registry = new ToolRegistry();
   registry.register(tool);
-  const observability = new FakeObservability() as unknown as ConstructorParameters<
-    typeof OrchestratorAgent
-  >[0]['observability'];
-  return new OrchestratorAgent({
+  const observability = new FakeObservability();
+  const orchestrator = new OrchestratorAgent({
     llmProvider: new FakeLLMProvider(script) as unknown as ConstructorParameters<
       typeof OrchestratorAgent
     >[0]['llmProvider'],
-    observability,
+    observability: observability as unknown as ConstructorParameters<
+      typeof OrchestratorAgent
+    >[0]['observability'],
     toolRegistry: registry,
     promptManager: new FakePromptManager() as unknown as ConstructorParameters<
       typeof OrchestratorAgent
     >[0]['promptManager'],
   });
+  return { orchestrator, observability };
 }
 
 const EMPTY_TOOL_CTX = {
@@ -113,7 +113,7 @@ describe('OrchestratorAgent smoke tests', () => {
       }),
     };
 
-    const orchestrator = makeOrchestrator(tool, [
+    const { orchestrator } = makeOrchestrator(tool, [
       [{ functionCall: { name: 'list_teams', args: {} } }],
       [{ text: 'Tienes 2 equipos.' }],
     ]);
@@ -147,7 +147,7 @@ describe('OrchestratorAgent smoke tests', () => {
       }),
     };
 
-    const orchestrator = makeOrchestrator(tool, [
+    const { orchestrator } = makeOrchestrator(tool, [
       [{ functionCall: { name: 'propose_create_training', args: {} } }],
       [{ text: 'Propuesta preparada.' }],
     ]);
@@ -183,7 +183,7 @@ describe('OrchestratorAgent smoke tests', () => {
       }),
     };
 
-    const orchestrator = makeOrchestrator(tool, [
+    const { orchestrator } = makeOrchestrator(tool, [
       [{ functionCall: { name: 'run_training_generator', args: {} } }],
       [{ text: 'Listo.' }],
     ]);
@@ -205,7 +205,7 @@ describe('OrchestratorAgent smoke tests', () => {
 
   it('suggest_navigation adds client actions', async () => {
     const navTool = createNavigationTools()[0];
-    const orchestrator = makeOrchestrator(navTool, [
+    const { orchestrator } = makeOrchestrator(navTool, [
       [{ functionCall: { name: 'suggest_navigation', args: { target: 'calendar' } } }],
       [{ text: 'Aquí tienes el acceso al calendario.' }],
     ]);
@@ -232,7 +232,7 @@ describe('OrchestratorAgent smoke tests', () => {
       handler: async () => ({}),
     };
 
-    const orchestrator = makeOrchestrator(tool, [[]]);
+    const { orchestrator } = makeOrchestrator(tool, [[]]);
 
     const res = await orchestrator.run(
       { userMessage: 'hola', userDigest: EMPTY_DIGEST },
@@ -245,6 +245,61 @@ describe('OrchestratorAgent smoke tests', () => {
     expect(res.blocks.some((b) => b.type === 'text')).toBe(true);
   });
 
+  it('logs fallback_message_emitted=1 when only a safety-block text is emitted (sub-A.0)', async () => {
+    const tool: ToolDefinition = {
+      name: 'noop',
+      description: 'noop',
+      parameters: { type: 'object', properties: {} },
+      handler: async () => ({}),
+    };
+
+    // LLM returns zero parts → orchestrator's safety block emits "He terminado."
+    const { orchestrator, observability } = makeOrchestrator(tool, [[]]);
+
+    await orchestrator.run(
+      { userMessage: 'hola', userDigest: EMPTY_DIGEST },
+      EMPTY_TOOL_CTX,
+      TRACE_CTX,
+      AGENT_OPTS
+    );
+
+    const calls = observability.logScore.mock.calls;
+    const names = calls.map((c: unknown[]) => (c[1] as { name: string }).name);
+    expect(names).toContain('fallback_message_emitted');
+    const fallbackCall = calls.find(
+      (c: unknown[]) => (c[1] as { name: string }).name === 'fallback_message_emitted'
+    );
+    expect((fallbackCall?.[1] as { value: number }).value).toBe(1);
+  });
+
+  it('does NOT log fallback_message_emitted when meaningful blocks are emitted', async () => {
+    const tool: ToolDefinition = {
+      name: 'list_teams',
+      description: 'List teams',
+      parameters: { type: 'object', properties: {} },
+      renderAs: 'team_list',
+      handler: async () => ({
+        teams: [{ id: 't1', name: 'Cadete A', categoria: 'cadete', memberCount: 12 }],
+      }),
+    };
+
+    const { orchestrator, observability } = makeOrchestrator(tool, [
+      [{ functionCall: { name: 'list_teams', args: {} } }],
+      [{ text: 'Tienes 1 equipo.' }],
+    ]);
+
+    await orchestrator.run(
+      { userMessage: 'lista mis equipos', userDigest: EMPTY_DIGEST },
+      EMPTY_TOOL_CTX,
+      TRACE_CTX,
+      AGENT_OPTS
+    );
+
+    const calls = observability.logScore.mock.calls;
+    const names = calls.map((c: unknown[]) => (c[1] as { name: string }).name);
+    expect(names).not.toContain('fallback_message_emitted');
+  });
+
   it('captures tool errors without crashing the loop', async () => {
     const tool: ToolDefinition = {
       name: 'failing_tool',
@@ -255,7 +310,7 @@ describe('OrchestratorAgent smoke tests', () => {
       },
     };
 
-    const orchestrator = makeOrchestrator(tool, [
+    const { orchestrator } = makeOrchestrator(tool, [
       [{ functionCall: { name: 'failing_tool', args: {} } }],
       [{ text: 'No pude completar la acción.' }],
     ]);

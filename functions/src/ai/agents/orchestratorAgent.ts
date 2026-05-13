@@ -317,6 +317,23 @@ export class OrchestratorAgent {
           value: totalToolErrors,
         });
       }
+      // sub-A.0 baseline: track how often Pick falls back to the safety
+      // messages "He terminado." / "He dejado un acceso directo abajo."
+      // These indicate the orchestrator had to emit *something* but the
+      // model produced no useful text/rich card. High rate ⇒ context or
+      // routing problem.
+      const fallbackEmitted = blocks.some(
+        (b) =>
+          b.type === "text" &&
+          (b.markdown === "He terminado." ||
+            b.markdown === "He dejado un acceso directo abajo.")
+      );
+      if (fallbackEmitted) {
+        this.deps.observability.logScore(traceId, {
+          name: "fallback_message_emitted",
+          value: 1,
+        });
+      }
     }
 
     return {
