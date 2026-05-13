@@ -1,7 +1,6 @@
- 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, X } from 'lucide-react';
+import { ArrowLeft, Pencil, Plus, X } from 'lucide-react';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useRegisterScreenContext } from '../hooks/useRegisterScreenContext';
