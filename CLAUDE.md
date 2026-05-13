@@ -128,10 +128,11 @@ El digest que se inyecta en el system prompt de Pick (`functions/src/ai/userDige
 Sobre el contexto rico de sub-A, sub-B añade 4 capas para conversación natural. Estado actual:
 
 - **B.1 — System prompt redesign** ✅ (PR #57): persona reforzada, ambigüedad protocol, proactividad cues — todo en `functions/src/ai/promptManager.ts → orchestrator-system`.
-- **B.2 — History compression v2** ✅ (este PR): `functions/src/ai/history/{cache, summarizer, compressHistoryV2}.ts`. Reemplaza el truncado flat a 130 chars por chunks topic-aware (4 turnos) resumidos vía LLM fast + cache Firestore por `(conversationId, chunkEndIndex)` en `users/{uid}/historySummaries/`. Si el summarizer falla, fallback a líneas flat.
-- **B.3+B.4 — Ambiguity classifier** ⏳ pendiente: pre-LLM step que emite `confirm_choice` block cuando hay >1 candidato plausible.
+- **B.2 — History compression v2** ✅ (PR #58): `functions/src/ai/history/{cache, summarizer, compressHistoryV2}.ts`. Reemplaza el truncado flat a 130 chars por chunks topic-aware (4 turnos) resumidos vía LLM fast + cache Firestore por `(conversationId, chunkEndIndex)` en `users/{uid}/historySummaries/`. Si el summarizer falla, fallback a líneas flat.
+- **B.3 — Ambiguity classifier regex** ✅ (este PR): `functions/src/ai/ambiguity/{heuristics, classifier, types}.ts` + bloque `confirm_choice` en `pickContracts.ts`. Pre-LLM step que detecta "del partido" + "este equipo/jugador" + out-of-scope con regex y digest-lookup. Cuando ambiguo, emite `ConfirmChoice` block sin pagar un turno de LLM. Frontend wired en `BlockRenderer` + `PickPanel`/`PickColumn`.
+- **B.4 — Ambiguity LLM fallback** ⏳ pendiente: el classifier ya acepta `llm` dep — B.4 conecta el fast-model para casos que regex no atrapa.
 - **B.5 — Proactive engine** ⏳ pendiente (`functions/src/proactiveEngine.ts` ya existe como daily-briefing — se extenderá para on-open).
-- **B.6 — Frontend blocks** ⏳ pendiente: `ConfirmChoice` + `ProactiveCard` render.
+- **B.6 — Frontend blocks** ⏳ pendiente: `ProactiveCard` render (`ConfirmChoice` adelantado en B.3).
 - **B.7+B.8 — Eval multi-turn + docs** ⏳ pendiente.
 
 **Spec + plan**: `docs/superpowers/specs/2026-05-13-sub-proyecto-B-paridad-conversacional-design.md` + plan TDD en `docs/superpowers/plans/2026-05-13-sub-proyecto-B-paridad-conversacional.md`.

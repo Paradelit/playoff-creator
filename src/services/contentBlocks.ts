@@ -4,6 +4,7 @@
  * the same discriminated unions and proposal kinds.
  */
 export type {
+  AmbiguityCandidate,
   BracketPreviewData,
   BracketRecord,
   CalendarSessionRecord,
