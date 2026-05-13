@@ -97,9 +97,19 @@ export interface PendingConvocatoria {
   hoursUntil: number;
 }
 
+export interface PendingMatchAction {
+  sessionId: string;
+  fecha: string;
+  teamId?: string;
+  teamName?: string;
+  rival?: string;
+}
+
 export interface PendingActions {
   convocatorias: PendingConvocatoria[];
-  // Próximos kinds (futuros PRs): analyses, scoutings, playerReports.
+  scoutings: PendingMatchAction[];
+  analyses: PendingMatchAction[];
+  // Próximo kind (futuro PR): playerReports (informe por jugador, no por partido).
 }
 
 export interface UserDigest {
