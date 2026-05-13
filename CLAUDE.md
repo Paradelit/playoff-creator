@@ -123,17 +123,18 @@ El digest que se inyecta en el system prompt de Pick (`functions/src/ai/userDige
 
 **Spec + plan**: `docs/superpowers/specs/2026-05-13-ai-chat-priority-master-design.md` + `sub-proyecto-A-contexto-completo-design.md` + plan TDD en `docs/superpowers/plans/2026-05-13-sub-proyecto-A-contexto-completo.md`.
 
-### Pick conversational layer (sub-proyecto B — en curso 2026-05-13)
+### Pick conversational layer (sub-proyecto B — cerrado funcionalmente 2026-05-13)
 
-Sobre el contexto rico de sub-A, sub-B añade 4 capas para conversación natural. Estado actual:
+Sobre el contexto rico de sub-A, sub-B añade 4 capas para conversación natural:
 
 - **B.1 — System prompt redesign** ✅ (PR #57): persona reforzada, ambigüedad protocol, proactividad cues — todo en `functions/src/ai/promptManager.ts → orchestrator-system`.
 - **B.2 — History compression v2** ✅ (PR #58): `functions/src/ai/history/{cache, summarizer, compressHistoryV2}.ts`. Reemplaza el truncado flat a 130 chars por chunks topic-aware (4 turnos) resumidos vía LLM fast + cache Firestore por `(conversationId, chunkEndIndex)` en `users/{uid}/historySummaries/`. Si el summarizer falla, fallback a líneas flat.
 - **B.3 — Ambiguity classifier regex** ✅ (PR #60): `functions/src/ai/ambiguity/{heuristics, classifier, types}.ts` + bloque `confirm_choice` en `pickContracts.ts`. Pre-LLM step que detecta "del partido" + "este equipo/jugador" + out-of-scope con regex y digest-lookup. Cuando ambiguo, emite `ConfirmChoice` block sin pagar un turno de LLM. Frontend wired en `BlockRenderer` + `PickPanel`/`PickColumn`.
-- **B.4 — Ambiguity LLM fallback** ✅ (este PR): `functions/src/ai/ambiguity/llmClassifier.ts` + wire en `classifier.ts`. Cuando la regex devuelve `clear` y el mensaje es >= 10 chars, llama a fast-model con digest-slim. Parse defensivo (strip fences + validación de kind). **Fail-open** — cualquier error vuelve `clear`. Métrica nueva `ambiguity_classifier_ms`.
-- **B.5 — Proactive engine** ⏳ pendiente (`functions/src/proactiveEngine.ts` ya existe como daily-briefing — se extenderá para on-open).
-- **B.6 — Frontend blocks** ⏳ pendiente: `ProactiveCard` render (`ConfirmChoice` adelantado en B.3).
-- **B.7+B.8 — Eval multi-turn + docs** ⏳ pendiente.
+- **B.4 — Ambiguity LLM fallback** ✅ (PR #61): `functions/src/ai/ambiguity/llmClassifier.ts` + wire en `classifier.ts`. Cuando la regex devuelve `clear` y el mensaje es >= 10 chars, llama a fast-model con digest-slim. Parse defensivo (strip fences + validación de kind). **Fail-open** — cualquier error vuelve `clear`. Métrica nueva `ambiguity_classifier_ms`.
+- **B.5 — Proactive engine** ✅ (este PR): `functions/src/ai/proactive/{types, priorizer, dismissals, engine}.ts`. **On-open** engine (distinto del `proactiveEngine.ts` daily-briefing existente). Priorizer pure-function: convocatorias <48h → high, convocatorias 48h-7d / analyses >7d → warn, scoutings + player_reports ≥3 → info. Engine `decideProactive` filtra por dismissals (backoff 7d por kind en `users/{uid}/preferences/proactive`). Callables `pickGetProactive` + `pickDismissProactive` en `index.ts`.
+- **B.6 — Frontend `ProactiveCard`** ✅ (este PR): `src/components/pick/blocks/ProactiveCard.tsx` con severity styling (high amber, warn yellow, info slate). `usePick` fetcha on-open por (wsId, día) via `proactiveFetchedRef`. CTA "Sí, hagámoslo" dispara `sendMessage(suggestedPrompt)`; "Ahora no" llama `pickDismissProactive` callable. Render como banner sobre la conversación en `PickPanel` + `PickColumn`.
+- **B.7 — Evals** ✅ (este PR): nuevo score `confirm-choice-emitted` en `AutoEvaluator` (mide cuántos turnos el ambiguity classifier ahorró sin LLM). Multi-turn LLM-as-judge fixtures deferred a follow-up.
+- **B.8 — Docs** ✅ (este bloque).
 
 **Spec + plan**: `docs/superpowers/specs/2026-05-13-sub-proyecto-B-paridad-conversacional-design.md` + plan TDD en `docs/superpowers/plans/2026-05-13-sub-proyecto-B-paridad-conversacional.md`.
 

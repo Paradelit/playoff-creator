@@ -4,7 +4,14 @@ import { useScreenContext } from '../contexts/ScreenContextProvider';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirebase } from '../contexts/FirebaseContext';
 import { useWorkspace } from '../contexts/WorkspaceContext';
-import { runAgent, aiChatV2, submitFeedback } from '../services/aiClient';
+import {
+  runAgent,
+  aiChatV2,
+  submitFeedback,
+  getProactiveMessage,
+  dismissProactive as callDismissProactive,
+} from '../services/aiClient';
+import type { ProactiveMessage, ProactiveKind } from '../services/aiClient';
 import { usePickTips, type ProactivityMode } from './usePickTips';
 import { useProfile } from './useProfile';
 import { useConversationPersistence } from './useConversationPersistence';
@@ -50,6 +57,11 @@ export interface PickAPI {
 
   // Last response for feedback
   lastTraceId: string | null;
+
+  // Proactive (sub-B.5/B.6) — banner over the conversation, populated on open.
+  proactiveMessage: ProactiveMessage | null;
+  acceptProactive: (suggestedPrompt: string) => void;
+  dismissProactive: (kind: ProactiveKind) => Promise<void>;
 }
 
 export function usePickInternal(): PickAPI {
@@ -68,6 +80,8 @@ export function usePickInternal(): PickAPI {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastTraceId, setLastTraceId] = useState<string | null>(null);
+  const [proactiveMessage, setProactiveMessage] = useState<ProactiveMessage | null>(null);
+  const proactiveFetchedRef = useRef<string | null>(null);
 
   const previousRouteRef = useRef(location.pathname);
   const modeBeforeTransitionRef = useRef<PickMode>('compact');
@@ -278,6 +292,49 @@ export function usePickInternal(): PickAPI {
     [persistence.conversationId, activeWsId, appId],
   );
 
+  // Proactive engine (sub-B.5/B.6) — fetch on first open per workspace+day.
+  // Re-fetches if wsId changes or the day rolls over. Stays silent on errors
+  // (no UI surface for "couldn't load proactive" — just no banner shown).
+  useEffect(() => {
+    if (!activeWsId) return;
+    const today = new Date().toLocaleDateString('en-CA');
+    const key = `${activeWsId}::${today}`;
+    if (proactiveFetchedRef.current === key) return;
+    proactiveFetchedRef.current = key;
+    let cancelled = false;
+    (async () => {
+      try {
+        const msg = await getProactiveMessage({ appId, wsId: activeWsId, clientDate: today });
+        if (!cancelled) setProactiveMessage(msg);
+      } catch {
+        // Silently fail — proactive is opportunistic, not critical.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeWsId, appId]);
+
+  const acceptProactive = useCallback(
+    (suggestedPrompt: string) => {
+      setProactiveMessage(null);
+      sendMessage(suggestedPrompt);
+    },
+    [sendMessage],
+  );
+
+  const dismissProactive = useCallback(
+    async (kind: ProactiveKind) => {
+      setProactiveMessage(null);
+      try {
+        await callDismissProactive({ appId, kind });
+      } catch {
+        // Silent — worst case the next session re-shows the same kind.
+      }
+    },
+    [appId],
+  );
+
   return {
     mode,
     setMode,
@@ -298,5 +355,8 @@ export function usePickInternal(): PickAPI {
     renameConversation: persistence.renameConversation,
     executeAction,
     lastTraceId,
+    proactiveMessage,
+    acceptProactive,
+    dismissProactive,
   };
 }

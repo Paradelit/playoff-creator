@@ -5,6 +5,7 @@ import { useScreenContext } from '../../contexts/ScreenContextProvider';
 import ActionButton from './ActionButton';
 import PickFeedback from './PickFeedback';
 import BlockRenderer from './blocks/BlockRenderer';
+import ProactiveCard from './blocks/ProactiveCard';
 import TextBlock from './blocks/TextBlock';
 
 const SCREEN_LABELS: Record<string, string> = {
@@ -56,6 +57,9 @@ export default function PickPanel() {
     executeAction,
     confirmProposal,
     startNewConversation,
+    proactiveMessage,
+    acceptProactive,
+    dismissProactive,
   } = usePick();
   const { screenContext } = useScreenContext();
   const [input, setInput] = useState('');
@@ -119,6 +123,9 @@ export default function PickPanel() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-[200px]">
+        {proactiveMessage && (
+          <ProactiveCard message={proactiveMessage} onAccept={acceptProactive} onDismiss={dismissProactive} />
+        )}
         {messages.length === 0 && (
           <div className="py-6">
             <div className="text-center mb-4">

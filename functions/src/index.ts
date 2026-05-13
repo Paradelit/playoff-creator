@@ -1,12 +1,15 @@
-import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { onSchedule } from "firebase-functions/v2/scheduler";
-import { defineSecret } from "firebase-functions/params";
-import * as functionsV1 from "firebase-functions/v1";
-import { initializeApp, getApps } from "firebase-admin/app";
-import { getFirestore, type Firestore } from "firebase-admin/firestore";
-import { cleanupUserData as runCleanupUserData, type CleanupAction } from "./dataCleanup";
-import { runProactiveBriefing } from "./proactiveEngine";
-import { bootstrapPersonalWorkspace } from "./auth/onUserCreate";
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { defineSecret } from 'firebase-functions/params';
+import * as functionsV1 from 'firebase-functions/v1';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+import { cleanupUserData as runCleanupUserData, type CleanupAction } from './dataCleanup';
+import { runProactiveBriefing } from './proactiveEngine';
+import { decideProactive } from './ai/proactive/engine';
+import { recordDismissal } from './ai/proactive/dismissals';
+import type { ProactiveKind } from './ai/proactive/types';
+import { bootstrapPersonalWorkspace } from './auth/onUserCreate';
 // Re-export del trigger v1 al final del index.ts para que el deploy lo registre.
 import {
   AgentRouter,
@@ -30,17 +33,17 @@ import {
   createUserContextTools,
   buildUserDigest,
   AutoEvaluator,
-} from "./ai";
-import { assertWithinQuota } from "./billing/quota";
-import { assertWorkspaceMembership } from "./common/assertWorkspaceMembership";
+} from './ai';
+import { assertWithinQuota } from './billing/quota';
+import { assertWorkspaceMembership } from './common/assertWorkspaceMembership';
 
 if (getApps().length === 0) initializeApp();
 
-const geminiKey = defineSecret("GEMINI_API_KEY");
-const openRouterKey = defineSecret("OPENROUTER_API_KEY");
-const langfusePublicKey = defineSecret("LANGFUSE_PUBLIC_KEY");
-const langfuseSecretKey = defineSecret("LANGFUSE_SECRET_KEY");
-const langfuseBaseUrl = defineSecret("LANGFUSE_BASE_URL");
+const geminiKey = defineSecret('GEMINI_API_KEY');
+const openRouterKey = defineSecret('OPENROUTER_API_KEY');
+const langfusePublicKey = defineSecret('LANGFUSE_PUBLIC_KEY');
+const langfuseSecretKey = defineSecret('LANGFUSE_SECRET_KEY');
+const langfuseBaseUrl = defineSecret('LANGFUSE_BASE_URL');
 
 interface System {
   router: AgentRouter;
@@ -61,9 +64,9 @@ let cached: System | null = null;
 
 function safeSecret(param: { value: () => string }): string {
   try {
-    return param.value() || "";
+    return param.value() || '';
   } catch {
-    return "";
+    return '';
   }
 }
 
@@ -75,7 +78,9 @@ function getSystem(): System {
   const gKey = geminiKey.value();
   const orKey = safeSecret(openRouterKey);
 
-  console.log(`[System] Cargando secretos... Gemini: ${gKey ? "OK" : "MISSING"}, OpenRouter: ${orKey ? "OK" : "MISSING"}`);
+  console.log(
+    `[System] Cargando secretos... Gemini: ${gKey ? 'OK' : 'MISSING'}, OpenRouter: ${orKey ? 'OK' : 'MISSING'}`,
+  );
 
   const llmProvider = new LLMProvider({
     apiKey: gKey,
@@ -146,17 +151,17 @@ function getSystem(): System {
 export const runAgent = onCall(
   {
     secrets: [geminiKey, openRouterKey, langfusePublicKey, langfuseSecretKey, langfuseBaseUrl],
-    region: "europe-west1",
+    region: 'europe-west1',
     timeoutSeconds: 300,
-    memory: "512MiB",
+    memory: '512MiB',
   },
   async (request) => {
-    if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
 
     const { agent, input, sessionId, appId, wsId } = request.data;
-    if (!agent || !input) throw new HttpsError("invalid-argument", "Missing agent or input");
-    if (!appId) throw new HttpsError("invalid-argument", "Missing appId");
-    if (!wsId) throw new HttpsError("invalid-argument", "Missing wsId");
+    if (!agent || !input) throw new HttpsError('invalid-argument', 'Missing agent or input');
+    if (!appId) throw new HttpsError('invalid-argument', 'Missing appId');
+    if (!wsId) throw new HttpsError('invalid-argument', 'Missing wsId');
 
     const db = getFirestore();
     // Verify membership BEFORE consuming quota — sin este check, un atacante
@@ -171,18 +176,18 @@ export const runAgent = onCall(
       return await system.router.routeExplicit(agent, input, { userId: request.auth.uid, sessionId });
     } catch (err) {
       const error = err as Error;
-      const msg = error.message || "";
-      if (msg === "RATE_LIMIT" || msg.includes("saturados")) {
-        throw new HttpsError("resource-exhausted", "Demasiadas peticiones a la IA. Espera 60 segundos.");
+      const msg = error.message || '';
+      if (msg === 'RATE_LIMIT' || msg.includes('saturados')) {
+        throw new HttpsError('resource-exhausted', 'Demasiadas peticiones a la IA. Espera 60 segundos.');
       }
-      if (msg === "FORBIDDEN") {
-        throw new HttpsError("permission-denied", "Error 403: La API Key no tiene acceso a la IA.");
+      if (msg === 'FORBIDDEN') {
+        throw new HttpsError('permission-denied', 'Error 403: La API Key no tiene acceso a la IA.');
       }
-      throw new HttpsError("internal", msg);
+      throw new HttpsError('internal', msg);
     } finally {
       await system.observability.flush();
     }
-  }
+  },
 );
 
 // 2. aiChat — orchestrator with function calling, returns ContentBlocks
@@ -201,10 +206,10 @@ export async function aiChatHandler(request: AiChatRequest, system: System, db: 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = (request.data || {}) as any;
   const { message, screenContext, conversationHistory, appId, wsId, clientDate, conversationId } = data;
-  if (!message) throw new HttpsError("invalid-argument", "Missing message");
-  if (!appId || typeof appId !== "string") throw new HttpsError("invalid-argument", "Missing appId");
-  if (!wsId || typeof wsId !== "string") {
-    throw new HttpsError("invalid-argument", "Missing or invalid wsId");
+  if (!message) throw new HttpsError('invalid-argument', 'Missing message');
+  if (!appId || typeof appId !== 'string') throw new HttpsError('invalid-argument', 'Missing appId');
+  if (!wsId || typeof wsId !== 'string') {
+    throw new HttpsError('invalid-argument', 'Missing or invalid wsId');
   }
 
   const userId = request.auth!.uid;
@@ -213,19 +218,19 @@ export async function aiChatHandler(request: AiChatRequest, system: System, db: 
   const memberRef = db.doc(`artifacts/${appId}/workspaces/${wsId}/members/${userId}`);
   const memberSnap = await memberRef.get();
   if (!memberSnap.exists) {
-    throw new HttpsError("permission-denied", "Not a member of this workspace");
+    throw new HttpsError('permission-denied', 'Not a member of this workspace');
   }
 
   // Quota gate — increments counter atomically; throws resource-exhausted when free + over.
   await assertWithinQuota(db, { wsId, appId });
 
   const trace = system.observability.createTrace({
-    name: "orchestrator",
+    name: 'orchestrator',
     userId,
     sessionId: conversationId,
     metadata: { screen: screenContext?.screen, userMessage: String(message).slice(0, 200) },
   });
-  const traceId = (trace as { id?: string })?.id || "";
+  const traceId = (trace as { id?: string })?.id || '';
   const traceContext = { trace };
   const agentOptions = { userId, sessionId: conversationId };
 
@@ -249,10 +254,9 @@ export async function aiChatHandler(request: AiChatRequest, system: System, db: 
       const entityType = screenContext.entityType as string | undefined;
       const entityId = screenContext.entityId as string | undefined;
       if (entityType && entityId) {
-        if (entityType === "team") defaults.teamId = entityId;
-        else if (entityType === "session" || entityType === "calendarSession")
-          defaults.sessionId = entityId;
-        else if (entityType === "bracket") defaults.bracketId = entityId;
+        if (entityType === 'team') defaults.teamId = entityId;
+        else if (entityType === 'session' || entityType === 'calendarSession') defaults.sessionId = entityId;
+        else if (entityType === 'bracket') defaults.bracketId = entityId;
       }
       // Also probe params (e.g. /teams/:teamId)
       const params = (screenContext.params as Record<string, string> | undefined) || {};
@@ -282,7 +286,7 @@ export async function aiChatHandler(request: AiChatRequest, system: System, db: 
       },
       toolCtx,
       traceContext,
-      agentOptions
+      agentOptions,
     );
 
     // Fire-and-forget: auto-score the trace without adding latency
@@ -303,15 +307,15 @@ export async function aiChatHandler(request: AiChatRequest, system: System, db: 
   } catch (err) {
     if (err instanceof HttpsError) throw err;
     const error = err as Error;
-    const msg = error.message || "";
-    console.error("aiChat error:", error);
-    if (msg === "RATE_LIMIT" || msg.includes("saturados")) {
-      throw new HttpsError("resource-exhausted", "Demasiadas peticiones a la IA. Espera 60 segundos.");
+    const msg = error.message || '';
+    console.error('aiChat error:', error);
+    if (msg === 'RATE_LIMIT' || msg.includes('saturados')) {
+      throw new HttpsError('resource-exhausted', 'Demasiadas peticiones a la IA. Espera 60 segundos.');
     }
-    if (msg === "FORBIDDEN") {
-      throw new HttpsError("permission-denied", "La API Key no tiene acceso a la IA.");
+    if (msg === 'FORBIDDEN') {
+      throw new HttpsError('permission-denied', 'La API Key no tiene acceso a la IA.');
     }
-    throw new HttpsError("internal", msg || "Error en el orquestador");
+    throw new HttpsError('internal', msg || 'Error en el orquestador');
   } finally {
     await system.observability.flush();
   }
@@ -320,77 +324,68 @@ export async function aiChatHandler(request: AiChatRequest, system: System, db: 
 export const aiChat = onCall(
   {
     secrets: [geminiKey, openRouterKey, langfusePublicKey, langfuseSecretKey, langfuseBaseUrl],
-    region: "europe-west1",
+    region: 'europe-west1',
     timeoutSeconds: 300,
-    memory: "512MiB",
+    memory: '512MiB',
   },
   async (request) => {
-    if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
     const system = getSystem();
     const db = getFirestore();
     return aiChatHandler(request, system, db);
-  }
+  },
 );
 
 // 3. logInteractionScore — user feedback → Langfuse scores
 export const logInteractionScore = onCall(
   {
     secrets: [geminiKey, openRouterKey, langfusePublicKey, langfuseSecretKey, langfuseBaseUrl],
-    region: "europe-west1",
+    region: 'europe-west1',
   },
   async (request) => {
-    if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
 
     const { traceId, score, comment } = request.data;
     if (!traceId || score === undefined) {
-      throw new HttpsError("invalid-argument", "Missing traceId or score");
+      throw new HttpsError('invalid-argument', 'Missing traceId or score');
     }
 
     const system = getSystem();
     system.observability.logScore(traceId, {
-      name: "user-feedback",
+      name: 'user-feedback',
       value: score,
       comment,
     });
     await system.observability.flush();
     return { success: true };
-  }
+  },
 );
 
 // 4. cleanupUserData — backend cascade deletes for teams, brackets, conversations and full account data
 export const cleanupUserData = onCall(
   {
-    region: "europe-west1",
+    region: 'europe-west1',
     timeoutSeconds: 300,
-    memory: "512MiB",
+    memory: '512MiB',
   },
   async (request) => {
-    if (!request.auth) throw new HttpsError("unauthenticated", "Login required");
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
 
     const { action, appId, wsId, teamId, bracketId, conversationId } = request.data || {};
-    if (!appId || typeof appId !== "string") {
-      throw new HttpsError("invalid-argument", "Missing appId");
+    if (!appId || typeof appId !== 'string') {
+      throw new HttpsError('invalid-argument', 'Missing appId');
     }
-    if (!action || typeof action !== "string") {
-      throw new HttpsError("invalid-argument", "Missing action");
+    if (!action || typeof action !== 'string') {
+      throw new HttpsError('invalid-argument', 'Missing action');
     }
-    const allowedActions: CleanupAction[] = [
-      "deleteTeam",
-      "deleteBracket",
-      "deleteConversation",
-      "deleteAllUserData",
-    ];
+    const allowedActions: CleanupAction[] = ['deleteTeam', 'deleteBracket', 'deleteConversation', 'deleteAllUserData'];
     if (!allowedActions.includes(action as CleanupAction)) {
-      throw new HttpsError("invalid-argument", "Invalid action");
+      throw new HttpsError('invalid-argument', 'Invalid action');
     }
-    const actionsNeedingWsId: CleanupAction[] = [
-      "deleteTeam",
-      "deleteBracket",
-      "deleteConversation",
-    ];
+    const actionsNeedingWsId: CleanupAction[] = ['deleteTeam', 'deleteBracket', 'deleteConversation'];
     if (actionsNeedingWsId.includes(action as CleanupAction)) {
-      if (!wsId || typeof wsId !== "string") {
-        throw new HttpsError("invalid-argument", "Missing or invalid wsId");
+      if (!wsId || typeof wsId !== 'string') {
+        throw new HttpsError('invalid-argument', 'Missing or invalid wsId');
       }
     }
     // deleteAllUserData iterates memberships server-side and doesn't need wsId from client.
@@ -401,22 +396,14 @@ export const cleanupUserData = onCall(
     // auth.uid presente y pasaba cualquier (wsId, teamId/bracketId) a la lógica
     // de borrado — un atacante podía borrar teams/brackets de cualquier workspace
     // pasando los IDs (descubrir IDs es trivial vía screenshots, share-codes, etc.).
-    if (action === "deleteTeam" || action === "deleteBracket") {
+    if (action === 'deleteTeam' || action === 'deleteBracket') {
       // Borrados de team/bracket requieren ser DT (o owner) del workspace —
       // misma matriz que firestore.rules para `allow delete` en /teams.
-      const ctx = await assertWorkspaceMembership(
-        db,
-        appId,
-        wsId as string,
-        request.auth.uid,
-      );
+      const ctx = await assertWorkspaceMembership(db, appId, wsId as string, request.auth.uid);
       if (!ctx.isOwner && !ctx.isDT) {
-        throw new HttpsError(
-          "permission-denied",
-          "Solo el owner o DT pueden borrar teams/brackets.",
-        );
+        throw new HttpsError('permission-denied', 'Solo el owner o DT pueden borrar teams/brackets.');
       }
-    } else if (action === "deleteConversation") {
+    } else if (action === 'deleteConversation') {
       // La conversación vive bajo users/{uid}/pickHistory/{wsId}/... — el path
       // ya scopea al uid del caller; aún así verificamos membership para no
       // permitir crear basura en wsId que el caller nunca ha usado.
@@ -443,15 +430,78 @@ export const cleanupUserData = onCall(
       // Error genérico, envolverlo como internal sin filtrar el mensaje (puede
       // incluir paths Firestore con IDs sensibles).
       if (error instanceof HttpsError) throw error;
-      console.error("[cleanupUserData] internal error", {
+      console.error('[cleanupUserData] internal error', {
         uid: request.auth.uid,
         action,
         wsId,
         err: error.message,
       });
-      throw new HttpsError("internal", "Cleanup failed");
+      throw new HttpsError('internal', 'Cleanup failed');
     }
-  }
+  },
+);
+
+// 5b. pickGetProactive — on-open Pick engine (sub-B.5).
+//     Returns at most one ProactiveMessage based on digest.pendingActions, filtered
+//     by per-user dismissals (7-day backoff). Called by the frontend when Pick opens.
+const VALID_PROACTIVE_KINDS: ReadonlyArray<ProactiveKind> = [
+  'convocatoria_urgent',
+  'analysis_overdue',
+  'scouting_missing',
+  'player_report_missing',
+];
+
+export const pickGetProactive = onCall(
+  {
+    secrets: [geminiKey, openRouterKey, langfusePublicKey, langfuseSecretKey, langfuseBaseUrl],
+    region: 'europe-west1',
+    timeoutSeconds: 60,
+    memory: '256MiB',
+  },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
+    const { appId, wsId, clientDate } = (request.data || {}) as {
+      appId?: string;
+      wsId?: string;
+      clientDate?: string;
+    };
+    if (!appId) throw new HttpsError('invalid-argument', 'Missing appId');
+    if (!wsId) throw new HttpsError('invalid-argument', 'Missing wsId');
+
+    const db = getFirestore();
+    await assertWorkspaceMembership(db, appId, wsId, request.auth.uid);
+
+    const digest = await buildUserDigest({
+      db,
+      userId: request.auth.uid,
+      wsId,
+      appId,
+      clientDate,
+    });
+    const msg = await decideProactive({ db, appId, userId: request.auth.uid }, digest, new Date().toISOString());
+    return { message: msg };
+  },
+);
+
+// 5c. pickDismissProactive — records a 7-day backoff for a kind when the coach
+//     clicks "Ahora no" on a ProactiveCard.
+export const pickDismissProactive = onCall(
+  {
+    region: 'europe-west1',
+    timeoutSeconds: 30,
+    memory: '256MiB',
+  },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
+    const { appId, kind } = (request.data || {}) as { appId?: string; kind?: string };
+    if (!appId) throw new HttpsError('invalid-argument', 'Missing appId');
+    if (!kind || !VALID_PROACTIVE_KINDS.includes(kind as ProactiveKind)) {
+      throw new HttpsError('invalid-argument', 'Invalid kind');
+    }
+    const db = getFirestore();
+    await recordDismissal({ db, appId, userId: request.auth.uid }, kind as ProactiveKind);
+    return { success: true };
+  },
 );
 
 // 6. proactiveDailyBriefing — scheduled function that runs every morning at 08:00 Europe/Madrid.
@@ -474,25 +524,25 @@ function resolveAppId(handlerName: string): string | null {
 
 export const proactiveDailyBriefing = onSchedule(
   {
-    schedule: "0 8 * * *",
-    timeZone: "Europe/Madrid",
+    schedule: '0 8 * * *',
+    timeZone: 'Europe/Madrid',
     secrets: [geminiKey],
-    region: "europe-west1",
+    region: 'europe-west1',
     timeoutSeconds: 540,
-    memory: "256MiB",
+    memory: '256MiB',
   },
   async (_event) => {
-    const appId = resolveAppId("proactiveDailyBriefing");
+    const appId = resolveAppId('proactiveDailyBriefing');
     if (!appId) return;
     const apiKey = geminiKey.value();
     try {
       const result = await runProactiveBriefing(apiKey, appId);
-      console.log("[proactiveDailyBriefing] Completed:", result);
+      console.log('[proactiveDailyBriefing] Completed:', result);
     } catch (err) {
-      console.error("[proactiveDailyBriefing] Fatal error:", (err as Error).message);
+      console.error('[proactiveDailyBriefing] Fatal error:', (err as Error).message);
       // Don't rethrow — let the function succeed so Cloud Scheduler doesn't retry aggressively.
     }
-  }
+  },
 );
 
 // 7. onUserCreate — Auth trigger that fires when a new Firebase Auth user is created.
@@ -501,56 +551,51 @@ export const proactiveDailyBriefing = onSchedule(
 //    Uses the v1 trigger because firebase-functions v2 does not expose a non-blocking
 //    auth.user().onCreate equivalent (only beforeUserCreated, which blocks signup).
 export const onUserCreate = functionsV1
-  .region("europe-west1")
+  .region('europe-west1')
   .auth.user()
   .onCreate(async (user) => {
-    const appId = resolveAppId("onUserCreate");
+    const appId = resolveAppId('onUserCreate');
     if (!appId) return;
     try {
       const result = await bootstrapPersonalWorkspace({ uid: user.uid }, appId);
-      console.log(
-        `[onUserCreate] uid=${user.uid} ${result.status} wsId=${result.wsId}`
-      );
+      console.log(`[onUserCreate] uid=${user.uid} ${result.status} wsId=${result.wsId}`);
     } catch (err) {
-      console.error(
-        `[onUserCreate] uid=${user.uid} FATAL:`,
-        (err as Error).message
-      );
+      console.error(`[onUserCreate] uid=${user.uid} FATAL:`, (err as Error).message);
       // Do not rethrow: the user record exists in Auth and we don't want to leave
       // them in a half-broken state. Client's WorkspaceProvisioningState handles retry.
     }
   });
 
-export { resolveMapsUrl } from "./locations/resolveMapsUrl";
+export { resolveMapsUrl } from './locations/resolveMapsUrl';
 
 // Sub-7 batch CI — cleanup automático cuando Firebase Auth borra un user.
 // Sin esto, workspaces/datos del user borrado quedaban como zombies.
-export { onUserDelete } from "./auth/onUserDelete";
+export { onUserDelete } from './auth/onUserDelete';
 
 // Sub-7 batch CI — backup automatizado diario de Firestore a Cloud Storage.
 // Requiere bucket `gs://playoff-creator-firestore-backups` con permisos
 // Firestore Service Agent. Si el bucket no existe, función falla con log
 // pero no rompe nada. Ver docs/runbooks/firestore-backups.md.
-export { scheduledFirestoreBackup } from "./maintenance/scheduledFirestoreBackup";
+export { scheduledFirestoreBackup } from './maintenance/scheduledFirestoreBackup';
 
 // Stripe billing (sub-proyecto 5).
-export { createCheckoutSession } from "./billing/createCheckoutSession";
-export { createPortalSession } from "./billing/createPortalSession";
-export { stripeWebhook } from "./billing/webhook";
+export { createCheckoutSession } from './billing/createCheckoutSession';
+export { createPortalSession } from './billing/createPortalSession';
+export { stripeWebhook } from './billing/webhook';
 // Sub-proyecto 6 — B2B per-seat billing.
-export { createClubSubscription } from "./billing/createClubSubscription";
+export { createClubSubscription } from './billing/createClubSubscription';
 
 // Sub-proyecto 3 — invitaciones y licencias.
-export { createClub } from "./sub3/createClub";
-export { inviteMember } from "./sub3/inviteMember";
-export { acceptInvite } from "./sub3/acceptInvite";
-export { revokeInvite } from "./sub3/revokeInvite";
-export { revokeMember } from "./sub3/revokeMember";
-export { setMemberTeams } from "./sub3/setMemberTeams";
-export { setMemberRole } from "./sub3/setMemberRole";
-export { transferOwnership } from "./sub3/transferOwnership";
-export { getClubAllowlistStatus } from "./sub3/getClubAllowlistStatus";
-export { onMemberDelete } from "./sub3/onMemberDelete";
-export { onTeamCreate } from "./sub3/onTeamCreate";
-export { onTeamDelete } from "./sub3/onTeamDelete";
-export { cleanupExpiredInvites } from "./sub3/cleanupExpiredInvites";
+export { createClub } from './sub3/createClub';
+export { inviteMember } from './sub3/inviteMember';
+export { acceptInvite } from './sub3/acceptInvite';
+export { revokeInvite } from './sub3/revokeInvite';
+export { revokeMember } from './sub3/revokeMember';
+export { setMemberTeams } from './sub3/setMemberTeams';
+export { setMemberRole } from './sub3/setMemberRole';
+export { transferOwnership } from './sub3/transferOwnership';
+export { getClubAllowlistStatus } from './sub3/getClubAllowlistStatus';
+export { onMemberDelete } from './sub3/onMemberDelete';
+export { onTeamCreate } from './sub3/onTeamCreate';
+export { onTeamDelete } from './sub3/onTeamDelete';
+export { cleanupExpiredInvites } from './sub3/cleanupExpiredInvites';

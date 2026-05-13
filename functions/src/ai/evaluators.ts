@@ -1,6 +1,6 @@
-import { ObservabilityService } from "./observability";
-import { ContentBlock } from "./contentBlocks";
-import type { UserDigest } from "./digest/types";
+import { ObservabilityService } from './observability';
+import { ContentBlock } from './contentBlocks';
+import type { UserDigest } from './digest/types';
 
 export interface AutoEvalMetrics {
   toolCalls: Array<{ name: string }>;
@@ -43,7 +43,7 @@ export function computeDigestRichness(digest: UserDigest): number {
  * - 1.0: hubo screenSemantic + referableIds no-vacío.
  */
 export function computeScreenSemanticScore(
-  semantic: { referableIds?: Record<string, string> } | null | undefined
+  semantic: { referableIds?: Record<string, string> } | null | undefined,
 ): number {
   if (!semantic) return 0.0;
   const refs = semantic.referableIds;
@@ -74,34 +74,32 @@ export class AutoEvaluator {
     let efficiencyComment: string;
     if (totalToolCalls === 0) {
       toolEfficiency = 1.0;
-      efficiencyComment = "No tool calls — N/A";
+      efficiencyComment = 'No tool calls — N/A';
     } else {
       const uniqueCount = new Set(toolCalls.map((t) => t.name)).size;
       toolEfficiency = uniqueCount / totalToolCalls;
       efficiencyComment = `${uniqueCount} unique / ${totalToolCalls} total`;
     }
     this.observability.logScore(traceId, {
-      name: "tool-efficiency",
+      name: 'tool-efficiency',
       value: toolEfficiency,
       comment: efficiencyComment,
     });
 
     // 2. loop-detected
     this.observability.logScore(traceId, {
-      name: "loop-detected",
+      name: 'loop-detected',
       value: loopDetected ? 0.0 : 1.0,
-      comment: loopDetected ? "Loop detected in orchestrator run" : "No loop detected",
+      comment: loopDetected ? 'Loop detected in orchestrator run' : 'No loop detected',
     });
 
     // 3. response-completeness
-    const textBlocks = contentBlocks.filter(
-      (b): b is { type: "text"; markdown: string } => b.type === "text"
-    );
+    const textBlocks = contentBlocks.filter((b): b is { type: 'text'; markdown: string } => b.type === 'text');
     let responseCompleteness: number;
     let completenessComment: string;
     if (textBlocks.length === 0) {
       responseCompleteness = 0.0;
-      completenessComment = "No text blocks in response";
+      completenessComment = 'No text blocks in response';
     } else {
       const hasSubstantialText = textBlocks.some((b) => b.markdown.length > 20);
       responseCompleteness = hasSubstantialText ? 1.0 : 0.5;
@@ -110,16 +108,15 @@ export class AutoEvaluator {
         : `${textBlocks.length} text block(s), short content`;
     }
     this.observability.logScore(traceId, {
-      name: "response-completeness",
+      name: 'response-completeness',
       value: responseCompleteness,
       comment: completenessComment,
     });
 
     // 4. tool-call-count
-    const toolCallCountScore =
-      totalToolCalls === 0 ? 1.0 : 1 - Math.min(totalToolCalls / 8, 1.0);
+    const toolCallCountScore = totalToolCalls === 0 ? 1.0 : 1 - Math.min(totalToolCalls / 8, 1.0);
     this.observability.logScore(traceId, {
-      name: "tool-call-count",
+      name: 'tool-call-count',
       value: toolCallCountScore,
       comment: `${totalToolCalls} tool call(s)`,
     });
@@ -128,7 +125,7 @@ export class AutoEvaluator {
     if (metrics.userDigest) {
       const richness = computeDigestRichness(metrics.userDigest);
       this.observability.logScore(traceId, {
-        name: "digest-richness",
+        name: 'digest-richness',
         value: richness,
         comment: `Populated optional sections: ${(richness * 10).toFixed(0)}/10`,
       });
@@ -140,11 +137,22 @@ export class AutoEvaluator {
       const refs = metrics.screenSemantic?.referableIds;
       const refCount = refs ? Object.keys(refs).length : 0;
       this.observability.logScore(traceId, {
-        name: "screen-semantic-score",
+        name: 'screen-semantic-score',
         value: score,
         comment: metrics.screenSemantic
           ? `surface=${metrics.screenSemantic.surface}, refs=${refCount}`
-          : "no screen semantic",
+          : 'no screen semantic',
+      });
+    }
+
+    // 7. confirm-choice-emitted (sub-B.7) — 1.0 if the turn short-circuited
+    //    into a ConfirmChoice (ambiguity resolved without paying for an LLM turn).
+    const hasConfirmChoice = contentBlocks.some((b) => b.type === 'confirm_choice');
+    if (hasConfirmChoice) {
+      this.observability.logScore(traceId, {
+        name: 'confirm-choice-emitted',
+        value: 1.0,
+        comment: 'Ambiguity classifier emitted ConfirmChoice (saved an LLM turn)',
       });
     }
   }
