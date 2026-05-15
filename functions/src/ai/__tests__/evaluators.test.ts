@@ -300,6 +300,7 @@ describe('AutoEvaluator.score — sub-C.6 convocatoria-preview-emitted', () => {
           type: 'convocatoria_preview',
           convocatoria: {
             sessionId: 'cal_1',
+            tipo: 'partido',
             teamId: 't1',
             mensaje: 'Convocatoria sábado',
             encabezado: 'vs Hispano',
