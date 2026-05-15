@@ -313,6 +313,29 @@ async function handleCreateExercises(ctx: ExecuteContext, payload: ProposalPaylo
   }
 }
 
+async function handleMarkConvocatoriaSent(ctx: ExecuteContext, payload: ProposalPayload) {
+  const sessionId = typeof payload.sessionId === 'string' ? payload.sessionId : '';
+  if (!sessionId) throw invalidProposal('falta sessionId');
+
+  if (sessionId.startsWith('playoff-')) {
+    // Virtual playoff session: persist flag in workspace settings.
+    // Existing UX path uses settings/playoffConvocatorias with map { sent: { [id]: true } }.
+    const settingsRef = workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'settings', 'playoffConvocatorias');
+    const snap = await getDoc(settingsRef);
+    const data = snap.exists() ? asRecord(snap.data()) || {} : {};
+    const sent = (asRecord(data.sent) as Record<string, unknown>) || {};
+    sent[sessionId] = true;
+    await setDoc(settingsRef, { sent, updatedAt: serverTimestamp() }, { merge: true });
+    return;
+  }
+
+  await setDoc(
+    workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'calendarSessions', sessionId),
+    { convocatoriaSentAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
 const proposalHandlers: Record<WriteProposalKind, ProposalHandler> = {
   create_training: handleCreateTraining,
   create_calendar_session: handleCreateCalendarSession,
@@ -326,6 +349,7 @@ const proposalHandlers: Record<WriteProposalKind, ProposalHandler> = {
   save_analysis: handleSaveAnalysis,
   create_exercise: handleCreateExercise,
   create_exercises: handleCreateExercises,
+  mark_convocatoria_sent: handleMarkConvocatoriaSent,
 };
 
 /**

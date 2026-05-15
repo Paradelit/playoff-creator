@@ -357,5 +357,32 @@ export function createWriteTools(): ToolDefinition[] {
         };
       },
     },
+
+    {
+      name: "propose_mark_convocatoria_sent",
+      description:
+        "Propone marcar la convocatoria de un partido como enviada. Después de confirmar, el partido deja de aparecer en pendientes y Pick no vuelve a sugerirla. Úsalo cuando el coach diga 'ya la mandé' / 'la envié' o tras el flujo mandar_convocatoria + share. sessionId puede ser un calendarSessionId o un id virtual de playoff con prefijo 'playoff-'.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          sessionId: {
+            type: "string",
+            description: "ID de la sesión (calendarSession o virtual playoff-*)",
+          },
+          summary: { type: "string", description: "Resumen humano de 1 línea" },
+        },
+        required: ["sessionId", "summary"],
+      },
+      handler: async (args) => {
+        const sessionId = typeof args.sessionId === "string" ? args.sessionId : "";
+        if (!sessionId) return { error: "Falta sessionId." };
+        return {
+          kind: "mark_convocatoria_sent",
+          sessionId,
+          summary: typeof args.summary === "string" ? args.summary : "",
+        };
+      },
+    },
   ];
 }
