@@ -11,6 +11,7 @@ import { resolveScopedTeamIds, type MemberScope } from "./digest/scoping";
 import { buildPendingConvocatorias } from "./digest/pendingConvocatorias";
 import { buildPendingAnalysesAndScoutings } from "./digest/pendingAnalysesScoutings";
 import { buildPendingPlayerReports } from "./digest/pendingPlayerReports";
+import { buildPlayoffSessionsInRange } from "./digest/playoffSessions";
 import type { UserDigest, UserRole } from "./digest/types";
 
 export type {
@@ -134,14 +135,29 @@ export async function buildUserDigest(deps: {
   const teamsById = new Map(teamsBare.map((t) => [t.id, t.name]));
 
   // PASS 2: sessions + brackets + profile + memorias + pending kinds en paralelo.
+  // Playoff sessions virtuales (sub-C follow-up): se generan desde
+  // bracketData.state porque NO viven en calendarSessions. Sin esto Pick
+  // no sabía de partidos de playoff esta semana — bug detectado el 2026-05-15.
+  const lookbackForPlayoffsISO = (() => {
+    const d = new Date(todayISO);
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().slice(0, 10);
+  })();
+  const lookaheadForPlayoffsISO = (() => {
+    const d = new Date(todayISO);
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().slice(0, 10);
+  })();
+
   const [
     activeBrackets,
-    upcomingSessionsWithTid,
-    recentPastSessionsWithTid,
+    upcomingSessionsRaw,
+    recentPastSessionsRaw,
     profileSnap,
     memories,
     pendingAnalysesScoutings,
     pendingPlayerReports,
+    playoffSessionsInRange,
   ] = await Promise.all([
     buildBracketsDigest({ db, appId, wsId, scopedTeamIds }),
     buildUpcomingSessionsDigest({ db, appId, wsId, todayISO, teamsById, scopedTeamIds }),
@@ -150,7 +166,33 @@ export async function buildUserDigest(deps: {
     fetchMemoriesForDigest(db, appId, wsId, 15),
     buildPendingAnalysesAndScoutings({ db, appId, wsId, todayISO, teamsById, scopedTeamIds }),
     buildPendingPlayerReports({ db, appId, wsId, teamsById, scopedTeamIds }),
+    buildPlayoffSessionsInRange({
+      db,
+      appId,
+      wsId,
+      fromISO: lookbackForPlayoffsISO,
+      toISO: lookaheadForPlayoffsISO,
+      teamsById,
+      scopedTeamIds,
+    }),
   ]);
+
+  // Merge playoff virtuals con regular sessions, sort by fecha, cap a 15.
+  // Para upcoming: fecha >= todayISO (incluye hoy). Para past: < todayISO.
+  const upcomingPlayoffs = playoffSessionsInRange.filter((s) => s.fecha >= todayISO);
+  const pastPlayoffs = playoffSessionsInRange.filter((s) => s.fecha < todayISO);
+  const upcomingSessionsWithTid = [...upcomingSessionsRaw, ...upcomingPlayoffs]
+    .sort((a, b) => {
+      if (a.fecha !== b.fecha) return a.fecha < b.fecha ? -1 : 1;
+      return (a.horaInicio || "").localeCompare(b.horaInicio || "");
+    })
+    .slice(0, 15);
+  const recentPastSessionsWithTid = [...recentPastSessionsRaw, ...pastPlayoffs]
+    .sort((a, b) => {
+      if (a.fecha !== b.fecha) return a.fecha > b.fecha ? -1 : 1;
+      return (b.horaInicio || "").localeCompare(a.horaInicio || "");
+    })
+    .slice(0, 15);
 
   const upcomingByTeam = groupSessionsByTeamId(upcomingSessionsWithTid);
   const recentByTeam = groupSessionsByTeamId(recentPastSessionsWithTid);
