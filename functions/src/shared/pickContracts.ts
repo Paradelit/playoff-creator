@@ -75,7 +75,11 @@ export type WriteProposalKind =
   | 'save_analysis'
   | 'create_exercise'
   | 'create_exercises'
-  | 'mark_convocatoria_sent';
+  | 'mark_convocatoria_sent'
+  | 'update_training'
+  | 'delete_training'
+  | 'update_calendar_session'
+  | 'delete_calendar_session';
 
 export interface WriteProposal {
   proposalId: string;

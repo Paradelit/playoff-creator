@@ -1,5 +1,5 @@
 import type { Firestore } from 'firebase/firestore';
-import { setDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { setDoc, serverTimestamp, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { workspaceDocRef, workspaceColRef } from './firestoreHelpers';
 import type { WriteProposal, WriteProposalKind } from './contentBlocks';
 import { calculateMatchWinner, buildDynamicBracket } from '../utils/bracketEngine';
@@ -336,6 +336,47 @@ async function handleMarkConvocatoriaSent(ctx: ExecuteContext, payload: Proposal
   );
 }
 
+async function handleUpdateTraining(ctx: ExecuteContext, payload: ProposalPayload) {
+  const teamId = typeof payload.teamId === 'string' ? payload.teamId : undefined;
+  const trainingId = typeof payload.trainingId === 'string' ? payload.trainingId : undefined;
+  const updates = asRecord(payload.updates);
+  if (!teamId || !trainingId || !updates) throw invalidProposal('falta teamId, trainingId o updates');
+
+  await setDoc(
+    doc(workspaceColRef(ctx.db, ctx.appId, ctx.wsId, 'teams'), teamId, 'trainings', trainingId),
+    { ...updates, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+async function handleDeleteTraining(ctx: ExecuteContext, payload: ProposalPayload) {
+  const teamId = typeof payload.teamId === 'string' ? payload.teamId : undefined;
+  const trainingId = typeof payload.trainingId === 'string' ? payload.trainingId : undefined;
+  if (!teamId || !trainingId) throw invalidProposal('falta teamId o trainingId');
+
+  await deleteDoc(doc(workspaceColRef(ctx.db, ctx.appId, ctx.wsId, 'teams'), teamId, 'trainings', trainingId));
+}
+
+async function handleUpdateCalendarSession(ctx: ExecuteContext, payload: ProposalPayload) {
+  const sessionId = typeof payload.sessionId === 'string' ? payload.sessionId : undefined;
+  const updates = asRecord(payload.updates);
+  if (!sessionId || !updates) throw invalidProposal('falta sessionId o updates');
+  if (sessionId.startsWith('playoff-')) throw invalidProposal('sesión virtual de playoff no editable');
+
+  await setDoc(
+    workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'calendarSessions', sessionId),
+    { ...updates, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+async function handleDeleteCalendarSession(ctx: ExecuteContext, payload: ProposalPayload) {
+  const sessionId = typeof payload.sessionId === 'string' ? payload.sessionId : undefined;
+  if (!sessionId) throw invalidProposal('falta sessionId');
+  if (sessionId.startsWith('playoff-')) throw invalidProposal('sesión virtual de playoff no borrable');
+  await deleteDoc(workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'calendarSessions', sessionId));
+}
+
 const proposalHandlers: Record<WriteProposalKind, ProposalHandler> = {
   create_training: handleCreateTraining,
   create_calendar_session: handleCreateCalendarSession,
@@ -350,6 +391,10 @@ const proposalHandlers: Record<WriteProposalKind, ProposalHandler> = {
   create_exercise: handleCreateExercise,
   create_exercises: handleCreateExercises,
   mark_convocatoria_sent: handleMarkConvocatoriaSent,
+  update_training: handleUpdateTraining,
+  delete_training: handleDeleteTraining,
+  update_calendar_session: handleUpdateCalendarSession,
+  delete_calendar_session: handleDeleteCalendarSession,
 };
 
 /**

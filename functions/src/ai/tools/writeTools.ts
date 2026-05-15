@@ -384,5 +384,118 @@ export function createWriteTools(): ToolDefinition[] {
         };
       },
     },
+
+    {
+      name: "propose_update_training",
+      description:
+        "Propone actualizar campos puntuales de un entrenamiento existente. Patch parcial — solo los campos pasados se cambian, el resto se mantiene. teamId se infiere de la pantalla si no se pasa.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          teamId: { type: "string", description: "Equipo dueño del entrenamiento (opcional si screen context)" },
+          trainingId: { type: "string", description: "ID del entrenamiento a actualizar" },
+          updates: { type: "object", description: "Campos a cambiar (parcial)" },
+          summary: { type: "string", description: "Resumen humano de 1 línea" },
+        },
+        required: ["trainingId", "updates", "summary"],
+      },
+      handler: async (args, ctx) => {
+        const teamId = resolveId(args, ctx, "teamId");
+        if (!teamId) return { error: "Falta teamId." };
+        const trainingId = typeof args.trainingId === "string" ? args.trainingId : "";
+        if (!trainingId) return { error: "Falta trainingId." };
+        const updates = (args.updates as Record<string, unknown>) || {};
+        if (Object.keys(updates).length === 0) return { error: "El campo updates está vacío." };
+        return {
+          kind: "update_training",
+          teamId,
+          trainingId,
+          updates,
+          summary: typeof args.summary === "string" ? args.summary : "",
+        };
+      },
+    },
+
+    {
+      name: "propose_delete_training",
+      description:
+        "Propone borrar un entrenamiento. Acción destructiva — el summary debe explicar claramente qué se borra para que el coach lo vea antes de confirmar. teamId se infiere de la pantalla.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          teamId: { type: "string" },
+          trainingId: { type: "string" },
+          summary: { type: "string", description: "Obligatorio — explica qué entrenamiento se borra" },
+        },
+        required: ["trainingId", "summary"],
+      },
+      handler: async (args, ctx) => {
+        const teamId = resolveId(args, ctx, "teamId");
+        if (!teamId) return { error: "Falta teamId." };
+        const trainingId = typeof args.trainingId === "string" ? args.trainingId : "";
+        if (!trainingId) return { error: "Falta trainingId." };
+        const summary = typeof args.summary === "string" ? args.summary : "";
+        if (!summary) return { error: "Falta summary (obligatorio para acción destructiva)." };
+        return { kind: "delete_training", teamId, trainingId, summary };
+      },
+    },
+
+    {
+      name: "propose_update_calendar_session",
+      description:
+        "Propone actualizar campos puntuales de una sesión de calendario (entrenamiento o partido). Patch parcial. NO acepta sessionIds virtuales 'playoff-*' (no son editables — derivan del bracket). sessionId se infiere de la pantalla.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          sessionId: { type: "string" },
+          updates: { type: "object", description: "Campos a cambiar (fecha, horaInicio, horaFin, lugar, rival, etc.)" },
+          summary: { type: "string" },
+        },
+        required: ["sessionId", "updates", "summary"],
+      },
+      handler: async (args, ctx) => {
+        const sessionId = resolveId(args, ctx, "sessionId");
+        if (!sessionId) return { error: "Falta sessionId." };
+        if (sessionId.startsWith("playoff-")) {
+          return { error: "Las sesiones de playoff no son editables (derivan del bracket)." };
+        }
+        const updates = (args.updates as Record<string, unknown>) || {};
+        if (Object.keys(updates).length === 0) return { error: "El campo updates está vacío." };
+        return {
+          kind: "update_calendar_session",
+          sessionId,
+          updates,
+          summary: typeof args.summary === "string" ? args.summary : "",
+        };
+      },
+    },
+
+    {
+      name: "propose_delete_calendar_session",
+      description:
+        "Propone borrar una sesión de calendario. Acción destructiva. NO acepta playoff-*. summary obligatorio explícito.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          sessionId: { type: "string" },
+          summary: { type: "string" },
+        },
+        required: ["sessionId", "summary"],
+      },
+      handler: async (args, ctx) => {
+        const sessionId = resolveId(args, ctx, "sessionId");
+        if (!sessionId) return { error: "Falta sessionId." };
+        if (sessionId.startsWith("playoff-")) {
+          return { error: "Las sesiones de playoff no son borrables (derivan del bracket)." };
+        }
+        const summary = typeof args.summary === "string" ? args.summary : "";
+        if (!summary) return { error: "Falta summary (obligatorio para acción destructiva)." };
+        return { kind: "delete_calendar_session", sessionId, summary };
+      },
+    },
   ];
 }
