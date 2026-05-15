@@ -265,6 +265,24 @@ describe('writeTools — propose_delete_exercises (sub-C.4 bulk)', () => {
     );
     expect((result as { exerciseIds: string[] }).exerciseIds).toEqual(['ex_1', 'ex_2']);
   });
+
+  it('rejects array > 50 IDs (hard cap)', async () => {
+    const ids = Array.from({ length: 51 }, (_, i) => `ex_${i}`);
+    const result = await findTool('propose_delete_exercises').handler(
+      { exerciseIds: ids, summary: 's' },
+      buildCtx(),
+    );
+    expect(result).toEqual({ error: expect.stringContaining('50') });
+  });
+
+  it('accepts exactly 50 IDs (boundary)', async () => {
+    const ids = Array.from({ length: 50 }, (_, i) => `ex_${i}`);
+    const result = await findTool('propose_delete_exercises').handler(
+      { exerciseIds: ids, summary: 'Borrar 50' },
+      buildCtx(),
+    );
+    expect((result as { exerciseIds: string[] }).exerciseIds).toHaveLength(50);
+  });
 });
 
 describe('writeTools — propose_delete_bracket (sub-C.5)', () => {

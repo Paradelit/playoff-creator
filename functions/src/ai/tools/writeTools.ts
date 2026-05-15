@@ -388,7 +388,7 @@ export function createWriteTools(): ToolDefinition[] {
     {
       name: "propose_update_training",
       description:
-        "Propone actualizar campos puntuales de un entrenamiento existente. Patch parcial — solo los campos pasados se cambian, el resto se mantiene. teamId se infiere de la pantalla si no se pasa.",
+        "Propone actualizar campos puntuales de un entrenamiento existente. PATCH PARCIAL: solo los campos pasados en 'updates' cambian, el resto del documento NO se sobrescribe. teamId se infiere de la pantalla si no se pasa.",
       isWrite: true,
       parameters: {
         type: "object",
@@ -445,7 +445,7 @@ export function createWriteTools(): ToolDefinition[] {
     {
       name: "propose_update_calendar_session",
       description:
-        "Propone actualizar campos puntuales de una sesión de calendario (entrenamiento o partido). Patch parcial. NO acepta sessionIds virtuales 'playoff-*' (no son editables — derivan del bracket). sessionId se infiere de la pantalla.",
+        "Propone actualizar campos puntuales de una sesión de calendario (entrenamiento o partido). PATCH PARCIAL: solo los campos pasados en 'updates' cambian, el resto del documento NO se sobrescribe. NO acepta sessionIds virtuales 'playoff-*' (derivan del bracket). sessionId se infiere de la pantalla.",
       isWrite: true,
       parameters: {
         type: "object",
@@ -501,7 +501,7 @@ export function createWriteTools(): ToolDefinition[] {
     {
       name: "propose_update_exercise",
       description:
-        "Propone actualizar campos puntuales de un ejercicio existente. Patch parcial. exerciseId obligatorio (no se infiere de la pantalla — no hay screen context para ejercicios individuales).",
+        "Propone actualizar campos puntuales de un ejercicio existente. PATCH PARCIAL: solo los campos pasados en 'updates' cambian, el resto del documento NO se sobrescribe. exerciseId obligatorio (no se infiere de la pantalla — no hay screen context para ejercicios individuales).",
       isWrite: true,
       parameters: {
         type: "object",
@@ -550,12 +550,16 @@ export function createWriteTools(): ToolDefinition[] {
     {
       name: "propose_delete_exercises",
       description:
-        "Propone borrar varios ejercicios de golpe. Recibe array de IDs explícitos. NO acepta filtros tipo 'todos los de X categoría' — usar list_exercises primero y pasar los IDs concretos. Acción destructiva.",
+        "Propone borrar varios ejercicios de golpe. Recibe array de IDs explícitos. NO acepta filtros tipo 'todos los de X categoría' — usar list_exercises primero y pasar los IDs concretos. Máximo 50 por llamada (si necesitas más, trocea en lotes). Acción destructiva.",
       isWrite: true,
       parameters: {
         type: "object",
         properties: {
-          exerciseIds: { type: "array", items: { type: "string" }, description: "IDs de ejercicios a borrar" },
+          exerciseIds: {
+            type: "array",
+            items: { type: "string" },
+            description: "IDs de ejercicios a borrar (máximo 50 por llamada)",
+          },
           summary: { type: "string" },
         },
         required: ["exerciseIds", "summary"],
@@ -565,6 +569,9 @@ export function createWriteTools(): ToolDefinition[] {
           ? args.exerciseIds.filter((id): id is string => typeof id === "string" && !!id)
           : [];
         if (exerciseIds.length === 0) return { error: "El array exerciseIds está vacío." };
+        if (exerciseIds.length > 50) {
+          return { error: "No se pueden borrar más de 50 ejercicios a la vez. Trocea en lotes." };
+        }
         const summary = typeof args.summary === "string" ? args.summary : "";
         if (!summary) return { error: "Falta summary (obligatorio para acción destructiva)." };
         return { kind: "delete_exercises", exerciseIds, summary };

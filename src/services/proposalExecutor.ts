@@ -323,9 +323,12 @@ async function handleMarkConvocatoriaSent(ctx: ExecuteContext, payload: Proposal
     const settingsRef = workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'settings', 'playoffConvocatorias');
     const snap = await getDoc(settingsRef);
     const data = snap.exists() ? asRecord(snap.data()) || {} : {};
-    const sent = (asRecord(data.sent) as Record<string, unknown>) || {};
-    sent[sessionId] = true;
-    await setDoc(settingsRef, { sent, updatedAt: serverTimestamp() }, { merge: true });
+    const prevSent = (asRecord(data.sent) as Record<string, unknown>) || {};
+    await setDoc(
+      settingsRef,
+      { sent: { ...prevSent, [sessionId]: true }, updatedAt: serverTimestamp() },
+      { merge: true },
+    );
     return;
   }
 
@@ -395,20 +398,40 @@ async function handleDeleteExercise(ctx: ExecuteContext, payload: ProposalPayloa
   await deleteDoc(workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'exercises', exerciseId));
 }
 
+const BULK_DELETE_HARD_CAP = 50;
+
 async function handleDeleteExercises(ctx: ExecuteContext, payload: ProposalPayload) {
-  const exerciseIds = Array.isArray(payload.exerciseIds) ? payload.exerciseIds : [];
-  if (exerciseIds.length === 0) throw invalidProposal('exerciseIds vacío');
-  for (const raw of exerciseIds) {
-    const id = typeof raw === 'string' ? raw : '';
-    if (!id) continue;
-    await deleteDoc(workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'exercises', id));
-  }
+  const raw = Array.isArray(payload.exerciseIds) ? payload.exerciseIds : [];
+  const ids = raw
+    .map((r) => (typeof r === 'string' ? r : ''))
+    .filter((id) => id.length > 0)
+    .slice(0, BULK_DELETE_HARD_CAP);
+  if (ids.length === 0) throw invalidProposal('exerciseIds vacío');
+  await Promise.all(ids.map((id) => deleteDoc(workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'exercises', id))));
 }
 
 async function handleDeleteBracket(ctx: ExecuteContext, payload: ProposalPayload) {
   const bracketId = typeof payload.bracketId === 'string' ? payload.bracketId : undefined;
   if (!bracketId) throw invalidProposal('falta bracketId');
-  await deleteDoc(workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'brackets', bracketId));
+
+  // If the bracket has a shared mirror in artifacts/{appId}/shared/{shareCode},
+  // delete it best-effort first so the public link doesn't outlive the source.
+  // Failures (missing doc, rules block) don't prevent the main delete.
+  const ref = workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'brackets', bracketId);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    const data = asRecord(snap.data()) || {};
+    const shareCode = typeof data.shareCode === 'string' ? data.shareCode : '';
+    if (shareCode) {
+      try {
+        await deleteDoc(doc(ctx.db, 'artifacts', ctx.appId, 'shared', shareCode));
+      } catch {
+        // Best-effort: shared doc may not exist or rules may block delete.
+      }
+    }
+  }
+
+  await deleteDoc(ref);
 }
 
 const proposalHandlers: Record<WriteProposalKind, ProposalHandler> = {
