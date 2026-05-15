@@ -191,3 +191,112 @@ describe('writeTools — propose_delete_calendar_session (sub-C.3)', () => {
     expect(result).toEqual({ error: expect.stringContaining('summary') });
   });
 });
+
+describe('writeTools — propose_update_exercise (sub-C.4)', () => {
+  it('returns update_exercise kind', async () => {
+    const result = await findTool('propose_update_exercise').handler(
+      { exerciseId: 'ex_1', updates: { nivel: 'avanzado' }, summary: 'Subir nivel' },
+      buildCtx(),
+    );
+    expect(result).toEqual({
+      kind: 'update_exercise',
+      exerciseId: 'ex_1',
+      updates: { nivel: 'avanzado' },
+      summary: 'Subir nivel',
+    });
+  });
+
+  it('returns error if exerciseId missing', async () => {
+    const result = await findTool('propose_update_exercise').handler(
+      { updates: { nivel: 'x' }, summary: 's' },
+      buildCtx(),
+    );
+    expect(result).toEqual({ error: expect.stringContaining('exerciseId') });
+  });
+
+  it('returns error if updates empty', async () => {
+    const result = await findTool('propose_update_exercise').handler(
+      { exerciseId: 'ex_1', updates: {}, summary: 's' },
+      buildCtx(),
+    );
+    expect(result).toEqual({ error: expect.stringContaining('updates') });
+  });
+});
+
+describe('writeTools — propose_delete_exercise (sub-C.4)', () => {
+  it('returns delete_exercise kind', async () => {
+    const result = await findTool('propose_delete_exercise').handler(
+      { exerciseId: 'ex_1', summary: 'Borrar duplicado' },
+      buildCtx(),
+    );
+    expect(result).toMatchObject({ kind: 'delete_exercise', exerciseId: 'ex_1' });
+  });
+
+  it('returns error if summary missing', async () => {
+    const result = await findTool('propose_delete_exercise').handler(
+      { exerciseId: 'ex_1' },
+      buildCtx(),
+    );
+    expect(result).toEqual({ error: expect.stringContaining('summary') });
+  });
+});
+
+describe('writeTools — propose_delete_exercises (sub-C.4 bulk)', () => {
+  it('returns delete_exercises kind with array of IDs', async () => {
+    const result = await findTool('propose_delete_exercises').handler(
+      { exerciseIds: ['ex_1', 'ex_2'], summary: 'Borrar batería duplicada' },
+      buildCtx(),
+    );
+    expect(result).toMatchObject({ kind: 'delete_exercises', exerciseIds: ['ex_1', 'ex_2'] });
+  });
+
+  it('rejects empty array', async () => {
+    const result = await findTool('propose_delete_exercises').handler(
+      { exerciseIds: [], summary: 's' },
+      buildCtx(),
+    );
+    expect(result).toEqual({ error: expect.stringContaining('vacío') });
+  });
+
+  it('filters non-string IDs', async () => {
+    const result = await findTool('propose_delete_exercises').handler(
+      { exerciseIds: ['ex_1', 42, '', 'ex_2'], summary: 's' },
+      buildCtx(),
+    );
+    expect((result as { exerciseIds: string[] }).exerciseIds).toEqual(['ex_1', 'ex_2']);
+  });
+});
+
+describe('writeTools — propose_delete_bracket (sub-C.5)', () => {
+  it('returns delete_bracket kind', async () => {
+    const result = await findTool('propose_delete_bracket').handler(
+      { bracketId: 'br_1', summary: 'Borrar bracket cerrado' },
+      buildCtx(),
+    );
+    expect(result).toMatchObject({ kind: 'delete_bracket', bracketId: 'br_1' });
+  });
+
+  it('uses screen context bracketId when args.bracketId missing', async () => {
+    const result = await findTool('propose_delete_bracket').handler(
+      { summary: 'Borrar este bracket' },
+      buildCtx({ bracketId: 'br-ctx' }),
+    );
+    expect((result as { bracketId: string }).bracketId).toBe('br-ctx');
+  });
+
+  it('returns error if no bracketId resolvable', async () => {
+    const result = await findTool('propose_delete_bracket').handler(
+      { summary: 's' },
+      buildCtx(),
+    );
+    expect(result).toEqual({ error: expect.stringContaining('bracketId') });
+  });
+
+  it('returns error if summary missing', async () => {
+    const result = await findTool('propose_delete_bracket').handler(
+      { bracketId: 'br_1' },
+      buildCtx(),
+    );
+    expect(result).toEqual({ error: expect.stringContaining('summary') });
+  });
+});

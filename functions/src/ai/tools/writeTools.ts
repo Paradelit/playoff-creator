@@ -497,5 +497,100 @@ export function createWriteTools(): ToolDefinition[] {
         return { kind: "delete_calendar_session", sessionId, summary };
       },
     },
+
+    {
+      name: "propose_update_exercise",
+      description:
+        "Propone actualizar campos puntuales de un ejercicio existente. Patch parcial. exerciseId obligatorio (no se infiere de la pantalla — no hay screen context para ejercicios individuales).",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          exerciseId: { type: "string", description: "ID del ejercicio a actualizar" },
+          updates: { type: "object", description: "Campos a cambiar (parcial)" },
+          summary: { type: "string" },
+        },
+        required: ["exerciseId", "updates", "summary"],
+      },
+      handler: async (args) => {
+        const exerciseId = typeof args.exerciseId === "string" ? args.exerciseId : "";
+        if (!exerciseId) return { error: "Falta exerciseId." };
+        const updates = (args.updates as Record<string, unknown>) || {};
+        if (Object.keys(updates).length === 0) return { error: "El campo updates está vacío." };
+        return {
+          kind: "update_exercise",
+          exerciseId,
+          updates,
+          summary: typeof args.summary === "string" ? args.summary : "",
+        };
+      },
+    },
+
+    {
+      name: "propose_delete_exercise",
+      description: "Propone borrar un ejercicio. Acción destructiva. summary obligatorio para confirmación.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          exerciseId: { type: "string" },
+          summary: { type: "string" },
+        },
+        required: ["exerciseId", "summary"],
+      },
+      handler: async (args) => {
+        const exerciseId = typeof args.exerciseId === "string" ? args.exerciseId : "";
+        if (!exerciseId) return { error: "Falta exerciseId." };
+        const summary = typeof args.summary === "string" ? args.summary : "";
+        if (!summary) return { error: "Falta summary (obligatorio para acción destructiva)." };
+        return { kind: "delete_exercise", exerciseId, summary };
+      },
+    },
+
+    {
+      name: "propose_delete_exercises",
+      description:
+        "Propone borrar varios ejercicios de golpe. Recibe array de IDs explícitos. NO acepta filtros tipo 'todos los de X categoría' — usar list_exercises primero y pasar los IDs concretos. Acción destructiva.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          exerciseIds: { type: "array", items: { type: "string" }, description: "IDs de ejercicios a borrar" },
+          summary: { type: "string" },
+        },
+        required: ["exerciseIds", "summary"],
+      },
+      handler: async (args) => {
+        const exerciseIds = Array.isArray(args.exerciseIds)
+          ? args.exerciseIds.filter((id): id is string => typeof id === "string" && !!id)
+          : [];
+        if (exerciseIds.length === 0) return { error: "El array exerciseIds está vacío." };
+        const summary = typeof args.summary === "string" ? args.summary : "";
+        if (!summary) return { error: "Falta summary (obligatorio para acción destructiva)." };
+        return { kind: "delete_exercises", exerciseIds, summary };
+      },
+    },
+
+    {
+      name: "propose_delete_bracket",
+      description:
+        "Propone borrar un cuadro de playoffs completo. Acción muy destructiva — borra estructura, scores y referencias. bracketId se infiere de la pantalla si el coach está viendo un cuadro. summary debe ser muy explícito (el coach ve confirmar antes).",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          bracketId: { type: "string", description: "Opcional si screen context lo aporta" },
+          summary: { type: "string", description: "Obligatorio — explica qué bracket se borra" },
+        },
+        required: ["summary"],
+      },
+      handler: async (args, ctx) => {
+        const bracketId = resolveId(args, ctx, "bracketId");
+        if (!bracketId) return { error: "Falta bracketId." };
+        const summary = typeof args.summary === "string" ? args.summary : "";
+        if (!summary) return { error: "Falta summary (obligatorio para acción destructiva)." };
+        return { kind: "delete_bracket", bracketId, summary };
+      },
+    },
   ];
 }

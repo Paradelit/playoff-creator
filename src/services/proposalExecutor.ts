@@ -377,6 +377,40 @@ async function handleDeleteCalendarSession(ctx: ExecuteContext, payload: Proposa
   await deleteDoc(workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'calendarSessions', sessionId));
 }
 
+async function handleUpdateExercise(ctx: ExecuteContext, payload: ProposalPayload) {
+  const exerciseId = typeof payload.exerciseId === 'string' ? payload.exerciseId : undefined;
+  const updates = asRecord(payload.updates);
+  if (!exerciseId || !updates) throw invalidProposal('falta exerciseId o updates');
+
+  await setDoc(
+    workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'exercises', exerciseId),
+    { ...updates, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+async function handleDeleteExercise(ctx: ExecuteContext, payload: ProposalPayload) {
+  const exerciseId = typeof payload.exerciseId === 'string' ? payload.exerciseId : undefined;
+  if (!exerciseId) throw invalidProposal('falta exerciseId');
+  await deleteDoc(workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'exercises', exerciseId));
+}
+
+async function handleDeleteExercises(ctx: ExecuteContext, payload: ProposalPayload) {
+  const exerciseIds = Array.isArray(payload.exerciseIds) ? payload.exerciseIds : [];
+  if (exerciseIds.length === 0) throw invalidProposal('exerciseIds vacío');
+  for (const raw of exerciseIds) {
+    const id = typeof raw === 'string' ? raw : '';
+    if (!id) continue;
+    await deleteDoc(workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'exercises', id));
+  }
+}
+
+async function handleDeleteBracket(ctx: ExecuteContext, payload: ProposalPayload) {
+  const bracketId = typeof payload.bracketId === 'string' ? payload.bracketId : undefined;
+  if (!bracketId) throw invalidProposal('falta bracketId');
+  await deleteDoc(workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'brackets', bracketId));
+}
+
 const proposalHandlers: Record<WriteProposalKind, ProposalHandler> = {
   create_training: handleCreateTraining,
   create_calendar_session: handleCreateCalendarSession,
@@ -395,6 +429,10 @@ const proposalHandlers: Record<WriteProposalKind, ProposalHandler> = {
   delete_training: handleDeleteTraining,
   update_calendar_session: handleUpdateCalendarSession,
   delete_calendar_session: handleDeleteCalendarSession,
+  update_exercise: handleUpdateExercise,
+  delete_exercise: handleDeleteExercise,
+  delete_exercises: handleDeleteExercises,
+  delete_bracket: handleDeleteBracket,
 };
 
 /**
