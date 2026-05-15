@@ -357,5 +357,247 @@ export function createWriteTools(): ToolDefinition[] {
         };
       },
     },
+
+    {
+      name: "propose_mark_convocatoria_sent",
+      description:
+        "Propone marcar la convocatoria de un partido como enviada. Después de confirmar, el partido deja de aparecer en pendientes y Pick no vuelve a sugerirla. Úsalo cuando el coach diga 'ya la mandé' / 'la envié' o tras el flujo mandar_convocatoria + share. sessionId puede ser un calendarSessionId o un id virtual de playoff con prefijo 'playoff-'.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          sessionId: {
+            type: "string",
+            description: "ID de la sesión (calendarSession o virtual playoff-*)",
+          },
+          summary: { type: "string", description: "Resumen humano de 1 línea" },
+        },
+        required: ["sessionId", "summary"],
+      },
+      handler: async (args) => {
+        const sessionId = typeof args.sessionId === "string" ? args.sessionId : "";
+        if (!sessionId) return { error: "Falta sessionId." };
+        return {
+          kind: "mark_convocatoria_sent",
+          sessionId,
+          summary: typeof args.summary === "string" ? args.summary : "",
+        };
+      },
+    },
+
+    {
+      name: "propose_update_training",
+      description:
+        "Propone actualizar campos puntuales de un entrenamiento existente. PATCH PARCIAL: solo los campos pasados en 'updates' cambian, el resto del documento NO se sobrescribe. teamId se infiere de la pantalla si no se pasa.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          teamId: { type: "string", description: "Equipo dueño del entrenamiento (opcional si screen context)" },
+          trainingId: { type: "string", description: "ID del entrenamiento a actualizar" },
+          updates: { type: "object", description: "Campos a cambiar (parcial)" },
+          summary: { type: "string", description: "Resumen humano de 1 línea" },
+        },
+        required: ["trainingId", "updates", "summary"],
+      },
+      handler: async (args, ctx) => {
+        const teamId = resolveId(args, ctx, "teamId");
+        if (!teamId) return { error: "Falta teamId." };
+        const trainingId = typeof args.trainingId === "string" ? args.trainingId : "";
+        if (!trainingId) return { error: "Falta trainingId." };
+        const updates = (args.updates as Record<string, unknown>) || {};
+        if (Object.keys(updates).length === 0) return { error: "El campo updates está vacío." };
+        return {
+          kind: "update_training",
+          teamId,
+          trainingId,
+          updates,
+          summary: typeof args.summary === "string" ? args.summary : "",
+        };
+      },
+    },
+
+    {
+      name: "propose_delete_training",
+      description:
+        "Propone borrar un entrenamiento. Acción destructiva — el summary debe explicar claramente qué se borra para que el coach lo vea antes de confirmar. teamId se infiere de la pantalla.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          teamId: { type: "string" },
+          trainingId: { type: "string" },
+          summary: { type: "string", description: "Obligatorio — explica qué entrenamiento se borra" },
+        },
+        required: ["trainingId", "summary"],
+      },
+      handler: async (args, ctx) => {
+        const teamId = resolveId(args, ctx, "teamId");
+        if (!teamId) return { error: "Falta teamId." };
+        const trainingId = typeof args.trainingId === "string" ? args.trainingId : "";
+        if (!trainingId) return { error: "Falta trainingId." };
+        const summary = typeof args.summary === "string" ? args.summary : "";
+        if (!summary) return { error: "Falta summary (obligatorio para acción destructiva)." };
+        return { kind: "delete_training", teamId, trainingId, summary };
+      },
+    },
+
+    {
+      name: "propose_update_calendar_session",
+      description:
+        "Propone actualizar campos puntuales de una sesión de calendario (entrenamiento o partido). PATCH PARCIAL: solo los campos pasados en 'updates' cambian, el resto del documento NO se sobrescribe. NO acepta sessionIds virtuales 'playoff-*' (derivan del bracket). sessionId se infiere de la pantalla.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          sessionId: { type: "string" },
+          updates: { type: "object", description: "Campos a cambiar (fecha, horaInicio, horaFin, lugar, rival, etc.)" },
+          summary: { type: "string" },
+        },
+        required: ["sessionId", "updates", "summary"],
+      },
+      handler: async (args, ctx) => {
+        const sessionId = resolveId(args, ctx, "sessionId");
+        if (!sessionId) return { error: "Falta sessionId." };
+        if (sessionId.startsWith("playoff-")) {
+          return { error: "Las sesiones de playoff no son editables (derivan del bracket)." };
+        }
+        const updates = (args.updates as Record<string, unknown>) || {};
+        if (Object.keys(updates).length === 0) return { error: "El campo updates está vacío." };
+        return {
+          kind: "update_calendar_session",
+          sessionId,
+          updates,
+          summary: typeof args.summary === "string" ? args.summary : "",
+        };
+      },
+    },
+
+    {
+      name: "propose_delete_calendar_session",
+      description:
+        "Propone borrar una sesión de calendario. Acción destructiva. NO acepta playoff-*. summary obligatorio explícito.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          sessionId: { type: "string" },
+          summary: { type: "string" },
+        },
+        required: ["sessionId", "summary"],
+      },
+      handler: async (args, ctx) => {
+        const sessionId = resolveId(args, ctx, "sessionId");
+        if (!sessionId) return { error: "Falta sessionId." };
+        if (sessionId.startsWith("playoff-")) {
+          return { error: "Las sesiones de playoff no son borrables (derivan del bracket)." };
+        }
+        const summary = typeof args.summary === "string" ? args.summary : "";
+        if (!summary) return { error: "Falta summary (obligatorio para acción destructiva)." };
+        return { kind: "delete_calendar_session", sessionId, summary };
+      },
+    },
+
+    {
+      name: "propose_update_exercise",
+      description:
+        "Propone actualizar campos puntuales de un ejercicio existente. PATCH PARCIAL: solo los campos pasados en 'updates' cambian, el resto del documento NO se sobrescribe. exerciseId obligatorio (no se infiere de la pantalla — no hay screen context para ejercicios individuales).",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          exerciseId: { type: "string", description: "ID del ejercicio a actualizar" },
+          updates: { type: "object", description: "Campos a cambiar (parcial)" },
+          summary: { type: "string" },
+        },
+        required: ["exerciseId", "updates", "summary"],
+      },
+      handler: async (args) => {
+        const exerciseId = typeof args.exerciseId === "string" ? args.exerciseId : "";
+        if (!exerciseId) return { error: "Falta exerciseId." };
+        const updates = (args.updates as Record<string, unknown>) || {};
+        if (Object.keys(updates).length === 0) return { error: "El campo updates está vacío." };
+        return {
+          kind: "update_exercise",
+          exerciseId,
+          updates,
+          summary: typeof args.summary === "string" ? args.summary : "",
+        };
+      },
+    },
+
+    {
+      name: "propose_delete_exercise",
+      description: "Propone borrar un ejercicio. Acción destructiva. summary obligatorio para confirmación.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          exerciseId: { type: "string" },
+          summary: { type: "string" },
+        },
+        required: ["exerciseId", "summary"],
+      },
+      handler: async (args) => {
+        const exerciseId = typeof args.exerciseId === "string" ? args.exerciseId : "";
+        if (!exerciseId) return { error: "Falta exerciseId." };
+        const summary = typeof args.summary === "string" ? args.summary : "";
+        if (!summary) return { error: "Falta summary (obligatorio para acción destructiva)." };
+        return { kind: "delete_exercise", exerciseId, summary };
+      },
+    },
+
+    {
+      name: "propose_delete_exercises",
+      description:
+        "Propone borrar varios ejercicios de golpe. Recibe array de IDs explícitos. NO acepta filtros tipo 'todos los de X categoría' — usar list_exercises primero y pasar los IDs concretos. Máximo 50 por llamada (si necesitas más, trocea en lotes). Acción destructiva.",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          exerciseIds: {
+            type: "array",
+            items: { type: "string" },
+            description: "IDs de ejercicios a borrar (máximo 50 por llamada)",
+          },
+          summary: { type: "string" },
+        },
+        required: ["exerciseIds", "summary"],
+      },
+      handler: async (args) => {
+        const exerciseIds = Array.isArray(args.exerciseIds)
+          ? args.exerciseIds.filter((id): id is string => typeof id === "string" && !!id)
+          : [];
+        if (exerciseIds.length === 0) return { error: "El array exerciseIds está vacío." };
+        if (exerciseIds.length > 50) {
+          return { error: "No se pueden borrar más de 50 ejercicios a la vez. Trocea en lotes." };
+        }
+        const summary = typeof args.summary === "string" ? args.summary : "";
+        if (!summary) return { error: "Falta summary (obligatorio para acción destructiva)." };
+        return { kind: "delete_exercises", exerciseIds, summary };
+      },
+    },
+
+    {
+      name: "propose_delete_bracket",
+      description:
+        "Propone borrar un cuadro de playoffs completo. Acción muy destructiva — borra estructura, scores y referencias. bracketId se infiere de la pantalla si el coach está viendo un cuadro. summary debe ser muy explícito (el coach ve confirmar antes).",
+      isWrite: true,
+      parameters: {
+        type: "object",
+        properties: {
+          bracketId: { type: "string", description: "Opcional si screen context lo aporta" },
+          summary: { type: "string", description: "Obligatorio — explica qué bracket se borra" },
+        },
+        required: ["summary"],
+      },
+      handler: async (args, ctx) => {
+        const bracketId = resolveId(args, ctx, "bracketId");
+        if (!bracketId) return { error: "Falta bracketId." };
+        const summary = typeof args.summary === "string" ? args.summary : "";
+        if (!summary) return { error: "Falta summary (obligatorio para acción destructiva)." };
+        return { kind: "delete_bracket", bracketId, summary };
+      },
+    },
   ];
 }

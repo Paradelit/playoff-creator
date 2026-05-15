@@ -298,6 +298,7 @@ export async function aiChatHandler(request: AiChatRequest, system: System, db: 
         contentBlocks: response.blocks,
         userDigest,
         screenSemantic: screenContext?.semantic || null,
+        userMessage: String(message),
       });
     }
 

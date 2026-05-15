@@ -234,6 +234,7 @@ export class OrchestratorAgent {
     let totalToolErrors = 0;
     let completedIterations = 0;
     const toolCallNames: Array<{ name: string }> = [];
+    const proposalKindCounts: Record<string, number> = {};
     let loopDetected = false;
 
     // Loop-protection: track the last set of tool calls to detect repeated identical calls
@@ -326,6 +327,13 @@ export class OrchestratorAgent {
           totalToolCalls += 1;
           toolCallNames.push({ name: toolName });
 
+          if (tool.isWrite && output && typeof output === 'object') {
+            const kind = (output as { kind?: unknown }).kind;
+            if (typeof kind === 'string') {
+              proposalKindCounts[kind] = (proposalKindCounts[kind] || 0) + 1;
+            }
+          }
+
           if (toolName === 'suggest_navigation') {
             const out = output as Record<string, unknown>;
             if (out.ok === true && typeof out.path === 'string' && typeof out.label === 'string') {
@@ -400,6 +408,45 @@ export class OrchestratorAgent {
         this.deps.observability.logScore(traceId, {
           name: 'tool_errors_total',
           value: totalToolErrors,
+        });
+      }
+      // sub-C.0 baseline: track proposal kinds emitted per turn so we can
+      // measure adoption of update/delete tools added across sub-C PRs.
+      // comment field carries kind breakdown for Langfuse filtering.
+      let updateProposalsTotal = 0;
+      let deleteProposalsTotal = 0;
+      let markConvocatoriaSentTotal = 0;
+      const updateBreakdown: string[] = [];
+      const deleteBreakdown: string[] = [];
+      for (const [kind, count] of Object.entries(proposalKindCounts)) {
+        if (kind.startsWith('update_')) {
+          updateProposalsTotal += count;
+          updateBreakdown.push(`${kind}=${count}`);
+        } else if (kind.startsWith('delete_')) {
+          deleteProposalsTotal += count;
+          deleteBreakdown.push(`${kind}=${count}`);
+        } else if (kind === 'mark_convocatoria_sent') {
+          markConvocatoriaSentTotal += count;
+        }
+      }
+      if (updateProposalsTotal > 0) {
+        this.deps.observability.logScore(traceId, {
+          name: 'update_proposals_total',
+          value: updateProposalsTotal,
+          comment: updateBreakdown.join(','),
+        });
+      }
+      if (deleteProposalsTotal > 0) {
+        this.deps.observability.logScore(traceId, {
+          name: 'delete_proposals_total',
+          value: deleteProposalsTotal,
+          comment: deleteBreakdown.join(','),
+        });
+      }
+      if (markConvocatoriaSentTotal > 0) {
+        this.deps.observability.logScore(traceId, {
+          name: 'mark_convocatoria_sent_total',
+          value: markConvocatoriaSentTotal,
         });
       }
       // sub-A.0 baseline: track how often Pick falls back to the safety

@@ -138,6 +138,32 @@ Sobre el contexto rico de sub-A, sub-B añade 4 capas para conversación natural
 
 **Spec + plan**: `docs/superpowers/specs/2026-05-13-sub-proyecto-B-paridad-conversacional-design.md` + plan TDD en `docs/superpowers/plans/2026-05-13-sub-proyecto-B-paridad-conversacional.md`.
 
+### Pick action layer (sub-proyecto C — cerrado funcionalmente 2026-05-15)
+
+Sobre los 35 tools de sub-A/B (22 read + 12 write + 1 mark + agents/memory/nav/knowledge), sub-C cierra el ciclo de acción y completa CRUD uniforme. 8 tools nuevos en 4 PRs:
+
+- **C.0 — Langfuse counters** ✅ (PR #63): `orchestratorAgent.ts` instrumenta `proposalKindCounts` por turno y emite `update_proposals_total` / `delete_proposals_total` / `mark_convocatoria_sent_total` con `comment` breakdown por kind. Baseline para medir adopción.
+- **C.1 — `propose_mark_convocatoria_sent`** ✅ (PR #63): cierra el ciclo del caso narrativo central del master spec. Pick genera convocatoria → coach la manda → coach dice "ya la mandé" → Pick propone `mark_convocatoria_sent` → tras confirmación, `calendarSessions/{id}.convocatoriaSentAt` se setea → `pendingConvocatorias` digest (sub-A) filtra esa sesión → Pick no la vuelve a sugerir. Para sesiones virtuales playoff-\*: flag en `settings/playoffConvocatorias.sent[id]`.
+- **C.2 — `propose_update_training` + `propose_delete_training`** ✅ (PR #64).
+- **C.3 — `propose_update_calendar_session` + `propose_delete_calendar_session`** ✅ (PR #64). Rechazan `playoff-*` sessionIds tanto en tool como en executor.
+- **C.4 — `propose_update_exercise` + `propose_delete_exercise` + `propose_delete_exercises`** ✅ (PR #65). Bulk delete solo con IDs explícitos (no filter-based).
+- **C.5 — `propose_delete_bracket`** ✅ (PR #65). Acción muy destructiva, summary obligatorio.
+- **C.6 — Eval scores** ✅ (PR #66): `update-delete-offered` (per-turn: edit intent regex + check de proposal emitted) y `convocatoria-preview-emitted` (counter para denominador del close-loop rate calculado en Langfuse contra `mark_convocatoria_sent_total`).
+- **C.7 — Docs** ✅ (este bloque).
+
+**Pattern uniforme de tool nuevo**: 4 sitios en orden — `functions/src/shared/pickContracts.ts` (kind al union `WriteProposalKind`), `functions/src/ai/tools/writeTools.ts` (declaración + handler), `src/services/proposalExecutor.ts` (handler que ejecuta el write Firestore client-side + entry en `proposalHandlers`), tests en `functions/src/ai/tools/__tests__/writeTools.test.ts`. No requiere cambios frontend explícitos — `ConfirmWriteBlock` ya renderiza cualquier kind. No requiere cambios en firestore.rules — writes son client-side bajo rules existentes.
+
+**Decisiones de diseño aplicadas**:
+
+- **Patch parcial** (no overwrite) para updates: el LLM recibe requests parciales del coach ("cambia la hora a 19:30") — pedirle dump completo es ruido. Firestore `doc.update()` vs `set()`.
+- **Hard delete** (no soft): proposal pattern + user confirm es safety net suficiente; soft añadiría filtros a todos los reads.
+- **Bulk delete acotado a IDs explícitos**: si el coach pide "borra todos los de X", Pick debe llamar `list_*` primero y pasar IDs al bulk. Defense-in-depth contra borrados masivos accidentales.
+- **Playoff virtual sessions inmutables**: `playoff-*` IDs son derivados del bracket — editarlos no tiene sentido. Rechazo defensivo en backend tool + frontend executor.
+
+**Layer 3 diferido** (no en sub-C): live scoring planilla, bulk calendar (filter-based), bracket structure edits, team member CRUD desde chat, competition management post-creación. Criterio de re-evaluación a 4 semanas: si `update_delete_rejected_rate` >5% para alguno de estos → priorizar en sub-D.
+
+**Spec + plan**: `docs/superpowers/specs/2026-05-15-sub-proyecto-C-tool-coverage-design.md` + plan TDD en `docs/superpowers/plans/2026-05-15-sub-proyecto-C-tool-coverage.md`.
+
 ### Key conventions
 
 - `teamDisplayName(team)` (from `utils/teamUtils.js`) is the canonical way to format team names for display.

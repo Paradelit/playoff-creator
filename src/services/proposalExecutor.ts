@@ -1,5 +1,5 @@
 import type { Firestore } from 'firebase/firestore';
-import { setDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { setDoc, serverTimestamp, doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { workspaceDocRef, workspaceColRef } from './firestoreHelpers';
 import type { WriteProposal, WriteProposalKind } from './contentBlocks';
 import { calculateMatchWinner, buildDynamicBracket } from '../utils/bracketEngine';
@@ -313,6 +313,127 @@ async function handleCreateExercises(ctx: ExecuteContext, payload: ProposalPaylo
   }
 }
 
+async function handleMarkConvocatoriaSent(ctx: ExecuteContext, payload: ProposalPayload) {
+  const sessionId = typeof payload.sessionId === 'string' ? payload.sessionId : '';
+  if (!sessionId) throw invalidProposal('falta sessionId');
+
+  if (sessionId.startsWith('playoff-')) {
+    // Virtual playoff session: persist flag in workspace settings.
+    // Existing UX path uses settings/playoffConvocatorias with map { sent: { [id]: true } }.
+    const settingsRef = workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'settings', 'playoffConvocatorias');
+    const snap = await getDoc(settingsRef);
+    const data = snap.exists() ? asRecord(snap.data()) || {} : {};
+    const prevSent = (asRecord(data.sent) as Record<string, unknown>) || {};
+    await setDoc(
+      settingsRef,
+      { sent: { ...prevSent, [sessionId]: true }, updatedAt: serverTimestamp() },
+      { merge: true },
+    );
+    return;
+  }
+
+  await setDoc(
+    workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'calendarSessions', sessionId),
+    { convocatoriaSentAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+async function handleUpdateTraining(ctx: ExecuteContext, payload: ProposalPayload) {
+  const teamId = typeof payload.teamId === 'string' ? payload.teamId : undefined;
+  const trainingId = typeof payload.trainingId === 'string' ? payload.trainingId : undefined;
+  const updates = asRecord(payload.updates);
+  if (!teamId || !trainingId || !updates) throw invalidProposal('falta teamId, trainingId o updates');
+
+  await setDoc(
+    doc(workspaceColRef(ctx.db, ctx.appId, ctx.wsId, 'teams'), teamId, 'trainings', trainingId),
+    { ...updates, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+async function handleDeleteTraining(ctx: ExecuteContext, payload: ProposalPayload) {
+  const teamId = typeof payload.teamId === 'string' ? payload.teamId : undefined;
+  const trainingId = typeof payload.trainingId === 'string' ? payload.trainingId : undefined;
+  if (!teamId || !trainingId) throw invalidProposal('falta teamId o trainingId');
+
+  await deleteDoc(doc(workspaceColRef(ctx.db, ctx.appId, ctx.wsId, 'teams'), teamId, 'trainings', trainingId));
+}
+
+async function handleUpdateCalendarSession(ctx: ExecuteContext, payload: ProposalPayload) {
+  const sessionId = typeof payload.sessionId === 'string' ? payload.sessionId : undefined;
+  const updates = asRecord(payload.updates);
+  if (!sessionId || !updates) throw invalidProposal('falta sessionId o updates');
+  if (sessionId.startsWith('playoff-')) throw invalidProposal('sesión virtual de playoff no editable');
+
+  await setDoc(
+    workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'calendarSessions', sessionId),
+    { ...updates, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+async function handleDeleteCalendarSession(ctx: ExecuteContext, payload: ProposalPayload) {
+  const sessionId = typeof payload.sessionId === 'string' ? payload.sessionId : undefined;
+  if (!sessionId) throw invalidProposal('falta sessionId');
+  if (sessionId.startsWith('playoff-')) throw invalidProposal('sesión virtual de playoff no borrable');
+  await deleteDoc(workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'calendarSessions', sessionId));
+}
+
+async function handleUpdateExercise(ctx: ExecuteContext, payload: ProposalPayload) {
+  const exerciseId = typeof payload.exerciseId === 'string' ? payload.exerciseId : undefined;
+  const updates = asRecord(payload.updates);
+  if (!exerciseId || !updates) throw invalidProposal('falta exerciseId o updates');
+
+  await setDoc(
+    workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'exercises', exerciseId),
+    { ...updates, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+async function handleDeleteExercise(ctx: ExecuteContext, payload: ProposalPayload) {
+  const exerciseId = typeof payload.exerciseId === 'string' ? payload.exerciseId : undefined;
+  if (!exerciseId) throw invalidProposal('falta exerciseId');
+  await deleteDoc(workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'exercises', exerciseId));
+}
+
+const BULK_DELETE_HARD_CAP = 50;
+
+async function handleDeleteExercises(ctx: ExecuteContext, payload: ProposalPayload) {
+  const raw = Array.isArray(payload.exerciseIds) ? payload.exerciseIds : [];
+  const ids = raw
+    .map((r) => (typeof r === 'string' ? r : ''))
+    .filter((id) => id.length > 0)
+    .slice(0, BULK_DELETE_HARD_CAP);
+  if (ids.length === 0) throw invalidProposal('exerciseIds vacío');
+  await Promise.all(ids.map((id) => deleteDoc(workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'exercises', id))));
+}
+
+async function handleDeleteBracket(ctx: ExecuteContext, payload: ProposalPayload) {
+  const bracketId = typeof payload.bracketId === 'string' ? payload.bracketId : undefined;
+  if (!bracketId) throw invalidProposal('falta bracketId');
+
+  // If the bracket has a shared mirror in artifacts/{appId}/shared/{shareCode},
+  // delete it best-effort first so the public link doesn't outlive the source.
+  // Failures (missing doc, rules block) don't prevent the main delete.
+  const ref = workspaceDocRef(ctx.db, ctx.appId, ctx.wsId, 'brackets', bracketId);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    const data = asRecord(snap.data()) || {};
+    const shareCode = typeof data.shareCode === 'string' ? data.shareCode : '';
+    if (shareCode) {
+      try {
+        await deleteDoc(doc(ctx.db, 'artifacts', ctx.appId, 'shared', shareCode));
+      } catch {
+        // Best-effort: shared doc may not exist or rules may block delete.
+      }
+    }
+  }
+
+  await deleteDoc(ref);
+}
+
 const proposalHandlers: Record<WriteProposalKind, ProposalHandler> = {
   create_training: handleCreateTraining,
   create_calendar_session: handleCreateCalendarSession,
@@ -326,6 +447,15 @@ const proposalHandlers: Record<WriteProposalKind, ProposalHandler> = {
   save_analysis: handleSaveAnalysis,
   create_exercise: handleCreateExercise,
   create_exercises: handleCreateExercises,
+  mark_convocatoria_sent: handleMarkConvocatoriaSent,
+  update_training: handleUpdateTraining,
+  delete_training: handleDeleteTraining,
+  update_calendar_session: handleUpdateCalendarSession,
+  delete_calendar_session: handleDeleteCalendarSession,
+  update_exercise: handleUpdateExercise,
+  delete_exercise: handleDeleteExercise,
+  delete_exercises: handleDeleteExercises,
+  delete_bracket: handleDeleteBracket,
 };
 
 /**
