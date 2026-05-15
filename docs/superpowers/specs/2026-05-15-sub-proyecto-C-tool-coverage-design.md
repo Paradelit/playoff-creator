@@ -23,9 +23,9 @@ Dos capas (ordenadas por valor para el coach):
    digest deja de proponerla → próximo turno no la sugiere de nuevo. Resuelve
    el caso narrativo central del master spec.
 2. **Layer 2 — CRUD completion uniforme** (C.2-C.5): añadir `propose_update_*`
-   - `propose_delete_*` a los proposals existentes donde tiene sentido
-     (entrenamiento, calendar session, ejercicio, bracket). Fundación
-     arquitectónica para futuro.
+   y `propose_delete_*` a los proposals existentes donde tiene sentido
+   (entrenamiento, calendar session, ejercicio, bracket). Fundación
+   arquitectónica para futuro.
 
 Layer 3 (live scoring + bulk + bracket structure + team members + competition
 settings) queda **explícitamente diferida** hasta tener data de uso de C.1+C.2.
