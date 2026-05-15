@@ -116,6 +116,26 @@ jobs:
           fi
           exit $STATUS
 
+      - name: Deploy Firestore indexes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        # Sin este step, cualquier query nuevo con .where compuesto o
+        # .where + .orderBy sobre campos distintos falla en prod con
+        # FAILED_PRECONDITION (no auto-deploy desde firestore.indexes.json).
+        # Mismo soft-fail pattern que rules. Pasó el 2026-05-15 con
+        # pendingAnalysesScoutings (sub-A.4a) tumbando aiChat + pickGetProactive
+        # tras el deploy de sub-C — ver feedback_ci_firestore_indexes_not_deployed.md.
+        continue-on-error: true
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/sa-key-indexes.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa-key-indexes.json"
+          firebase deploy --only firestore:indexes --project playoff-creator --force --non-interactive
+          STATUS=$?
+          rm -f "$RUNNER_TEMP/sa-key-indexes.json"
+          if [ $STATUS -ne 0 ]; then
+            echo "::warning::Firestore indexes deploy failed (exit $STATUS). Grant the service account Cloud Datastore Owner. Hosting deploy is unaffected. Note: index builds take 1-3 min after deploy succeeds."
+          fi
+          exit $STATUS
+
       - name: Deploy Cloud Functions
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         # Soft-fail: the FIREBASE_SERVICE_ACCOUNT secret was provisioned for
