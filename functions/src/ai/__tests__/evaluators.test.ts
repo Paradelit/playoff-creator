@@ -192,3 +192,138 @@ describe('AutoEvaluator.score — new sub-A.7 scores', () => {
     expect(score).toBeUndefined();
   });
 });
+
+describe('AutoEvaluator.score — sub-C.6 update-delete-offered', () => {
+  function makeEvaluator() {
+    const logScore = vi.fn();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const obs = { logScore } as any;
+    return { evaluator: new AutoEvaluator(obs), logScore };
+  }
+
+  it('logs update-delete-offered=1.0 when edit intent met with update proposal', () => {
+    const { evaluator, logScore } = makeEvaluator();
+    evaluator.score('t1', {
+      toolCalls: [],
+      loopDetected: false,
+      contentBlocks: [
+        {
+          type: 'confirm_write',
+          proposal: {
+            proposalId: 'p1',
+            kind: 'update_training',
+            summary: 'Renombrar',
+            payload: { teamId: 't1', trainingId: 'tr_1', updates: { titulo: 'X' } },
+          },
+        },
+      ],
+      userMessage: 'cambia el título del entrenamiento',
+    });
+    const score = logScore.mock.calls.find(
+      (c: unknown[]) => (c[1] as { name: string }).name === 'update-delete-offered',
+    );
+    expect(score).toBeDefined();
+    expect((score![1] as { value: number }).value).toBe(1.0);
+  });
+
+  it('logs update-delete-offered=0.0 when edit intent but no proposal', () => {
+    const { evaluator, logScore } = makeEvaluator();
+    evaluator.score('t1', {
+      toolCalls: [],
+      loopDetected: false,
+      contentBlocks: [{ type: 'text', markdown: 'No tengo ese tool todavía.' }],
+      userMessage: 'borra ese entrenamiento',
+    });
+    const score = logScore.mock.calls.find(
+      (c: unknown[]) => (c[1] as { name: string }).name === 'update-delete-offered',
+    );
+    expect(score).toBeDefined();
+    expect((score![1] as { value: number }).value).toBe(0.0);
+  });
+
+  it('does NOT log update-delete-offered when no edit intent', () => {
+    const { evaluator, logScore } = makeEvaluator();
+    evaluator.score('t1', {
+      toolCalls: [],
+      loopDetected: false,
+      contentBlocks: [{ type: 'text', markdown: 'Aquí tienes el equipo.' }],
+      userMessage: 'muéstrame el equipo',
+    });
+    const score = logScore.mock.calls.find(
+      (c: unknown[]) => (c[1] as { name: string }).name === 'update-delete-offered',
+    );
+    expect(score).toBeUndefined();
+  });
+
+  it('does NOT log update-delete-offered when userMessage missing', () => {
+    const { evaluator, logScore } = makeEvaluator();
+    evaluator.score('t1', { toolCalls: [], loopDetected: false, contentBlocks: [] });
+    const score = logScore.mock.calls.find(
+      (c: unknown[]) => (c[1] as { name: string }).name === 'update-delete-offered',
+    );
+    expect(score).toBeUndefined();
+  });
+
+  it('triggers on multiple verbs (cambia, borra, modifica, etc.)', () => {
+    const verbs = ['cambia', 'edita', 'modifica', 'borra', 'elimina', 'quita', 'actualiza', 'mueve'];
+    for (const verb of verbs) {
+      const { evaluator, logScore } = makeEvaluator();
+      evaluator.score('t', {
+        toolCalls: [],
+        loopDetected: false,
+        contentBlocks: [{ type: 'text', markdown: 'no puedo' }],
+        userMessage: `${verb} esto`,
+      });
+      const score = logScore.mock.calls.find(
+        (c: unknown[]) => (c[1] as { name: string }).name === 'update-delete-offered',
+      );
+      expect(score, `verb=${verb} should trigger intent`).toBeDefined();
+    }
+  });
+});
+
+describe('AutoEvaluator.score — sub-C.6 convocatoria-preview-emitted', () => {
+  function makeEvaluator() {
+    const logScore = vi.fn();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const obs = { logScore } as any;
+    return { evaluator: new AutoEvaluator(obs), logScore };
+  }
+
+  it('logs convocatoria-preview-emitted=1.0 when block present', () => {
+    const { evaluator, logScore } = makeEvaluator();
+    evaluator.score('t1', {
+      toolCalls: [],
+      loopDetected: false,
+      contentBlocks: [
+        {
+          type: 'convocatoria_preview',
+          convocatoria: {
+            sessionId: 'cal_1',
+            teamId: 't1',
+            mensaje: 'Convocatoria sábado',
+            encabezado: 'vs Hispano',
+          },
+        },
+      ],
+    });
+    const score = logScore.mock.calls.find(
+      (c: unknown[]) => (c[1] as { name: string }).name === 'convocatoria-preview-emitted',
+    );
+    expect(score).toBeDefined();
+    expect((score![1] as { value: number }).value).toBe(1.0);
+  });
+
+  it('does NOT log when no convocatoria_preview block', () => {
+    const { evaluator, logScore } = makeEvaluator();
+    evaluator.score('t1', {
+      toolCalls: [],
+      loopDetected: false,
+      contentBlocks: [{ type: 'text', markdown: 'hola' }],
+    });
+    const score = logScore.mock.calls.find(
+      (c: unknown[]) => (c[1] as { name: string }).name === 'convocatoria-preview-emitted',
+    );
+    expect(score).toBeUndefined();
+  });
+});

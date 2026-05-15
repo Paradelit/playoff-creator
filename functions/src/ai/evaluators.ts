@@ -10,7 +10,16 @@ export interface AutoEvalMetrics {
   userDigest?: UserDigest;
   /** Sub-A.7: screen semantic del turno para puntuar referencias contextuales. */
   screenSemantic?: { surface: string; referableIds?: Record<string, string> } | null;
+  /** Sub-C.6: mensaje del usuario del turno actual para clasificar intent. */
+  userMessage?: string;
 }
+
+/**
+ * Regex que detecta intención de editar/borrar en el mensaje del coach.
+ * Cubre verbos comunes en español + algunas variantes ortográficas.
+ * Exportado para tests.
+ */
+export const EDIT_DELETE_INTENT_REGEX = /\b(cambia|edita|modifica|borra|elimina|quita|actualiza|mueve)\b/i;
 
 /**
  * Computa un score 0.0–1.0 que refleja cuán "rico" salió el digest este
@@ -153,6 +162,40 @@ export class AutoEvaluator {
         name: 'confirm-choice-emitted',
         value: 1.0,
         comment: 'Ambiguity classifier emitted ConfirmChoice (saved an LLM turn)',
+      });
+    }
+
+    // 8. update-delete-offered (sub-C.6) — para turnos donde el coach pide
+    //    editar/borrar algo, mide si Pick emite un propose_update_* o
+    //    propose_delete_* correcto. 1.0 = intent matched + proposal; 0.0 =
+    //    intent matched + no proposal. No se emite si no hay intent
+    //    (los turnos sin intent no son medibles).
+    if (metrics.userMessage && EDIT_DELETE_INTENT_REGEX.test(metrics.userMessage)) {
+      const proposalKinds = contentBlocks
+        .filter((b): b is Extract<ContentBlock, { type: 'confirm_write' }> => b.type === 'confirm_write')
+        .map((b) => b.proposal.kind);
+      const matchingKinds = proposalKinds.filter((k) => k.startsWith('update_') || k.startsWith('delete_'));
+      const offered = matchingKinds.length > 0;
+      this.observability.logScore(traceId, {
+        name: 'update-delete-offered',
+        value: offered ? 1.0 : 0.0,
+        comment: offered
+          ? `Edit intent met with: ${matchingKinds.join(',')}`
+          : `Edit intent in "${metrics.userMessage.slice(0, 50)}" but no update/delete proposal`,
+      });
+    }
+
+    // 9. convocatoria-preview-emitted (sub-C.6) — counter para denominador
+    //    del action-close-loop rate. Cuando Pick emite un convocatoria_preview,
+    //    el siguiente turno (o uno cercano) debería emitir mark_convocatoria_sent
+    //    si el coach confirma haberla mandado. El close-loop rate se calcula
+    //    en Langfuse: sum(mark_convocatoria_sent_total) / sum(convocatoria-preview-emitted).
+    const hasConvocatoriaPreview = contentBlocks.some((b) => b.type === 'convocatoria_preview');
+    if (hasConvocatoriaPreview) {
+      this.observability.logScore(traceId, {
+        name: 'convocatoria-preview-emitted',
+        value: 1.0,
+        comment: 'Turn emitted convocatoria_preview — pareado con mark_convocatoria_sent_total para close-loop rate',
       });
     }
   }
